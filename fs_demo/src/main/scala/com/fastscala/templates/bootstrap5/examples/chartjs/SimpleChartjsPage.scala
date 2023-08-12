@@ -1,7 +1,7 @@
 package com.fastscala.templates.bootstrap5.examples.chartjs
 
 import com.fastscala.chartjs.{BarChartDataset, BarChartType, ChartData, ChartDataset, ChartJs, SimpleNumbersChartDatasetData}
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
 import com.fastscala.templates.bootstrap5.modals.BSModal5Base

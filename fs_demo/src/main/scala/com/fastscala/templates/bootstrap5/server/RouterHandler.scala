@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.server
 
-import com.fastscala.code.{FSSession, FSSystem}
+import com.fastscala.core.{FSSession, FSSystem}
 import com.fastscala.server.{MainRouterHandlerHelper, Ok, Response}
 import com.fastscala.templates.bootstrap5.examples._
 import com.fastscala.templates.bootstrap5.examples.chartjs.SimpleChartjsPage

@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.Lazy

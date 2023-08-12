@@ -1,6 +1,6 @@
 package com.fastscala.websockets
 
-import com.fastscala.code.FSSystem
+import com.fastscala.core.FSSystem
 import jakarta.websocket.{Endpoint, EndpointConfig, Session}
 
 import scala.util.Try

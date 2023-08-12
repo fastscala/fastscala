@@ -1,6 +1,6 @@
 package com.fastscala.templates.form4
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.utils.ElemWithRandomId
 import com.fastscala.utils.RenderableWithFSContext

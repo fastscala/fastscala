@@ -1,6 +1,6 @@
 package com.fastscala.server
 
-import com.fastscala.code.FSSystem
+import com.fastscala.core.FSSystem
 import com.fastscala.utils.FSOptimizedResourceHandler
 import com.fastscala.websockets.FSWebsocketServletContextHandler
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet

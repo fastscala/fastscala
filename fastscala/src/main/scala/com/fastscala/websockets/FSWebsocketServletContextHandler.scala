@@ -1,6 +1,6 @@
 package com.fastscala.websockets
 
-import com.fastscala.code.FSSystem
+import com.fastscala.core.FSSystem
 import jakarta.servlet.ServletContext
 import jakarta.websocket.server.{ServerContainer, ServerEndpointConfig}
 import org.eclipse.jetty.server.Server

@@ -1,6 +1,6 @@
 package com.fastscala.templates.form5.fields
 
-import com.fastscala.code.{FSContext, FSUploadedFile}
+import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
 import com.fastscala.templates.form5.Form5
 import com.fastscala.utils.ElemTransformers.RichElem

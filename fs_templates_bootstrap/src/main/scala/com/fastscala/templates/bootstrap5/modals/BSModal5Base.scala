@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.modals
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.{Js, Rerenderer}
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.utils.IdGen

@@ -1,6 +1,6 @@
 package com.fastscala.templates.form5
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form5.fields._
 import com.fastscala.templates.utils.ElemWithRandomId

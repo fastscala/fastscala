@@ -1,6 +1,6 @@
 package com.fastscala.stats
 
-import com.fastscala.code.{FSContext, FSPage, FSSession, FSSystem}
+import com.fastscala.core.{FSContext, FSPage, FSSession, FSSystem}
 import com.github.loki4j.slf4j.marker.LabelMarker
 import io.circe.syntax.EncoderOps
 import io.prometheus.client.Counter

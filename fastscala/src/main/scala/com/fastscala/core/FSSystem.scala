@@ -1,4 +1,4 @@
-package com.fastscala.code
+package com.fastscala.core
 
 import com.fastscala.js.Js
 import com.fastscala.server._

@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.examples.tables
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
 import com.fastscala.templates.bootstrap5.examples.components.Widget
 import com.fastscala.templates.bootstrap5.examples.data.{CountriesData, Country}

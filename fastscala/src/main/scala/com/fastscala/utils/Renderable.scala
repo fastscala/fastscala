@@ -1,6 +1,6 @@
 package com.fastscala.utils
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 
 import scala.xml.NodeSeq
 

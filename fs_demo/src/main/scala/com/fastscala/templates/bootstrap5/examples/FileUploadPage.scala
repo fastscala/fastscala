@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.examples
 
-import com.fastscala.code.{FSContext, FSSessionVarOpt, FSUploadedFile}
+import com.fastscala.core.{FSContext, FSSessionVarOpt, FSUploadedFile}
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.FileUpload
 

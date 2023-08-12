@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.utils
 
-import com.fastscala.code.{FSContext, FSUploadedFile}
+import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
 

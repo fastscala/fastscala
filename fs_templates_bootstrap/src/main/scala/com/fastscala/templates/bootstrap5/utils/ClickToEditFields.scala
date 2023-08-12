@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.utils
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
 import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq

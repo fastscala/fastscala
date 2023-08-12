@@ -2,7 +2,7 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.js.Js
 import IcnFA.RichIcn
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.utils.IdGen
 
 import java.util.UUID

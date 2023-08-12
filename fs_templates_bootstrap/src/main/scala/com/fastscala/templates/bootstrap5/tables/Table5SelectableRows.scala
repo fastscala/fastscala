@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.classes.BSHelpers.s
 import com.fastscala.templates.bootstrap5.modals.BSModal5

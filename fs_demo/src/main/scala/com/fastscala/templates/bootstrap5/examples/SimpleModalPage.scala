@@ -1,7 +1,7 @@
 package com.fastscala.templates.bootstrap5.examples
 
 import cats.effect.IO
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5Base
 import com.fastscala.templates.bootstrap5.utils.BSBtn

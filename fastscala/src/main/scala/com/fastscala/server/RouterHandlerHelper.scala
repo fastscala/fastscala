@@ -1,6 +1,6 @@
 package com.fastscala.server
 
-import com.fastscala.code.{FSSession, FSSystem}
+import com.fastscala.core.{FSSession, FSSystem}
 import com.fastscala.js.Js
 import com.fastscala.utils.RenderableWithFSContext
 import jakarta.servlet.http.{Cookie, HttpServletRequest, HttpServletResponse}

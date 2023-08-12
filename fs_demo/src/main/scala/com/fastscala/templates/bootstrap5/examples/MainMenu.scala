@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.examples
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.utils.IdGen
 
 import scala.xml.NodeSeq

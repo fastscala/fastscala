@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 
 import scala.xml.{Elem, NodeSeq}
 

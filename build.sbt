@@ -110,8 +110,6 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     Compile / run / connectInput := true,
     javaOptions += "-Xmx2G",
     javaOptions += "-Xms400M",
-    // javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
-    javaHome := Some(file("/opt/jdk-19.0.1")),
   )
   .dependsOn(fs_templates_bootstrap)
   .dependsOn(fs_chartjs)

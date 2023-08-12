@@ -1,6 +1,6 @@
 package com.fastscala.js
 
-import com.fastscala.code.FSContext
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js.consoleLog
 import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.IdGen

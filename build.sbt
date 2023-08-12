@@ -99,8 +99,6 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     rpmLicense := Some("none"),
 
     libraryDependencies ++= Seq(
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % "2.23.2",
-      "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.23.2" % "compile-internal",
       "org.eclipse.jetty" % "jetty-servlet" % "11.0.13",
       "org.eclipse.jetty" % "jetty-server" % "11.0.13",
       "org.typelevel" %% "cats-effect" % "3.4.4",

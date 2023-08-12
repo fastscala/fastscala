@@ -1,7 +1,9 @@
 package com.fastscala.templates.bootstrap5.examples.data
 
-import com.github.plokhotnyuk.jsoniter_scala.macros._
-import com.github.plokhotnyuk.jsoniter_scala.core._
+import io.circe.generic.semiauto
+
+import scala.io.Source
+
 case class CountryName(
                         common: String
                         , official: String
@@ -31,7 +33,10 @@ case class Country(
 
 object CountriesData {
 
-  implicit val codecCountry: JsonValueCodec[Array[Country]] = JsonCodecMaker.make
-
-  lazy val data = readFromStream(getClass.getResourceAsStream("/countries.json"))
+  lazy val data = {
+    import io.circe._, io.circe.parser.parse
+    implicit val CountryNameDecoder: Decoder[CountryName] = semiauto.deriveDecoder[CountryName]
+    implicit val CountryDecoder: Decoder[Country] = semiauto.deriveDecoder[Country]
+    parse(Source.fromInputStream(getClass.getResourceAsStream("/countries.json")).getLines().mkString("\n")).right.get.as[Array[Country]].right.get
+  }
 }

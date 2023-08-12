@@ -34,7 +34,7 @@ object LightTableTestLightEntity extends Table[LightTableTestLightEntity] {
   override def createSampleRow(): LightTableTestLightEntity = new LightTableTestLightEntity
 }
 
-class LightTableSpec extends AnyFlatSpec with DBTests {
+trait LightTableSpecBase extends AnyFlatSpec {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
@@ -61,3 +61,7 @@ class LightTableSpec extends AnyFlatSpec with DBTests {
     })
   }
 }
+
+class SQLiteLightTableSpec extends LightTableSpecBase with SQLiteDB
+
+class PostgresLightTableSpec extends LightTableSpecBase with PostgresDB

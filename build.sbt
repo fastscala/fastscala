@@ -5,7 +5,7 @@ import scala.concurrent.duration.*
 
 resolvers += Resolver.mavenLocal
 
-ThisBuild / organization := "com.kezlisolutions"
+ThisBuild / organization := "com.fastscala"
 ThisBuild / scalaVersion := "2.13.11"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
@@ -19,7 +19,9 @@ scalacOptions += "-Ypartial-unification"
 
 val LiftVersion = "3.5.0"
 
-lazy val fastscala = (project in file("fastscala_repos/fastscala"))
+val FSRoot = "./"
+
+lazy val fastscala = (project in file(FSRoot + "fastscala"))
   .settings(
     name := "fastscala",
 
@@ -45,19 +47,21 @@ lazy val fastscala = (project in file("fastscala_repos/fastscala"))
     ),
   )
 
-lazy val fs_db = (project in file("fastscala_repos/fs_db"))
+lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
     name := "fs_db",
     libraryDependencies ++= Seq(
       "org.postgresql" % "postgresql" % "42.3.5",
+      "org.xerial" % "sqlite-jdbc" % "3.42.0.0",
       "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
       "com.google.guava" % "guava" % "32.1.1-jre",
-
-    )
+      "org.scalatest" %% "scalatest" % "3.2.16" % Test,
+    ),
+    Test / parallelExecution := false
   )
   .dependsOn(fastscala)
 
-lazy val fs_templates = (project in file("fastscala_repos/fs_templates"))
+lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
   .settings(
     name := "fs_templates",
 
@@ -68,23 +72,25 @@ lazy val fs_templates = (project in file("fastscala_repos/fs_templates"))
   .dependsOn(fastscala)
   .dependsOn(fs_db)
 
-lazy val fs_templates_bootstrap = (project in file("fastscala_repos/fs_templates_bootstrap"))
+lazy val fs_templates_bootstrap = (project in file(FSRoot + "fs_templates_bootstrap"))
   .settings(name := "fs_templates_bootstrap")
   .dependsOn(fs_templates)
   .dependsOn(fastscala)
   .dependsOn(fs_db)
 
-lazy val fs_chartjs = (project in file("fastscala_repos/fs_chartjs"))
+lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
   .settings(name := "fs_chartjs")
   .dependsOn(fastscala)
 
-lazy val fs_demo = (project in file("fastscala_repos/fs_demo"))
+lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
   .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
   .settings(
     name := "fs_demo",
 
     Compile / packageBin / mainClass := Some("com.fastscala.templates.bootstrap5.server.JettyServer"),
     Compile / mainClass := Some("com.fastscala.templates.bootstrap5.server.JettyServer"),
+
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "main" / "scala",
 
     publishArtifact := true,
     bashScriptEnvConfigLocation := Some("/etc/default/" + (Linux / packageName).value),
@@ -109,3 +115,4 @@ lazy val fs_demo = (project in file("fastscala_repos/fs_demo"))
   )
   .dependsOn(fs_templates_bootstrap)
   .dependsOn(fs_chartjs)
+

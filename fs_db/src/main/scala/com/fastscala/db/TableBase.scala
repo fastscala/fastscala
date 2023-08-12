@@ -11,7 +11,7 @@ import scalikejdbc._
 
 import java.util.UUID
 
-trait Table[R] {
+trait TableBase[R] {
 
   def createSampleRow(): R
 
@@ -37,47 +37,45 @@ trait Table[R] {
                           field: java.lang.reflect.Field,
                           clas: Class[_],
                           value: => Any,
-                          append: String = " not null"
+                          columnConstrains: Set[String] = Set("not null")
                         ): String = clas.getName match {
-    case "java.lang.Byte" => "integer" + append
-    case "byte" => "integer" + append
+    case "java.lang.Byte" => "integer" + columnConstrains.mkString(" ", " ", "")
+    case "byte" => "integer" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Short" => "integer" + append
-    case "short" => "integer" + append
+    case "java.lang.Short" => "integer" + columnConstrains.mkString(" ", " ", "")
+    case "short" => "integer" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Integer" => "integer" + append
-    case "int" => "integer" + append
+    case "java.lang.Integer" => "integer" + columnConstrains.mkString(" ", " ", "")
+    case "int" => "integer" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Long" => "bigint" + append
-    case "long" => "bigint" + append
+    case "java.lang.Long" => "bigint" + columnConstrains.mkString(" ", " ", "")
+    case "long" => "bigint" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Float" => "real" + append
-    case "float" => "real" + append
+    case "java.lang.Float" => "real" + columnConstrains.mkString(" ", " ", "")
+    case "float" => "real" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Double" => "double precision" + append
-    case "double" => "double precision" + append
+    case "java.lang.Double" => "double precision" + columnConstrains.mkString(" ", " ", "")
+    case "double" => "double precision" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Character" => "char" + append
-    case "char" => "char" + append
+    case "java.lang.Character" => "char" + columnConstrains.mkString(" ", " ", "")
+    case "char" => "char" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.String" => "text" + append
+    case "java.lang.String" => "text" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.lang.Boolean" => "boolean" + append
-    case "boolean" => "boolean" + append
+    case "java.lang.Boolean" => "boolean" + columnConstrains.mkString(" ", " ", "")
+    case "boolean" => "boolean" + columnConstrains.mkString(" ", " ", "")
 
-    case "java.util.UUID" => "UUID" + append
-
-    case "[B" => "bytea" + append
+    case "[B" => "bytea" + columnConstrains.mkString(" ", " ", "")
 
     case "scala.Option" =>
       val cast = value.asInstanceOf[Option[Any]]
       if (cast.isEmpty) {
         throw new Exception(s"Missing value for field '${fieldName(field)}' in sample row for table '$tableName'")
       }
-      fieldTypeToSQLType(field, cast.get.getClass, ???, append.replaceAll(" not null", ""))
-    case "scala.Enumeration$Value" => "integer" + append
+      fieldTypeToSQLType(field, cast.get.getClass, ???, columnConstrains - "not null")
+    case "scala.Enumeration$Value" => "integer" + columnConstrains.mkString(" ", " ", "")
 
-    case "scala.Enumeration$Val" => "integer" + append
+    case "scala.Enumeration$Val" => "integer" + columnConstrains.mkString(" ", " ", "")
 
     case _ => throw new Exception(s"Unexpected field class ${clas.getSimpleName} for field ${field.getName}")
   }
@@ -116,7 +114,6 @@ trait Table[R] {
     case v: Float => sqls"$v"
     case v: Long => sqls"$v"
     case v: String => sqls"$v"
-    case v: java.util.UUID => sqls"${v.toString}::UUID"
     case v: Array[Byte] => sqls"$v"
     case v: Enumeration#Value => sqls"${v.id}"
   }
@@ -160,9 +157,6 @@ trait Table[R] {
 
       case "java.lang.Boolean" | "boolean" if nullable => field.set(instance, rs.booleanOpt(idx))
       case "java.lang.Boolean" | "boolean" => field.set(instance, rs.boolean(idx))
-
-      case "java.util.UUID" if nullable => field.set(instance, rs.stringOpt(idx).map(UUID.fromString))
-      case "java.util.UUID" => field.set(instance, UUID.fromString(rs.string(idx)))
 
       case "[B" if nullable => field.set(instance, rs.bytesOpt(idx))
       case "[B" => field.set(instance, rs.bytes(idx))

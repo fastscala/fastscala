@@ -20,8 +20,9 @@ object TestEntity3 extends Table[TestEntity3] {
   override def createSampleRow(): TestEntity3 = new TestEntity3
 }
 
-class TableRowSpec extends AnyFlatSpec with DBTests {
+trait TableRowSpecBase extends AnyFlatSpec {
 
+  def runTests() {
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
       TestEntity3.__createTableSQL.execute()()
@@ -53,3 +54,8 @@ class TableRowSpec extends AnyFlatSpec with DBTests {
     })
   }
 }
+}
+
+class SQLiteTableRowSpec extends TableRowSpecBase with SQLiteDB
+
+class PostgresTableRowSpec extends TableRowSpecBase with PostgresDB

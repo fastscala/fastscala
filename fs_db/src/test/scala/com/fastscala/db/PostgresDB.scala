@@ -2,7 +2,7 @@ package com.fastscala.db
 
 import scalikejdbc.{ConnectionPool, ConnectionPoolSettings}
 
-trait DBTests {
+trait PostgresDB {
 
   Class.forName("org.postgresql.Driver")
 

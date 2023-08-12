@@ -12,15 +12,15 @@ class TestEntity4(
                    var myString: String = "hello",
                    var myBoolean: Boolean = true,
                    var myChar: Char = 'X',
-                 ) extends RowWithUUID[TestEntity4] {
-  override def table: TableWithUUID[TestEntity4] = TestEntity4
+                 ) extends PgRowWithUUID[TestEntity4] {
+  override def table: PgTableWithUUID[TestEntity4] = TestEntity4
 }
 
-object TestEntity4 extends TableWithUUID[TestEntity4] {
+object TestEntity4 extends PgTableWithUUID[TestEntity4] {
   override def createSampleRow(): TestEntity4 = new TestEntity4()
 }
 
-class TableUUIDRowSpec extends AnyFlatSpec with DBTests {
+class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>

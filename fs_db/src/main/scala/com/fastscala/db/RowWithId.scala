@@ -9,7 +9,7 @@ trait RowWithId[R <: RowWithId[R]] extends Row[R] {
 
   var id: java.lang.Long = _
 
-  override def isPersisted_? = id != null
+  def isPersisted_?() = id != null
 
   def reloadOpt(): Option[R] = table.forId(id)
 

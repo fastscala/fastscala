@@ -4,36 +4,17 @@ import scalikejdbc._
 
 import java.util.UUID
 
-trait RowWithUUIDBase extends RowBase {
-
-  def table: TableWithUUID[_]
-
-  var uuid: Option[UUID] = None
-
-  override def isPersisted_?(): Boolean = uuid.isDefined
-
-  def saveSQL(): SQL[Nothing, NoExtractor]
-
-  def save(): this.type
-
-  def update(): Unit
-
-  def delete(): Unit
-
-  override def insert(): Unit
-}
-
-trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
+trait SQLiteRowWithUUID[R <: SQLiteRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
   self: R =>
 
-  def table: TableWithUUID[R]
+  def table: SQLiteTableWithUUID[R]
 
   def saveSQL(): SQL[Nothing, NoExtractor] = {
     val sql = if (uuid.isEmpty) {
       uuid = Some(UUID.randomUUID())
       table.insertSQL(this)
     } else {
-      table.updateSQL(this, sqls" where uuid = ${uuid.get.toString}::UUID")
+      table.updateSQL(this, sqls" where uuid = ${uuid.get.toString}")
     }
     sql
   }
@@ -46,7 +27,7 @@ trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
   def update(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
-        table.updateSQL(this, sqls" where uuid = ${uuid.toString}::UUID").execute()()
+        table.updateSQL(this, sqls" where uuid = ${uuid.toString}").execute()()
       })
     })
   }
@@ -54,7 +35,7 @@ trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
   def delete(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
-        table.deleteSQL(this, sqls"where uuid = $uuid::UUID").execute()()
+        table.deleteSQL(this, sqls"where uuid = $uuid").execute()()
       })
     })
   }

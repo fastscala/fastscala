@@ -18,10 +18,10 @@ trait TableWithId[R <: RowWithId[R]] extends Table[R] {
                                    field: java.lang.reflect.Field,
                                    clas: Class[_],
                                    value: => Any,
-                                   append: String = " not null"
+                                   columnConstrains: Set[String] = Set("not null")
                                  ): String =
     if (field.getName == "id") "bigserial primary key not null"
-    else super.fieldTypeToSQLType(field, clas, value, append)
+    else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
 
   def forId(id: Long): Option[R] = list(sqls""" where id = $id""").headOption
 }

@@ -1,14 +1,14 @@
 package com.fastscala.templates.bootstrap5.examples.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
+import com.fastscala.templates.bootstrap5.examples.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.examples.data.{CountriesData, Country}
 import com.fastscala.templates.bootstrap5.tables._
 
 import scala.xml.NodeSeq
 
 
-class PaginatedTableExamplePage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/tables/PaginatedTableExamplePage.scala") {
+class PaginatedTableExamplePage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/tables/PaginatedTableExamplePage.scala") {
 
   override def pageTitle: String = "Paginated Table Example"
 

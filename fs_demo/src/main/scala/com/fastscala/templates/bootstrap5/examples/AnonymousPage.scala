@@ -7,7 +7,7 @@ import com.fastscala.templates.bootstrap5.utils.FileUpload
 import java.util.Base64
 import scala.xml.NodeSeq
 
-class AnonymousPage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/AnonymousPage.scala") {
+class AnonymousPage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/AnonymousPage.scala") {
 
   override def pageTitle: String = "Anonymous Page"
 
@@ -33,7 +33,7 @@ class AnonymousPage extends ExampleWithCodePage("/com/fastscala/templates/bootst
 class VisualizeUploadedImageAnonymousPage(
                                            contentType: String,
                                            contents: Array[Byte]
-                                         ) extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/AnonymousPage.scala") {
+                                         ) extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/AnonymousPage.scala") {
 
   override def pageTitle: String = "Visualize Uploaded Image Anonymous Page Example"
 

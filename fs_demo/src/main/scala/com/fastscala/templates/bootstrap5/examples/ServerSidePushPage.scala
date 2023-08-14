@@ -8,7 +8,7 @@ import com.fastscala.utils.IdGen
 import scala.concurrent.duration.DurationInt
 import scala.xml.NodeSeq
 
-class ServerSidePushPage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/ServerSidePushPage.scala") {
+class ServerSidePushPage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/ServerSidePushPage.scala") {
 
   override def pageTitle: String = "Server Side Push Example"
 

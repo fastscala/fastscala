@@ -128,5 +128,5 @@ class DateFieldOpt(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate(this)) List(this) else Nil
 }

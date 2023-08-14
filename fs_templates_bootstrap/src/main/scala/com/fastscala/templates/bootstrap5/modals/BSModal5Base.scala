@@ -41,7 +41,7 @@ abstract class BSModal5Base {
 
   lazy val modalContentsFooterRenderer: Rerenderer = Js.rerenderable(_ => implicit fsc => renderModalFooterContent())
 
-  def install()(implicit fsc: FSContext): Js = Js.append2Body(renderModal())
+  def append2DOM()(implicit fsc: FSContext): Js = Js.append2Body(renderModal())
 
   def installAndShow(
                       backdrop: Boolean = true
@@ -49,16 +49,22 @@ abstract class BSModal5Base {
                       , focus: Boolean = true
                       , keyboard: Boolean = true
                     )(implicit fsc: FSContext): Js =
-    install() & show(backdrop, backdropStatic, focus, keyboard) & show() & removeOnHidden()
+    install(backdrop, backdropStatic, focus, keyboard) & show() & removeOnHidden()
 
-  def show(
-            backdrop: Boolean = true
-            , backdropStatic: Boolean = false
-            , focus: Boolean = true
-            , keyboard: Boolean = true
-          )(implicit fsc: FSContext): Js = Js(
-    s""";new bootstrap.Modal(document.getElementById('$modalId'));"""
-  )
+  def install(
+               backdrop: Boolean = true
+               , backdropStatic: Boolean = false
+               , focus: Boolean = true
+               , keyboard: Boolean = true
+             )(implicit fsc: FSContext): Js =
+    append2DOM() &
+      Js(
+        s""";new bootstrap.Modal(document.getElementById('$modalId'), {
+           |  backdrop: ${if (backdropStatic) "'static'" else backdrop.toString},
+           |  keyboard: $keyboard,
+           |  focus: $focus,
+           |});""".stripMargin
+      )
 
   def dispose(): Js = Js(s"""$$('#$modalId').modal('dispose')""")
 
@@ -74,13 +80,13 @@ abstract class BSModal5Base {
 
   def toggle(): Js = Js(s"""$$('#$modalId').modal('toggle')""")
 
-  def onShow(js: Js): Js = Js(s"""$$('#$modalId').on('show.bs.modal', function (e) {${js.cmd}});""")
+  def onShow(js: Js): Js = Js(s"""$$('#$modalId').on('show.bs.modal', function (e) {${js.cmd}});""").printToConsoleBefore()
 
-  def onShown(js: Js): Js = Js(s"""$$('#$modalId').on('shown.bs.modal', function (e) {${js.cmd}});""")
+  def onShown(js: Js): Js = Js(s"""$$('#$modalId').on('shown.bs.modal', function (e) {${js.cmd}});""").printToConsoleBefore()
 
-  def onHide(js: Js): Js = Js(s"""$$('#$modalId').on('hide.bs.modal', function (e) {${js.cmd}});""")
+  def onHide(js: Js): Js = Js(s"""$$('#$modalId').on('hide.bs.modal', function (e) {${js.cmd}});""").printToConsoleBefore()
 
-  def onHidden(js: Js): Js = Js(s"""$$('#$modalId').on('hidden.bs.modal', function (e) {${js.cmd}});""")
+  def onHidden(js: Js): Js = Js(s"""$$('#$modalId').on('hidden.bs.modal', function (e) {${js.cmd}});""").printToConsoleBefore()
 
   def removeOnHidden(): Js = onHidden(remove())
 

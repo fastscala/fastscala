@@ -10,7 +10,7 @@ import com.fastscala.utils.IdGen
 import scala.concurrent.duration.DurationInt
 import scala.xml.NodeSeq
 
-class SimpleModalPage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/SimpleModalPage.scala") {
+class SimpleModalPage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/SimpleModalPage.scala") {
 
   override def pageTitle: String = "Simple Modal Example"
 

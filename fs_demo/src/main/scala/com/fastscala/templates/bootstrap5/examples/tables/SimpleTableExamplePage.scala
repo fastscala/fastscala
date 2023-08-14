@@ -1,14 +1,14 @@
 package com.fastscala.templates.bootstrap5.examples.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
+import com.fastscala.templates.bootstrap5.examples.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.examples.data.{CountriesData, Country}
 import com.fastscala.templates.bootstrap5.tables._
 
 import scala.xml.NodeSeq
 
 
-class SimpleTableExamplePage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/tables/SimpleTableExamplePage.scala") {
+class SimpleTableExamplePage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/tables/SimpleTableExamplePage.scala") {
 
   override def pageTitle: String = "Table example"
 

@@ -23,7 +23,7 @@ class RawHtmlField(
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{gen}</div>
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
 class SurroundWithHtmlField[T <: FormField](
@@ -39,7 +39,10 @@ class SurroundWithHtmlField[T <: FormField](
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{wrap(field.render())}</div>
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) this :: field.fieldsMatching(predicate) else Nil
+
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
+    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+      List(field).flatMap(_.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
 }
@@ -67,7 +70,9 @@ class VerticalField(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) this :: children.toList.flatMap(_.fieldsMatching(predicate)) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
+    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+      children.toList.flatMap(_.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
 }
@@ -109,7 +114,9 @@ class HorizontalField(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) this :: children.toList.flatMap(_._2.fieldsMatching(predicate)) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
+    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+      children.toList.flatMap(_._2.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js =
     super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
@@ -171,7 +178,7 @@ abstract class TextField[T](
                              , val readOnly: () => Boolean = () => false
                              , val enabled: () => Boolean = () => true
                              , val deps: Set[FormField] = Set()
-                           )(implicit renderer: TextFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField {
+                           )(implicit renderer: TextFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
 
   var currentValue: Option[T] = getOpt()
 
@@ -195,6 +202,8 @@ abstract class TextField[T](
 
   def additionalAttrs(): Seq[(String, String)] = Nil
 
+  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
@@ -202,25 +211,27 @@ abstract class TextField[T](
         renderer.render(this)(
           label.map(lbl => <label for={elemId}>{lbl}</label>),
             <input type={inputType}
-                 name={name.getOrElse(null)}
-                 class="form-control"
-                 id={elemId}
-                 onblur={fsc.callback(Js.elementValueById(elemId), str => {
-                   fromString(str).foreach(currentValue = _)
-                   form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
-                 }).cmd}
-                 placeholder={placeholder.getOrElse(null)}
-                 value={toString(currentValue)}
-                 tabindex={tabindex.map(_ + "").getOrElse(null)}
-                 maxlength={maxlength.map(_ + "").getOrElse(null)}
-                 required={if (required()) "true" else null}/>.withAttrs(additionalAttrs(): _*),
+                   name={name.getOrElse(null)}
+                   class="form-control"
+                   id={elemId}
+                   onblur={fsc.callback(Js.elementValueById(elemId), str => {
+                     fromString(str).foreach(currentValue = _)
+                     form.onEvent(ChangedField(this)) &
+                       Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
+                   }).cmd}
+                   onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${Js.blur(elemId) & Js.evalIf(hints.contains(SaveOnEnterHint))(form.onSaveClientSide())}}"}
+                   placeholder={placeholder.getOrElse(null)}
+                   value={toString(currentValue)}
+                   tabindex={tabindex.map(_ + "").getOrElse(null)}
+                   maxlength={maxlength.map(_ + "").getOrElse(null)}
+                   required={if (required()) "true" else null}/>.withAttrs(additionalAttrs(): _*),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
 class StringField(
@@ -560,7 +571,7 @@ class CheckboxField(
                      , val readOnly: () => Boolean = () => false
                      , val enabled: () => Boolean = () => true
                      , val deps: Set[FormField] = Set()
-                   )(implicit renderer: CheckboxFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField {
+                   )(implicit renderer: CheckboxFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
 
   var currentValue: Boolean = get()
 
@@ -583,6 +594,8 @@ class CheckboxField(
   })
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+
+  override def focusJs: Js = Js.focus(elemId)
 
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
@@ -607,7 +620,7 @@ class CheckboxField(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
@@ -647,7 +660,7 @@ class SelectField[T](
                       , val readOnly: () => Boolean = () => false
                       , val enabled: () => Boolean = () => true
                       , val deps: Set[FormField] = Set()
-                    )(implicit renderer: SelectFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField {
+                    )(implicit renderer: SelectFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
 
   var currentlySelectedValue: T = get()
 
@@ -700,6 +713,8 @@ class SelectField[T](
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 
+  override def focusJs: Js = Js.focus(elemId)
+
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     val options = all()
     val ids2Option: Map[String, T] = options.map(opt => fsc.session.nextID() -> opt).toMap
@@ -733,7 +748,7 @@ class SelectField[T](
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
 class MultiSelectField[T](
@@ -835,7 +850,7 @@ class MultiSelectField[T](
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
 object EnumField {
@@ -924,7 +939,7 @@ class TextAreaField(
                      , val deps: Set[FormField] = Set()
                    )(
                      implicit renderer: TextareaFieldRenderer
-                   ) extends StandardFormField with ValidatableField with StringSerializableField {
+                   ) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
 
   var currentValue = get()
 
@@ -977,6 +992,8 @@ class TextAreaField(
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
+  override def focusJs: Js = Js.focus(elemId)
+
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
@@ -1004,7 +1021,7 @@ class TextAreaField(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
 class CodeField(
@@ -1139,7 +1156,7 @@ class CodeField(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
 trait ButtonFieldRenderer {
@@ -1155,7 +1172,7 @@ class SaveButtonField(
 
   def readOnly: () => Boolean = () => false
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
@@ -1256,7 +1273,7 @@ class FileUploadField(
     }
   }
 
-  override def fieldsMatching(predicate: FormField => Boolean): List[FormField] = if (predicate(this)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 

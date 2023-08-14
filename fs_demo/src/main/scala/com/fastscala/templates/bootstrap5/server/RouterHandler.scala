@@ -3,6 +3,7 @@ package com.fastscala.templates.bootstrap5.server
 import com.fastscala.core.{FSSession, FSSystem}
 import com.fastscala.server.{MainRouterHandlerHelper, Ok, Response}
 import com.fastscala.templates.bootstrap5.examples._
+import com.fastscala.templates.bootstrap5.examples.bootstrap.{BootstrapButtonsPage, BootstrapExamplePage}
 import com.fastscala.templates.bootstrap5.examples.chartjs.SimpleChartjsPage
 import com.fastscala.templates.bootstrap5.examples.forms.BasicFormExamplePage
 import com.fastscala.templates.bootstrap5.examples.tables.{PaginatedTableExamplePage, SelectableColsTableExamplePage, SelectableRowsTableExamplePage, SimpleTableExamplePage, SortableTableExamplePage}
@@ -30,6 +31,8 @@ class RouterHandler()(implicit fss: FSSystem) extends MainRouterHandlerHelper {
   override def handlerInSession(implicit req: HttpServletRequest, session: FSSession): Option[Response] = {
     Some(req).collect {
       case Get() => servePage(new SimpleTableExamplePage())
+      case Get("bootstrap") => servePage(new BootstrapExamplePage())
+      case Get("bootstrap", "buttons") => servePage(new BootstrapButtonsPage())
       case Get("simple_tables") => servePage(new SimpleTableExamplePage())
       case Get("sortable_tables") => servePage(new SortableTableExamplePage())
       case Get("paginated_tables") => servePage(new PaginatedTableExamplePage())

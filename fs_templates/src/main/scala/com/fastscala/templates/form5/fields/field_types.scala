@@ -17,7 +17,7 @@ trait FormField {
   /**
    * Ignores fields not matching the predicate, and their children.
    */
-  def fieldsMatching(predicate: FormField => Boolean): List[FormField]
+  def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField]
 
   def enabledFields: List[FormField] = fieldsMatching(_.enabled())
 
@@ -26,6 +26,11 @@ trait FormField {
   def deps: Set[FormField]
 
   def enabled: () => Boolean
+}
+
+trait FocusableFormField extends FormField {
+
+  def focusJs: Js
 }
 
 trait StandardFormField extends FormField with ElemWithRandomId {

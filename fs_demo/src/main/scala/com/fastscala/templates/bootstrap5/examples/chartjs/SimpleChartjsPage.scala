@@ -3,14 +3,14 @@ package com.fastscala.templates.bootstrap5.examples.chartjs
 import com.fastscala.chartjs.{BarChartDataset, BarChartType, ChartData, ChartDataset, ChartJs, SimpleNumbersChartDatasetData}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
+import com.fastscala.templates.bootstrap5.examples.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.modals.BSModal5Base
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import io.circe.syntax.EncoderOps
 
 import scala.xml.NodeSeq
 
-class SimpleChartjsPage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/chartjs/SimpleChartjsPage.scala") {
+class SimpleChartjsPage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/chartjs/SimpleChartjsPage.scala") {
 
   override def pageTitle: String = "Simple chart.js Example"
 

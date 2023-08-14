@@ -2,7 +2,7 @@ package com.fastscala.templates.bootstrap5.examples.forms
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
+import com.fastscala.templates.bootstrap5.examples.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.examples.data.{CountriesData, Country}
 import com.fastscala.templates.bootstrap5.form5.BSFormRenderer
 import com.fastscala.templates.bootstrap5.modals.BSModal5
@@ -20,7 +20,7 @@ class User1(
              var countryOfResidence: Country
            )
 
-class BasicFormExamplePage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/forms/BasicFormExamplePage.scala") {
+class BasicFormExamplePage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/forms/BasicFormExamplePage.scala") {
 
   override def pageTitle: String = "Simple Form Example"
 

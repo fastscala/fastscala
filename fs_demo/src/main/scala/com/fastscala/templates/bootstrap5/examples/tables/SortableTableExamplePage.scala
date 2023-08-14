@@ -1,7 +1,7 @@
 package com.fastscala.templates.bootstrap5.examples.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.templates.bootstrap5.examples.ExampleWithCodePage
+import com.fastscala.templates.bootstrap5.examples.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.examples.data.{CountriesData, Country}
 import com.fastscala.templates.bootstrap5.tables._
 
@@ -9,7 +9,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.NodeSeq
 
 
-class SortableTableExamplePage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/tables/SortableTableExamplePage.scala") {
+class SortableTableExamplePage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/tables/SortableTableExamplePage.scala") {
 
   override def pageTitle: String = "Sortable Table Example"
 

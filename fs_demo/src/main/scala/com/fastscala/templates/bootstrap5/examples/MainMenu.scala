@@ -6,6 +6,10 @@ import com.fastscala.utils.IdGen
 import scala.xml.NodeSeq
 
 object MainMenu extends Menu(
+  MenuSection("Bootstrap")(
+    MenuItem("Basics", "/bootstrap")
+    , MenuItem("Buttons", "/bootstrap/buttons")
+  ),
   MenuSection("Tables")(
     MenuItem("Simple", "/simple_tables")
     , MenuItem("Sortable", "/sortable_tables")

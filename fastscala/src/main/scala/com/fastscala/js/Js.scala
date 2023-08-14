@@ -34,7 +34,10 @@ trait Js {
 
   def &(js: Js) = RawJs(cmd + ";" + js.cmd)
 
-  def onDOMContentLoaded: Js = Js(s"""document.addEventListener('DOMContentLoaded', function() {$cmd}, false);""")
+  def onDOMContentLoaded: Js = Js {
+    s"""if (/complete|interactive|loaded/.test(document.readyState)) {$cmd}
+       |else { document.addEventListener('DOMContentLoaded', function() {$cmd}, false); }""".stripMargin
+  }
 
   def inScriptTag: Elem = {
     <script type="text/javascript">{Unparsed(
@@ -239,7 +242,7 @@ object Js {
                               ): ContentRerendererP[P] =
     new ContentRerendererP[P](render, outterElem = outterElem, id = id, debugLabel = debugLabel)
 
-  def evalIf(cond: => Boolean)(js: => Js): Js = if (cond) js else Js.void
+  def evalIf(cond: Boolean)(js: => Js): Js = if (cond) js else Js.void
 
   def _if(cond: Js, _then: Js, _else: Js = Js.void): Js = Js(s"if(${cond.cmd}) {${_then}} else {${_else}}")
 
@@ -321,19 +324,21 @@ object Js {
 
   def setTimeout(js: Js, timeout: Long): Js = Js(s"""setTimeout(function(){ ${js.cmd} }, $timeout);""")
 
-  def removeId(id: String): Js = Js(s"""document.getElementById("$id").remove()""")
+  def removeId(id: String): Js = Js(s"""document.getElementById("$id").remove();""")
 
-  def replace(id: String, by: NodeSeq): Js = Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"))""")
+  def replace(id: String, by: NodeSeq): Js = Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
 
-  def setContents(id: String, ns: NodeSeq): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}" """)
+  def setContents(id: String, ns: NodeSeq): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
 
-  def show(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "block"""")
+  def show(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "block";""")
 
-  def hide(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "none"""")
+  def hide(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "none";""")
 
-  def focus(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").focus()""")
+  def focus(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").focus();""")
 
-  def blur(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").blur()""")
+  def select(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").select();""")
+
+  def blur(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").blur();""")
 
   def addClass(id: String, clas: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").classList.add(${Js.asJsStr(clas)})""")
 

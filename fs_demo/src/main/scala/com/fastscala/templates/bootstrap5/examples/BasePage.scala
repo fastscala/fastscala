@@ -17,20 +17,6 @@ trait BasePage extends RenderableWithFSContext {
 
   def renderPageContents()(implicit fsc: FSContext): NodeSeq
 
-  def codeSnippet(file: String, separator: String = "=== code snippet ==="): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-    val allCode = IOUtils.resourceToString(file, StandardCharsets.UTF_8)
-    val codeSections: List[String] = allCode.split("\n.*" + Regex.quote(separator) + ".*\n").zipWithIndex.toList.collect({
-      case (code, idx) if (idx + 1) % 2 == 0 => code
-    })
-    div.border.border_secondary.rounded.apply {
-      h3.apply("Source Code").bg_secondary.text_white.px_3.py_2.m_0.border_bottom.border_secondary ++
-        div.apply {
-          <pre><code style="background-color: #eee;" class="language-scala">{codeSections.mkString("\n\n// [...]\n\n")}</code></pre>.m_0
-        }
-    }
-  }
-
   def append2Head(): NodeSeq = NodeSeq.Empty
 
   def append2Body(): NodeSeq = NodeSeq.Empty
@@ -45,7 +31,6 @@ trait BasePage extends RenderableWithFSContext {
         <title>FastScala Bootstrap Template Example</title>
         <link href="/static/assets/dist/css/bootstrap.min.css" rel="stylesheet"/>
         <link href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet"/>
-        <link href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/vs.min.css" rel="stylesheet"/>
         <link href="/static/custom_base_page.css" rel="stylesheet"/>
         {fsc.fsPageScript().inScriptTag}
         {append2Head()}
@@ -100,9 +85,6 @@ trait BasePage extends RenderableWithFSContext {
         <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
         <script src="/static/assets/dist/js/bootstrap.bundle.min.js"></script>
         <script src="//cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/scala.min.js"></script>
-        <script>hljs.highlightAll();</script>
         {append2Body()}
       </body>
     </html>

@@ -11,7 +11,7 @@ import scala.xml.NodeSeq
 object UploadedImage extends FSSessionVarOpt[FSUploadedFile]()
 // === code snippet ===
 
-class FileUploadPage extends ExampleWithCodePage("/com/fastscala/templates/bootstrap5/examples/FileUploadPage.scala") {
+class FileUploadPage extends SingleCodeExamplePage("/com/fastscala/templates/bootstrap5/examples/FileUploadPage.scala") {
 
   override def pageTitle: String = "File Upload Example"
 

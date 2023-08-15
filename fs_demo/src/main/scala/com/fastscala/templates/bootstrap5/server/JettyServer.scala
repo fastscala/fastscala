@@ -8,9 +8,9 @@ import java.net.URI
 
 object JettyServer extends JettyServerHelper() {
 
-  override def Port: Int = if (isLocal) 9064 else 80
+  override def Port: Int = 9064
 
-  override def isLocal: Boolean = System.getProperty("user.name") == "david"
+  override def isLocal: Boolean = System.getProperty("user.name") != "fs_demo"
 
   override def appName: String = "fs_demo"
 

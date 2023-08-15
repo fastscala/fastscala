@@ -70,8 +70,7 @@ trait BasePage extends RenderableWithFSContext {
                         </div>
 
                         <div class="text-end justify-content-end">
-                            <a href="#" class="btn btn-outline-light me-2">Login</a>
-                            <a href="#" class="btn btn-warning">Sign-up</a>
+                            <a href="https://github.com/fastscala/fastscala" class="btn btn-warning">GitHub</a>
                         </div>
                     </div>
                 </header>

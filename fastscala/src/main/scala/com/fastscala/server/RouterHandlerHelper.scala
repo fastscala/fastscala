@@ -372,8 +372,7 @@ class OkTextBased(text: String, val contentType: String) extends TextResponse {
   override def contents: String = text
 }
 
-
-abstract class RouterHandlerHelper extends AbstractHandler {
+object RouterHandlerHelper {
 
   trait Method
 
@@ -448,6 +447,10 @@ abstract class RouterHandlerHelper extends AbstractHandler {
   object Trace extends UnapplyHelper1("TRACE")
 
   object Patch extends UnapplyHelper1("PATCH")
+
+}
+
+abstract class RouterHandlerHelper extends AbstractHandler {
 
   def handlerNoSession(implicit req: HttpServletRequest): Option[Response]
 

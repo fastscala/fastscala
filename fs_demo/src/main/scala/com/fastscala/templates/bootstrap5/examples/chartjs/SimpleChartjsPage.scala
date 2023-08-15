@@ -19,28 +19,6 @@ class SimpleChartjsPage extends SingleCodeExamplePage("/com/fastscala/templates/
 
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-    /*
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-        datasets: [{
-          label: '# of Votes',
-          data: [12, 19, 3, 5, 2, 3],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        scales: {
-          y: {
-            beginAtZero: true
-          }
-        }
-      }
-    });
-     */
-
     import com.fastscala.chartjs.ChartJsNullable2Option._
     <canvas id="chart"></canvas> ++ ChartJs(
       `type` = BarChartType,

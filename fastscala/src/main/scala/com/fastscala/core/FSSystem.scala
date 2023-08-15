@@ -670,6 +670,8 @@ class FSSystem(
     val sessionIdOpt = Option(req.getCookies).getOrElse(Array()).find(_.getName == FSSessionIdCookieName).map(_.getValue)
     val sessionOpt = sessionIdOpt.flatMap(sessionId => sessions.get(sessionId))
 
+    import RouterHandlerHelper._
+
     Some(req).collect {
       case Post(FSPrefix, "cb", pageId, funcId) =>
         // Callback invocation:

@@ -31,6 +31,8 @@ class FSOptimizedResourceHandler(
                                   defaultCompression: Int = 7
                                 ) extends RouterHandlerHelper {
 
+  import RouterHandlerHelper._
+
   private def openResource(name: String): Option[InputStream] =
     resourceRoots.iterator.map(root => Option(getClass.getResourceAsStream(root + name)))
       .find(_.isDefined).flatten

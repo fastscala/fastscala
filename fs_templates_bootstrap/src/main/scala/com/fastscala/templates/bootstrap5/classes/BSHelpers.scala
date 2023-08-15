@@ -29,6 +29,8 @@ object BSHelpers extends BSCombinedHelper[Elem] {
 
   def em: Elem = <em></em>
 
+  def mark: Elem = <mark></mark>
+
   def div: Elem = <div></div>
 
   def ul: Elem = <ul></ul>
@@ -48,6 +50,8 @@ object BSHelpers extends BSCombinedHelper[Elem] {
   def b: Elem = <b/>
 
   def p: Elem = <p/>
+
+  def abbr: Elem = <abbr/>
 
   def h1: Elem = <h1/>
 

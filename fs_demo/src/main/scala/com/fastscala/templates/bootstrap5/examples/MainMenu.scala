@@ -1,36 +1,40 @@
 package com.fastscala.templates.bootstrap5.examples
 
-import com.fastscala.core.FSContext
-import com.fastscala.utils.IdGen
+import com.fastscala.core.{FSContext, FSSession}
+import com.fastscala.server.{MainRouterHandlerHelper, Response}
+import com.fastscala.templates.bootstrap5.examples.bootstrap.BootstrapTypographyPage
+import com.fastscala.utils.{IdGen, RenderableWithFSContext}
+import jakarta.servlet.http.HttpServletRequest
 
 import scala.xml.NodeSeq
 
 object MainMenu extends Menu(
   MenuSection("Bootstrap")(
-    MenuItem("Basics", "/bootstrap")
-    , MenuItem("Buttons", "/bootstrap/buttons")
+    SimpleMenuItem("Basics", "/bootstrap")
+    , SimpleMenuItem("Buttons", "/bootstrap/buttons")
+    , new RoutingMenuItem("bootstrap", "typography")("Typography", new BootstrapTypographyPage())
   ),
   MenuSection("Tables")(
-    MenuItem("Simple", "/simple_tables")
-    , MenuItem("Sortable", "/sortable_tables")
-    , MenuItem("Paginated", "/paginated_tables")
-    , MenuItem("Selectable Rows", "/selectable_rows_tables")
-    , MenuItem("Selectable Columns", "/tables_sel_cols")
+    SimpleMenuItem("Simple", "/simple_tables")
+    , SimpleMenuItem("Sortable", "/sortable_tables")
+    , SimpleMenuItem("Paginated", "/paginated_tables")
+    , SimpleMenuItem("Selectable Rows", "/selectable_rows_tables")
+    , SimpleMenuItem("Selectable Columns", "/tables_sel_cols")
   ),
   MenuSection("Forms")(
-    MenuItem("Simple", "/simple_form")
+    SimpleMenuItem("Simple", "/simple_form")
   ),
   MenuSection("Modals")(
-    MenuItem("Simple", "/simple_modal")
+    SimpleMenuItem("Simple", "/simple_modal")
   ),
   MenuSection("chart.js")(
-    MenuItem("Simple", "/chartjs/simple")
+    SimpleMenuItem("Simple", "/chartjs/simple")
   ),
   MenuSection("Other")(
-    MenuItem("File Upload", "/file_upload")
-    , MenuItem("Anonymous Page", "/anon_page")
-    , MenuItem("File Download", "/file_download")
-    , MenuItem("Server Side Push", "/server_side_push")
+    SimpleMenuItem("File Upload", "/file_upload")
+    , SimpleMenuItem("Anonymous Page", "/anon_page")
+    , SimpleMenuItem("File Download", "/file_download")
+    , SimpleMenuItem("Server Side Push", "/server_side_push")
   ),
 )
 
@@ -42,6 +46,9 @@ case class Menu(sections: MenuSection*) {
       </ul>
     </div>
   }
+
+  def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] =
+    sections.map(_.serve()).find(_.isDefined).flatten
 }
 
 case class MenuSection(name: String)(items: MenuItem*) {
@@ -59,10 +66,33 @@ case class MenuSection(name: String)(items: MenuItem*) {
       </div>
     </li>
   }
+
+  def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] =
+    items.map(_.serve()).find(_.isDefined).flatten
 }
 
-case class MenuItem(name: String, href: String) {
-  def render()(implicit fsc: FSContext): NodeSeq = {
+trait MenuItem {
+  def name: String
+
+  def href: String
+
+  def render()(implicit fsc: FSContext): NodeSeq =
     <li><a href={href} class="text-white d-inline-flex text-decoration-none rounded">{name}</a></li>
+
+  def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext]
+}
+
+case class SimpleMenuItem(name: String, href: String) extends MenuItem {
+  def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] = None
+}
+
+class RoutingMenuItem(matching: String*)(val name: String, page: => RenderableWithFSContext) extends MenuItem {
+  override def href: String = matching.mkString("/", "/", "")
+
+  import com.fastscala.server.RouterHandlerHelper._
+
+  def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] = Some(req).collect {
+    case Get(path@_*) if path == matching => page
   }
+
 }

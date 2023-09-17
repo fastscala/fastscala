@@ -617,7 +617,7 @@ class FSSystem(
                 , val afterCallBackJs: Option[FSContext => Js] = None
                 , val appName: String = "app"
                 , val stats: FSStats = new FSStats()
-              ) extends RouterHandlerHelper {
+              ) extends RoutingHandlerNoSessionHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
   val sessions: collection.mutable.Map[String, FSSession] = collection.mutable.Map[String, FSSession]()
@@ -670,7 +670,7 @@ class FSSystem(
     val sessionIdOpt = Option(req.getCookies).getOrElse(Array()).find(_.getName == FSSessionIdCookieName).map(_.getValue)
     val sessionOpt = sessionIdOpt.flatMap(sessionId => sessions.get(sessionId))
 
-    import RouterHandlerHelper._
+    import RoutingHandlerHelper._
 
     Some(req).collect {
       case Post(FSPrefix, "cb", pageId, funcId) =>

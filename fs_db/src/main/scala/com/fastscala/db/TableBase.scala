@@ -23,7 +23,7 @@ trait TableBase[R] {
 
   lazy val sampleRow = createSampleRowInternal()
 
-  val fieldsList = sampleRow.getClass.getDeclaredFields.iterator.filter({
+  val fieldsList: List[Field] = sampleRow.getClass.getDeclaredFields.iterator.filter({
     case field => !field.getAnnotations.exists(anno => anno.annotationType().getName == "java.beans.Transient")
   }).toList
 
@@ -89,10 +89,17 @@ trait TableBase[R] {
     SQL(s"""create table ${s"\"$tableName\""} $columns""")
   }
 
-  def __addColumnsIfNotExists: List[SQL[Nothing, NoExtractor]] = {
+  def __addMissingColumnsIfNotExists(default: PartialFunction[Field, Any] = PartialFunction.empty[Field, Any]): List[SQL[Nothing, NoExtractor]] = {
     fieldsList.map(field => {
       field.setAccessible(true)
-      SQL(s"""ALTER TABLE ${s"\"$tableName\""} ADD COLUMN IF NOT EXISTS ${fieldName(field)} ${fieldTypeToSQLType(field, field.getType, field.get(sampleRow))};""")
+      val isNullable = field.getType.getName != "scala.Option" && default.isDefinedAt(field)
+      val defaultSQL: SQLSyntax = if (isNullable) SQLSyntax.createUnsafely(s" default ${default(field)}") else sqls""
+      val statement =
+        sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")}
+           ADD COLUMN IF NOT EXISTS ${SQLSyntax.createUnsafely(fieldName(field))}
+           ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRow)))}
+           ${defaultSQL}"""
+      statement
     })
   }
 
@@ -204,13 +211,13 @@ trait TableBase[R] {
   def list(rest: SQLSyntax): List[R] = {
     DB.readOnly({ implicit session =>
       val query = selectFrom.append(rest)
-      sql"${query}".map(fromWrappedResultSet).list()()
+      sql"${query}".map(fromWrappedResultSet).list()
     })
   }
 
   def listFromQuery(query: SQLSyntax): List[R] = {
     DB.readOnly({ implicit session =>
-      sql"${query}".map(fromWrappedResultSet).list()()
+      sql"${query}".map(fromWrappedResultSet).list()
     })
   }
 

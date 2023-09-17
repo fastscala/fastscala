@@ -372,7 +372,7 @@ class OkTextBased(text: String, val contentType: String) extends TextResponse {
   override def contents: String = text
 }
 
-object RouterHandlerHelper {
+object RoutingHandlerHelper {
 
   trait Method
 
@@ -450,7 +450,7 @@ object RouterHandlerHelper {
 
 }
 
-abstract class RouterHandlerHelper extends AbstractHandler {
+abstract class RoutingHandlerNoSessionHelper extends AbstractHandler {
 
   def handlerNoSession(implicit req: HttpServletRequest): Option[Response]
 
@@ -462,7 +462,7 @@ abstract class RouterHandlerHelper extends AbstractHandler {
   }
 }
 
-abstract class MainRouterHandlerHelper(implicit fss: FSSystem) extends RouterHandlerHelper {
+abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
 
   def servePage(renderable: RenderableWithFSContext, debugLbl: Option[String] = None)(implicit req: HttpServletRequest, session: FSSession): Response = {
     session.createPage(implicit fsc => Ok.html(renderable.render())

@@ -14,7 +14,7 @@ object JettyServer extends JettyServerHelper() {
 
   override def appName: String = "fs_demo"
 
-  override def buildMainHandler(): Handler = new RouterHandler()
+  override def buildMainHandler(): Handler = new RoutingHandler()
 
   override def postStart(): Unit = {
     super.postStart()

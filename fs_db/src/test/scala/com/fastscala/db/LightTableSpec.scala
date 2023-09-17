@@ -38,7 +38,7 @@ trait LightTableSpecBase extends AnyFlatSpec {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      LightTableTestEntity.__createTableSQL.execute()()
+      LightTableTestEntity.__createTableSQL.execute()
     })
   }
   "Insert row" should "succeed" in {
@@ -57,7 +57,7 @@ trait LightTableSpecBase extends AnyFlatSpec {
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      LightTableTestEntity.__dropTableSQL.execute()()
+      LightTableTestEntity.__dropTableSQL.execute()
     })
   }
 }

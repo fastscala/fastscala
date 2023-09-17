@@ -2,9 +2,11 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
-import com.fastscala.utils.IdGen
+import com.fastscala.utils.{IdGen, NodeSeqUtils}
+import io.circe.Json.{JArray, JString}
 
 import java.io.ByteArrayInputStream
+import java.util.Base64
 import java.util.zip.ZipInputStream
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -18,7 +20,8 @@ object FileUpload {
              labelOpt: Option[Elem] = None,
              transformSubmit: Elem => Elem = (_: Elem).btn.apply("Upload").btn.btn_success.mt_2.w_100,
              buttonLbl: Option[String] = None,
-             multiple: Boolean = false
+             multiple: Boolean = false,
+             clipboardUpload: Boolean = false
            )(implicit fsc: FSContext): NodeSeq = {
     val actionUrl = fsc.fileUploadActionUrl({
       case uploadedFile => processUpload(uploadedFile)
@@ -26,6 +29,44 @@ object FileUpload {
     val targetId = IdGen.id("targetFrame")
     val inputId = IdGen.id("input")
     val buttonId = IdGen.id("btn")
+    NodeSeqUtils.showIf(clipboardUpload) {
+      val callback = fsc.callbackJSON(Js("[fileName, fileType, base64String]"), json => {
+        json.arrayOrObject(
+          Js.void,
+          {
+            case Vector(fileName, fileType, contentsEncoded) =>
+              processUpload(
+                Seq(new FSUploadedFile(
+                  fileName.asString.get,
+                  fileName.asString.get,
+                  fileType.asString.get,
+                  Base64.getDecoder().decode(contentsEncoded.asString.get)
+                ))
+              )
+          },
+          obj => Js.void
+        )
+      })
+      Js(
+        s"""document.addEventListener('paste', function (evt) {
+           |    const items = evt.clipboardData.items;
+           |    if (items.length === 0) { return; }
+           |    const item = items[0];
+           |    const blob = item.getAsFile();
+           |    const fileName = blob.name;
+           |    const fileType = blob.type;
+           |	  const reader = new FileReader();
+           |	  reader.onloadend = () => {
+           |	  	const base64String = reader.result
+           |		  	.replace('data:', '')
+           |		  	.replace(/^.+,/, '');
+           |     $callback
+           |	};
+           |	reader.readAsDataURL(blob);
+           |});
+           |""".stripMargin
+      ).onDOMContentLoaded.inScriptTag
+    } ++
     <iframe id={targetId} name={targetId} src="about:blank" onload="eval(this.contentWindow.document.body.innerText)" style="width:0;height:0;border:0px solid #fff;"><html><body></body></html></iframe>
     <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" >
       {

@@ -18,12 +18,12 @@ trait TableBasicSpecBase extends AnyFlatSpec {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity1.__createTableSQL.execute()()
+      TestEntity1.__createTableSQL.execute()
     })
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity1.__dropTableSQL.execute()()
+      TestEntity1.__dropTableSQL.execute()
     })
   }
 }

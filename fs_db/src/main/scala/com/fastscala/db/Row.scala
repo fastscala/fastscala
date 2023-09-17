@@ -16,5 +16,5 @@ trait Row[R <: Row[R]] extends RowBase {
 
   def insertSQL(): SQL[Nothing, NoExtractor] = table.insertSQL(this)
 
-  def insert(): Unit = DB.localTx({ implicit session => insertSQL().execute()() })
+  def insert(): Unit = DB.localTx({ implicit session => insertSQL().execute() })
 }

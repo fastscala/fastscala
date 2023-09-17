@@ -5,10 +5,12 @@ import com.fastscala.js.Js
 import com.fastscala.templates.form5.Form5
 import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.IdGen
-import org.joda.time.LocalDate
+import org.joda.time.{DateTime, LocalDate}
 import org.joda.time.format.DateTimeFormat
 
+import java.text.DecimalFormat
 import java.util.regex.Pattern
+import scala.util.{Failure, Success, Try}
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq, Unparsed}
 
@@ -172,12 +174,13 @@ abstract class TextField[T](
                              , placeholder: Option[String] = None
                              , tabindex: Option[Int] = None
                              , maxlength: Option[Int] = None
-                             , required: () => Boolean = () => false
+                             , required: () => Boolean
                              , inputType: String = "text"
-                             , val disabled: () => Boolean = () => false
-                             , val readOnly: () => Boolean = () => false
-                             , val enabled: () => Boolean = () => true
-                             , val deps: Set[FormField] = Set()
+                             , val disabled: () => Boolean
+                             , val readOnly: () => Boolean
+                             , val enabled: () => Boolean
+                             , val deps: Set[FormField]
+                             , val additionalAttrs: Seq[(String, String)]
                            )(implicit renderer: TextFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
 
   var currentValue: Option[T] = getOpt()
@@ -200,9 +203,9 @@ abstract class TextField[T](
     case _ => Js.void
   })
 
-  def additionalAttrs(): Seq[(String, String)] = Nil
-
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+
+  def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
@@ -224,7 +227,7 @@ abstract class TextField[T](
                    value={toString(currentValue)}
                    tabindex={tabindex.map(_ + "").getOrElse(null)}
                    maxlength={maxlength.map(_ + "").getOrElse(null)}
-                   required={if (required()) "true" else null}/>.withAttrs(additionalAttrs(): _*),
+                   required={if (required()) "true" else null}/>.withAttrs(finalAdditionalAttrs: _*),
           errors().headOption.map(_._2)
         )
       }
@@ -248,6 +251,7 @@ class StringField(
                    , readOnly: () => Boolean = () => false
                    , enabled: () => Boolean = () => true
                    , deps: Set[FormField] = Set()
+                   , additionalAttrs: Seq[(String, String)] = Nil
                  )(implicit renderer: TextFieldRenderer) extends TextField[String](
   getOpt = () => Some(get())
   , setOpt = strOpt => set(strOpt.getOrElse(""))
@@ -264,6 +268,7 @@ class StringField(
   , readOnly = readOnly
   , enabled = enabled
   , deps = deps
+  , additionalAttrs = additionalAttrs
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
@@ -285,6 +290,7 @@ class StringField(
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
             , deps: Set[FormField] = deps
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
           ): StringField = new StringField(
     get = get
     , set = set
@@ -299,6 +305,79 @@ class StringField(
     , readOnly = readOnly
     , enabled = enabled
     , deps = deps
+    , additionalAttrs = additionalAttrs
+  )
+}
+
+class StringOptField(
+                      get: () => Option[String]
+                      , set: Option[String] => Js
+                      , label: Option[NodeSeq] = None
+                      , name: Option[String] = None
+                      , placeholder: Option[String] = None
+                      , tabindex: Option[Int] = None
+                      , maxlength: Option[Int] = None
+                      , required: () => Boolean = () => false
+                      , inputType: String = "text"
+                      , disabled: () => Boolean = () => false
+                      , readOnly: () => Boolean = () => false
+                      , enabled: () => Boolean = () => true
+                      , deps: Set[FormField] = Set()
+                      , additionalAttrs: Seq[(String, String)] = Nil
+                    )(implicit renderer: TextFieldRenderer) extends TextField[String](
+  getOpt = () => get()
+  , setOpt = strOpt => set(strOpt.filter(_ != ""))
+  , toString = _.getOrElse("")
+  , fromString = str => Right(Some(str))
+  , label = label
+  , name = name
+  , placeholder = placeholder
+  , tabindex = tabindex
+  , maxlength = maxlength
+  , required = required
+  , inputType = inputType
+  , disabled = disabled
+  , readOnly = readOnly
+  , enabled = enabled
+  , deps = deps
+  , additionalAttrs = additionalAttrs
+) {
+
+  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+
+  def copy(
+            get: () => Option[String] = get
+            , set: Option[String] => Js = set
+            , label: Option[NodeSeq] = label
+            , name: Option[String] = name
+            , placeholder: Option[String] = placeholder
+            , tabindex: Option[Int] = tabindex
+            , maxlength: Option[Int] = maxlength
+            , required: () => Boolean = required
+            , inputType: String = inputType
+            , disabled: () => Boolean = disabled
+            , readOnly: () => Boolean = readOnly
+            , enabled: () => Boolean = enabled
+            , deps: Set[FormField] = deps
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
+          ): StringOptField = new StringOptField(
+    get = get
+    , set = set
+    , label = label
+    , name = name
+    , placeholder = placeholder
+    , tabindex = tabindex
+    , maxlength = maxlength
+    , required = required
+    , inputType = inputType
+    , disabled = disabled
+    , readOnly = readOnly
+    , enabled = enabled
+    , deps = deps
+    , additionalAttrs = additionalAttrs
   )
 }
 
@@ -316,6 +395,7 @@ class DateOptField(
                     , readOnly: () => Boolean = () => false
                     , enabled: () => Boolean = () => true
                     , deps: Set[FormField] = Set()
+                    , additionalAttrs: Seq[(String, String)] = Nil
                   )(implicit renderer: TextFieldRenderer) extends TextField[LocalDate](
   getOpt = () => get()
   , setOpt = optValue => set(optValue)
@@ -332,6 +412,7 @@ class DateOptField(
   , readOnly = readOnly
   , enabled = enabled
   , deps = deps
+  , additionalAttrs = additionalAttrs
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
@@ -353,6 +434,7 @@ class DateOptField(
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
             , deps: Set[FormField] = deps
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
           ): DateOptField = new DateOptField(
     get = get
     , set = set
@@ -367,6 +449,7 @@ class DateOptField(
     , readOnly = readOnly
     , enabled = enabled
     , deps = deps
+    , additionalAttrs = additionalAttrs
   )
 }
 
@@ -388,10 +471,11 @@ class DoubleOptField(
                       , deps: Set[FormField] = Set()
                       , prefix: String = ""
                       , suffix: String = ""
+                      , additionalAttrs: Seq[(String, String)] = Nil
                     )(implicit renderer: TextFieldRenderer) extends TextField[Double](
   getOpt = () => get()
   , setOpt = doubleOpt => set(doubleOpt)
-  , toString = _.map(value => prefix + " " + value.formatted("%.2f") + " " + suffix).map(_.trim).getOrElse("")
+  , toString = _.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
   , fromString = str => {
     if (str.trim == "") {
       Right(None)
@@ -413,17 +497,18 @@ class DoubleOptField(
   , tabindex = tabindex
   , maxlength = maxlength
   , required = required
-  , inputType = "text"
+  , inputType = "number"
   , disabled = disabled
   , readOnly = readOnly
   , enabled = enabled
   , deps = deps
+  , additionalAttrs = additionalAttrs
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  override def additionalAttrs(): Seq[(String, String)] = super.additionalAttrs() ++ List(
+  override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ List(
     "min" -> min.map(_.toString).getOrElse(null),
     "step" -> step.map(_.toString).getOrElse(null),
     "max" -> max.map(_.toString).getOrElse(null)
@@ -439,6 +524,9 @@ class DoubleOptField(
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
             , maxlength: Option[Int] = maxlength
+            , min: Option[Double] = min
+            , step: Option[Double] = step
+            , max: Option[Double] = max
             , required: () => Boolean = required
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
@@ -446,6 +534,7 @@ class DoubleOptField(
             , deps: Set[FormField] = deps
             , prefix: String = prefix
             , suffix: String = suffix
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
           ) = new DoubleOptField(
     get = get
     , set = set
@@ -454,6 +543,9 @@ class DoubleOptField(
     , placeholder = placeholder
     , tabindex = tabindex
     , maxlength = maxlength
+    , min = min
+    , step = step
+    , max = max
     , required = required
     , disabled = disabled
     , readOnly = readOnly
@@ -461,6 +553,198 @@ class DoubleOptField(
     , deps = deps
     , prefix = prefix
     , suffix = suffix
+    , additionalAttrs = additionalAttrs
+  )
+}
+
+class IntOptField(
+                   get: () => Option[Int]
+                   , set: Option[Int] => Js
+                   , label: Option[NodeSeq] = None
+                   , name: Option[String] = None
+                   , placeholder: Option[String] = None
+                   , tabindex: Option[Int] = None
+                   , maxlength: Option[Int] = None
+                   , min: Option[Int] = None
+                   , step: Option[Int] = None
+                   , max: Option[Int] = None
+                   , required: () => Boolean = () => false
+                   , disabled: () => Boolean = () => false
+                   , readOnly: () => Boolean = () => false
+                   , enabled: () => Boolean = () => true
+                   , deps: Set[FormField] = Set()
+                   , prefix: String = ""
+                   , suffix: String = ""
+                   , additionalAttrs: Seq[(String, String)] = Nil
+                 )(implicit renderer: TextFieldRenderer) extends TextField[Int](
+  getOpt = () => get()
+  , setOpt = intOpt => set(intOpt)
+  , toString = _.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
+  , fromString = str => {
+    if (str.trim == "") {
+      Right(None)
+    } else {
+      str
+        .toLowerCase
+        .trim
+        .replaceAll("^" + Pattern.quote(prefix.toLowerCase) + " *", "")
+        .replaceAll(" *" + Pattern.quote(suffix.toLowerCase) + "$", "")
+        .toIntOption match {
+        case Some(value) => Right(Some(value))
+        case None => Left(s"Not an int?: $str")
+      }
+    }
+  }
+  , label = label
+  , name = name
+  , placeholder = placeholder
+  , tabindex = tabindex
+  , maxlength = maxlength
+  , required = required
+  , inputType = "number"
+  , disabled = disabled
+  , readOnly = readOnly
+  , enabled = enabled
+  , deps = deps
+  , additionalAttrs = additionalAttrs
+) {
+
+  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+
+  override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ List(
+    "min" -> min.map(_.toString).getOrElse(null),
+    "step" -> step.map(_.toString).getOrElse(null),
+    "max" -> max.map(_.toString).getOrElse(null)
+  )
+
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+
+  def copy(
+            get: () => Option[Int] = get
+            , set: Option[Int] => Js = set
+            , label: Option[NodeSeq] = label
+            , name: Option[String] = name
+            , placeholder: Option[String] = placeholder
+            , tabindex: Option[Int] = tabindex
+            , maxlength: Option[Int] = maxlength
+            , min: Option[Int] = min
+            , step: Option[Int] = step
+            , max: Option[Int] = max
+            , required: () => Boolean = required
+            , disabled: () => Boolean = disabled
+            , readOnly: () => Boolean = readOnly
+            , enabled: () => Boolean = enabled
+            , deps: Set[FormField] = deps
+            , prefix: String = prefix
+            , suffix: String = suffix
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
+          ) = new IntOptField(
+    get = get
+    , set = set
+    , label = label
+    , name = name
+    , placeholder = placeholder
+    , tabindex = tabindex
+    , maxlength = maxlength
+    , min = min
+    , step = step
+    , max = max
+    , required = required
+    , disabled = disabled
+    , readOnly = readOnly
+    , enabled = enabled
+    , deps = deps
+    , prefix = prefix
+    , suffix = suffix
+    , additionalAttrs = additionalAttrs
+  )
+}
+
+class TimeOfDayField(
+                      get: () => Option[Int]
+                      , set: Option[Int] => Js
+                      , label: Option[NodeSeq] = None
+                      , name: Option[String] = None
+                      , placeholder: Option[String] = None
+                      , tabindex: Option[Int] = None
+                      , required: () => Boolean = () => false
+                      , disabled: () => Boolean = () => false
+                      , readOnly: () => Boolean = () => false
+                      , enabled: () => Boolean = () => true
+                      , deps: Set[FormField] = Set()
+                      , prefix: String = ""
+                      , suffix: String = ""
+                      , additionalAttrs: Seq[(String, String)] = Nil
+                    )(implicit renderer: TextFieldRenderer) extends TextField[Int](
+  getOpt = () => get()
+  , setOpt = doubleOpt => set(doubleOpt)
+  , toString = _.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")
+  , fromString = str => {
+    if (str.trim == "") {
+      Right(None)
+    } else {
+      str
+        .toLowerCase
+        .trim
+        .replaceAll("^" + Pattern.quote(prefix.toLowerCase) + " *", "")
+        .replaceAll(" *" + Pattern.quote(suffix.toLowerCase) + "$", "")
+        .pipe(txt => {
+          Try(DateTimeFormat.forPattern("HH:mm").parseLocalTime(txt)) match {
+            case Failure(exception) => Left(s"Not a time?: $txt")
+            case Success(parsed) => Right(Some(parsed.getHourOfDay * 60 + parsed.getMinuteOfHour))
+          }
+        })
+    }
+  }
+  , label = label
+  , name = name
+  , placeholder = placeholder
+  , tabindex = tabindex
+  , required = required
+  , inputType = "time"
+  , disabled = disabled
+  , readOnly = readOnly
+  , enabled = enabled
+  , deps = deps
+  , additionalAttrs = additionalAttrs
+) {
+
+  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+
+  def copy(
+            get: () => Option[Int] = get
+            , set: Option[Int] => Js = set
+            , label: Option[NodeSeq] = label
+            , name: Option[String] = name
+            , placeholder: Option[String] = placeholder
+            , tabindex: Option[Int] = tabindex
+            , required: () => Boolean = required
+            , disabled: () => Boolean = disabled
+            , readOnly: () => Boolean = readOnly
+            , enabled: () => Boolean = enabled
+            , deps: Set[FormField] = deps
+            , prefix: String = prefix
+            , suffix: String = suffix
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
+          ) = new TimeOfDayField(
+    get = get
+    , set = set
+    , label = label
+    , name = name
+    , placeholder = placeholder
+    , tabindex = tabindex
+    , required = required
+    , disabled = disabled
+    , readOnly = readOnly
+    , enabled = enabled
+    , deps = deps
+    , prefix = prefix
+    , suffix = suffix
+    , additionalAttrs = additionalAttrs
   )
 }
 
@@ -482,6 +766,7 @@ class DoubleField(
                    , deps: Set[FormField] = Set()
                    , prefix: String = ""
                    , suffix: String = ""
+                   , additionalAttrs: Seq[(String, String)] = Nil
                  )(implicit renderer: TextFieldRenderer) extends TextField[Double](
   getOpt = () => Some(get())
   , setOpt = doubleOpt => doubleOpt.map(double => set(double)).getOrElse(Js.void)
@@ -508,6 +793,7 @@ class DoubleField(
   , readOnly = readOnly
   , enabled = enabled
   , deps = deps
+  , additionalAttrs = additionalAttrs
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
@@ -515,7 +801,7 @@ class DoubleField(
 
   def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
 
-  override def additionalAttrs(): Seq[(String, String)] = super.additionalAttrs() ++ Seq(
+  override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ Seq(
     min.map(min => "min" -> min.toString)
     , step.map(step => "step" -> step.toString)
     , max.map(max => "max" -> max.toString)
@@ -539,6 +825,7 @@ class DoubleField(
             , deps: Set[FormField] = deps
             , prefix: String = prefix
             , suffix: String = suffix
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
           ) = new DoubleField(
     get = get
     , set = set
@@ -557,6 +844,7 @@ class DoubleField(
     , deps = deps
     , prefix = prefix
     , suffix = suffix
+    , additionalAttrs = additionalAttrs
   )
 }
 

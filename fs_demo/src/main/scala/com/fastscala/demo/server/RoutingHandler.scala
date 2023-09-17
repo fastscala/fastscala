@@ -6,18 +6,18 @@ import com.fastscala.demo.examples.bootstrap.{BootstrapButtonsPage, BootstrapExa
 import com.fastscala.demo.examples.chartjs.SimpleChartjsPage
 import com.fastscala.demo.examples.forms.BasicFormExamplePage
 import com.fastscala.demo.examples.tables.{PaginatedTableExamplePage, SelectableColsTableExamplePage, SelectableRowsTableExamplePage, SimpleTableExamplePage, SortableTableExamplePage}
-import com.fastscala.server.{MainRouterHandlerHelper, Ok, Response}
+import com.fastscala.server.{RoutingHandlerHelper, Ok, Response}
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-class RouterHandler()(implicit fss: FSSystem) extends MainRouterHandlerHelper {
+class RoutingHandler()(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
-  import com.fastscala.server.RouterHandlerHelper._
+  import com.fastscala.server.RoutingHandlerHelper._
 
   override def handlerNoSession(implicit req: HttpServletRequest): Option[Response] = Some(req).collect {
     case Get("loaderio-4370139ed4f90c60359531343155344a") =>

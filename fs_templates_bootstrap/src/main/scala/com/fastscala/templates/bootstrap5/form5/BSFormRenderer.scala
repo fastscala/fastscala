@@ -15,6 +15,8 @@ abstract class BSFormRenderer {
 
   def defaultRequiredFieldLabel: String
 
+  implicit def bsFormRenderer: BSFormRenderer = this
+
   implicit val dateFieldOptRenderer = new DateFieldOptRenderer {
     override def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
   }

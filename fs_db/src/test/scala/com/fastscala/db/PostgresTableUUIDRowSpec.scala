@@ -24,7 +24,7 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity4.__createTableSQL.execute()()
+      TestEntity4.__createTableSQL.execute()
     })
   }
   "Save row" should "succeed" in {
@@ -92,7 +92,7 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity4.__dropTableSQL.execute()()
+      TestEntity4.__dropTableSQL.execute()
     })
   }
 }

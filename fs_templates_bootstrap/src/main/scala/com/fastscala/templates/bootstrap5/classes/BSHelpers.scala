@@ -31,6 +31,16 @@ object BSHelpers extends BSCombinedHelper[Elem] {
 
   def mark: Elem = <mark></mark>
 
+  def pre: Elem = <pre></pre>
+
+  def td: Elem = <td></td>
+
+  def tr: Elem = <tr></tr>
+
+  def tbody: Elem = <tbody></tbody>
+
+  def thead: Elem = <thead></thead>
+
   def div: Elem = <div></div>
 
   def ul: Elem = <ul></ul>

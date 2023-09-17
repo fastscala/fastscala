@@ -25,7 +25,7 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
       println(TestEntity5.__createTableSQL.statement)
-      TestEntity5.__createTableSQL.execute()()
+      TestEntity5.__createTableSQL.execute()
     })
   }
   "Save row" should "succeed" in {
@@ -93,7 +93,7 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity5.__dropTableSQL.execute()()
+      TestEntity5.__dropTableSQL.execute()
     })
   }
 }

@@ -20,14 +20,14 @@ trait SQLiteRowWithUUID[R <: SQLiteRowWithUUID[R]] extends Row[R] with RowWithUU
   }
 
   def save(): this.type = {
-    DB.localTx({ implicit session => saveSQL().update()() })
+    DB.localTx({ implicit session => saveSQL().update() })
     this
   }
 
   def update(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
-        table.updateSQL(this, sqls" where uuid = ${uuid.toString}").execute()()
+        table.updateSQL(this, sqls" where uuid = ${uuid.toString}").execute()
       })
     })
   }
@@ -35,7 +35,7 @@ trait SQLiteRowWithUUID[R <: SQLiteRowWithUUID[R]] extends Row[R] with RowWithUU
   def delete(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
-        table.deleteSQL(this, sqls"where uuid = $uuid").execute()()
+        table.deleteSQL(this, sqls"where uuid = $uuid").execute()
       })
     })
   }

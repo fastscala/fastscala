@@ -103,4 +103,18 @@ trait Table5StdColsHelper {
     override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
       <td>{render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows)}</td>
   }
+
+  def ColNsFullTd(
+                   title: String,
+                   render: FSContext => (TableBodyRerenderer, TRRerenderer, TDRerenderer, R, TableRowIdx, TableColIdx, Seq[(String, R)]) => Elem
+                 ) = new Table5StandardColumn[R] {
+
+    override def label: String = title
+
+    override def renderTH()(implicit tableHeadRerenderer: TableHeadRerenderer, trRerenderer: TRRerenderer, thRerenderer: THRerenderer, colIdx: TableColIdx, pageRows: Seq[(String, R)], fsc: FSContext): Elem =
+      <th>{title}</th>
+
+    override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
+      render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows)
+  }
 }

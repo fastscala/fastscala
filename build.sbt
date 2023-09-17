@@ -53,7 +53,7 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
     libraryDependencies ++= Seq(
       "org.postgresql" % "postgresql" % "42.3.5",
       "org.xerial" % "sqlite-jdbc" % "3.42.0.0",
-      "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
       "com.google.guava" % "guava" % "32.1.1-jre",
       "org.scalatest" %% "scalatest" % "3.2.16" % Test,
     ),

@@ -20,14 +20,14 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
   }
 
   def save(): this.type = {
-    DB.localTx({ implicit session => saveSQL().update()() })
+    DB.localTx({ implicit session => saveSQL().update() })
     this
   }
 
   def update(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
-        table.updateSQL(this, sqls" where uuid = ${uuid.toString}::UUID").execute()()
+        table.updateSQL(this, sqls" where uuid = ${uuid.toString}::UUID").execute()
       })
     })
   }
@@ -35,7 +35,7 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
   def delete(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
-        table.deleteSQL(this, sqls"where uuid = $uuid::UUID").execute()()
+        table.deleteSQL(this, sqls"where uuid = $uuid::UUID").execute()
       })
     })
   }

@@ -36,7 +36,7 @@ trait RowWithId[R <: RowWithId[R]] extends Row[R] {
 
   def update(): Unit = {
     DB.localTx({ implicit session =>
-      table.updateSQL(this, sqls" where id = $id").execute()()
+      table.updateSQL(this, sqls" where id = $id").execute()
     })
   }
 
@@ -50,7 +50,7 @@ trait RowWithId[R <: RowWithId[R]] extends Row[R] {
 
   def delete(): Unit = {
     DB.localTx({ implicit session =>
-      table.deleteSQL(this, sqls"where id = $id").execute()()
+      table.deleteSQL(this, sqls"where id = $id").execute()
     })
   }
 

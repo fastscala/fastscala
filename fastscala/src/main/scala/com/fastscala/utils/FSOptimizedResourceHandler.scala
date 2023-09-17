@@ -1,6 +1,6 @@
 package com.fastscala.utils
 
-import com.fastscala.server.{ClientError, Ok, Response, RouterHandlerHelper}
+import com.fastscala.server.{ClientError, Ok, Response, RoutingHandlerHelper, RoutingHandlerNoSessionHelper}
 import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.io.IOUtils
 
@@ -29,9 +29,9 @@ class FSOptimizedResourceHandler(
                                   defaultMaxWidth: Int = 900,
                                   defaultMaxHeight: Int = 900,
                                   defaultCompression: Int = 7
-                                ) extends RouterHandlerHelper {
+                                ) extends RoutingHandlerNoSessionHelper {
 
-  import RouterHandlerHelper._
+  import RoutingHandlerHelper._
 
   private def openResource(name: String): Option[InputStream] =
     resourceRoots.iterator.map(root => Option(getClass.getResourceAsStream(root + name)))

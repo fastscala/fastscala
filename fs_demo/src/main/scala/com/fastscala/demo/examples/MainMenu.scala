@@ -100,7 +100,7 @@ class RoutingMenuItem(matching: String*)(val name: String, page: => RenderableWi
   def render()(implicit fsc: FSContext): NodeSeq =
     <li><a href={href} class="text-white d-inline-flex text-decoration-none rounded">{name}</a></li>
 
-  import com.fastscala.server.RouterHandlerHelper._
+  import com.fastscala.server.RoutingHandlerHelper._
 
   def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] = Some(req).collect {
     case Get(path@_*) if path == matching => page

@@ -14,6 +14,8 @@ trait FormRenderer {
   def render(form: Elem): NodeSeq
 }
 
+abstract class DefaultForm5()(implicit val formRenderer: FormRenderer) extends Form5
+
 trait Form5 extends RenderableWithFSContext with ElemWithRandomId {
 
   implicit def form = this
@@ -29,7 +31,7 @@ trait Form5 extends RenderableWithFSContext with ElemWithRandomId {
     rootField.onEvent(event)
   }
 
-  def renderer: FormRenderer
+  def formRenderer: FormRenderer
 
   def focusFirstFocusableFieldJs(): Js =
     rootField.fieldsMatching({ case _: FocusableFormField => true })
@@ -59,20 +61,23 @@ trait Form5 extends RenderableWithFSContext with ElemWithRandomId {
   def afterSave()(implicit fsc: FSContext): Js = Js.void
 
   def onSaveServerSide()(implicit fsc: FSContext): Js = {
-    val hasErrors = rootField.enabledFields.exists({ case field: ValidatableField => field.hasErrors_?() case _ => false })
-    implicit val renderHints = formRenderHits() :+ OnSaveRerender
-    if (hasErrors) {
-      rootField.reRender()(this, fsc, renderHints :+ ShowValidationsHint)
-    } else {
-      beforeSave() &
-        rootField.onEvent(BeforeSave) &
-        rootField.onEvent(PerformSave) &
-        rootField.onEvent(AfterSave) &
-        afterSave() &
-        rootField.reRender()
+    if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)
+    else {
+      val hasErrors = rootField.enabledFields.exists({ case field: ValidatableField => field.hasErrors_?() case _ => false })
+      implicit val renderHints = formRenderHits() :+ OnSaveRerender
+      if (hasErrors) {
+        rootField.onEvent(ErrorsOnSave) &
+          rootField.reRender()(this, fsc, renderHints :+ ShowValidationsHint :+ FailedSaveStateHint)
+      } else {
+        beforeSave() &
+          rootField.onEvent(BeforeSave) &
+          rootField.onEvent(PerformSave) &
+          rootField.onEvent(AfterSave) &
+          afterSave() &
+          rootField.reRender()
+      }
     }
   }
 
-  def onSaveClientSide()(implicit fsc: FSContext): Js =
-    fsc.callback(() => onSaveServerSide())
+  def onSaveClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => onSaveServerSide())
 }

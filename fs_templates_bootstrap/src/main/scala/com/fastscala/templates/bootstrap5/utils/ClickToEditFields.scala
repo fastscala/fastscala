@@ -4,9 +4,9 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
 import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq
-import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
 
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, ZoneId}
 import scala.xml.{Elem, NodeSeq}
 
 object ClickToEditFields {
@@ -25,7 +25,7 @@ object ClickToEditFields {
       case true =>
         val toEditJs = fsc.callback(() => rerenderer.rerender(false)).cmd
         val cur = get()
-        transformDisplayElem(cur)(<span tabindex={tabindex + ""} onclick={toEditJs} onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {$toEditJs}"}>{toString(cur)}</span>)
+        transformDisplayElem(cur)(<span tabindex={tabindex.toString} onclick={toEditJs} onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {$toEditJs}"}>{toString(cur)}</span>)
       case false =>
         val valuesAndIndexes = all().zipWithIndex
         val submit = fsc.callback(Js.elementValueById(inputId), str => valuesAndIndexes.find(_._2.toString == str).map(_._1).map(set).getOrElse(Js.void) & rerenderer.rerender(true).debug("rerender"), ignoreErrors = true).cmd
@@ -43,24 +43,32 @@ object ClickToEditFields {
            get: () => String,
            set: String => Js,
            emptyString: String = "",
-           emptyDisplayClasses: String = "",
-           nonEmptyDisplayClasses: String = "",
+           displayElemClasses: String = "",
+           editElemClasses: String = "",
            placeholder: String = "",
+           transformDisplayElem: String => Elem => Elem = _ => identity[Elem],
+           transformEditElem: String => Elem => Elem = _ => identity[Elem],
+           confirm: Option[String => String] = None,
            tabindex: Int = 0
          )(implicit fsc: FSContext): NodeSeq = {
-    val aroundId = fsc.session.nextID("around")
-    val inputId = s"input$aroundId"
+    val elemId = fsc.session.nextID("editable_str")
 
     def editing: NodeSeq = {
-      val submit = fsc.callback(Js.elementValueById(inputId), str => set(str.trim) & Js.replace(aroundId, displaying)).cmd
-      <div id={aroundId}>
-        <input id={inputId} value={get()} onblur={submit} type="text" onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {$submit}"} class="form-control" placeholder={if (placeholder == "") null else placeholder}/>
-      </div>
+      val submit = fsc.callback(Js.elementValueById(elemId), str => {
+        if (get() != str) {
+          confirm.map(_(str)).map(confirmMessage => Js.confirm(confirmMessage, fsc.callback(() => set(str.trim) & Js.replace(elemId, displaying)))).getOrElse({
+            set(str.trim) & Js.replace(elemId, displaying)
+          })
+        } else Js.replace(elemId, displaying)
+      }).cmd
+      val cancel = Js.replace(elemId, displaying)
+      transformEditElem(get())(<input class={editElemClasses} id={elemId} value={get()} onblur={submit} type="text" onkeypress={Js.onkeypress(13, 27)(Js.blur(elemId)).cmd} placeholder={if (placeholder == "") null else placeholder}/>)
     }
 
     def displaying: NodeSeq = {
-      val toEditJs = fsc.callback(() => Js.replace(aroundId, editing) & Js.focus(inputId)).cmd
-      <span id={aroundId}><span tabindex={tabindex + ""} class={if (get() == "") emptyDisplayClasses else nonEmptyDisplayClasses} onclick={toEditJs} onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {$toEditJs}"}>{Some(get()).filter(_ != "").getOrElse(emptyString)}</span></span>
+      val toEditJs = fsc.callback(() => Js.replace(elemId, editing) & Js.focus(elemId))
+      val value = get()
+      transformDisplayElem(value)(<span id={elemId}><span class={displayElemClasses} tabindex={tabindex.toString} onclick={toEditJs.cmd} onkeypress={Js.onkeypress(13)(toEditJs).cmd}>{Some(value).filter(_ != "").getOrElse(emptyString)}</span></span>)
     }
 
     displaying
@@ -106,39 +114,60 @@ object ClickToEditFields {
                  get: () => Option[Double],
                  set: Option[Double] => Js,
                  emptyString: String = "",
-                 emptyDisplayClasses: String = "",
-                 nonEmptyDisplayClasses: String = "",
+                 displayElemClasses: String = "",
+                 editElemClasses: String = "",
                  placeholder: String = "",
+                 transformDisplayElem: String => Elem => Elem = _ => identity[Elem],
+                 transformEditElem: String => Elem => Elem = _ => identity[Elem],
+                 confirm: Option[String => String] = None,
                  tabindex: Int = 0
                )(implicit fsc: FSContext): NodeSeq = Str(
     () => get().map(_.toString).getOrElse(""),
     str => if (str == "") set(None) else set(scala.util.Try(str.toDouble).toOption),
-    emptyString,
-    emptyDisplayClasses,
-    nonEmptyDisplayClasses,
-    placeholder,
-    tabindex
+    emptyString = emptyString,
+    displayElemClasses = displayElemClasses,
+    editElemClasses = editElemClasses,
+    placeholder = placeholder,
+    transformDisplayElem = transformDisplayElem,
+    transformEditElem = transformEditElem,
+    tabindex = tabindex
   )
 
-  def Date(
-            get: () => Option[LocalDate],
-            set: Option[LocalDate] => Js,
-            emptyString: String = "",
-            emptyDisplayClasses: String = "",
-            nonEmptyDisplayClasses: String = "",
-            placeholder: String = "",
-            tabindex: Int = 0
-          )(implicit fsc: FSContext): NodeSeq = Str(
-    () => get().map(_.toString("yyyy-MM-dd")).getOrElse(""),
-    str => if (str == "") set(None) else set(
-      scala.util.Try(LocalDate.parse(str, DateTimeFormat.forPattern("yyyy-MM-dd"))).toOption.orElse(
-        scala.util.Try(LocalDate.parse(str, DateTimeFormat.forPattern("yyyyMMdd"))).toOption
-      )
-    ),
-    emptyString,
-    emptyDisplayClasses,
-    nonEmptyDisplayClasses,
-    placeholder,
-    tabindex
-  )
+  def LocalDate(
+                 get: () => Option[LocalDate],
+                 set: Option[LocalDate] => Js,
+                 emptyString: String = "",
+                 displayElemClasses: String = "",
+                 editElemClasses: String = "",
+                 placeholder: String = "",
+                 transformDisplayElem: String => Elem => Elem = _ => identity[Elem],
+                 transformEditElem: String => Elem => Elem = _ => identity[Elem],
+                 confirm: Option[String => String] = None,
+                 mainDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                 otherFormats: List[String] = List("yyyy MM dd", "dd MM yyyy", "yyyy/MM/dd", "dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy", "yyyyMMdd", "ddMMyyyy"),
+                 failedToParseDate: String = "Could not parse date.",
+                 tabindex: Int = 0
+               )(implicit fsc: FSContext): NodeSeq = {
+    def fromStr(str: String): Option[LocalDate] = scala.util.Try(java.time.LocalDate.parse(str, mainDateFormat)).toOption.orElse(
+      otherFormats.iterator.map(format => scala.util.Try(java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern(format))).toOption).flatten.nextOption()
+    )
+
+    Str(
+      () => get().map(date => mainDateFormat.format(date)).getOrElse(""),
+      str => if (str == "") set(None) else {
+        fromStr(str) match {
+          case Some(date) => set(Some(date))
+          case None => Js.alert(failedToParseDate)
+        }
+      },
+      emptyString = emptyString,
+      displayElemClasses = displayElemClasses,
+      editElemClasses = editElemClasses,
+      placeholder = placeholder,
+      transformDisplayElem = transformDisplayElem,
+      transformEditElem = transformEditElem,
+      confirm = confirm.map(origFunc => dateStr => origFunc(fromStr(dateStr).map(date => mainDateFormat.format(date)).getOrElse(emptyString))),
+      tabindex = tabindex
+    )
+  }
 }

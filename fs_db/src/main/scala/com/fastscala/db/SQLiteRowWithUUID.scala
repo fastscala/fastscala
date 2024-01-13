@@ -50,7 +50,8 @@ trait SQLiteRowWithUUID[R <: SQLiteRowWithUUID[R]] extends Row[R] with RowWithUU
   override def equals(obj: Any): Boolean = {
     if (obj.isInstanceOf[R]) {
       val obj2 = obj.asInstanceOf[R]
-      obj2.uuid.isDefined && uuid.isDefined && obj2.uuid == uuid
+      (obj2.uuid.isDefined && uuid.isDefined && obj2.uuid == uuid) ||
+        (obj2.uuid.isEmpty && uuid.isEmpty && super.equals(obj2))
     } else {
       false
     }

@@ -21,7 +21,8 @@ object FileUpload {
              transformSubmit: Elem => Elem = (_: Elem).btn.apply("Upload").btn.btn_success.mt_2.w_100,
              buttonLbl: Option[String] = None,
              multiple: Boolean = false,
-             clipboardUpload: Boolean = false
+             clipboardUpload: Boolean = false,
+             acceptTypes: Option[String] = None
            )(implicit fsc: FSContext): NodeSeq = {
     val actionUrl = fsc.fileUploadActionUrl({
       case uploadedFile => processUpload(uploadedFile)
@@ -72,9 +73,9 @@ object FileUpload {
       {
       labelOpt.map(label => label.withFor(inputId)).getOrElse(NodeSeq.Empty)
       }
-      <input class="form-control" name="file" type="file" multiple={Some("true").filter(_ => multiple).getOrElse(null)} id={inputId} onchange={Js.show(buttonId).cmd} />
+      <input class="form-control" name="file" type="file" accept={acceptTypes.getOrElse(null)} multiple={Some("true").filter(_ => multiple).getOrElse(null)} id={inputId} onchange={Js.show(buttonId).cmd} />
       {
-      transformSubmit(button.withId(buttonId).withStyle("display:none").pipe(btn => buttonLbl.map(lbl => btn.apply(lbl)).getOrElse(btn)).withTypeSubmit())
+      transformSubmit(button.withId(buttonId).withStyle("display:none").withTypeSubmit()).pipe(btn => buttonLbl.map(lbl => btn.apply(lbl)).getOrElse(btn))
       }
     </form>
   }

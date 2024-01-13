@@ -1,12 +1,13 @@
 package com.fastscala.chartjs
 
 import com.fastscala.js.Js
+import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.IdGen
 import io.circe.{Encoder, Json}
 import io.circe.generic.semiauto
 import io.circe.syntax.EncoderOps
 
-import scala.xml.NodeSeq
+import scala.xml.{Elem, NodeSeq}
 
 object ChartJsNullable2Option {
   implicit def nullable2Option[T <: AnyRef](v: T): Option[T] = if (v == null) None else Some(v)
@@ -36,10 +37,11 @@ case class ChartJs(
     )
   }
 
-  def rendered(): NodeSeq = {
-    val id = IdGen.id("chart_js_canvas")
+  def rendered(): NodeSeq = renderedOn(<canvas></canvas>)
 
-    <canvas id={id}></canvas> ++ installInCanvas(id).onDOMContentLoaded.inScriptTag
+  def renderedOn(elem: Elem): NodeSeq = {
+    val id = elem.getId.getOrElse(IdGen.id("chart_js_canvas"))
+    val finalElem = elem.withId(id)
+    finalElem ++ installInCanvas(id).onDOMContentLoaded.inScriptTag
   }
-
 }

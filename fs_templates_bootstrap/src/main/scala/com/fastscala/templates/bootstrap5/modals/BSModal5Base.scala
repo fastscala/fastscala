@@ -92,9 +92,11 @@ abstract class BSModal5Base {
 
   def modalHeaderTitle: String
 
+  def modalHeaderTitleNs: Elem = <h1 class="modal-title fs-5">{modalHeaderTitle}</h1>
+
   def modalHeaderContents()(implicit fsc: FSContext): NodeSeq = {
-    <h1 class="modal-title fs-5">{modalHeaderTitle}</h1>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    modalHeaderTitleNs ++
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
   }
 
   def modalBodyContents()(implicit fsc: FSContext): NodeSeq
@@ -153,14 +155,14 @@ object BSModal5 {
                   closeBtnText: String,
                   onHidden: Js = Js.void
                 )(
-                  contents: FSContext => NodeSeq
+                  contents: BSModal5Base => FSContext => NodeSeq
                 )(implicit fsc: FSContext): Js = {
     val modal = new BSModal5Base {
       override def modalHeaderTitle: String = title
 
-      override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = contents(fsc)
+      override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = contents(this)(fsc)
 
-      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(BSBtn.BtnPrimary.lbl(closeBtnText).onclick(hide()).btn)
+      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(BSBtn.BtnPrimary.lbl(closeBtnText).onclick(hideAndRemove()).btn)
     }
     modal.installAndShow() & modal.onHidden(onHidden)
   }

@@ -115,6 +115,11 @@ trait Response {
     this
   }
 
+  def addCookie(cookie: Cookie): this.type = {
+    cookiesToAdd += cookie
+    this
+  }
+
   def addHeaders(headers: (String, String)*): this.type = {
     headers.foreach({
       case (name, value) => addHeader(name, value)

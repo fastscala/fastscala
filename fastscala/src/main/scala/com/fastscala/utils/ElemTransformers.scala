@@ -50,6 +50,8 @@ trait ElemTransformers {
 
   def withType(`type`: String): Elem = attributeTransform("type", _ => `type`)
 
+  def withTitle(title: String): Elem = attributeTransform("title", _ => title)
+
   def withName(name: String): Elem = attributeTransform("name", _ => name)
 
   def withTypeSubmit(): Elem = attributeTransform("type", _ => "submit")
@@ -63,6 +65,10 @@ trait ElemTransformers {
   }.withAttr(next))
 
   def withRole(role: String): Elem = attributeTransform("role", _ => role)
+
+  def withHref(href: String): Elem = attributeTransform("href", _ => href)
+
+  def withRoleButton: Elem = withRole("button")
 
   def withId(id: String): Elem = attributeTransform("id", _ => id)
 

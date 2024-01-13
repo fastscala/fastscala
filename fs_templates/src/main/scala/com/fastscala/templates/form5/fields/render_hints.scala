@@ -4,6 +4,8 @@ import com.fastscala.templates.form5.Form5
 
 trait RenderHint
 
+object FailedSaveStateHint extends RenderHint
+
 object ShowValidationsHint extends RenderHint
 
 object DisableFieldsHint extends RenderHint

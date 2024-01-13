@@ -3,11 +3,12 @@ package com.fastscala.templates.bootstrap5.utils
 import com.fastscala.js.Js
 import IcnFA.RichIcn
 import com.fastscala.core.FSContext
+import com.fastscala.templates.bootstrap5.utils.BsIcn.BsIcn
 import com.fastscala.utils.IdGen
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.xml.NodeSeq
+import scala.xml.{Elem, NodeSeq}
 
 case class BSBtn(
                   cls: String,
@@ -42,7 +43,9 @@ case class BSBtn(
 
   def withClass(s: String) = copy(cls = cls + " " + s)
 
-  def icn(i: IcnFA.FaIcn) = copy(content = i.icn ++ <span> </span> ++ content)
+  def icn(i: BsIcn.type => BsIcn.BsIcn): BSBtn = icn(i(BsIcn).icn)
+
+  def icn(i: Elem): BSBtn = copy(content = i ++ <span> </span> ++ content)
 
   def lbl(s: String) = copy(content = content ++ scala.xml.Text(s))
 
@@ -81,12 +84,21 @@ case class BSBtn(
 
   def btn(implicit fsc: FSContext) = <button class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>
 
-  def toggle(get: => Boolean, set: Boolean => Js, selected: BSBtn => BSBtn = identity[BSBtn], unselected: BSBtn => BSBtn = identity[BSBtn])(implicit fsc: FSContext) = {
+  def toggle(
+              get: => Boolean,
+              set: Boolean => Js,
+              selected: BSBtn => BSBtn = identity[BSBtn],
+              unselected: BSBtn => BSBtn = identity[BSBtn]
+            )(implicit fsc: FSContext): Elem = {
     val finalBtn = if (idOpt.isDefined) this else this.id(IdGen.id)
 
     def generate: scala.xml.Elem =
-      if (get) selected(finalBtn).ajax(implicit fsc => {set(false) & Js.replace(finalBtn.idOpt.get, generate)}).btn
-      else unselected(finalBtn).ajax(implicit fsc => {set(true) & Js.replace(finalBtn.idOpt.get, generate)}).btn
+      if (get) selected(finalBtn).ajax(implicit fsc => {
+        set(false) & Js.replace(finalBtn.idOpt.get, generate)
+      }).btn
+      else unselected(finalBtn).ajax(implicit fsc => {
+        set(true) & Js.replace(finalBtn.idOpt.get, generate)
+      }).btn
 
     generate
   }
@@ -219,5 +231,8 @@ object BSBtn extends BSBtn(
   , styleOpt = None
   , idOpt = None
   , titleOpt = None
-)
+) {
+
+  implicit def BSBtn2Elem(btn: BSBtn)(implicit fsc: FSContext): Elem = btn.btn
+}
 

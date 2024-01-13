@@ -43,11 +43,11 @@ class SelectableRowsTableExamplePage extends SingleCodeExamplePage("/com/fastsca
     new Widget {
       override def widgetTitle: String = "Selectable rows"
 
-      override def transformCardBody(elem: Elem): Elem = super.transformCardBody(elem).p_0
+      override def transformWidgetCardBody(elem: Elem): Elem = super.transformWidgetCardBody(elem).p_0
 
       override def widgetTopRight()(implicit fsc: FSContext): NodeSeq = table.clearRowSelectionBtn.btn ++ table.selectAllVisibleRowsBtn.btn.ms_2
 
       override def widgetContents()(implicit fsc: FSContext): NodeSeq = table.render()
-    }.render()
+    }.renderWidget()
   }
 }

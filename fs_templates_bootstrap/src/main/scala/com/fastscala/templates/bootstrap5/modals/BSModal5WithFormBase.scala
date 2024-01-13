@@ -8,7 +8,9 @@ import com.fastscala.utils.IdGen
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class BSModal5WithFormBase(implicit val renderer: FormRenderer) extends BSModal5Base with Form5 {
+abstract class BSModal5WithFormBase(
+                                     val modalHeaderTitle: String
+                                   )(implicit val formRenderer: FormRenderer) extends BSModal5Base with Form5 {
 
   def saveBtnLbl = "Save"
 

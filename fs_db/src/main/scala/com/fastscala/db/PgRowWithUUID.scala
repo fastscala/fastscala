@@ -24,6 +24,21 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
     this
   }
 
+  def update(func: R => Unit): this.type = {
+    val inDB = reload()
+    func(inDB)
+    inDB.save()
+    func(this)
+    this
+  }
+
+  def reload(): R = {
+    uuid match {
+      case Some(uuid) => table.forUUIDOpt(uuid).get
+      case None => this
+    }
+  }
+
   def update(): Unit = {
     uuid.foreach(uuid => {
       DB.localTx({ implicit session =>
@@ -50,7 +65,8 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
   override def equals(obj: Any): Boolean = {
     if (obj.isInstanceOf[R]) {
       val obj2 = obj.asInstanceOf[R]
-      obj2.uuid.isDefined && uuid.isDefined && obj2.uuid == uuid
+      (obj2.uuid.isDefined && uuid.isDefined && obj2.uuid == uuid) ||
+        (obj2.uuid.isEmpty && uuid.isEmpty && super.equals(obj2))
     } else {
       false
     }

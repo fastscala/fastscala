@@ -18,7 +18,7 @@ class SortableTableExamplePage extends SingleCodeExamplePage("/com/fastscala/dem
     new Table5Base
       with Table5BaseBootrapSupport
       with Table5StandardColumns
-      with Table5SeqDataSource
+      with Table5SeqSortableDataSource
       with Table5Sortable {
       override type R = Country
 

@@ -69,7 +69,8 @@ case class RawJs(js: String) extends Js {
 class Rerenderer(
                   renderFunc: Rerenderer => FSContext => Elem,
                   idOpt: Option[String] = None,
-                  debugLabel: Option[String] = None
+                  debugLabel: Option[String] = None,
+                  gcOldFSContext: Boolean = true
                 ) {
 
   var aroundId = idOpt.getOrElse("around" + IdGen.id)
@@ -77,7 +78,10 @@ class Rerenderer(
 
   def render()(implicit fsc: FSContext) = {
     rootRenderContext = Some(fsc)
-    val rendered = renderFunc(this)(fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel))
+    val rendered = renderFunc(this)({
+      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
+      else fsc
+    })
     rendered.getId match {
       case Some(id) =>
         aroundId = id
@@ -110,7 +114,8 @@ class Rerenderer(
 class RerendererP[P](
                       renderFunc: RerendererP[P] => FSContext => P => Elem,
                       idOpt: Option[String] = None,
-                      debugLabel: Option[String] = None
+                      debugLabel: Option[String] = None,
+                      gcOldFSContext: Boolean = true
                     ) {
 
   var aroundId = idOpt.getOrElse("around" + IdGen.id)
@@ -118,7 +123,10 @@ class RerendererP[P](
 
   def render(param: P)(implicit fsc: FSContext) = {
     rootRenderContext = Some(fsc)
-    val rendered = renderFunc(this)(fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel))(param)
+    val rendered = renderFunc(this)({
+      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
+      else fsc
+    })(param)
     rendered.getId match {
       case Some(id) =>
         aroundId = id
@@ -152,7 +160,8 @@ class ContentRerenderer(
                          renderFunc: ContentRerenderer => FSContext => NodeSeq
                          , outterElem: Elem = <div></div>,
                          id: Option[String] = None,
-                         debugLabel: Option[String] = None
+                         debugLabel: Option[String] = None,
+                         gcOldFSContext: Boolean = true
                        ) {
 
   val aroundId = id.getOrElse("around" + IdGen.id)
@@ -160,7 +169,10 @@ class ContentRerenderer(
 
   def render()(implicit fsc: FSContext) = {
     rootRenderContext = Some(fsc)
-    outterElem.withIdIfNotSet(aroundId).apply(renderFunc(this)(fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)))
+    outterElem.withIdIfNotSet(aroundId).apply(renderFunc(this)({
+      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
+      else fsc
+    }))
   }
 
   def rerender() = Js.replace(aroundId, render()(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
@@ -170,7 +182,8 @@ class ContentRerendererP[P](
                              renderFunc: ContentRerendererP[P] => FSContext => P => NodeSeq
                              , outterElem: Elem = <div></div>,
                              id: Option[String] = None,
-                             debugLabel: Option[String] = None
+                             debugLabel: Option[String] = None,
+                             gcOldFSContext: Boolean = true
                            ) {
 
   val aroundId = id.getOrElse("around" + IdGen.id)
@@ -178,7 +191,10 @@ class ContentRerendererP[P](
 
   def render(param: P)(implicit fsc: FSContext) = {
     rootRenderContext = Some(fsc)
-    outterElem.withIdIfNotSet(aroundId)(renderFunc.apply(this)(fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel))(param))
+    outterElem.withIdIfNotSet(aroundId)(renderFunc.apply(this)({
+      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
+      else fsc
+    })(param))
   }
 
   def rerender(param: P) = Js.replace(aroundId, render(param)(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
@@ -216,31 +232,35 @@ object Js {
   def rerenderable(
                     render: Rerenderer => FSContext => Elem,
                     idOpt: Option[String] = None,
-                    debugLabel: Option[String] = None
-                  ): Rerenderer = new Rerenderer(render, idOpt = idOpt, debugLabel = debugLabel)
+                    debugLabel: Option[String] = None,
+                    gcOldFSContext: Boolean = true
+                  ): Rerenderer = new Rerenderer(render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def rerenderableP[P](
                         render: RerendererP[P] => FSContext => P => Elem,
                         idOpt: Option[String] = None,
-                        debugLabel: Option[String] = None
-                      ): RerendererP[P] = new RerendererP[P](render, idOpt = idOpt, debugLabel = debugLabel)
+                        debugLabel: Option[String] = None,
+                        gcOldFSContext: Boolean = true
+                      ): RerendererP[P] = new RerendererP[P](render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def rerenderableContents(
                             render: ContentRerenderer => FSContext => NodeSeq,
                             outterElem: Elem = <div></div>,
                             id: Option[String] = None,
-                            debugLabel: Option[String] = None
+                            debugLabel: Option[String] = None,
+                            gcOldFSContext: Boolean = true
                           ): ContentRerenderer =
-    new ContentRerenderer(render, outterElem = outterElem, id = id, debugLabel = debugLabel)
+    new ContentRerenderer(render, outterElem = outterElem, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
 
   def rerenderableContentsP[P](
                                 render: ContentRerendererP[P] => FSContext => P => NodeSeq,
                                 outterElem: Elem = <div></div>,
                                 id: Option[String] = None,
-                                debugLabel: Option[String] = None
+                                debugLabel: Option[String] = None,
+                                gcOldFSContext: Boolean = true
                               ): ContentRerendererP[P] =
-    new ContentRerendererP[P](render, outterElem = outterElem, id = id, debugLabel = debugLabel)
+    new ContentRerendererP[P](render, outterElem = outterElem, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def evalIf(cond: Boolean)(js: => Js): Js = if (cond) js else Js.void
 
@@ -308,6 +328,8 @@ object Js {
 
   def alert(text: String): Js = Js(s"""alert("${escapeStr(text)}");""")
 
+  def toClipboard(text: String): Js = Js(s"navigator.clipboard.writeText('${escapeStr(text)}');")
+
   def consoleLog(js: Js): Js = Js(s"""console.log(${js.cmd});""")
 
   def consoleLog(str: String): Js = Js.consoleLog(Js.asJsStr(str))
@@ -316,9 +338,17 @@ object Js {
 
   def redirectTo(link: String): Js = Js(s"""window.location.href = "${escapeStr(link)}";""")
 
+  def reloadPageWithQueryParam(key: String, value: String): Js = Js {
+    s"""var searchParams = new URLSearchParams(window.location.search);
+       |searchParams.set(${Js.asJsStr(key)}, ${Js.asJsStr(value)});
+       |window.location.search = searchParams.toString();""".stripMargin
+  }
+
   def goBack(n: Int = 1): Js = Js(s""";window.history.back();""")
 
-  def onload(js: Js): Js = Js(s"""$$(document).ready(function() { ${js.cmd});""")
+  def onload(js: Js): Js = Js(s"""$$(document).ready(function() { ${js.cmd} });""")
+
+  def onkeypress(codes: Int*)(js: Js): Js = Js(s"event = event || window.event; if (${codes.map(code => s"(event.keyCode ? event.keyCode : event.which) == $code").mkString(" || ")}) {${js.cmd}};")
 
   def reload(): Js = Js(s"""location.reload();""")
 

@@ -9,6 +9,7 @@ import org.joda.time.{DateTime, LocalDate}
 import org.joda.time.format.DateTimeFormat
 
 import java.text.DecimalFormat
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 import scala.util.{Failure, Success, Try}
 import scala.util.chaining.scalaUtilChainingOps
@@ -174,7 +175,7 @@ abstract class TextField[T](
                              , placeholder: Option[String] = None
                              , tabindex: Option[Int] = None
                              , maxlength: Option[Int] = None
-                             , required: () => Boolean
+                             , val required: () => Boolean
                              , inputType: String = "text"
                              , val disabled: () => Boolean
                              , val readOnly: () => Boolean
@@ -381,22 +382,22 @@ class StringOptField(
   )
 }
 
-class DateOptField(
-                    get: () => Option[LocalDate]
-                    , set: Option[LocalDate] => Js
-                    , label: Option[NodeSeq] = None
-                    , name: Option[String] = None
-                    , placeholder: Option[String] = None
-                    , tabindex: Option[Int] = None
-                    , maxlength: Option[Int] = None
-                    , required: () => Boolean = () => false
-                    , inputType: String = "date"
-                    , disabled: () => Boolean = () => false
-                    , readOnly: () => Boolean = () => false
-                    , enabled: () => Boolean = () => true
-                    , deps: Set[FormField] = Set()
-                    , additionalAttrs: Seq[(String, String)] = Nil
-                  )(implicit renderer: TextFieldRenderer) extends TextField[LocalDate](
+class JodaDateOptField(
+                        get: () => Option[LocalDate]
+                        , set: Option[LocalDate] => Js
+                        , label: Option[NodeSeq] = None
+                        , name: Option[String] = None
+                        , placeholder: Option[String] = None
+                        , tabindex: Option[Int] = None
+                        , maxlength: Option[Int] = None
+                        , required: () => Boolean = () => false
+                        , inputType: String = "date"
+                        , disabled: () => Boolean = () => false
+                        , readOnly: () => Boolean = () => false
+                        , enabled: () => Boolean = () => true
+                        , deps: Set[FormField] = Set()
+                        , additionalAttrs: Seq[(String, String)] = Nil
+                      )(implicit renderer: TextFieldRenderer) extends TextField[LocalDate](
   getOpt = () => get()
   , setOpt = optValue => set(optValue)
   , toString = _.map(_.toString("YYYY-MM-dd")).getOrElse("")
@@ -423,6 +424,78 @@ class DateOptField(
   def copy(
             get: () => Option[LocalDate] = get
             , set: Option[LocalDate] => Js = set
+            , label: Option[NodeSeq] = label
+            , name: Option[String] = name
+            , placeholder: Option[String] = placeholder
+            , tabindex: Option[Int] = tabindex
+            , maxlength: Option[Int] = maxlength
+            , required: () => Boolean = required
+            , inputType: String = inputType
+            , disabled: () => Boolean = disabled
+            , readOnly: () => Boolean = readOnly
+            , enabled: () => Boolean = enabled
+            , deps: Set[FormField] = deps
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
+          ): JodaDateOptField = new JodaDateOptField(
+    get = get
+    , set = set
+    , label = label
+    , name = name
+    , placeholder = placeholder
+    , tabindex = tabindex
+    , maxlength = maxlength
+    , required = required
+    , inputType = inputType
+    , disabled = disabled
+    , readOnly = readOnly
+    , enabled = enabled
+    , deps = deps
+    , additionalAttrs = additionalAttrs
+  )
+}
+
+class DateOptField(
+                    get: () => Option[java.time.LocalDate]
+                    , set: Option[java.time.LocalDate] => Js
+                    , label: Option[NodeSeq] = None
+                    , name: Option[String] = None
+                    , placeholder: Option[String] = None
+                    , tabindex: Option[Int] = None
+                    , maxlength: Option[Int] = None
+                    , required: () => Boolean = () => false
+                    , inputType: String = "date"
+                    , disabled: () => Boolean = () => false
+                    , readOnly: () => Boolean = () => false
+                    , enabled: () => Boolean = () => true
+                    , deps: Set[FormField] = Set()
+                    , additionalAttrs: Seq[(String, String)] = Nil
+                  )(implicit renderer: TextFieldRenderer) extends TextField[java.time.LocalDate](
+  getOpt = () => get()
+  , setOpt = optValue => set(optValue)
+  , toString = _.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).getOrElse("")
+  , fromString = str => Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+  , label = label
+  , name = name
+  , placeholder = placeholder
+  , tabindex = tabindex
+  , maxlength = maxlength
+  , required = required
+  , inputType = inputType
+  , disabled = disabled
+  , readOnly = readOnly
+  , enabled = enabled
+  , deps = deps
+  , additionalAttrs = additionalAttrs
+) {
+
+  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+
+  def copy(
+            get: () => Option[java.time.LocalDate] = get
+            , set: Option[java.time.LocalDate] => Js = set
             , label: Option[NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
@@ -1312,6 +1385,19 @@ class TextAreaField(
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
+object CodeField {
+
+  def cssImports: NodeSeq = {
+    <link href={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/css/ace.min.css"} rel="stylesheet"></link>
+  }
+
+  def jsImports: NodeSeq = {
+    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/ace.min.js"}></script>
+    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/mode-html.js"}></script>
+    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/theme-textmate.js"}></script>
+  }
+}
+
 class CodeField(
                  get: () => String
                  , set: String => Js
@@ -1428,13 +1514,10 @@ class CodeField(
             <div id={editorId}>{currentValue}</div>
           </div>
 
-          <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.15.3/src-min-noconflict/ace.min.js" charset="utf-8"></script>
-          <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.15.3/src-min-noconflict/mode-html.js" charset="utf-8"></script>
-          <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.15.3/src-min-noconflict/theme-monokai.js" charset="utf-8"></script>
           {
             Unparsed(
               s"""<script>window.$editorId = ace.edit(${Js.asJsStr(editorId).cmd});
-                 |window.$editorId.setTheme("ace/theme/monokai");
+                 |window.$editorId.setTheme("ace/theme/textmate");
                  |window.$editorId.session.setMode("ace/mode/html");
                  |window.$editorId.session.on('change', ${onChangeJS});</script>""".stripMargin
             )
@@ -1448,25 +1531,50 @@ class CodeField(
 }
 
 trait ButtonFieldRenderer {
-  def render(field: SaveButtonField)(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
+  def render(field: SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
-class SaveButtonField(
-                       btn: Elem
-                       , val disabled: () => Boolean = () => false
-                       , val enabled: () => Boolean = () => true
-                       , val deps: Set[FormField] = Set()
-                     )(implicit renderer: ButtonFieldRenderer) extends StandardFormField {
+class SaveButtonField[B <% Elem](
+                                  btn: B
+                                  , val disabled: () => Boolean = () => false
+                                  , val enabled: () => Boolean = () => true
+                                  , val deps: Set[FormField] = Set()
+                                  , val toInitialState: B => B = identity[B] _
+                                  , val toChangedState: B => B = identity[B] _
+                                  , val toErrorState: B => B = identity[B] _
+                                )(implicit renderer: ButtonFieldRenderer) extends StandardFormField {
 
   def readOnly: () => Boolean = () => false
 
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
+  val btnRenderer = Js.rerenderableP[(B => B, Form5)](_ => implicit fsc => {
+    case (transformer, form) => (transformer(btn): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+  })
+
+  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+    case AfterSave =>
+      //btnRenderer.rerender((toInitialState, form)).printToConsoleBefore()
+      Js.void
+    case BeforeSave => Js.void
+    case ErrorsOnSave =>
+      //btnRenderer.rerender((toErrorState, form)).printToConsoleBefore()
+      Js.void
+    case ChangedField(_) =>
+      //btnRenderer.rerender((toChangedState, form)).printToConsoleBefore()
+      Js.void
+    case PerformSave => Js.void
+    case _ => Js.void
+  })
+
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
-        renderer.render(this)(btn.withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd))
+        renderer.render(this)({
+          if (hints.contains(FailedSaveStateHint)) btnRenderer.render((toErrorState, form))
+          else btnRenderer.render((toInitialState, form))
+        })
       }
     }
 }
@@ -1475,20 +1583,20 @@ trait FileUploadFieldRenderer {
 
   def transformFormElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforLabelElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+    def transforLabelElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforSubmitButtonElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+    def transforSubmitButtonElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforResetButtonElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+    def transforResetButtonElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforFileInputElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+    def transforFileInputElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 }
 
 class FileUploadField(
                        get: () => Option[(String, Array[Byte])]
                        , set: Option[(String, Array[Byte])] => Js
                        , submitBtn: Elem
-                       , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem
+                       , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = _ => _ => <div></div>
                        , resetBtn: Option[Elem] = None
                        , label: Option[NodeSeq] = None
                        , name: Option[String] = None
@@ -1508,32 +1616,32 @@ class FileUploadField(
 
   var currentValue: Option[(String, Array[Byte])] = get()
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case PerformSave => set(currentValue)
-    case _ => Js.void
-  })
+    override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+      case PerformSave => set(currentValue)
+      case _ => Js.void
+    })
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+    override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
-    else {
-      withFieldRenderHints { implicit hints =>
-        val targetId = IdGen.id("targetFrame")
-        val inputId = IdGen.id("input")
-        val buttonId = IdGen.id("btn")
-        val resetButtonId = IdGen.id("reset-btn")
+    def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+      if (!enabled()) <div style="display:none;" id={aroundId}></div>
+      else {
+        withFieldRenderHints { implicit hints =>
+          val targetId = IdGen.id("targetFrame")
+          val inputId = IdGen.id("input")
+          val buttonId = IdGen.id("btn")
+          val resetButtonId = IdGen.id("reset-btn")
 
-        val previewRenderer = Js.rerenderable(rerenderer => implicit fsc => renderPreview(fsc)(currentValue))
-        val actionUrl = fsc.fileUploadActionUrl({
-          case Seq(uploadedFile: FSUploadedFile, _ *) =>
-            currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))
-            previewRenderer.rerender() &
-              form.onEvent(ChangedField(this)) &
-              (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &
-              Js.show(resetButtonId)
-        })
-        <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" id={aroundId}>
+          val previewRenderer = Js.rerenderable(rerenderer => implicit fsc => renderPreview(fsc)(currentValue))
+          val actionUrl = fsc.fileUploadActionUrl({
+            case Seq(uploadedFile: FSUploadedFile, _ *) =>
+              currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))
+              previewRenderer.rerender() &
+                form.onEvent(ChangedField(this)) &
+                (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &
+                Js.show(resetButtonId)
+          })
+          <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" id={aroundId}>
           <iframe id={targetId} name={targetId} src="about:blank" onload="eval(this.contentWindow.document.body.innerText)" style="width:0;height:0;border:0px solid #fff;"><html><body></body></html></iframe>
           {
           label.map(label => <label for={elemId}>{label}</label>).map(_.pipe(renderer.transforLabelElem(this)).pipe(transforLabelElem)).getOrElse(NodeSeq.Empty)
@@ -1557,49 +1665,49 @@ class FileUploadField(
           }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(NodeSeq.Empty)
           }
         </form>.pipe(renderer.transformFormElem(this)).pipe(transformFormElem)
+        }
       }
     }
-  }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+    override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+    def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
-  def copy(
-            get: () => Option[(String, Array[Byte])] = get
-            , set: Option[(String, Array[Byte])] => Js = set
-            , submitBtn: Elem = submitBtn
-            , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = renderPreview
-            , resetBtn: Option[Elem] = resetBtn
-            , label: Option[NodeSeq] = label
-            , name: Option[String] = name
-            , tabindex: Option[Int] = tabindex
-            , disabled: () => Boolean = disabled
-            , readOnly: () => Boolean = readOnly
-            , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
-            , transformFormElem: Elem => Elem = transformFormElem
-            , transforLabelElem: Elem => Elem = transforLabelElem
-            , transforSubmitButtonElem: Elem => Elem = transforSubmitButtonElem
-            , transforResetButtonElem: Elem => Elem = transforResetButtonElem
-            , transforFileInputElem: Elem => Elem = transforFileInputElem
-          ): FileUploadField = new FileUploadField(
-    get = get
-    , set = set
-    , submitBtn = submitBtn
-    , renderPreview = renderPreview
-    , resetBtn = resetBtn
-    , label = label
-    , name = name
-    , tabindex = tabindex
-    , disabled = disabled
-    , readOnly = readOnly
-    , enabled = enabled
-    , deps = deps
-    , transformFormElem = transformFormElem
-    , transforLabelElem = transforLabelElem
-    , transforSubmitButtonElem = transforSubmitButtonElem
-    , transforResetButtonElem = transforResetButtonElem
-    , transforFileInputElem = transforFileInputElem
-  )
+    def copy(
+              get: () => Option[(String, Array[Byte])] = get
+              , set: Option[(String, Array[Byte])] => Js = set
+              , submitBtn: Elem = submitBtn
+              , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = renderPreview
+              , resetBtn: Option[Elem] = resetBtn
+              , label: Option[NodeSeq] = label
+              , name: Option[String] = name
+              , tabindex: Option[Int] = tabindex
+              , disabled: () => Boolean = disabled
+              , readOnly: () => Boolean = readOnly
+              , enabled: () => Boolean = enabled
+              , deps: Set[FormField] = deps
+              , transformFormElem: Elem => Elem = transformFormElem
+              , transforLabelElem: Elem => Elem = transforLabelElem
+              , transforSubmitButtonElem: Elem => Elem = transforSubmitButtonElem
+              , transforResetButtonElem: Elem => Elem = transforResetButtonElem
+              , transforFileInputElem: Elem => Elem = transforFileInputElem
+            ): FileUploadField = new FileUploadField(
+      get = get
+      , set = set
+      , submitBtn = submitBtn
+      , renderPreview = renderPreview
+      , resetBtn = resetBtn
+      , label = label
+      , name = name
+      , tabindex = tabindex
+      , disabled = disabled
+      , readOnly = readOnly
+      , enabled = enabled
+      , deps = deps
+      , transformFormElem = transformFormElem
+      , transforLabelElem = transforLabelElem
+      , transforSubmitButtonElem = transforSubmitButtonElem
+      , transforResetButtonElem = transforResetButtonElem
+      , transforFileInputElem = transforFileInputElem
+    )
 }

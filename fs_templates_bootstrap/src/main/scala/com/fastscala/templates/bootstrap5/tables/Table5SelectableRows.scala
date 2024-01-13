@@ -55,7 +55,7 @@ trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
         else allSelectedRowsEvenIfNotVisible -= value
         onSelectedRowsChange() &
           trRerenderer.rerenderer.rerender()
-      }, "").m_0
+      }, "").m_0.d_inline_block
       <td>{contents}</td>
     }
   }

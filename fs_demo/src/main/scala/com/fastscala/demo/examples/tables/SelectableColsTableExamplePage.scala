@@ -25,7 +25,7 @@ class SelectableColsTableExamplePage extends SingleCodeExamplePage("/com/fastsca
   lazy val table = new Table5Base
     with Table5BaseBootrapSupport
     with Table5Paginated
-    with Table5SeqDataSource
+    with Table5SeqSortableDataSource
     with Table5StandardColumns
     with Table5Sortable
     with Table5SelectableCols {

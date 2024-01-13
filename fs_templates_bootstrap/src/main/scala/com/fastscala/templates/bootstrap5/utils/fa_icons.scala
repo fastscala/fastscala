@@ -1,12 +1,12 @@
 package com.fastscala.templates.bootstrap5.utils
 
-import scala.xml.NodeSeq
+import scala.xml.{Elem, NodeSeq}
 
 object IcnFA {
   type FaIcn = String
 
   implicit class RichIcn(i: FaIcn) {
-    def icn: NodeSeq = <i class={i}></i>
+    def icn: Elem = <i class={i}></i>
   }
 
   val adjust: FaIcn = " fa fa-adjust "

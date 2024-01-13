@@ -10,7 +10,7 @@ ThisBuild / scalaVersion := "2.13.11"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
-val AkkaVersion = "2.6.20"
+val AkkaVersion = "2.7.0"
 val AkkaHttpVersion = "10.2.10"
 
 executableScriptName := "router-prod"

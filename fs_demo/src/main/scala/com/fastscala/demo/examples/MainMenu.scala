@@ -11,7 +11,7 @@ object MainMenu extends Menu(
   MenuSection("Bootstrap")(
     SimpleMenuItem("Basics", "/bootstrap")
     , SimpleMenuItem("Buttons", "/bootstrap/buttons")
-    , new RoutingMenuItem("bootstrap", "typography")("Typography", new BootstrapTypographyPage())
+    , new RoutingMenuItem("bootstrap", "typography")("Typography", () => new BootstrapTypographyPage())
   ),
   MenuSection("Tables")(
     SimpleMenuItem("Simple", "/simple_tables")
@@ -91,7 +91,7 @@ case class SimpleMenuItem(name: String, href: String) extends MenuItem {
     <li><a href={href} class="text-white d-inline-flex text-decoration-none rounded">{name}</a></li>
 }
 
-class RoutingMenuItem(matching: String*)(val name: String, page: => RenderableWithFSContext) extends MenuItem {
+class RoutingMenuItem(matching: String*)(val name: String, page: () => RenderableWithFSContext) extends MenuItem {
 
   def matches(uri: String): Boolean = href == uri
 
@@ -103,6 +103,6 @@ class RoutingMenuItem(matching: String*)(val name: String, page: => RenderableWi
   import com.fastscala.server.RoutingHandlerHelper._
 
   def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] = Some(req).collect {
-    case Get(path@_*) if path == matching => page
+    case Get(path@_*) if path == matching => page()
   }
 }

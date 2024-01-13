@@ -47,7 +47,7 @@ class BasicFormExamplePage extends SingleCodeExamplePage("/com/fastscala/demo/ex
           BSModal5.verySimple(
             "Created User",
             "Done"
-          )(implicit fsc => {
+          )(modal => implicit fsc => {
             <span><b>First Name:</b> {editing.firstName}</span><br/> ++
               <span><b>Last Name:</b> {editing.lastName}</span><br/> ++
               <span><b>Email:</b> {editing.email}</span><br/> ++
@@ -68,7 +68,7 @@ class BasicFormExamplePage extends SingleCodeExamplePage("/com/fastscala/demo/ex
           , new SaveButtonField(BSBtn.BtnPrimary.lbl("Create User").btn.d_block)
         )
 
-        override def renderer: FormRenderer = formRenderer
+        override def formRenderer: FormRenderer = formRenderer
       }.render()
     }
     // === code snippet ===

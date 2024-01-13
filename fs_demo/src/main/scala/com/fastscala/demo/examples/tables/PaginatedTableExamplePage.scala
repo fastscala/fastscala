@@ -17,7 +17,7 @@ class PaginatedTableExamplePage extends SingleCodeExamplePage("/com/fastscala/de
     new Table5Base
       with Table5BaseBootrapSupport
       with Table5StandardColumns
-      with Table5SeqDataSource
+      with Table5SeqSortableDataSource
       with Table5Paginated {
 
       override type R = Country

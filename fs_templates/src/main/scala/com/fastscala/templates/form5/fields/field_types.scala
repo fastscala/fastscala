@@ -42,7 +42,7 @@ trait StandardFormField extends FormField with ElemWithRandomId {
   def visible: () => Boolean = () => enabled()
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case ChangedField(field) if deps.contains(field) => reRender()
+    case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
     case _ => Js.void
   })
 

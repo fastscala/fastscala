@@ -15,7 +15,7 @@ abstract class BSFormRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  implicit def bsFormRenderer: BSFormRenderer = this
+  implicit val bsFormRenderer: BSFormRenderer = this
 
   implicit val dateFieldOptRenderer = new DateFieldOptRenderer {
     override def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
@@ -139,7 +139,7 @@ abstract class BSFormRenderer {
   }
 
   implicit val buttonFieldRenderer = new ButtonFieldRenderer {
-    override def render(field: SaveButtonField)(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
+    override def render(field: SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
         btn

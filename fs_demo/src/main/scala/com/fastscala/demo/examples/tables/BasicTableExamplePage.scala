@@ -20,7 +20,7 @@ class BasicTableExamplePage extends SingleCodeExamplePage("/com/fastscala/demo/e
     new Table5Base
       with Table5BaseBootrapSupport
       with Table5Paginated
-      with Table5SeqDataSource
+      with Table5SeqSortableDataSource
       with Table5StandardColumns
       with Table5Sortable {
       override type R = Country

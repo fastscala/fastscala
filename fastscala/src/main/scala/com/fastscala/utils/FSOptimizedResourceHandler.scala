@@ -97,6 +97,7 @@ class FSOptimizedResourceHandler(
   }
 
   val cssLoaderCache = mutable.WeakHashMap[String, String]()
+  val imgCache = mutable.WeakHashMap[String, Response]()
 
   override def handlerNoSession(implicit req: HttpServletRequest): Option[Response] = Some(req).collect({
     case Get("static", "optimized", "css_loader.css") =>
@@ -112,50 +113,56 @@ class FSOptimizedResourceHandler(
       Ok.css(css)
         .addHeader("Cache-control", "public, max-age=7776000")
 
-    case Req(GET, "static" :: "optimized" :: restOfPath, suf@("jpg" | "jpeg"), _) =>
-      val remaining = java.net.URLDecoder.decode(restOfPath.mkString("", "/", "." + suf), "UTF-8")
-      val resourceName = "/web/static/" + remaining
-      val resource = getClass.getResource(resourceName)
-
-      if (resource == null) {
-        System.err.println(s"Not found: $resourceName")
-        ClientError.NotFound
-      } else if (remaining.toLowerCase.endsWith("jpg") || remaining.toLowerCase.endsWith("jpeg")) {
-        val maxWidth: Option[Int] = Option(req.getParameter("max-width")).flatMap(_.toIntOption)
-        val maxHeight: Option[Int] = Option(req.getParameter("max-height")).flatMap(_.toIntOption)
-        val compression: Option[Int] = Option(req.getParameter("compression")).flatMap(_.toIntOption)
-        val original: Boolean = Option(req.getParameter("original")).flatMap(_.toBooleanOption).getOrElse(false)
-        val resource = getClass.getResource(resourceName)
-        val is = resource.openStream()
-        try {
-          val byteArray: Array[Byte] = {
-            if (original) {
-              IOUtils.toByteArray(is)
-            } else {
-              val br: BufferedImage = ImageIO.read(is)
-              val resizedWidth: BufferedImage = maxWidth.orElse(Some(defaultMaxWidth)).filter(_ > 0).map(maxWidth => {
-                resizeMaxWidth(maxWidth, br)
-              }).getOrElse(br)
-              val resizedHeight: BufferedImage = maxHeight.orElse(Some(defaultMaxHeight)).filter(_ > 0).map(maxHeight => {
-                resizeMaxHeight(maxHeight, resizedWidth)
-              }).getOrElse(resizedWidth)
-              val afterHook: BufferedImage = imagePostProcessHook("static/" + remaining, resizedHeight)
-              write(compression.map(v => math.min(10, math.max(0, v))).getOrElse(defaultCompression), afterHook)
-            }
-          }
-          Ok.binaryAutoDetectContentType(byteArray, restOfPath.last)
-        } finally {
-          is.close()
-        }
-      } else {
-        val is = resource.openStream()
-        try {
-          Ok.binaryAutoDetectContentType(IOUtils.toByteArray(is), restOfPath.last)
-            .addHeader("Cache-control", "public, max-age=7776000")
-        } finally {
-          is.close()
-        }
+    case r@Req(GET, "static" :: "optimized" :: restOfPath, suf@("jpg" | "jpeg"), _) =>
+      if (imgCache.size > 50) {
+        imgCache --= imgCache.keys.take(25)
       }
+      imgCache.getOrElseUpdate(r.getRequestURI, {
+        val remaining = java.net.URLDecoder.decode(restOfPath.mkString("", "/", "." + suf), "UTF-8")
+        val resourceName = "/web/static/" + remaining
+        val resource = getClass.getResource(resourceName)
+
+        if (resource == null) {
+          System.err.println(s"Not found: $resourceName")
+          ClientError.NotFound
+        } else if (remaining.toLowerCase.endsWith("jpg") || remaining.toLowerCase.endsWith("jpeg")) {
+          val maxWidth: Option[Int] = Option(req.getParameter("max-width")).flatMap(_.toIntOption)
+          val maxHeight: Option[Int] = Option(req.getParameter("max-height")).flatMap(_.toIntOption)
+          val compression: Option[Int] = Option(req.getParameter("compression")).flatMap(_.toIntOption)
+          val original: Boolean = Option(req.getParameter("original")).flatMap(_.toBooleanOption).getOrElse(false)
+          val resource = getClass.getResource(resourceName)
+          val is = resource.openStream()
+          try {
+            val byteArray: Array[Byte] = {
+              if (original) {
+                IOUtils.toByteArray(is)
+              } else {
+                val br: BufferedImage = ImageIO.read(is)
+                val resizedWidth: BufferedImage = maxWidth.orElse(Some(defaultMaxWidth)).filter(_ > 0).map(maxWidth => {
+                  resizeMaxWidth(maxWidth, br)
+                }).getOrElse(br)
+                val resizedHeight: BufferedImage = maxHeight.orElse(Some(defaultMaxHeight)).filter(_ > 0).map(maxHeight => {
+                  resizeMaxHeight(maxHeight, resizedWidth)
+                }).getOrElse(resizedWidth)
+                val afterHook: BufferedImage = imagePostProcessHook("static/" + remaining, resizedHeight)
+                write(compression.map(v => math.min(10, math.max(0, v))).getOrElse(defaultCompression), afterHook)
+              }
+            }
+            Ok.binaryAutoDetectContentType(byteArray, restOfPath.last)
+              .addHeader("Cache-control", "public, max-age=7776000")
+          } finally {
+            is.close()
+          }
+        } else {
+          val is = resource.openStream()
+          try {
+            Ok.binaryAutoDetectContentType(IOUtils.toByteArray(is), restOfPath.last)
+              .addHeader("Cache-control", "public, max-age=7776000")
+          } finally {
+            is.close()
+          }
+        }
+      })
   })
 
   var version = System.currentTimeMillis()

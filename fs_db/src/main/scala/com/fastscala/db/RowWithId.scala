@@ -64,7 +64,8 @@ trait RowWithId[R <: RowWithId[R]] extends Row[R] {
   override def equals(obj: Any): Boolean = {
     if (obj.isInstanceOf[R]) {
       val obj2 = obj.asInstanceOf[R]
-      obj2.id != null && id != null && obj2.id == id
+      (obj2.id != null && id != null && obj2.id == id) ||
+        (obj2.id == null && id == null && super.equals(obj2))
     } else {
       false
     }

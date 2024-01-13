@@ -10,8 +10,6 @@ import scala.xml.Elem
 
 trait Table5SelectableRowsWithActions extends Table5SelectableRows {
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-
   def actionsForRows(rows: Set[R]): Seq[BSBtn] = Nil
 
   def actionsBtnToIncludeInDropdown: BSBtn = BSBtn.BtnPrimary.lbl("Actions")

@@ -26,6 +26,10 @@ trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends Table[R] with TableWithUUID
   def forUUIDOpt(uuid: UUID*): Option[R] = forUUID(uuid: _*).headOption
 
   def forUUID(uuid: UUID*): List[R] = list(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String])))
+
+  def deleteAll(rows: Seq[R]): Long = {
+    delete(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(rows.flatMap(_.uuid.map(_.toString)).toArray[String])))
+  }
 }
 
 object PgTableWithUUID {

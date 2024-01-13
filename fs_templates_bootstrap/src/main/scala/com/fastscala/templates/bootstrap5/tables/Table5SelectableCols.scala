@@ -11,11 +11,11 @@ import scala.xml.Elem
 
 trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
 
-  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns().filter(columnStartsSelected): _*))
+  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns().filter(columnStartsVisible): _*))
 
   def allColumns(): Seq[C]
 
-  def columnStartsSelected(c: C): Boolean = true
+  def columnStartsVisible(c: C): Boolean = true
 
   def columns(): Seq[C] = allColumns().filter(col => currentSelectedCols().contains(col))
 
@@ -28,7 +28,7 @@ trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
     "Select Columns",
     "Done",
     onHidden = fsc.callback(() => rerenderTableAround())
-  )(implicit fsc => {
+  )(modal => implicit fsc => {
     allColumns().map(col => {
       ImmediateInputFields.checkbox(
         () => currentSelectedCols().contains(col),

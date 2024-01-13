@@ -78,6 +78,44 @@ object ImmediateInputFields {
     }).getOrElse(inputNS)
   }
 
+  def range(
+             get: () => Int,
+             set: Int => Js,
+             min: Int,
+             max: Int,
+             classes: String = "",
+             style: String = "",
+             name: String = "",
+             `type`: String = "range",
+             id: Option[String] = None,
+             onSubmitClientSide: Js => Js = _ => Js.void,
+             ignoreUnchangedValue: Boolean = true,
+             timeBeforeChangeMs: Long = 600
+           )(implicit fsc: FSContext): Elem = {
+    val inputId = id.getOrElse("input" + fsc.session.nextID())
+
+    val initialValue = get()
+
+    val submit = Js.withVarStmt("value", Js.elementValueById(inputId))(value => {
+      Js(
+        s"""try {
+           |  window.clearTimeout(window.timeout$inputId);
+           |} catch(err) { }
+           |window.timeout$inputId = window.setTimeout(function () { """.stripMargin + Js._if(
+          if (ignoreUnchangedValue) value `_!=` Js.varOrElseUpdate(Js(s"window.currentValue$inputId"), Js.asJsStr(initialValue.toString))
+          else Js._true,
+          _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.toInt))
+        ).cmd + s"}, $timeBeforeChangeMs);"
+      )
+    }).cmd
+
+    val inputNS = <input min={min.toString} max={max.toString} id={inputId} type={`type`} value={initialValue.toString} class={classes} style={style}
+       name={if (name == "") null else name}
+        onchange={submit}
+      />
+    inputNS
+  }
+
   def select[T](
                  all: () => Seq[T],
                  get: () => T,

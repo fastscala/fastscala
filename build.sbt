@@ -87,8 +87,8 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
   .settings(
     name := "fs_demo",
 
-    Compile / packageBin / mainClass := Some("com.fastscala.templates.bootstrap5.server.JettyServer"),
-    Compile / mainClass := Some("com.fastscala.templates.bootstrap5.server.JettyServer"),
+    Compile / packageBin / mainClass := Some("com.fastscala.demo.server.JettyServer"),
+    Compile / mainClass := Some("com.fastscala.demo.server.JettyServer"),
 
     Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "main" / "scala",
 

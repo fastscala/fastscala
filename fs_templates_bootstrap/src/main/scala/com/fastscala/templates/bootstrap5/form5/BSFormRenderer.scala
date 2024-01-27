@@ -26,7 +26,7 @@ abstract class BSFormRenderer {
     def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
 
     override def render[T](
-                            field: TextField[T]
+                            field: F5TextField[T]
                           )(
                             label: Option[NodeSeq],
                             inputElem: Elem,
@@ -49,7 +49,7 @@ abstract class BSFormRenderer {
     def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
 
     override def render(
-                         field: TextAreaField
+                         field: F5TextAreaField
                        )(
                          label: Option[NodeSeq],
                          inputElem: Elem,
@@ -72,7 +72,7 @@ abstract class BSFormRenderer {
     def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
 
     override def render[T](
-                            field: SelectField[T]
+                            field: F5SelectField[T]
                           )(
                             label: Option[Elem],
                             elem: Elem,
@@ -95,7 +95,7 @@ abstract class BSFormRenderer {
     def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
 
     override def render[T](
-                            field: MultiSelectField[T]
+                            field: F5MultiSelectField[T]
                           )(
                             label: Option[Elem],
                             elem: Elem,
@@ -116,7 +116,7 @@ abstract class BSFormRenderer {
   implicit val checkboxFieldRenderer = new CheckboxFieldRenderer {
 
     override def render(
-                         field: CheckboxField
+                         field: F5CheckboxField
                        )(
                          label: Option[Elem],
                          elem: Elem,
@@ -135,11 +135,11 @@ abstract class BSFormRenderer {
   }
 
   implicit val fileUploadFieldRenderer = new FileUploadFieldRenderer {
-    override def transformFormElem(field: FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = super.transformFormElem(field)(elem).mb_3
+    override def transformFormElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = super.transformFormElem(field)(elem).mb_3
   }
 
   implicit val buttonFieldRenderer = new ButtonFieldRenderer {
-    override def render(field: SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
+    override def render(field: F5SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
         btn

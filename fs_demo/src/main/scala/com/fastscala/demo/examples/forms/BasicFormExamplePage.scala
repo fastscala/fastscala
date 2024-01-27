@@ -57,15 +57,15 @@ class BasicFormExamplePage extends SingleCodeExamplePage("/com/fastscala/demo/ex
           })
         }
 
-        override lazy val rootField: FormField = VerticalField()(
-          HorizontalField()(
-            "col" -> new StringField(() => editing.firstName, str => {editing.firstName = str; Js.void}).withLabel("First Name")
-            , "col" -> new StringField(() => editing.lastName, str => {editing.lastName = str; Js.void}).withLabel("Last Name")
+        override lazy val rootField: FormField = F5VerticalField()(
+          F5HorizontalField()(
+            "col" -> new F5StringField(() => editing.firstName, str => {editing.firstName = str; Js.void}).withLabel("First Name")
+            , "col" -> new F5StringField(() => editing.lastName, str => {editing.lastName = str; Js.void}).withLabel("Last Name")
           )
-          , new StringField(() => editing.email, str => {editing.email = str; Js.void}, inputType = "email").withLabel("Email")
-          , new StringField(() => editing.phoneNumber, str => {editing.phoneNumber = str; Js.void}, inputType = "tel").withLabel("Phone Number")
-          , new SelectField[Country](() => CountriesData.data.toList, () => editing.countryOfResidence, v => {editing.countryOfResidence = v; Js.void}, _.name.common).withLabel("Country of Residence")
-          , new SaveButtonField(BSBtn.BtnPrimary.lbl("Create User").btn.d_block)
+          , new F5StringField(() => editing.email, str => {editing.email = str; Js.void}, inputType = "email").withLabel("Email")
+          , new F5StringField(() => editing.phoneNumber, str => {editing.phoneNumber = str; Js.void}, inputType = "tel").withLabel("Phone Number")
+          , new F5SelectField[Country](() => CountriesData.data.toList, () => editing.countryOfResidence, v => {editing.countryOfResidence = v; Js.void}, _.name.common).withLabel("Country of Residence")
+          , new F5SaveButtonField(BSBtn.BtnPrimary.lbl("Create User").btn.d_block)
         )
 
         override def formRenderer: FormRenderer = formRenderer

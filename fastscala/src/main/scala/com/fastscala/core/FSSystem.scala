@@ -394,6 +394,11 @@ abstract class FSSessionVarOpt[T]() {
 
   def update(value: T)(implicit hasSession: FSHasSession): Unit = hasSession.session.setData(this, value)
 
+  def setOrClear(valueOpt: Option[T])(implicit hasSession: FSHasSession): Unit = valueOpt match {
+    case Some(value) => update(value)
+    case None => clear()
+  }
+
   def clear()(implicit hasSession: FSHasSession): Unit = hasSession.session.clear(this)
 }
 

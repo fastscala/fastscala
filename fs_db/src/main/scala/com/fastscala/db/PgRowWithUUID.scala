@@ -19,12 +19,12 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
     sql
   }
 
-  def save(): this.type = {
+  def save(): R = {
     DB.localTx({ implicit session => saveSQL().update() })
     this
   }
 
-  def update(func: R => Unit): this.type = {
+  def update(func: R => Unit): R = {
     val inDB = reload()
     func(inDB)
     inDB.save()
@@ -34,7 +34,7 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
 
   def reload(): R = {
     uuid match {
-      case Some(uuid) => table.forUUIDOpt(uuid).get
+      case Some(uuid) => table.getForIdOpt(uuid).get
       case None => this
     }
   }

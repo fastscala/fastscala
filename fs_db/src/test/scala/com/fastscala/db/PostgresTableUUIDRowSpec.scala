@@ -36,7 +36,7 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
   "Read row" should "succeed" in {
     DB.localTx({ implicit session =>
       val example = new TestEntity4()
-      val single = TestEntity4.listAll().head
+      val single = TestEntity4.selectAll().head
 
       assert(example.myInt == single.myInt)
       assert(example.myLong == single.myLong)
@@ -50,7 +50,7 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
   }
   "Update row" should "succeed" in {
     DB.localTx({ implicit session =>
-      val single = TestEntity4.listAll().head
+      val single = TestEntity4.selectAll().head
 
       single.myInt += 1
       single.myLong += 1
@@ -63,9 +63,9 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
 
       single.update()
 
-      assert(TestEntity4.listAll().size == 1)
+      assert(TestEntity4.selectAll().size == 1)
 
-      val inDB = TestEntity4.listAll().head
+      val inDB = TestEntity4.selectAll().head
 
       assert(single.uuid.isDefined)
 
@@ -85,9 +85,9 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
     DB.localTx({ implicit session =>
       new TestEntity4().save()
       new TestEntity4().save()
-      val uuids = TestEntity4.listAll().map(_.uuid.get)
+      val uuids = TestEntity4.selectAll().map(_.uuid.get)
 
-      assert(TestEntity4.forUUID(uuids: _*).size == 3)
+      assert(TestEntity4.getForIds(uuids: _*).size == 3)
     })
   }
   "Delete table" should "succeed" in {

@@ -10,7 +10,7 @@ trait SQLiteTableWithUUID[R <: SQLiteRowWithUUID[R]] extends SQLiteTable[R] with
 
   override def createSampleRowInternal(): R = {
     val ins = super.createSampleRowInternal()
-    if (ins.uuid.isEmpty) ins.uuid = Some(PgTableWithUUID.sampleUUID)
+    if (ins.uuid.isEmpty) ins.uuid = Some(PgTableWithUUID.PlaceholderUUID)
     ins
   }
 
@@ -23,12 +23,12 @@ trait SQLiteTableWithUUID[R <: SQLiteRowWithUUID[R]] extends SQLiteTable[R] with
     if (field.getName == "uuid") super.fieldTypeToSQLType(field, clas, value, columnConstrains + "primary key")
     else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
 
-  def forUUIDOpt(uuid: UUID*): Option[R] = forUUID(uuid: _*).headOption
+  def getForIdOpt(uuid: UUID): Option[R] = getForIds(uuid).headOption
 
-  def forUUID(uuid: UUID*): List[R] = {
+  def getForIds(uuid: UUID*): List[R] = {
     if (uuid.isEmpty) Nil
     else {
-      list(SQLSyntax.createUnsafely(s""" WHERE uuid IN (${(0 until uuid.size).map(_ => "?").mkString(",")})""", uuid.map(_.toString)))
+      select(SQLSyntax.createUnsafely(s""" WHERE uuid IN (${(0 until uuid.size).map(_ => "?").mkString(",")})""", uuid.map(_.toString)))
     }
   }
 }

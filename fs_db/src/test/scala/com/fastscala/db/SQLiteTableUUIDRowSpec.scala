@@ -37,7 +37,7 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
   "Read row" should "succeed" in {
     DB.localTx({ implicit session =>
       val example = new TestEntity5()
-      val single = TestEntity5.listAll().head
+      val single = TestEntity5.selectAll().head
 
       assert(example.myInt == single.myInt)
       assert(example.myLong == single.myLong)
@@ -51,7 +51,7 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
   }
   "Update row" should "succeed" in {
     DB.localTx({ implicit session =>
-      val single = TestEntity5.listAll().head
+      val single = TestEntity5.selectAll().head
 
       single.myInt += 1
       single.myLong += 1
@@ -64,9 +64,9 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
 
       single.update()
 
-      assert(TestEntity5.listAll().size == 1)
+      assert(TestEntity5.selectAll().size == 1)
 
-      val inDB = TestEntity5.listAll().head
+      val inDB = TestEntity5.selectAll().head
 
       assert(single.uuid.isDefined)
 
@@ -86,9 +86,9 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
     DB.localTx({ implicit session =>
       new TestEntity5().save()
       new TestEntity5().save()
-      val uuids = TestEntity5.listAll().map(_.uuid.get)
+      val uuids = TestEntity5.selectAll().map(_.uuid.get)
 
-      assert(TestEntity5.forUUID(uuids: _*).size == 3)
+      assert(TestEntity5.getForIds(uuids: _*).size == 3)
     })
   }
   "Delete table" should "succeed" in {

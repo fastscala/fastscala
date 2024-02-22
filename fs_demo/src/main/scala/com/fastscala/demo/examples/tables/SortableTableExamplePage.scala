@@ -43,7 +43,7 @@ class SortableTableExamplePage extends SingleCodeExamplePage("/com/fastscala/dem
         case ColArea => _.sortBy(_.area)
       }
 
-      override def seqRowsSource(): Seq[Country] = CountriesData.data
+      override def seqRowsSource: Seq[Country] = CountriesData.data
     }.render()
   }
   // === code snippet ===

@@ -13,10 +13,10 @@ class TestEntity3(
                    var myBoolean: Boolean = true,
                    var myChar: Char = 'X',
                  ) extends Row[TestEntity3] {
-  override def table: Table[TestEntity3] = TestEntity3
+  override def table: PgTable[TestEntity3] = TestEntity3
 }
 
-object TestEntity3 extends Table[TestEntity3] {
+object TestEntity3 extends PgTable[TestEntity3] {
   override def createSampleRow(): TestEntity3 = new TestEntity3
 }
 
@@ -36,7 +36,7 @@ trait TableRowSpecBase extends AnyFlatSpec {
   "Read row" should "succeed" in {
     DB.localTx({ implicit session =>
       val example = new TestEntity3()
-      val single = TestEntity3.listAll().head
+      val single = TestEntity3.selectAll().head
 
       assert(example.myInt == single.myInt)
       assert(example.myLong == single.myLong)

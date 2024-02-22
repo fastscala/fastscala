@@ -13,10 +13,10 @@ class TestEntity2(
                    var myShort: Short = 777,
                    var myChar: Char = 'X',
                  ) extends Row[TestEntity2] {
-  override def table: Table[TestEntity2] = TestEntity2
+  override def table: PgTable[TestEntity2] = TestEntity2
 }
 
-object TestEntity2 extends Table[TestEntity2] {
+object TestEntity2 extends PgTable[TestEntity2] {
   override def createSampleRow(): TestEntity2 = new TestEntity2
 }
 

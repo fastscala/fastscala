@@ -7,10 +7,10 @@ class TestEntity1 extends Row[TestEntity1] {
 
   var username: String = ""
 
-  override def table: Table[TestEntity1] = TestEntity1
+  override def table: PgTable[TestEntity1] = TestEntity1
 }
 
-object TestEntity1 extends Table[TestEntity1] {
+object TestEntity1 extends PgTable[TestEntity1] {
   override def createSampleRow(): TestEntity1 = new TestEntity1
 }
 

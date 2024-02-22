@@ -1,6 +1,7 @@
 package com.fastscala.db
 
 import com.google.common.base.CaseFormat
+import org.apache.commons.text.StringEscapeUtils
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
@@ -26,6 +27,13 @@ trait TableBase[R] {
   val fieldsList: List[Field] = sampleRow.getClass.getDeclaredFields.iterator.filter({
     case field => !field.getAnnotations.exists(anno => Set("java.beans.Transient", "scala.transient").contains(anno.annotationType().getName))
   }).toList
+
+  def copyRow(from: R, to: R): Unit = {
+    fieldsList.foreach(field => {
+      field.setAccessible(true)
+      field.set(to, field.get(from))
+    })
+  }
 
   def tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, sampleRow.getClass.getSimpleName)
 
@@ -99,19 +107,9 @@ trait TableBase[R] {
   def __addMissingColumnsIfNotExistsWithDefaults(default: PartialFunction[Field, Any]): List[SQL[Nothing, NoExtractor]] = {
     fieldsList.map(field => {
       field.setAccessible(true)
-      val isNullable = field.getType.getName != "scala.Option" && default.isDefinedAt(field)
-      val defaultSQL: SQLSyntax = if (isNullable) {
-        val defaultStr = default(field) match {
-          case Array() => "''::bytea"
-          case other => other.toString
-        }
-        SQLSyntax.createUnsafely(s" default $defaultStr")
-      } else sqls""
-      val statement =
-        sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")}
-           ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(fieldName(field))}"
-           ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRow)))}
-           ${defaultSQL}"""
+      val dfltValue = if (default.isDefinedAt(field)) Some(default(field)) else None
+      val defaultSQL: SQLSyntax = dfltValue.map(v => sqls"default " + valueToLiteral(v)).getOrElse(SQLSyntax.empty)
+      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(fieldName(field))}" ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRow)))} ${defaultSQL}""".stripMargin
       statement
     })
   }
@@ -128,6 +126,7 @@ trait TableBase[R] {
     case null => sqls"null"
     case None => sqls"null"
     case Some(value) => valueToFragment(value)
+    case Array() => sqls"''::bytea"
     case v: Int => sqls"$v"
     case v: Double => sqls"$v"
     case v: Boolean => sqls"$v"
@@ -142,6 +141,27 @@ trait TableBase[R] {
     case v: java.time.LocalTime => sqls"$v"
     case v: java.time.LocalDateTime => sqls"$v"
     case v: java.time.OffsetDateTime => sqls"$v"
+  }
+
+  def valueToLiteral(value: Any): SQLSyntax = value match {
+    case null => SQLSyntax.createUnsafely("null")
+    case None => SQLSyntax.createUnsafely("null")
+    case Some(value) => valueToFragment(value)
+    case Array() => SQLSyntax.createUnsafely("''::bytea")
+    case v: Int => SQLSyntax.createUnsafely(v + "::integer")
+    case v: Double => SQLSyntax.createUnsafely(v + "::double precision")
+    case v: Boolean => SQLSyntax.createUnsafely(v + "::boolean")
+    case v: Char => SQLSyntax.createUnsafely(v + "::char")
+    case v: Short => SQLSyntax.createUnsafely(v + "::integer")
+    case v: Float => SQLSyntax.createUnsafely(v + "::real")
+    case v: Long => SQLSyntax.createUnsafely(v + "::bigint")
+    case v: String => SQLSyntax.createUnsafely("'" + org.postgresql.core.Utils.escapeLiteral(null, v, true) + "'" + "::text")
+    case v: Array[Byte] => ???
+    case v: Enumeration#Value => valueToLiteral(v.id)
+    case v: java.time.LocalDate => ???
+    case v: java.time.LocalTime => ???
+    case v: java.time.LocalDateTime => ???
+    case v: java.time.OffsetDateTime => ???
   }
 
   private def enumSampleToValue(sample: AnyRef, id: Int): AnyRef = sample match {
@@ -237,11 +257,11 @@ trait TableBase[R] {
 
   def deleteSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = sql"""delete from "$tableNameSQLSyntax" $where"""
 
-  def listAll(): List[R] = list(SQLSyntax.empty)
+  def selectAll(): List[R] = select(SQLSyntax.empty)
 
-  def list(rest: SQLSyntax): List[R] = {
+  def select(rest: SQLSyntax): List[R] = {
     DB.readOnly({ implicit session =>
-      val query = selectFrom.append(rest)
+      val query = selectFromSQL.append(rest)
       sql"${query}".map(fromWrappedResultSet).list()
     })
   }
@@ -259,9 +279,9 @@ trait TableBase[R] {
     })
   }
 
-  def select: SQLSyntax = sqls"""select ${SQLSyntax.createUnsafely(fieldsList.map(fieldName).map('"' + _ + '"').mkString(", "))}"""
+  def selectSQL: SQLSyntax = sqls"""select ${SQLSyntax.createUnsafely(fieldsList.map(fieldName).map('"' + _ + '"').mkString(", "))}"""
 
-  def selectFrom: SQLSyntax = sqls"""$select from "$tableNameSQLSyntax""""
+  def selectFromSQL: SQLSyntax = sqls"""$selectSQL from "$tableNameSQLSyntax""""
 
   def deleteFrom: SQLSyntax = sqls"""delete from "$tableNameSQLSyntax""""
 

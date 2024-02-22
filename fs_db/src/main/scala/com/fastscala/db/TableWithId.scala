@@ -4,7 +4,7 @@ import scalikejdbc._
 
 import java.lang.reflect.Field
 
-trait TableWithId[R <: RowWithId[R]] extends Table[R] {
+trait TableWithId[R <: RowWithId[R]] extends PgTable[R] {
 
   override def createSampleRowInternal(): R = {
     val ins = super.createSampleRowInternal()
@@ -23,7 +23,7 @@ trait TableWithId[R <: RowWithId[R]] extends Table[R] {
     if (field.getName == "id") "bigserial primary key not null"
     else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
 
-  def forId(id: Long): Option[R] = list(sqls""" where id = $id""").headOption
+  def forId(id: Long): Option[R] = select(sqls""" where id = $id""").headOption
 }
 
 

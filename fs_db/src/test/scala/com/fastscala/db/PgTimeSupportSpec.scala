@@ -33,7 +33,7 @@ class PgTimeSupportSpec extends AnyFlatSpec with PostgresDB {
   }
   "Read row" should "succeed" in {
     DB.localTx({ implicit session =>
-      val single = TestEntity6.listAll().head
+      val single = TestEntity6.selectAll().head
 
       assert(single.myDate == today)
       assert(single.myDate != tomorrow)
@@ -41,13 +41,13 @@ class PgTimeSupportSpec extends AnyFlatSpec with PostgresDB {
   }
   "Update row" should "succeed" in {
     DB.localTx({ implicit session =>
-      val single = TestEntity6.listAll().head
+      val single = TestEntity6.selectAll().head
       single.myDate = tomorrow
       single.update()
 
-      assert(TestEntity6.listAll().size == 1)
+      assert(TestEntity6.selectAll().size == 1)
 
-      val inDB = TestEntity6.listAll().head
+      val inDB = TestEntity6.selectAll().head
       assert(single.uuid.isDefined)
       assert(single.uuid == inDB.uuid)
 

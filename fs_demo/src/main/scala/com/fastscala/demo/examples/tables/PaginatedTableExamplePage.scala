@@ -43,7 +43,7 @@ class PaginatedTableExamplePage extends SingleCodeExamplePage("/com/fastscala/de
         case ColName => _.sortBy(_.name.common)
       }
 
-      override def seqRowsSource(): Seq[Country] = CountriesData.data
+      override def seqRowsSource: Seq[Country] = CountriesData.data
     }.render()
   }
   // === code snippet ===

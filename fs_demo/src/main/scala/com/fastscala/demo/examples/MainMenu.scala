@@ -106,3 +106,10 @@ class RoutingMenuItem(matching: String*)(val name: String, page: () => Renderabl
     case Get(path@_*) if path == matching => page()
   }
 }
+class HeaderMenuItem(val title: String) extends MenuItem {
+  override def render()(implicit fsc: FSContext): NodeSeq = <li class="mt-3"><span class="menu-heading fw-bold text-uppercase fs-7 ">{title}</span></li>
+
+  override def serve()(implicit req: HttpServletRequest, session: FSSession): Option[RenderableWithFSContext] = None
+
+  override def matches(uri: String): Boolean = false
+}

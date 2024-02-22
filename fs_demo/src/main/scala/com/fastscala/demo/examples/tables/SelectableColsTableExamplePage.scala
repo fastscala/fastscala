@@ -102,7 +102,7 @@ class SelectableColsTableExamplePage extends SingleCodeExamplePage("/com/fastsca
       //        , ColFlag
     )
 
-    override def seqRowsSource(): Seq[Country] = CountriesData.data
+    override def seqRowsSource: Seq[Country] = CountriesData.data
   }
   // === code snippet ===
 }

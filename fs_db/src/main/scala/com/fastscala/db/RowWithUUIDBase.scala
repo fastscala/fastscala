@@ -14,7 +14,7 @@ trait RowWithUUIDBase extends RowBase {
 
   def saveSQL(): SQL[Nothing, NoExtractor]
 
-  def save(): this.type
+  def save(): Any
 
   def update(): Unit
 

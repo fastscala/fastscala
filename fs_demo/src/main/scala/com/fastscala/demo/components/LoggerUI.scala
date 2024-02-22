@@ -103,6 +103,9 @@ class LoggerUIImpl(val title: String)(implicit fsc: FSContext) extends LoggerUI 
 }
 
 object LoggerUI {
+
+  implicit val Default = new LoggerUISysoutOnly("Default")
+
   def runInSeparateThreadAndOpenProgressModal(title: String)(code: LoggerUI => Unit)(implicit fsc: FSContext): Js = {
     val loggerUI = new LoggerUIImpl(title)
     new Thread() {

@@ -13,10 +13,10 @@ class LightTableTestEntity(
                             var myBoolean: Boolean = true,
                             var myChar: Char = 'X',
                           ) extends Row[LightTableTestEntity] {
-  override def table: Table[LightTableTestEntity] = LightTableTestEntity
+  override def table: PgTable[LightTableTestEntity] = LightTableTestEntity
 }
 
-object LightTableTestEntity extends Table[LightTableTestEntity] {
+object LightTableTestEntity extends PgTable[LightTableTestEntity] {
   override def createSampleRow(): LightTableTestEntity = new LightTableTestEntity
 }
 
@@ -24,10 +24,10 @@ class LightTableTestLightEntity(
                                  var myInt: Int = 123,
                                  var myChar: Char = 'X'
                                ) extends Row[LightTableTestLightEntity] {
-  override def table: Table[LightTableTestLightEntity] = LightTableTestLightEntity
+  override def table: PgTable[LightTableTestLightEntity] = LightTableTestLightEntity
 }
 
-object LightTableTestLightEntity extends Table[LightTableTestLightEntity] {
+object LightTableTestLightEntity extends PgTable[LightTableTestLightEntity] {
 
   override def tableName: String = LightTableTestEntity.tableName
 
@@ -49,7 +49,7 @@ trait LightTableSpecBase extends AnyFlatSpec {
   "Read light row" should "succeed" in {
     DB.localTx({ implicit session =>
       val example = new LightTableTestLightEntity()
-      val single = LightTableTestLightEntity.listAll().head
+      val single = LightTableTestLightEntity.selectAll().head
 
       assert(example.myInt == single.myInt)
       assert(example.myChar == single.myChar)

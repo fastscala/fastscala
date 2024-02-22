@@ -5,7 +5,7 @@ import scalikejdbc.{WrappedResultSet, scalikejdbcSQLInterpolationImplicitDef}
 
 import java.util.UUID
 
-trait Table[R] extends TableBase[R] {
+trait PgTable[R] extends TableBase[R] {
 
   override def fieldTypeToSQLType(
                                    field: java.lang.reflect.Field,
@@ -22,6 +22,11 @@ trait Table[R] extends TableBase[R] {
   override def valueToFragment(value: Any): SQLSyntax = value match {
     case v: java.util.UUID => sqls"${v.toString}::UUID"
     case _ => super.valueToFragment(value)
+  }
+
+  override def valueToLiteral(value: Any): SQLSyntax = value match {
+    case v: java.util.UUID => SQLSyntax.createUnsafely(s"'${v.toString}'::UUID")
+    case _ => super.valueToLiteral(value)
   }
 
   override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: R, nullable: Boolean = false): Unit = valueType.getName match {

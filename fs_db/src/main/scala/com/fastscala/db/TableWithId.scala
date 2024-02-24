@@ -4,7 +4,7 @@ import scalikejdbc._
 
 import java.lang.reflect.Field
 
-trait TableWithId[R <: RowWithId[R]] extends PgTable[R] {
+trait TableWithId[R <: RowWithLongId[R]] extends PgTable[R] {
 
   override def createSampleRowInternal(): R = {
     val ins = super.createSampleRowInternal()

@@ -5,7 +5,7 @@ import scalikejdbc.{WrappedResultSet, scalikejdbcSQLInterpolationImplicitDef}
 
 import java.util.UUID
 
-trait SQLiteTable[R] extends TableBase[R] {
+trait SQLiteTable[R] extends Table[R] {
 
   override def fieldTypeToSQLType(
                                    field: java.lang.reflect.Field,
@@ -24,7 +24,7 @@ trait SQLiteTable[R] extends TableBase[R] {
     case _ => super.valueToFragment(value)
   }
 
-  override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: R, nullable: Boolean = false): Unit = valueType.getName match {
+  override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: Any, nullable: Boolean = false): Unit = valueType.getName match {
     case "java.util.UUID" if nullable => field.set(instance, rs.stringOpt(idx).map(UUID.fromString))
     case "java.util.UUID" => field.set(instance, UUID.fromString(rs.string(idx)))
 

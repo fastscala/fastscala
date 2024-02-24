@@ -2,17 +2,10 @@ package com.fastscala.db
 
 import scalikejdbc._
 
-trait RowBase {
-
-  def table: TableBase[_]
-
-  def insert(): Unit
-}
-
 trait Row[R <: Row[R]] extends RowBase {
   self: R =>
 
-  def table: TableBase[R]
+  def table: Table[R]
 
   def insertSQL(): SQL[Nothing, NoExtractor] = table.insertSQL(this)
 

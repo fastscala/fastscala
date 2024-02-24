@@ -4,7 +4,7 @@ import scalikejdbc._
 
 import java.util.UUID
 
-trait SQLiteRowWithUUID[R <: SQLiteRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
+trait SQLiteRowWithUUID[R <: SQLiteRowWithUUID[R]] extends Row[R] with RowWithUuidIdBase {
   self: R =>
 
   def table: SQLiteTableWithUUID[R]

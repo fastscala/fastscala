@@ -4,7 +4,7 @@ import scalikejdbc._
 
 import java.util.UUID
 
-trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUUIDBase {
+trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUuidIdBase {
   self: R =>
 
   def table: PgTableWithUUID[R]

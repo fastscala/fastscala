@@ -82,7 +82,7 @@ case class BSBtn(
 
   def id = idOpt.getOrElse(null)
 
-  def btn(implicit fsc: FSContext) = <button class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>
+  def btn(implicit fsc: FSContext) = <button class={cls} id={id} type="button" style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>
 
   def toggle(
               get: => Boolean,

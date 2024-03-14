@@ -2,9 +2,9 @@ package com.fastscala.db
 
 import java.util.UUID
 
-trait TableWithUUIDBase[R <: RowWithUuidIdBase] extends Table[R] {
+trait TableWithUUIDBase[R <: RowWithUuidIdBase] extends Table[R] with TableWithId[R, UUID] {
 
-  def getForIdOpt(uuid: UUID): Option[R]
+  def getForIdOpt(key: UUID): Option[R]
 
   def getForIds(uuid: UUID*): List[R]
 }

@@ -1,29 +1,11 @@
 package com.fastscala.db
 
-import scalikejdbc._
+trait TableWithId[R, K] extends Table[R] {
 
-import java.lang.reflect.Field
+  def getForIdOpt(key: K): Option[R]
 
-trait TableWithId[R <: RowWithLongId[R]] extends PgTable[R] {
-
-  override def createSampleRowInternal(): R = {
-    val ins = super.createSampleRowInternal()
-    if (ins == null) ins.id = 0
-    ins
-  }
-
-  override def insertFields: List[Field] = fieldsList.filter(_.getName != "id")
-
-  override def fieldTypeToSQLType(
-                                   field: java.lang.reflect.Field,
-                                   clas: Class[_],
-                                   value: => Any,
-                                   columnConstrains: Set[String] = Set("not null")
-                                 ): String =
-    if (field.getName == "id") "bigserial primary key not null"
-    else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
-
-  def forId(id: Long): Option[R] = select(sqls""" where id = $id""").headOption
+  def getForIds(key: K*): List[R]
 }
+
 
 

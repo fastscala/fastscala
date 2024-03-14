@@ -2,16 +2,18 @@ package com.fastscala.db
 
 import scalikejdbc._
 
-trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase {
+trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>
 
-  def table: TableWithId[R]
+  def table: TableWithLongId[R]
 
   var id: java.lang.Long = _
 
+  override def key: java.lang.Long = id
+
   def isPersisted_?() = id != null
 
-  def reloadOpt(): Option[R] = table.forId(id)
+  def reloadOpt(): Option[R] = table.getForIdOpt(id)
 
   def reload(): R = reloadOpt().get
 
@@ -41,7 +43,7 @@ trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase {
   }
 
   def update(upd: R => Unit): Unit = {
-    table.forId(id).foreach(row => {
+    table.getForIdOpt(id).foreach(row => {
       upd(row)
       row.save()
       upd(this)

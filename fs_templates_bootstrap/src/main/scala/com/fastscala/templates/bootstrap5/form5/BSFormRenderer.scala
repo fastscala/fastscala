@@ -21,6 +21,8 @@ abstract class BSFormRenderer {
     override def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
   }
 
+  def textFieldRendererInputElemClasses: String = form_control.getClassAttr
+
   implicit val textFieldRenderer = new TextFieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
@@ -36,13 +38,17 @@ abstract class BSFormRenderer {
       else div.mb_3.withId(field.aroundId) {
         val showErrors = hints.contains(ShowValidationsHint)
         label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
-          inputElem.form_control.withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+          inputElem
+            .withClass(textFieldRendererInputElemClasses)
+            .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
           error.filter(_ => showErrors).map(error => invalid_feedback(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
+
+  def textareaFieldRendererTextareaElemClasses: String = form_control.getClassAttr
 
   implicit val textareaFieldRenderer = new TextareaFieldRenderer {
 
@@ -59,13 +65,17 @@ abstract class BSFormRenderer {
       else div.mb_3.withId(field.aroundId) {
         val showErrors = hints.contains(ShowValidationsHint)
         label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
-          inputElem.form_control.withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+          inputElem
+            .withClass(textareaFieldRendererTextareaElemClasses)
+            .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
           error.filter(_ => showErrors).map(error => invalid_feedback(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
+
+  def selectFieldRendererSelectElemClasses: String = form_select.form_control.getClassAttr
 
   implicit val selectFieldRenderer = new SelectFieldRenderer {
 
@@ -82,13 +92,17 @@ abstract class BSFormRenderer {
       else div.mb_3.withId(field.aroundId) {
         val showErrors = true // hints.contains(ShowValidationsHint)
         label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
-          elem.addClass("form-select form-control").withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+          elem
+            .addClass(selectFieldRendererSelectElemClasses)
+            .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
           error.filter(_ => showErrors).map(error => invalid_feedback(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
+
+  def multiSelectFieldRendererSelectElemClasses: String = form_select.form_control.getClassAttr
 
   implicit val multiSelectFieldRenderer = new MultiSelectFieldRenderer {
 
@@ -105,13 +119,17 @@ abstract class BSFormRenderer {
       else div.mb_3.withId(field.aroundId) {
         val showErrors = true // hints.contains(ShowValidationsHint)
         label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
-          elem.addClass("form-select form-control").withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+          elem
+            .addClass(multiSelectFieldRendererSelectElemClasses)
+            .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
           error.filter(_ => showErrors).map(error => invalid_feedback(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
+
+  def checkboxFieldRendererCheckboxElemClasses: String = form_check_input.getClassAttr
 
   implicit val checkboxFieldRenderer = new CheckboxFieldRenderer {
 
@@ -125,7 +143,9 @@ abstract class BSFormRenderer {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.form_check.withId(field.aroundId) {
         val showErrors = hints.contains(ShowValidationsHint)
-        elem.addClass("form-check-input").withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+        elem
+          .addClass(checkboxFieldRendererCheckboxElemClasses)
+          .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
           .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
           .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
           label.map(lbl => <label/>.form_check_label.withFor(field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++

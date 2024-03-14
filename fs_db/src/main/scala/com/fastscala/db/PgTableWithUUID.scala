@@ -24,7 +24,7 @@ trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends PgTable[R] with TableWithUU
     if (field.getName == "uuid") super.fieldTypeToSQLType(field, clas, value, columnConstrains + "primary key")
     else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
 
-  def getForIdOpt(uuid: UUID): Option[R] = getForIds(uuid).headOption
+  def getForIdOpt(key: UUID): Option[R] = getForIds(key).headOption
 
   def getForIds(uuid: UUID*): List[R] = select(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String])))
 

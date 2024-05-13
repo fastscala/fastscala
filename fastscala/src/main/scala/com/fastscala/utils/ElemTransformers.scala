@@ -1,5 +1,6 @@
 package com.fastscala.utils
 
+import com.fastscala.js.Js
 import com.fastscala.utils
 import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq
 
@@ -39,6 +40,8 @@ trait ElemTransformers {
   def addClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
 
   def addOnClick(js: String): Elem = attributeTransform("onclick", _.getOrElse("") + ";" + js)
+
+  def addOnClick(js: Js): Elem = addOnClick(js.cmd)
 
   def withClassIf(bool: Boolean, `class`: String): Elem = if (bool) addClass(`class`) else elem
 
@@ -91,6 +94,8 @@ trait ElemTransformers {
   def showIf(bool: Boolean): NodeSeq = if (bool) elem else NodeSeq.Empty
 
   def getClassAttr: String = elem.attributes.get("class").map(_.map(_.toString()).mkString(" ")).getOrElse("")
+
+  def getStyleAttr: String = elem.attributes.get("style").map(_.map(_.toString()).mkString(" ")).getOrElse("")
 
   def getId: Option[String] = elem.attributes.get("id").map(_.map(_.toString()).mkString(" "))
 }

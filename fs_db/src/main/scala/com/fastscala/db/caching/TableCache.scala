@@ -84,6 +84,7 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
   def getForIdsX(ids: K*): List[R] =
     ids.toList.flatMap(id => table.getForIdOpt(id))
 
+  override def beforeSaved(table: TableBase, row: RowBase): Unit = ()
 
   def saved(t: TableBase, row: RowBase): Unit = (table, row) match {
     case (`table`, row: R) =>
@@ -95,11 +96,13 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
     case _ =>
   }
 
-  def deleted(t: TableBase, row: RowBase): Unit = (table, row) match {
+  def beforeDelete(t: TableBase, row: RowBase): Unit = (table, row) match {
     case (`table`, row: R) =>
       if (status != CacheStatus.NONE_LOADED) {
         entries -= row.key
       }
     case _ =>
   }
+
+  override def deleted(table: TableBase, row: RowBase): Unit = ()
 }

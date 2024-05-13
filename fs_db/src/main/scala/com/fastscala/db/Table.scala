@@ -33,6 +33,8 @@ trait Table[R] extends TableBase {
 
   def insertFields: List[Field] = fieldsList
 
+  def updateFields: List[Field] = fieldsList
+
   def insertSQL(row: R): SQL[Nothing, NoExtractor] = {
     val columns: SQLSyntax = SQLSyntax.createUnsafely(insertFields.map(field => {
       field.setAccessible(true)
@@ -41,16 +43,16 @@ trait Table[R] extends TableBase {
 
     val values: List[SQLSyntax] = insertFields.map(field => {
       field.setAccessible(true)
-      valueToFragment(field.get(row))
+      valueToFragment(field, field.get(row))
     })
 
     sql"""insert into "$tableNameSQLSyntax" $columns VALUES ($values)"""
   }
 
   def updateSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
-    val values: SQLSyntax = insertFields.map(field => {
+    val values: SQLSyntax = updateFields.map(field => {
       field.setAccessible(true)
-      sqls""""${SQLSyntax.createUnsafely(fieldName(field))}" = """ + valueToFragment(field.get(row))
+      sqls""""${SQLSyntax.createUnsafely(fieldName(field))}" = """ + valueToFragment(field, field.get(row))
     }).reduceOption(_ + sqls", " + _).getOrElse(SQLSyntax.empty)
 
     sql"""update "$tableNameSQLSyntax" set $values $where"""

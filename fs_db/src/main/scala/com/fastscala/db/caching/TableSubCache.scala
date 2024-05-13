@@ -1,7 +1,8 @@
 package com.fastscala.db.caching
 
+import com.fastscala.db.keyed.uuid.RowWithUuidIdBase
 import com.fastscala.db.observable.ObservableRowBase
-import com.fastscala.db.{Row, RowWithId, RowWithUuidIdBase, TableWithId}
+import com.fastscala.db.{Row, RowWithId, TableWithId}
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID

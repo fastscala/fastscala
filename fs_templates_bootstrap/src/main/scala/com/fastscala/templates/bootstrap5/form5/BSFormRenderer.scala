@@ -23,6 +23,8 @@ abstract class BSFormRenderer {
 
   def textFieldRendererInputElemClasses: String = form_control.getClassAttr
 
+  def textFieldRendererInputElemStyle: String = form_control.getStyleAttr
+
   implicit val textFieldRenderer = new TextFieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSFormRenderer.this.defaultRequiredFieldLabel
@@ -40,6 +42,7 @@ abstract class BSFormRenderer {
         label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
           inputElem
             .withClass(textFieldRendererInputElemClasses)
+            .withStyle(textFieldRendererInputElemStyle)
             .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
@@ -49,6 +52,8 @@ abstract class BSFormRenderer {
   }
 
   def textareaFieldRendererTextareaElemClasses: String = form_control.getClassAttr
+
+  def textareaFieldRendererTextareaElemStyle: String = form_control.getStyleAttr
 
   implicit val textareaFieldRenderer = new TextareaFieldRenderer {
 
@@ -67,6 +72,7 @@ abstract class BSFormRenderer {
         label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
           inputElem
             .withClass(textareaFieldRendererTextareaElemClasses)
+            .withStyle(textareaFieldRendererTextareaElemStyle)
             .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++

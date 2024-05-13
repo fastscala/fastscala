@@ -25,7 +25,7 @@ trait TableRowSpecBase extends AnyFlatSpec {
   def runTests() {
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity3.__createTableSQL.execute()
+      TestEntity3.__createTableSQL.foreach(_.execute())
     })
   }
   "Insert row" should "succeed" in {

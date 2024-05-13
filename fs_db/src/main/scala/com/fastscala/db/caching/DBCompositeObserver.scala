@@ -23,11 +23,15 @@ trait DBCompositeObserver extends DBObserver {
 
   lazy val observingTables: Seq[TableBase] = allObservers.flatMap(_.observingTables)
 
-  def saved(table: TableBase, row: RowBase): Unit = {
-    table2Observers.getOrElse(table, Nil).foreach(_.saved(table, row))
-  }
+  override def beforeSaved(table: TableBase, row: RowBase): Unit =
+    table2Observers.getOrElse(table, Nil).foreach(_.beforeSaved(table, row))
 
-  def deleted(table: TableBase, row: RowBase): Unit = {
+  def saved(table: TableBase, row: RowBase): Unit =
+    table2Observers.getOrElse(table, Nil).foreach(_.saved(table, row))
+
+  override def beforeDelete(table: TableBase, row: RowBase): Unit =
+    table2Observers.getOrElse(table, Nil).foreach(_.beforeDelete(table, row))
+
+  def deleted(table: TableBase, row: RowBase): Unit =
     table2Observers.getOrElse(table, Nil).foreach(_.deleted(table, row))
-  }
 }

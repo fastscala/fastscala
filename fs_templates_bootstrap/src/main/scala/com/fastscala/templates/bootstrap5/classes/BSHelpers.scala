@@ -5,8 +5,6 @@ import com.fastscala.utils.ElemTransformers
 import scala.xml.{Elem, NodeSeq}
 
 trait BSCombinedHelper[T] extends BSBaseHelper[T]
-  with BSUtilitiesHelper[T]
-  with BSGridHelper[T]
   with BSOtherHelper[T]
 
 object BSHelpers extends BSCombinedHelper[Elem] {
@@ -40,6 +38,8 @@ object BSHelpers extends BSCombinedHelper[Elem] {
   def tbody: Elem = <tbody></tbody>
 
   def thead: Elem = <thead></thead>
+
+  def img: Elem = <img/>
 
   def div: Elem = <div></div>
 

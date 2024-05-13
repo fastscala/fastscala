@@ -1,5 +1,6 @@
 package com.fastscala.db
 
+import com.fastscala.db.keyed.uuid.PgRowWithUUID
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc._
 
@@ -24,7 +25,7 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      TestEntity4.__createTableSQL.execute()
+      TestEntity4.__createTableSQL.foreach(_.execute())
     })
   }
   "Save row" should "succeed" in {

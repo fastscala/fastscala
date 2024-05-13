@@ -6,13 +6,16 @@ trait ObservableRow[K, R <: ObservableRow[K, R]] extends RowWithId[K, R] with Ob
   self: R =>
 
   override def saveX()(implicit obs: DBObserver): R = try {
+    obs.beforeSaved(table, this)
     save()
   } finally {
     obs.saved(table, this)
   }
 
-  override def deleteX()(implicit obs: DBObserver): Unit = {
-    obs.deleted(table, this)
+  override def deleteX()(implicit obs: DBObserver): Unit = try {
+    obs.beforeDelete(table, this)
     delete()
+  } finally {
+    obs.deleted(table, this)
   }
 }

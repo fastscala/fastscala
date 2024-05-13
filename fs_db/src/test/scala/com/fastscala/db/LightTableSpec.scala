@@ -38,7 +38,7 @@ trait LightTableSpecBase extends AnyFlatSpec {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      LightTableTestEntity.__createTableSQL.execute()
+      LightTableTestEntity.__createTableSQL.foreach(_.execute())
     })
   }
   "Insert row" should "succeed" in {

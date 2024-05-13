@@ -1,5 +1,6 @@
 package com.fastscala.db
 
+import com.fastscala.db.keyed.uuid.SQLiteRowWithUUID
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc._
 
@@ -24,8 +25,8 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
-      println(TestEntity5.__createTableSQL.statement)
-      TestEntity5.__createTableSQL.execute()
+      TestEntity5.__createTableSQL.map(_.statement).foreach(println)
+      TestEntity5.__createTableSQL.foreach(_.execute())
     })
   }
   "Save row" should "succeed" in {

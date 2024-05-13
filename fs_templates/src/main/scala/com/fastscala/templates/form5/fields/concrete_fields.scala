@@ -454,6 +454,42 @@ class F5JodaDateOptField(
   )
 }
 
+object F5DateOptField {
+
+  def apply(
+             pattern: String
+             , get: () => Option[String]
+             , set: Option[String] => Js
+             , label: Option[NodeSeq] = None
+             , name: Option[String] = None
+             , placeholder: Option[String] = None
+             , tabindex: Option[Int] = None
+             , maxlength: Option[Int] = None
+             , required: () => Boolean = () => false
+             , inputType: String = "date"
+             , disabled: () => Boolean = () => false
+             , readOnly: () => Boolean = () => false
+             , enabled: () => Boolean = () => true
+             , deps: Set[FormField] = Set()
+             , additionalAttrs: Seq[(String, String)] = Nil
+           )(implicit renderer: TextFieldRenderer) = new F5DateOptField(
+    get = () => get().map(date => java.time.LocalDate.parse(date, DateTimeFormatter.ofPattern(pattern))),
+    set = localDate => set(localDate.map(localDate => localDate.format(DateTimeFormatter.ofPattern(pattern)))),
+    label = label,
+    name = name,
+    placeholder = placeholder,
+    tabindex = tabindex,
+    maxlength = maxlength,
+    required = required,
+    inputType = inputType,
+    disabled = disabled,
+    readOnly = readOnly,
+    enabled = enabled,
+    deps = deps,
+    additionalAttrs = additionalAttrs
+  )
+}
+
 class F5DateOptField(
                       get: () => Option[java.time.LocalDate]
                       , set: Option[java.time.LocalDate] => Js
@@ -509,6 +545,78 @@ class F5DateOptField(
             , deps: Set[FormField] = deps
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
           ): F5DateOptField = new F5DateOptField(
+    get = get
+    , set = set
+    , label = label
+    , name = name
+    , placeholder = placeholder
+    , tabindex = tabindex
+    , maxlength = maxlength
+    , required = required
+    , inputType = inputType
+    , disabled = disabled
+    , readOnly = readOnly
+    , enabled = enabled
+    , deps = deps
+    , additionalAttrs = additionalAttrs
+  )
+}
+
+class F5DateTimeOptField(
+                          get: () => Option[java.time.LocalDateTime]
+                          , set: Option[java.time.LocalDateTime] => Js
+                          , label: Option[NodeSeq] = None
+                          , name: Option[String] = None
+                          , placeholder: Option[String] = None
+                          , tabindex: Option[Int] = None
+                          , maxlength: Option[Int] = None
+                          , required: () => Boolean = () => false
+                          , inputType: String = "datetime-local"
+                          , disabled: () => Boolean = () => false
+                          , readOnly: () => Boolean = () => false
+                          , enabled: () => Boolean = () => true
+                          , deps: Set[FormField] = Set()
+                          , additionalAttrs: Seq[(String, String)] = Nil
+                        )(implicit renderer: TextFieldRenderer) extends F5TextField[java.time.LocalDateTime](
+  getOpt = () => get()
+  , setOpt = optValue => set(optValue)
+  , toString = _.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).getOrElse("")
+  , fromString = str => Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))))
+  , label = label
+  , name = name
+  , placeholder = placeholder
+  , tabindex = tabindex
+  , maxlength = maxlength
+  , required = required
+  , inputType = inputType
+  , disabled = disabled
+  , readOnly = readOnly
+  , enabled = enabled
+  , deps = deps
+  , additionalAttrs = additionalAttrs
+) {
+
+  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+
+  def copy(
+            get: () => Option[java.time.LocalDateTime] = get
+            , set: Option[java.time.LocalDateTime] => Js = set
+            , label: Option[NodeSeq] = label
+            , name: Option[String] = name
+            , placeholder: Option[String] = placeholder
+            , tabindex: Option[Int] = tabindex
+            , maxlength: Option[Int] = maxlength
+            , required: () => Boolean = required
+            , inputType: String = inputType
+            , disabled: () => Boolean = disabled
+            , readOnly: () => Boolean = readOnly
+            , enabled: () => Boolean = enabled
+            , deps: Set[FormField] = deps
+            , additionalAttrs: Seq[(String, String)] = additionalAttrs
+          ): F5DateTimeOptField = new F5DateTimeOptField(
     get = get
     , set = set
     , label = label
@@ -1535,7 +1643,7 @@ trait ButtonFieldRenderer {
 }
 
 class F5SaveButtonField[B <% Elem](
-                                    btn: B
+                                    btn: FSContext => B
                                     , val disabled: () => Boolean = () => false
                                     , val enabled: () => Boolean = () => true
                                     , val deps: Set[FormField] = Set()
@@ -1549,7 +1657,7 @@ class F5SaveButtonField[B <% Elem](
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = Js.rerenderableP[(B => B, Form5)](_ => implicit fsc => {
-    case (transformer, form) => (transformer(btn): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+    case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {

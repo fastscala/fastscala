@@ -1,12 +1,13 @@
 package com.fastscala.demo.server
 
 import com.fastscala.core.{FSSession, FSSystem}
-import com.fastscala.demo.examples.{AnonymousPage, FileDownloadPage, FileUploadPage, MainMenu, ServerSidePushPage, SimpleModalPage}
-import com.fastscala.demo.examples.bootstrap.{BootstrapButtonsPage, BootstrapExamplePage}
-import com.fastscala.demo.examples.chartjs.SimpleChartjsPage
-import com.fastscala.demo.examples.forms.BasicFormExamplePage
-import com.fastscala.demo.examples.tables.{PaginatedTableExamplePage, SelectableColsTableExamplePage, SelectableRowsTableExamplePage, SimpleTableExamplePage, SortableTableExamplePage}
-import com.fastscala.server.{RoutingHandlerHelper, Ok, Response}
+import com.fastscala.demo.db.{CurrentUser, DB}
+import com.fastscala.demo.docs.bootstrap.{BootstrapBasicsPage, BootstrapButtonsPage}
+import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
+import com.fastscala.demo.docs.forms.BasicFormExamplePage
+import com.fastscala.demo.docs.tables._
+import com.fastscala.demo.docs._
+import com.fastscala.server.{Ok, Redirect, Response, RoutingHandlerHelper}
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 
@@ -31,25 +32,37 @@ class RoutingHandler()(implicit fss: FSSystem) extends RoutingHandlerHelper {
   }
 
   override def handlerInSession(implicit req: HttpServletRequest, session: FSSession): Option[Response] = {
-    MainMenu.serve().map(servePage(_)).orElse {
-      Some(req).collect {
-        case Get() => servePage(new SimpleTableExamplePage())
-        case Get("bootstrap") => servePage(new BootstrapExamplePage())
-        case Get("bootstrap", "buttons") => servePage(new BootstrapButtonsPage())
-        case Get("simple_tables") => servePage(new SimpleTableExamplePage())
-        case Get("sortable_tables") => servePage(new SortableTableExamplePage())
-        case Get("paginated_tables") => servePage(new PaginatedTableExamplePage())
-        case Get("selectable_rows_tables") => servePage(new SelectableRowsTableExamplePage())
-        case Get("tables_sel_cols") => servePage(new SelectableColsTableExamplePage())
-        case Get("simple_form") => servePage(new BasicFormExamplePage())
-        case Get("simple_modal") => servePage(new SimpleModalPage())
-        case Get("file_upload") => servePage(new FileUploadPage())
-        case Get("anon_page") => servePage(new AnonymousPage())
-        case Get("file_download") => servePage(new FileDownloadPage())
-        case Get("server_side_push") => servePage(new ServerSidePushPage())
-
-        case Get("chartjs", "simple") => servePage(new SimpleChartjsPage())
-      }
+    if (CurrentUser().isEmpty) {
+      Option(req.getCookies).getOrElse(Array()).find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(
+        Option(req.getParameterValues("user_token")).getOrElse(Array[String]()).headOption.filter(_.trim != "")
+      ).foreach(token => {
+        DB.users.find(_.loginToken == token).foreach(user => {
+          CurrentUser() = user
+        })
+      })
     }
+
+    FSDemoMainMenu.serve().map(servePage(_)).orElse({
+      Some(req).collect {
+        case Get("demo") => servePage(new SimpleTableExamplePage())
+        case Get("demo", "bootstrap") => servePage(new BootstrapBasicsPage())
+        case Get("demo", "bootstrap", "buttons") => servePage(new BootstrapButtonsPage())
+        case Get("demo", "simple_tables") => servePage(new SimpleTableExamplePage())
+        case Get("demo", "sortable_tables") => servePage(new SortableTableExamplePage())
+        case Get("demo", "paginated_tables") => servePage(new PaginatedTableExamplePage())
+        case Get("demo", "selectable_rows_tables") => servePage(new SelectableRowsTableExamplePage())
+        case Get("demo", "tables_sel_cols") => servePage(new SelectableColsTableExamplePage())
+        case Get("demo", "simple_form") => servePage(new BasicFormExamplePage())
+        case Get("demo", "simple_modal") => servePage(new SimpleModalPage())
+        case Get("demo", "file_upload") => servePage(new FileUploadPage())
+        case Get("demo", "anon_page") => servePage(new AnonymousPage())
+        case Get("demo", "file_download") => servePage(new FileDownloadPage())
+        case Get("demo", "server_side_push") => servePage(new ServerSidePushPage())
+
+        case Get("demo", "chartjs", "simple") => servePage(new SimpleChartjsPage())
+      }
+    }).orElse(
+      Some(Redirect.temporaryRedirect("/demo/"))
+    )
   }
 }

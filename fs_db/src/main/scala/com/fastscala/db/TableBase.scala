@@ -143,14 +143,22 @@ trait TableBase {
       throw new Exception(s"Exception setting value of field ${fieldName(field)} of type ${valueType.getName}", ex)
   }
 
-  def __createTableSQL: SQL[Nothing, NoExtractor] = {
+  def __createTableSQL: List[SQL[Nothing, NoExtractor]] = {
     val columns: String = fieldsList.map(field => {
       field.setAccessible(true)
       s""""${fieldName(field)}" ${fieldTypeToSQLType(field, field.getType, field.get(sampleRow))}"""
     }).mkString("(", ",", ")")
 
-    SQL(s"""create table ${s"\"$tableName\""} $columns""")
+    List(SQL(s"""CREATE TABLE IF NOT EXISTS ${s"\"$tableName\""} $columns"""))
   }
+
+  def __dropColumnWithName(colName: String): List[SQL[Nothing, NoExtractor]] = {
+    List {
+      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} DROP COLUMN "${SQLSyntax.createUnsafely(colName)}";""".stripMargin
+      statement
+    }
+  }
+
 
   def __addMissingColumnsIfNotExists: List[SQL[Nothing, NoExtractor]] = __addMissingColumnsIfNotExistsWithDefaults(PartialFunction.empty[Field, Any])
 
@@ -164,6 +172,16 @@ trait TableBase {
     })
   }
 
+  def __addMissingColumnsIfNotExistsWithDefaultsFromSampleRow(): List[SQL[Nothing, NoExtractor]] = {
+    fieldsList.map(field => {
+      field.setAccessible(true)
+      val dfltValue = field.get(sampleRow)
+      val defaultSQL: SQLSyntax = sqls"default " + valueToLiteral(dfltValue)
+      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(fieldName(field))}" ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRow)))} ${defaultSQL}""".stripMargin
+      statement
+    })
+  }
+
   def __dropTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""drop table ${s"\"$tableName\""}""")
 
   def __truncateSQL: SQL[Nothing, NoExtractor] = SQL(s"""truncate ${s"\"$tableName\""}""")
@@ -172,10 +190,10 @@ trait TableBase {
 
   def __truncateTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""drop table ${s"\"$tableName\""};""")
 
-  def valueToFragment(value: Any): SQLSyntax = value match {
+  def valueToFragment(field: Field, value: Any): SQLSyntax = value match {
     case null => sqls"null"
     case None => sqls"null"
-    case Some(value) => valueToFragment(value)
+    case Some(value) => valueToFragment(field, value)
     case Array() => sqls"''::bytea"
     case v: Int => sqls"$v"
     case v: Double => sqls"$v"
@@ -196,7 +214,7 @@ trait TableBase {
   def valueToLiteral(value: Any): SQLSyntax = value match {
     case null => SQLSyntax.createUnsafely("null")
     case None => SQLSyntax.createUnsafely("null")
-    case Some(value) => valueToFragment(value)
+    case Some(value) => valueToLiteral(value)
     case Array() => SQLSyntax.createUnsafely("''::bytea")
     case v: Int => SQLSyntax.createUnsafely(v + "::integer")
     case v: Double => SQLSyntax.createUnsafely(v + "::double precision")

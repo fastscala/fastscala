@@ -3,6 +3,7 @@ package com.fastscala.db
 import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc.{WrappedResultSet, scalikejdbcSQLInterpolationImplicitDef}
 
+import java.lang.reflect.Field
 import java.util.UUID
 
 trait SQLiteTable[R] extends Table[R] {
@@ -19,9 +20,9 @@ trait SQLiteTable[R] extends Table[R] {
     case _ => super.fieldTypeToSQLType(field, clas, value, columnConstrains)
   }
 
-  override def valueToFragment(value: Any): SQLSyntax = value match {
+  override def valueToFragment(field: Field, value: Any): SQLSyntax = value match {
     case v: java.util.UUID => sqls"${v.toString}"
-    case _ => super.valueToFragment(value)
+    case _ => super.valueToFragment(field, value)
   }
 
   override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: Any, nullable: Boolean = false): Unit = valueType.getName match {

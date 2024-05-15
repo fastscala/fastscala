@@ -28,7 +28,7 @@ object FSDemoMainMenu extends Menu(
   ),
   MenuSection("Forms")(
     SimpleMenuItem("Simple", "/demo/simple_form")
-    , new RoutingMenuItem("demo", "simple_form")("Input Types", () => new FormInputTypesPage())
+    , new RoutingMenuItem("demo", "forms", "input_types")("Input Types", () => new FormInputTypesPage())
   ),
   MenuSection("Modals")(
     SimpleMenuItem("Simple", "/demo/simple_modal")

@@ -4,10 +4,13 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form6.Form6
 import com.fastscala.utils.ElemTransformers.RichElem
+import com.fastscala.utils.Lazy
 import org.joda.time.{DateTime, LocalDate}
 import org.joda.time.format.DateTimeFormat
 
 import java.text.DecimalFormat
+import java.time
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 import scala.util.chaining.scalaUtilChainingOps
@@ -27,17 +30,37 @@ trait F6FieldInputFieldMixin extends F6FieldMixin {
   def process(input: Elem): Elem = input
 }
 
-trait F6FieldWithGettersAndSetters[V] extends F6FieldMixin {
-  var getter: () => V
-  var setter: V => Js
+trait F6FieldWithValue[T] extends F6FieldMixin {
 
-  def rw(get: => V, set: V => Unit) = {
+  def defaultValue: T
+
+  private lazy val currentValueHolder: Lazy[T] = Lazy(getter())
+
+  def currentValue = currentValueHolder()
+
+  def currentValue_=(v: T) = currentValueHolder() = v
+
+  var getter: () => T
+  var setter: T => Js
+
+  def rw(get: => T, set: T => Unit): this.type = mutate {
     getter = () => get
     setter = v => {
       set(v)
       Js.void
     }
   }
+}
+
+trait F6FieldWithInternalValue[T] extends F6FieldWithValue[T] {
+
+  private var internalValue: T = defaultValue
+
+  override var getter: () => T = () => defaultValue
+
+  override var setter: T => Js = v => Js.void(() => {
+    internalValue = v
+  })
 }
 
 trait F6FieldWithDisabled extends F6FieldInputFieldMixin {
@@ -360,10 +383,7 @@ trait F6FieldWithMax extends F6FieldInputFieldMixin {
   }).getOrElse(input)
 }
 
-abstract class F6TextField[T](
-                               getOpt: () => Option[T]
-                               , setOpt: Option[T] => Js
-                             )(implicit renderer: TextFieldRenderer) extends StandardFormField
+abstract class F6TextField[T]()(implicit renderer: TextFieldRenderer) extends StandardFormField
   with ValidatableField
   with StringSerializableField
   with FocusableFormField
@@ -378,19 +398,18 @@ abstract class F6TextField[T](
   with F6FieldWithMaxlength
   with F6FieldWithInputType
   with F6FieldWithAdditionalAttrs
-  with F6FieldWithDependencies {
+  with F6FieldWithDependencies
+  with F6FieldWithValue[T] {
 
-  def toString(strOpt: Option[T]): String
+  def toString(value: T): String
 
-  def fromString(str: String): Either[String, Option[T]]
-
-  var currentValue: Option[T] = getOpt()
+  def fromString(str: String): Either[String, T]
 
   override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
     fromString(str) match {
       case Right(value) =>
         currentValue = value
-        setOpt(currentValue)
+        setter(currentValue)
         Nil
       case Left(error) =>
         List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
@@ -400,7 +419,7 @@ abstract class F6TextField[T](
   override def saveToString(): Option[String] = Some(toString(currentValue)).filter(_ != "")
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case PerformSave => setOpt(currentValue)
+    case PerformSave => setter(currentValue)
     case _ => Js.void
   })
 
@@ -434,67 +453,37 @@ abstract class F6TextField[T](
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6StringField(
-                     get: () => String
-                     , set: String => Js
-                   )(implicit renderer: TextFieldRenderer) extends F6TextField[String](
-  getOpt = () => Some(get())
-  , setOpt = strOpt => set(strOpt.getOrElse(""))
-) {
+class F6StringField()(implicit renderer: TextFieldRenderer) extends F6TextField[String] with F6FieldWithInternalValue[String] {
 
-  def toString(strOpt: Option[String]): String = strOpt.getOrElse("")
+  override def defaultValue: String = ""
 
-  def fromString(str: String): Either[String, Option[String]] = Right(Some(str))
+  def toString(value: String): String = value
+
+  def fromString(str: String): Either[String, String] = Right(str)
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (_required() && currentValue.getOrElse("").trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (_required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
 
-class F6StringOptField(
-                        get: () => Option[String]
-                        , set: Option[String] => Js
-                      )(implicit renderer: TextFieldRenderer) extends F6TextField[String](
-  getOpt = () => get()
-  , setOpt = strOpt => set(strOpt.filter(_ != ""))
-) {
+class F6StringOptField()(implicit renderer: TextFieldRenderer) extends F6TextField[Option[String]] with F6FieldWithInternalValue[Option[String]] {
 
-  def toString(strOpt: Option[String]): String = strOpt.getOrElse("")
+  override def defaultValue: Option[String] = None
 
-  def fromString(str: String): Either[String, Option[String]] = Right(Some(str))
+  def toString(value: Option[String]): String = value.getOrElse("")
+
+  def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6JodaDateOptField(
-                          get: () => Option[LocalDate]
-                          , set: Option[LocalDate] => Js
-                        )(implicit renderer: TextFieldRenderer) extends F6TextField[LocalDate](
-  getOpt = () => get()
-  , setOpt = optValue => set(optValue)
-) {
-
-  def toString(strOpt: Option[LocalDate]): String = strOpt.map(_.toString("YYYY-MM-dd")).getOrElse("")
-
-  def fromString(str: String): Either[String, Option[LocalDate]] = Right(Some(str).filter(_.trim != "").map(str => LocalDate.parse(str, DateTimeFormat.forPattern("YYYY-MM-dd"))))
-
+class F6DateOptField()(implicit renderer: TextFieldRenderer) extends F6TextField[Option[java.time.LocalDate]] with F6FieldWithInternalValue[Option[java.time.LocalDate]] {
   override def _inputTypeDefault: String = "date"
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
-}
+  override def defaultValue: Option[time.LocalDate] = None
 
-class F6DateOptField(
-                      get: () => Option[java.time.LocalDate]
-                      , set: Option[java.time.LocalDate] => Js
-                    )(implicit renderer: TextFieldRenderer) extends F6TextField[java.time.LocalDate](
-  getOpt = () => get()
-  , setOpt = optValue => set(optValue)
-) {
-  override def _inputTypeDefault: String = "date"
-
-  def toString(strOpt: Option[java.time.LocalDate]): String = strOpt.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).getOrElse("")
+  def toString(value: Option[java.time.LocalDate]): String = value.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).getOrElse("")
 
   def fromString(str: String): Either[String, Option[java.time.LocalDate]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
 
@@ -502,16 +491,12 @@ class F6DateOptField(
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DateTimeOptField(
-                          get: () => Option[java.time.LocalDateTime]
-                          , set: Option[java.time.LocalDateTime] => Js
-                        )(implicit renderer: TextFieldRenderer) extends F6TextField[java.time.LocalDateTime](
-  getOpt = () => get()
-  , setOpt = optValue => set(optValue)
-) {
+class F6DateTimeOptField()(implicit renderer: TextFieldRenderer) extends F6TextField[Option[java.time.LocalDateTime]] with F6FieldWithInternalValue[Option[java.time.LocalDateTime]] {
   override def _inputTypeDefault: String = "datetime-local"
 
-  def toString(strOpt: Option[java.time.LocalDateTime]): String = strOpt.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).getOrElse("")
+  override def defaultValue: Option[LocalDateTime] = None
+
+  def toString(value: Option[java.time.LocalDateTime]): String = value.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).getOrElse("")
 
   def fromString(str: String): Either[String, Option[java.time.LocalDateTime]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))))
 
@@ -519,20 +504,19 @@ class F6DateTimeOptField(
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DoubleOptField(
-                        get: () => Option[Double]
-                        , set: Option[Double] => Js
-                      )(implicit renderer: TextFieldRenderer) extends F6TextField[Double](
-  getOpt = () => get()
-  , setOpt = doubleOpt => set(doubleOpt)
-) with F6FieldWithPrefix
-  with F6FieldWithSuffix
-  with F6FieldWithMin
-  with F6FieldWithStep
-  with F6FieldWithMax {
+class F6DoubleOptField()(implicit renderer: TextFieldRenderer)
+  extends F6TextField[Option[Double]]
+    with F6FieldWithPrefix
+    with F6FieldWithSuffix
+    with F6FieldWithMin
+    with F6FieldWithStep
+    with F6FieldWithMax
+    with F6FieldWithInternalValue[Option[Double]] {
   override def _inputTypeDefault: String = "number"
 
-  def toString(strOpt: Option[Double]): String = strOpt.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
+  override def defaultValue: Option[Double] = None
+
+  def toString(value: Option[Double]): String = value.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
 
   def fromString(str: String): Either[String, Option[Double]] = {
     if (str.trim == "") {
@@ -554,19 +538,18 @@ class F6DoubleOptField(
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6IntOptField(
-                     get: () => Option[Int]
-                     , set: Option[Int] => Js
-                   )(implicit renderer: TextFieldRenderer) extends F6TextField[Int](
-  getOpt = () => get()
-  , setOpt = intOpt => set(intOpt)
-) with F6FieldWithPrefix
-  with F6FieldWithSuffix
-  with F6FieldWithMin
-  with F6FieldWithStep
-  with F6FieldWithMax {
+class F6IntOptField()(implicit renderer: TextFieldRenderer)
+  extends F6TextField[Option[Int]]
+    with F6FieldWithPrefix
+    with F6FieldWithSuffix
+    with F6FieldWithMin
+    with F6FieldWithStep
+    with F6FieldWithMax
+    with F6FieldWithInternalValue[Option[Int]] {
 
-  def toString(strOpt: Option[Int]): String = strOpt.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
+  override def defaultValue: Option[Int] = None
+
+  def toString(value: Option[Int]): String = value.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
 
   def fromString(str: String): Either[String, Option[Int]] = {
     if (str.trim == "") {
@@ -588,23 +571,22 @@ class F6IntOptField(
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6TimeOfDayField(
-                        get: () => Option[Int]
-                        , set: Option[Int] => Js
-                      )(implicit renderer: TextFieldRenderer) extends F6TextField[Int](
-  getOpt = () => get()
-  , setOpt = doubleOpt => set(doubleOpt)
-) with F6FieldWithPrefix
-  with F6FieldWithSuffix
-  with F6FieldWithMin
-  with F6FieldWithStep
-  with F6FieldWithMax {
+class F6TimeOfDayField()(implicit renderer: TextFieldRenderer)
+  extends F6TextField[Option[Int]]
+    with F6FieldWithPrefix
+    with F6FieldWithSuffix
+    with F6FieldWithMin
+    with F6FieldWithStep
+    with F6FieldWithMax
+    with F6FieldWithInternalValue[Option[Int]] {
+
+  override def defaultValue: Option[Int] = None
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
 
-  def toString(strOpt: Option[Int]): String = strOpt.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")
+  def toString(value: Option[Int]): String = value.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")
 
   def fromString(str: String): Either[String, Option[Int]] = {
     if (str.trim == "") {
@@ -625,31 +607,27 @@ class F6TimeOfDayField(
   }
 }
 
-class F6DoubleField(
-                     get: () => Double
-                     , set: Double => Js
-                   )(implicit renderer: TextFieldRenderer) extends F6TextField[Double](
-  getOpt = () => Some(get())
-  , setOpt = doubleOpt => doubleOpt.map(double => set(double)).getOrElse(Js.void)
-) with F6FieldWithPrefix
-  with F6FieldWithSuffix
-  with F6FieldWithMin
-  with F6FieldWithStep
-  with F6FieldWithMax {
+class F6DoubleField()(implicit renderer: TextFieldRenderer)
+  extends F6TextField[Double]
+    with F6FieldWithPrefix
+    with F6FieldWithSuffix
+    with F6FieldWithMin
+    with F6FieldWithStep
+    with F6FieldWithMax
+    with F6FieldWithInternalValue[Double] {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def defaultValue: Double = 0
 
-  def toString(strOpt: Option[Double]): String = strOpt.map(value => prefix + " " + value.formatted("%.2f") + " " + suffix).map(_.trim).getOrElse("")
+  def toString(value: Double): String = (prefix + " " + value.formatted("%.2f") + " " + suffix).trim
 
-  def fromString(str: String): Either[String, Option[Double]] = {
+  def fromString(str: String): Either[String, Double] = {
     str
       .toLowerCase
       .trim
       .replaceAll("^" + Pattern.quote(prefix.toLowerCase) + " *", "")
       .replaceAll(" *" + Pattern.quote(suffix.toLowerCase) + "$", "")
       .toDoubleOption match {
-      case Some(value) => Right(Some(value))
+      case Some(value) => Right(value)
       case None => Left(s"Not a double?: $str")
     }
   }

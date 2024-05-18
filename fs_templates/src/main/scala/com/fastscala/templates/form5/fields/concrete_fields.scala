@@ -1334,7 +1334,7 @@ object EnumField {
                                      , enabled: () => Boolean = () => true
                                      , deps: Set[FormField] = Set()
                                    )(implicit renderer: SelectFieldRenderer) = new F5SelectField[T#Value](
-    all = () => `enum`.values.toList,
+    all = () => `enum`.values.toList.sortBy(_.id),
     get = get,
     set = set,
     toString = toString,
@@ -1355,7 +1355,7 @@ object EnumField {
                                , deps: Set[FormField] = Set()
                                , size: Option[Int] = None
                              )(implicit renderer: MultiSelectFieldRenderer) = new F5MultiSelectField[T#Value](
-    all = () => `enum`.values.toList,
+    all = () => `enum`.values.toList.sortBy(_.id),
     get = get,
     set = set,
     toString = toString,
@@ -1377,7 +1377,7 @@ object EnumField {
                                   , enabled: () => Boolean = () => true
                                   , deps: Set[FormField] = Set()
                                 )(implicit renderer: SelectFieldRenderer) = new F5SelectField[Option[T#Value]](
-    all = () => None :: `enum`.values.toList.map(Some(_)),
+    all = () => None :: `enum`.values.toList.sortBy(_.id).map(Some(_)),
     get = get,
     set = set,
     toString = toString,

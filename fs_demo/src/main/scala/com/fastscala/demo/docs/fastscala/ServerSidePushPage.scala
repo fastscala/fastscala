@@ -1,8 +1,8 @@
-package com.fastscala.demo.docs
+package com.fastscala.demo.docs.fastscala
 
 import cats.effect.IO
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
+import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
 
@@ -11,7 +11,7 @@ import scala.xml.NodeSeq
 
 class ServerSidePushPage extends SingleCodeExamplePage() {
 
-  override def pageTitle: String = "Server Side Push Example"
+  override def pageTitle: String = "Server-Side push using Websockets"
 
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===

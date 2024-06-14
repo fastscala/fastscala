@@ -2,6 +2,7 @@ package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.db.User
+import com.fastscala.templates.bootstrap5.classes.BSHelpers.{div, h4}
 import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq
 import org.apache.commons.io.IOUtils
 
@@ -23,7 +24,9 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
 
   def pageTitle: String
 
-  def renderExamples()(implicit fsc: FSContext): Unit
+  def renderExplanation()(implicit fsc: FSContext): NodeSeq = NodeSeq.Empty
+
+  def renderContentsWithSnippets()(implicit fsc: FSContext): Unit
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
     import com.fastscala.templates.bootstrap5.classes.BSHelpers._
@@ -36,31 +39,33 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   }
 
   def renderStandardPageContents()(implicit fsc: FSContext): NodeSeq = {
-    renderExamples()
+    renderContentsWithSnippets()
+    renderExplanation() ++
+      sections.reverse.mkNS(NodeSeq.Empty)
+  }
+
+  def renderCodeSnippet(title: String, rendered: NodeSeq, contents: NodeSeq): NodeSeq = {
     import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-    sections.reverse.map({
-      case (title, rendered, contents) =>
-        h4.pb_1.border_bottom.border_secondary_subtle.apply(title) ++
-          div.row.apply {
-            div.col_md_6.mb_2.apply {
-              div.border.border_secondary_subtle.bg_white.apply {
-                div.apply {
-                  rendered
-                }
-              }
-            } ++ div.col_md_6.mb_2.apply {
-              div.border.border_secondary_subtle.bg_white.apply {
-                div.p_3.apply {
-                  contents
-                }
-              }
+    h4.pb_1.border_bottom.border_secondary_subtle.apply(title) ++
+      div.row.apply {
+        div.col_md_6.mb_2.apply {
+          div.border.border_secondary_subtle.bg_white.apply {
+            div.apply {
+              rendered
             }
           }
-    }).mkNS(NodeSeq.Empty)
+        } ++ div.col_md_6.mb_2.apply {
+          div.border.border_secondary_subtle.bg_white.apply {
+            div.p_3.apply {
+              contents
+            }
+          }
+        }
+      }
   }
 
   var lastSection: Option[(Int, String, NodeSeq)] = None
-  var sections: List[(String, NodeSeq, NodeSeq)] = Nil
+  var sections: List[NodeSeq] = Nil
 
   val lines = IOUtils.resourceToString(file, StandardCharsets.UTF_8).split("\\n")
 
@@ -68,10 +73,20 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
                      title: String,
                      thisSectionStartsAt: Int = Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head.getLineNumber
                    )(contents: => NodeSeq): Unit = {
+    collectSection(thisSectionStartsAt)
+    lastSection = Some((thisSectionStartsAt, title, contents))
+  }
+
+  def renderHtml(
+                  thisSectionStartsAt: Int = Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head.getLineNumber
+                )(contents: => NodeSeq): Unit = {
+    collectSection(thisSectionStartsAt)
+    lastSection = None
+    sections ::= contents
+  }
+
+  def collectSection(thisSectionStartsAt: Int): Unit = {
     import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-    //    val stackTrace = Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head
-    //    println("stackTrace: " + stackTrace)
-    //    val thisSectionStartsAt = stackTrace.getLineNumber
     lastSection.foreach({
       case (lastSectionStartedAt, title, contents) =>
         val code = lines.drop(lastSectionStartedAt).take(thisSectionStartsAt - lastSectionStartedAt - 2)
@@ -81,9 +96,8 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
         val rendered = div.apply {
           <pre><code style="background-color: #eee;" class="language-scala">{withoutPadding}</code></pre>.m_0
         }
-        sections ::= (title, rendered, contents)
+        sections ::= renderCodeSnippet(title, rendered, contents)
     })
-    lastSection = Some((thisSectionStartsAt, title, contents))
   }
 
   def closeSnippet(): Unit = renderSnippet("", Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head.getLineNumber)(NodeSeq.Empty)

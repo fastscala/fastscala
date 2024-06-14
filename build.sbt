@@ -37,9 +37,9 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "org.apache.commons" % "commons-text" % "1.10.0",
       "commons-io" % "commons-io" % "2.11.0",
 
-      "org.eclipse.jetty" % "jetty-servlet" % "11.0.13",
+      "org.eclipse.jetty" % "jetty-servlet" % "11.0.21",
       "org.eclipse.jetty.toolchain" % "jetty-jakarta-websocket-api" % "2.0.0",
-      "org.eclipse.jetty.websocket" % "websocket-jakarta-server" % "11.0.13",
+      "org.eclipse.jetty.websocket" % "websocket-jakarta-server" % "11.0.21",
 
       "io.circe" %% "circe-core" % "0.14.3",
       "io.circe" %% "circe-generic" % "0.14.3",
@@ -99,9 +99,9 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     rpmLicense := Some("none"),
 
     libraryDependencies ++= Seq(
-      "org.eclipse.jetty" % "jetty-servlet" % "11.0.13",
-      "org.eclipse.jetty" % "jetty-server" % "11.0.13",
-      "org.typelevel" %% "cats-effect" % "3.4.4",
+      "org.eclipse.jetty" % "jetty-server" % "11.0.21",
+      "org.typelevel" %% "cats-effect" % "3.4.8",
+      "at.favre.lib" % "bcrypt" % "0.10.2",
     ),
 
     Compile / run / fork := true,

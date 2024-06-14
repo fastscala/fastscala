@@ -13,10 +13,10 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "FastScala Callbacks"
 
-  override def renderExamples()(implicit fsc: FSContext): Unit = {
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Basic callback") {
       <button
-        class="btn btn-primary"
+        class="btn btn-primary d-block mx-auto"
         onclick={
           fsc.callback(() => {
             Js.alert(s"Current date/time on server: ${new Date().toString}")
@@ -25,7 +25,7 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
     }
     renderSnippet("Callback with args") {
       <button
-        class="btn btn-primary"
+        class="btn btn-primary d-block mx-auto"
         onclick={
           fsc.callback(Js("navigator.userAgent"), userAgent => {
             Js.alert(s"User's browser is: $userAgent")
@@ -34,7 +34,7 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
     }
     renderSnippet("Callback with JSON arg with languages data") {
       <button
-        class="btn btn-primary"
+        class="btn btn-primary d-block mx-auto"
         onclick={
           fsc.callbackJSON(Js("navigator.languages"), json => {
             println(json.asString)
@@ -55,7 +55,7 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
                                     )
       implicit val jsonDecoder: Decoder[NavigatorData] = semiauto.deriveDecoder[NavigatorData]
       <button
-        class="btn btn-primary"
+        class="btn btn-primary d-block mx-auto"
         onclick={
           fsc.callbackJSONDecoded[NavigatorData](Js("{language: navigator.language, languages: navigator.languages, platform: navigator.platform, product: navigator.product, productSub: navigator.productSub, userAgent: navigator.userAgent, vendor: navigator.vendor }"), navigatorData => {
             Js.alert(s"NavigatorData: ${navigatorData.toString}")

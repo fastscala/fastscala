@@ -53,6 +53,8 @@ trait ElemTransformers {
 
   def withType(`type`: String): Elem = attributeTransform("type", _ => `type`)
 
+  def withValue(value: String): Elem = attributeTransform("value", _ => value)
+
   def withTitle(title: String): Elem = attributeTransform("title", _ => title)
 
   def withName(name: String): Elem = attributeTransform("name", _ => name)

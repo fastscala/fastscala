@@ -8,6 +8,7 @@ import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form6.DefaultForm6
 import com.fastscala.templates.form6.fields._
 
+import java.awt.Color
 import java.time.format.DateTimeFormatter
 
 class FormInputTypesPage extends MultipleCodeExamples2Page() {
@@ -17,7 +18,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
   import DefaultBSForm6Renderer._
   import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
-  override def renderExamples()(implicit fsc: FSContext): Unit = {
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("String input") {
       val inputField = new F6StringField().label("Name")
 
@@ -121,6 +122,76 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
           override def afterSave()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date/time is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("HH:mm dd MMM yyyy"))).getOrElse("[None selected]")}"))
+
+          override lazy val rootField: FormField = F6VerticalField()(
+            inputField
+            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Textarea") {
+      val inputField = new F6StringOptTextareaField().rows(6).label("Your message")
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm6() {
+          override def afterSave()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              fs_4.apply(s"Your message:") ++
+                pre.apply(inputField.currentValue.getOrElse("[No message provided]"))
+            )
+
+          override lazy val rootField: FormField = F6VerticalField()(
+            inputField
+            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Select") {
+      val colors: List[Color] = List(
+        java.awt.Color.WHITE
+        , java.awt.Color.LIGHT_GRAY
+        , java.awt.Color.GRAY
+        , java.awt.Color.DARK_GRAY
+        , java.awt.Color.BLACK
+        , java.awt.Color.RED
+        , java.awt.Color.PINK
+        , java.awt.Color.ORANGE
+        , java.awt.Color.YELLOW
+        , java.awt.Color.GREEN
+        , java.awt.Color.MAGENTA
+        , java.awt.Color.CYAN
+        , java.awt.Color.BLUE
+      )
+      val inputField = new F6SelectOptField[Color]().optionsValid(colors).label("Color")
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm6() {
+          override def afterSave()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              fs_4.apply(s"Your selection:") ++
+                pre.apply(inputField.currentValue.map(_.toString).getOrElse("[None selected]"))
+            )
+
+          override lazy val rootField: FormField = F6VerticalField()(
+            inputField
+            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Checkbox") {
+
+      val inputField = new F6CheckboxField().label("Has driving license")
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm6() {
+          override def afterSave()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              fs_4.apply(s"Your selection:") ++
+                pre.apply(inputField.currentValue.toString)
+            )
 
           override lazy val rootField: FormField = F6VerticalField()(
             inputField

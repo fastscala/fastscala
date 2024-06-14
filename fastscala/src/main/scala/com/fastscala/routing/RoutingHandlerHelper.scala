@@ -453,6 +453,8 @@ object RoutingHandlerHelper {
 
   object Patch extends UnapplyHelper1("PATCH")
 
+  def onlyHandleHtmlRequests(handle: => Option[Response])(implicit req: HttpServletRequest): Option[Response] =
+    if (Option(req.getHeader("Accept")).getOrElse("").contains("text/html")) handle else None
 }
 
 abstract class RoutingHandlerNoSessionHelper extends AbstractHandler {
@@ -480,6 +482,7 @@ abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandl
   }
 
   def handlerInSession(implicit req: HttpServletRequest, session: FSSession): Option[Response]
+
 
   override def handle(target: String, baseRequest: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
     handlerNoSession(request) match {

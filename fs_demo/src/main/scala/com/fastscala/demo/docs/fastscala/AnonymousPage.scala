@@ -1,7 +1,8 @@
-package com.fastscala.demo.docs
+package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.db.User
+import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.FileUpload
 

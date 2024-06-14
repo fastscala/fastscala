@@ -1,17 +1,13 @@
-package com.fastscala.demo.docs
+package com.fastscala.demo.docs.bootstrap
 
-import cats.effect.IO
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
-import com.fastscala.js.Js
+import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.modals.BSModal5Base
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.utils.IdGen
 
-import scala.concurrent.duration.DurationInt
 import scala.xml.NodeSeq
 
-class SimpleModalPage extends SingleCodeExamplePage() {
+class BootstrapModalPage extends SingleCodeExamplePage() {
 
   override def pageTitle: String = "Simple Modal Example"
 

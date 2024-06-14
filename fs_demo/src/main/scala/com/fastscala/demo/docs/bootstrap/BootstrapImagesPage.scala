@@ -12,7 +12,7 @@ class BootstrapImagesPage extends MultipleCodeExamples2Page() {
 
   val image = img.withAttr("src" -> "/static/images/pexels-souvenirpixels-414612.jpg")
 
-  override def renderExamples()(implicit fsc: FSContext): Unit = {
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Responsive") {
       image.img_fluid
     }

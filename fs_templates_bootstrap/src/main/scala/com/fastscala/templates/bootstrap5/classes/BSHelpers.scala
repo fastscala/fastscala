@@ -77,6 +77,8 @@ object BSHelpers extends BSCombinedHelper[Elem] {
 
   def hr: Elem = <hr/>
 
+  def br: Elem = <br/>
+
   implicit class ElemEnricher(val elem: Elem) extends ElemTransformers with BSCombinedHelper[Elem] {
     override def withClass(clas: String): Elem = elem.addClass(clas)
   }

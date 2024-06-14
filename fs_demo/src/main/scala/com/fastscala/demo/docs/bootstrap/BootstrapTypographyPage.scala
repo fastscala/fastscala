@@ -14,7 +14,7 @@ class BootstrapTypographyPage extends MultipleCodeExamples2Page() {
 
   import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
-  override def renderExamples()(implicit fsc: FSContext): Unit = {
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Headings") {
       h1.apply("h1 heading") ++
         h2.apply("h2 heading") ++

@@ -1,7 +1,7 @@
-package com.fastscala.demo.docs
+package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.{FSContext, FSSessionVarOpt, FSUploadedFile}
-import com.fastscala.demo.db.User
+import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.{BSBtn, FileUpload}
 
@@ -14,7 +14,7 @@ object FileDownloadPageUploadedImage extends FSSessionVarOpt[FSUploadedFile]()
 
 class FileDownloadPage extends SingleCodeExamplePage() {
 
-  override def pageTitle: String = "File Download Page"
+  override def pageTitle: String = "File Download"
 
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===

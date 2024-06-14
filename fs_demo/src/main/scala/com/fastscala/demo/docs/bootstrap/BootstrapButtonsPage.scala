@@ -14,7 +14,7 @@ class BootstrapButtonsPage extends MultipleCodeExamples2Page() {
 
   import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
-  override def renderExamples()(implicit fsc: FSContext): Unit = {
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 
     renderSnippet("Simple Button") {
       div.apply {

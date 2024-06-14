@@ -133,21 +133,27 @@ trait TextFieldRenderer {
 
   def render[T](field: F6TextField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
-//
-//trait TextareaFieldRenderer {
-//
-//  def defaultRequiredFieldLabel: String
-//
-//  def render(field: F6TextAreaField)(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-//}
-//
-//trait SelectFieldRenderer {
-//
-//  def defaultRequiredFieldLabel: String
-//
-//  def render[T](field: F6SelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-//}
-//
+
+trait TextareaFieldRenderer {
+
+  def defaultRequiredFieldLabel: String
+
+  def render[T](field: F6TextareaField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
+}
+
+trait SelectFieldRenderer {
+
+  def defaultRequiredFieldLabel: String
+
+  def render[T](field: F6SelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
+
+  def renderOption[T](field: F6SelectFieldBase[T])(
+    selected: Boolean,
+    value: String,
+    label: NodeSeq
+  )(implicit hints: Seq[RenderHint]): Elem
+}
+
 //trait MultiSelectFieldRenderer {
 //
 //  def defaultRequiredFieldLabel: String
@@ -155,10 +161,10 @@ trait TextFieldRenderer {
 //  def render[T](field: F6MultiSelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 //}
 //
-//trait CheckboxFieldRenderer {
-//
-//  def render(field: F6CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-//}
+trait CheckboxFieldRenderer {
+
+  def render(field: F6CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
+}
 
 //class F6CheckboxField(
 //                       get: () => Boolean
@@ -519,108 +525,6 @@ trait TextFieldRenderer {
 //    override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
 //      (if (required() && currentlySelectedValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 //  }
-//}
-//
-//class F6TextAreaField(
-//                       get: () => String
-//                       , set: String => Js
-//                       , label: Option[NodeSeq] = None
-//                       , name: Option[String] = None
-//                       , placeholder: Option[String] = None
-//                       , tabindex: Option[Int] = None
-//                       , maxlength: Option[Int] = None
-//                       , nRows: Int = 3
-//                       , additionalStyle: String = ""
-//                       , required: () => Boolean = () => false
-//                       , val disabled: () => Boolean = () => false
-//                       , val readOnly: () => Boolean = () => false
-//                       , val enabled: () => Boolean = () => true
-//                       , val deps: Set[FormField] = Set()
-//                     )(
-//                       implicit renderer: TextareaFieldRenderer
-//                     ) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
-//
-//  var currentValue = get()
-//
-//  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
-//    currentValue = str
-//    set(currentValue)
-//    Nil
-//  }
-//
-//  override def saveToString(): Option[String] = Some(currentValue).filter(_ != "")
-//
-//  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
-//
-//  def copy(
-//            get: () => String = get
-//            , set: String => Js = set
-//            , label: Option[NodeSeq] = label
-//            , name: Option[String] = name
-//            , placeholder: Option[String] = placeholder
-//            , tabindex: Option[Int] = tabindex
-//            , maxlength: Option[Int] = maxlength
-//            , nRows: Int = nRows
-//            , additionalStyle: String = additionalStyle
-//            , required: () => Boolean = required
-//            , enabled: () => Boolean = enabled
-//            , deps: Set[FormField] = deps
-//          ): F6TextAreaField = {
-//    new F6TextAreaField(
-//      get = get
-//      , set = set
-//      , label = label
-//      , name = name
-//      , placeholder = placeholder
-//      , tabindex = tabindex
-//      , maxlength = maxlength
-//      , nRows = nRows
-//      , additionalStyle = additionalStyle
-//      , required = required
-//      , enabled = enabled
-//      , deps = deps
-//    )
-//  }
-//
-//  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-//    case PerformSave => set(currentValue)
-//    case _ => Js.void
-//  })
-//
-//
-//  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-//    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
-//
-//  override def focusJs: Js = Js.focus(elemId)
-//
-//  override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-//    if (!enabled()) <div style="display:none;" id={aroundId}></div>
-//    else {
-//      withFieldRenderHints { implicit hints =>
-//        val changedJs = fsc.callback(Js.elementValueById(elemId), value => {
-//          currentValue = value
-//          form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
-//        }).cmd
-//        renderer.render(this)(
-//          label,
-//          <textarea type="text"
-//                    name={name.getOrElse(null)}
-//                    class="form-control"
-//                    style={additionalStyle}
-//                    id={elemId}
-//                    onblur={changedJs}
-//                    placeholder={placeholder.getOrElse(null)}
-//                    rows={nRows.toString}
-//                    tabindex={tabindex.map(_ + "").getOrElse(null)}
-//                    maxlength={maxlength.map(_ + "").getOrElse(null)}
-//                    required={if (required()) "true" else null}>{get()}</textarea>,
-//          errors().headOption.map(_._2)
-//        )
-//      }
-//    }
-//  }
-//
-//  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 //}
 //
 //object F6CodeField {

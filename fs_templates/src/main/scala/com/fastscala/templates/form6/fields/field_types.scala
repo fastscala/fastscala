@@ -8,7 +8,7 @@ import com.fastscala.templates.utils.ElemWithRandomId
 import scala.xml.{Elem, NodeSeq}
 
 
-trait FormField {
+trait F6Field {
 
   def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem
 
@@ -17,23 +17,23 @@ trait FormField {
   /**
    * Ignores fields not matching the predicate, and their children.
    */
-  def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField]
+  def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field]
 
-  def enabledFields: List[FormField] = fieldsMatching(_.enabled())
+  def enabledFields: List[F6Field] = fieldsMatching(_.enabled())
 
   def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
 
-  def deps: Set[FormField]
+  def deps: Set[F6Field]
 
   def enabled(): Boolean
 }
 
-trait FocusableFormField extends FormField {
+trait FocusableF6Field extends F6Field {
 
   def focusJs: Js
 }
 
-trait StandardFormField extends FormField with ElemWithRandomId {
+trait StandardF6Field extends F6Field with ElemWithRandomId {
 
   val aroundId: String = randomElemId
 
@@ -57,13 +57,13 @@ trait StandardFormField extends FormField with ElemWithRandomId {
   }
 }
 
-trait ValidatableField extends StandardFormField {
+trait ValidatableField extends StandardF6Field {
   def hasErrors_?() = errors().nonEmpty
 
   def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 }
 
-trait StringSerializableField extends StandardFormField {
+trait StringSerializableField extends StandardF6Field {
 
   def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)]
 

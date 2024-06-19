@@ -1,6 +1,6 @@
 package com.fastscala.demo.docs
 
-import com.fastscala.demo.docs.about.AboutPage
+import com.fastscala.demo.docs.about.{AboutPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
 import com.fastscala.demo.docs.fastscala.{AnonymousPage, CallbacksPage, FileDownloadPage, FileUploadPage, RerenderablePage, ServerSidePushPage}
 import com.fastscala.demo.docs.forms.FormInputTypesPage
@@ -10,6 +10,7 @@ import com.fastscala.demo.docs.js.JsUtilsPage
 object FSDemoMainMenu extends Menu(
   MenuSection("About FastScala")(
     new RoutingMenuItem()("About", () => new AboutPage())
+    , new RoutingMenuItem("getting_started")("Getting Started", () => new GettingStartedPage())
   )
   , MenuSection("FastScala Basics")(
     new RoutingMenuItem("demo", "fastscala", "callbacks")("Callbacks", () => new CallbacksPage())

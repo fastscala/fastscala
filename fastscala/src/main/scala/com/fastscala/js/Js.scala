@@ -379,7 +379,7 @@ object Js {
   def setCookie(name: String, cookie: String, expires: Option[Long] = None, path: Option[String] = None): Js =
     Js(s"""document.cookie='$name=${escapeStr(cookie)};${expires.map(new Date(_)).map(_.toGMTString).map("; expires=" + _).getOrElse("")}${path.map("; path=" + _).getOrElse("")}'""")
 
-  def deleteCookie(name: String): Js = setCookie(name, "")
+  def deleteCookie(name: String, path: String): Js = setCookie(name, "", expires = Some(0), path = Some(path))
 
   def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js = Js {
     s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${StringEscapeUtils.escapeEcmaScript(html.toString())}"))).content"""

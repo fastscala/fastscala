@@ -17,7 +17,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-trait F6FieldMixin extends FormField {
+trait F6FieldMixin extends F6Field {
 
   def mutate(code: => Unit): this.type = {
     code
@@ -299,15 +299,15 @@ trait F6FieldWithAdditionalAttrs extends F6FieldInputFieldMixin {
 }
 
 trait F6FieldWithDependencies extends F6FieldInputFieldMixin {
-  var _deps: () => Set[FormField] = () => Set()
+  var _deps: () => Set[F6Field] = () => Set()
 
   def deps() = _deps()
 
-  def deps(v: Set[FormField]): this.type = mutate {
+  def deps(v: Set[F6Field]): this.type = mutate {
     _deps = () => v
   }
 
-  def deps(f: () => Set[FormField]): this.type = mutate {
+  def deps(f: () => Set[F6Field]): this.type = mutate {
     _deps = f
   }
 }
@@ -414,10 +414,10 @@ trait F6FieldWithMax extends F6FieldInputFieldMixin {
   }
 }
 
-abstract class F6TextField[T]()(implicit renderer: TextFieldRenderer) extends StandardFormField
+abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends StandardF6Field
   with ValidatableField
   with StringSerializableField
-  with FocusableFormField
+  with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithRequired
   with F6FieldWithReadOnly
@@ -480,10 +480,10 @@ abstract class F6TextField[T]()(implicit renderer: TextFieldRenderer) extends St
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6StringField()(implicit renderer: TextFieldRenderer) extends F6TextField[String] {
+class F6StringField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[String] {
 
   override def defaultValue: String = ""
 
@@ -496,7 +496,7 @@ class F6StringField()(implicit renderer: TextFieldRenderer) extends F6TextField[
 }
 
 
-class F6StringOptField()(implicit renderer: TextFieldRenderer) extends F6TextField[Option[String]] {
+class F6StringOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[String]] {
 
   override def defaultValue: Option[String] = None
 
@@ -508,7 +508,7 @@ class F6StringOptField()(implicit renderer: TextFieldRenderer) extends F6TextFie
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DateOptField()(implicit renderer: TextFieldRenderer) extends F6TextField[Option[java.time.LocalDate]] {
+class F6DateOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[java.time.LocalDate]] {
   override def _inputTypeDefault: String = "date"
 
   override def defaultValue: Option[time.LocalDate] = None
@@ -521,7 +521,7 @@ class F6DateOptField()(implicit renderer: TextFieldRenderer) extends F6TextField
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DateTimeOptField()(implicit renderer: TextFieldRenderer) extends F6TextField[Option[java.time.LocalDateTime]] {
+class F6DateTimeOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[java.time.LocalDateTime]] {
   override def _inputTypeDefault: String = "datetime-local"
 
   override def defaultValue: Option[LocalDateTime] = None
@@ -534,7 +534,7 @@ class F6DateTimeOptField()(implicit renderer: TextFieldRenderer) extends F6TextF
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DoubleOptField()(implicit renderer: TextFieldRenderer)
+class F6DoubleOptField()(implicit renderer: TextF6FieldRenderer)
   extends F6TextField[Option[Double]]
     with F6FieldWithPrefix
     with F6FieldWithSuffix
@@ -567,7 +567,7 @@ class F6DoubleOptField()(implicit renderer: TextFieldRenderer)
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6IntOptField()(implicit renderer: TextFieldRenderer)
+class F6IntOptField()(implicit renderer: TextF6FieldRenderer)
   extends F6TextField[Option[Int]]
     with F6FieldWithPrefix
     with F6FieldWithSuffix
@@ -599,7 +599,7 @@ class F6IntOptField()(implicit renderer: TextFieldRenderer)
     (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6TimeOfDayField()(implicit renderer: TextFieldRenderer)
+class F6TimeOfDayField()(implicit renderer: TextF6FieldRenderer)
   extends F6TextField[Option[Int]]
     with F6FieldWithPrefix
     with F6FieldWithSuffix
@@ -634,7 +634,7 @@ class F6TimeOfDayField()(implicit renderer: TextFieldRenderer)
   }
 }
 
-class F6DoubleField()(implicit renderer: TextFieldRenderer)
+class F6DoubleField()(implicit renderer: TextF6FieldRenderer)
   extends F6TextField[Double]
     with F6FieldWithPrefix
     with F6FieldWithSuffix

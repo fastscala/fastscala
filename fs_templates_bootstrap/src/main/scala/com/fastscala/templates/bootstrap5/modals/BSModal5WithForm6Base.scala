@@ -1,18 +1,18 @@
 package com.fastscala.templates.bootstrap5.modals
 
 import com.fastscala.core.FSContext
-import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form5.{Form5, FormRenderer}
-import com.fastscala.utils.IdGen
+import com.fastscala.templates.form6.{Form6, F6FormRenderer}
 
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.NodeSeq
 
-abstract class BSModal5WithFormBase(
-                                     val modalHeaderTitle: String
-                                   )(implicit val formRenderer: FormRenderer) extends BSModal5Base with Form5 {
+abstract class BSModal5WithForm6Base(
+                                      val modalHeaderTitle: String
+                                    )(implicit val formRenderer: F6FormRenderer) extends BSModal5Base with Form6 {
 
   def saveBtnLbl = "Save"
+
+  def saveBtn(implicit fsc: FSContext) = BSBtn.BtnPrimary.lbl(saveBtnLbl).onclick(form.onSaveClientSide())
 
   override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = form.render()
 

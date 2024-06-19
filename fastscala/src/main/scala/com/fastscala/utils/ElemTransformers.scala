@@ -47,7 +47,7 @@ trait ElemTransformers {
 
   def withAttrIf(bool: Boolean, kv: (String, String)): Elem = if (bool) withAttr(kv) else elem
 
-  def withStyle(style: String): Elem = attributeTransform("style", _.getOrElse("") + ";" + style)
+  def withStyle(style: String): Elem = attributeTransform("style", _.map(_ + ";").getOrElse("") + style)
 
   def withFor(`for`: String): Elem = attributeTransform("for", _ => `for`)
 

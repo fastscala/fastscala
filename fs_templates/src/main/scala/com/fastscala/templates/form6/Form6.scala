@@ -9,18 +9,18 @@ import com.fastscala.utils.RenderableWithFSContext
 
 import scala.xml.{Elem, NodeSeq}
 
-trait FormRenderer {
+trait F6FormRenderer {
 
   def render(form: Elem): NodeSeq
 }
 
-abstract class DefaultForm6()(implicit val formRenderer: FormRenderer) extends Form6
+abstract class DefaultForm6()(implicit val formRenderer: F6FormRenderer) extends Form6
 
 trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
 
   implicit def form = this
 
-  val rootField: FormField
+  val rootField: F6Field
 
   def initForm()(implicit fsc: FSContext): Unit = ()
 
@@ -31,11 +31,11 @@ trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
     rootField.onEvent(event)
   }
 
-  def formRenderer: FormRenderer
+  def formRenderer: F6FormRenderer
 
   def focusFirstFocusableFieldJs(): Js =
-    rootField.fieldsMatching({ case _: FocusableFormField => true })
-      .collectFirst({ case fff: FocusableFormField => fff })
+    rootField.fieldsMatching({ case _: FocusableF6Field => true })
+      .collectFirst({ case fff: FocusableF6Field => fff })
       .map(_.focusJs)
       .getOrElse(Js.void)
 

@@ -27,7 +27,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
           override def afterSave()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your name is ${inputField.currentValue}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )
@@ -42,7 +42,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
           override def afterSave()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your name is ${inputField.currentValue.getOrElse("[None provided]")}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
@@ -58,7 +58,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
           override def afterSave()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue.getOrElse("[None provided]")}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
@@ -74,7 +74,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
           override def afterSave()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
@@ -90,7 +90,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
           override def afterSave()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue.getOrElse("[None provided]")}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
@@ -107,7 +107,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))).getOrElse("[None selected]")}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )
@@ -123,7 +123,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date/time is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("HH:mm dd MMM yyyy"))).getOrElse("[None selected]")}"))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )
@@ -141,7 +141,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
                 pre.apply(inputField.currentValue.getOrElse("[No message provided]"))
             )
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )
@@ -174,7 +174,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
                 pre.apply(inputField.currentValue.map(_.toString).getOrElse("[None selected]"))
             )
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )
@@ -193,7 +193,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
                 pre.apply(inputField.currentValue.toString)
             )
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             inputField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )

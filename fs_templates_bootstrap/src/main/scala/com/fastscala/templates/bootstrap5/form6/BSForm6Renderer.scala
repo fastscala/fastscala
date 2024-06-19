@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.form6
 
-import com.fastscala.templates.form6.FormRenderer
+import com.fastscala.templates.form6.F6FormRenderer
 import com.fastscala.templates.form6.fields._
 
 import scala.xml.{Elem, NodeSeq}
@@ -21,7 +21,7 @@ abstract class BSForm6Renderer {
 
   def textFieldRendererInputElemStyle: String = form_control.getStyleAttr
 
-  implicit val textFieldRenderer = new TextFieldRenderer {
+  implicit val textFieldRenderer = new TextF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
@@ -51,7 +51,7 @@ abstract class BSForm6Renderer {
 
   def textareaFieldRendererTextareaElemStyle: String = form_control.getStyleAttr
 
-  implicit val textareaFieldRenderer = new TextareaFieldRenderer {
+  implicit val textareaFieldRenderer = new TextareaF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
@@ -79,7 +79,7 @@ abstract class BSForm6Renderer {
 
   def selectFieldRendererSelectElemClasses: String = form_select.form_control.getClassAttr
 
-  implicit val selectFieldRenderer = new SelectFieldRenderer {
+  implicit val selectFieldRenderer = new SelectF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
@@ -136,7 +136,7 @@ abstract class BSForm6Renderer {
 
   def checkboxFieldRendererCheckboxElemClasses: String = form_check_input.getClassAttr
 
-  implicit val checkboxFieldRenderer = new CheckboxFieldRenderer {
+  implicit val checkboxFieldRenderer = new CheckboxF6FieldRenderer {
 
     override def render(
                          field: F6CheckboxField
@@ -163,7 +163,7 @@ abstract class BSForm6Renderer {
 //    override def transformFormElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = super.transformFormElem(field)(elem).mb_3
 //  }
 
-  implicit val buttonFieldRenderer = new ButtonFieldRenderer {
+  implicit val buttonFieldRenderer = new ButtonF6FieldRenderer {
     override def render(field: F6SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
@@ -174,7 +174,7 @@ abstract class BSForm6Renderer {
     }
   }
 
-  implicit val formRenderer: FormRenderer = new FormRenderer {
+  implicit val formRenderer: F6FormRenderer = new F6FormRenderer {
     override def render(form: Elem): Elem =
       form.mb_5.w_100.addClass("form")
   }

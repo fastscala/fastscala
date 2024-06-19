@@ -32,10 +32,10 @@ trait F6FieldWithNumRows extends F6FieldInputFieldMixin {
   }
 }
 
-abstract class F6TextareaField[T]()(implicit renderer: TextareaFieldRenderer) extends StandardFormField
+abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) extends StandardF6Field
   with ValidatableField
   with StringSerializableField
-  with FocusableFormField
+  with FocusableF6Field
   with F6FieldWithNumRows
   with F6FieldWithDisabled
   with F6FieldWithRequired
@@ -100,10 +100,10 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaFieldRenderer) ex
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6StringTextareaField()(implicit renderer: TextareaFieldRenderer) extends F6TextareaField[String] {
+class F6StringTextareaField()(implicit renderer: TextareaF6FieldRenderer) extends F6TextareaField[String] {
 
   override def defaultValue: String = ""
 
@@ -115,7 +115,7 @@ class F6StringTextareaField()(implicit renderer: TextareaFieldRenderer) extends 
     (if (required() && currentValue == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6StringOptTextareaField()(implicit renderer: TextareaFieldRenderer) extends F6TextareaField[Option[String]] {
+class F6StringOptTextareaField()(implicit renderer: TextareaF6FieldRenderer) extends F6TextareaField[Option[String]] {
 
   override def defaultValue: Option[String] = None
 

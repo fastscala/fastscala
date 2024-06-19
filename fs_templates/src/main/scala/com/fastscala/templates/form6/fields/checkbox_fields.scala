@@ -8,10 +8,10 @@ import com.fastscala.utils.ElemTransformers.RichElem
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-class F6CheckboxField()(implicit renderer: CheckboxFieldRenderer) extends StandardFormField
+class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends StandardF6Field
   with ValidatableField
   with StringSerializableField
-  with FocusableFormField
+  with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithReadOnly
   with F6FieldWithEnabled
@@ -69,5 +69,5 @@ class F6CheckboxField()(implicit renderer: CheckboxFieldRenderer) extends Standa
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 }

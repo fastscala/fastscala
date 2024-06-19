@@ -54,12 +54,12 @@ trait F6FieldWithOptionIds[T] extends F6FieldMixin {
   }
 }
 
-abstract class F6SelectFieldBase[T]()(implicit renderer: SelectFieldRenderer) extends StandardFormField
+abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) extends StandardF6Field
   with F6FieldWithOptions[T]
   with F6FieldWithOptionIds[T]
   with ValidatableField
   with StringSerializableField
-  with FocusableFormField
+  with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithRequired
   with F6FieldWithReadOnly
@@ -132,10 +132,10 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectFieldRenderer) ex
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6SelectOptField[T]()(implicit renderer: SelectFieldRenderer) extends F6SelectFieldBase[Option[T]] {
+class F6SelectOptField[T]()(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[Option[T]] {
   override def defaultValue: Option[T] = None
 
   def optionsValid(v: Seq[T]): F6SelectOptField.this.type = options(None +: v.map(Some(_)))

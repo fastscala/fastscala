@@ -7,7 +7,7 @@ import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form6.DefaultForm6
-import com.fastscala.templates.form6.fields.{F6SaveButtonField, F6StringField, F6VerticalField, FormField}
+import com.fastscala.templates.form6.fields.{F6SaveButtonField, F6StringField, F6VerticalField, F6Field}
 import io.circe.Decoder
 import io.circe.generic.semiauto
 
@@ -147,7 +147,7 @@ class AboutPage extends MultipleCodeExamples2Page {
             fs_4.apply(s"Your entered the name '${nameField.currentValue}' and email '${emailField.currentValue}'")
           })
 
-        override lazy val rootField: FormField = F6VerticalField()(
+        override lazy val rootField: F6Field = F6VerticalField()(
           nameField
           , emailField
           , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
@@ -156,46 +156,25 @@ class AboutPage extends MultipleCodeExamples2Page {
     }
     renderSnippet("Support advanced interactions with a few lines of code") {
       import DefaultBSForm6Renderer._
-      case class Definition(definition: Option[String], example: Option[String], synonyms: List[String], antonyms: List[String])
-      case class Meaning(partOfSpeech: String, definitions: List[Definition])
-      case class Response(word: String, phonetic: String, origin: Option[String], meanings: List[Meaning])
+      case class Definition(definition: Option[String], example: Option[String], synonyms: List[String], antonyms: List[String]) {
+        def render(): NodeSeq = definition.map(definition => <li><i>{definition}</i>{example.map(": " + _).getOrElse("")}</li>).getOrElse(NodeSeq.Empty)
+      }
+      case class Meaning(partOfSpeech: String, definitions: List[Definition]) {
+        def render(): NodeSeq = <li><i>{partOfSpeech}</i></li> ++
+          <li>Definitions: <ul class="ms-2">{definitions.flatMap(_.render())}</ul></li>.showIf(definitions.nonEmpty)
+      }
+      case class Response(word: String, phonetic: String, origin: Option[String], meanings: List[Meaning]) {
+        def render(): NodeSeq = <h6>{word}</h6> ++
+          <ul class="ms-2">
+            <li>Phonetic: {phonetic}</li>{origin.map(origin => <li>Origin: {origin}</li>).getOrElse(NodeSeq.Empty)}
+            {<li>Meanings: <ul class="ms-2">{meanings.flatMap(_.render())}</ul></li>.showIf(meanings.nonEmpty)}
+          </ul>.ms_2
+      }
       implicit val definitionDecoder: Decoder[Definition] = semiauto.deriveDecoder[Definition]
       implicit val meaningDecoder: Decoder[Meaning] = semiauto.deriveDecoder[Meaning]
       implicit val responseDecoder: Decoder[Response] = semiauto.deriveDecoder[Response]
 
-      def renderResponses(responses:  List[Response]) = responses.flatMap({
-        case Response(word, phonetic, origin, meanings) =>
-          <h6>{word}</h6> ++
-            <ul class="ms-2">
-              <li>Phonetic: {phonetic}</li>
-              {origin.map(origin => <li>Origin: {origin}</li>).getOrElse(NodeSeq.Empty)}
-              {
-              <li>
-                Meanings:
-                <ul class="ms-2">
-                  {
-                  meanings.map({
-                    case Meaning(partOfSpeech, definitions) =>
-                      <li><i>{partOfSpeech}</i></li> ++ {
-                        <li>
-                          Definitions:
-                          <ul class="ms-2">
-                            {
-                            definitions.collect({
-                              case Definition(Some(definition), example, synonyms, antonyms) =>
-                                <li><i>{definition}</i>{example.map(": " + _).getOrElse("")}</li>
-                            })
-                            }
-                          </ul>
-                        </li>.showIf(definitions.nonEmpty)
-                      }
-                  })
-                  }
-                </ul>
-              </li>.showIf(meanings.nonEmpty)
-              }
-            </ul>.ms_2
-      })
+      def renderResponses(responses:  List[Response]) = responses.flatMap(_.render())
 
       val resultsRenderer = Js.rerenderableContentsP[Option[String]](_ => implicit fsc => queryOpt => {
         queryOpt match {
@@ -224,7 +203,7 @@ class AboutPage extends MultipleCodeExamples2Page {
         new DefaultForm6() {
           override def afterSave()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
 
-          override lazy val rootField: FormField = F6VerticalField()(
+          override lazy val rootField: F6Field = F6VerticalField()(
             queryField
             , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
           )

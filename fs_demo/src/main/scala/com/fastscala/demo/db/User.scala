@@ -33,7 +33,7 @@ class User(
   def logOut()(implicit fg: FSContext): Js = fg.callback(() => {
     loginToken = IdGen.id
     CurrentUser.clear()
-    Js.deleteCookie("user_token") & Js.redirectTo("/login")
+    Js.deleteCookie("user_token", "/") & Js.redirectTo("/login")
   })
 
   def miniHeadshotOrPlaceholderRendered: Elem = {

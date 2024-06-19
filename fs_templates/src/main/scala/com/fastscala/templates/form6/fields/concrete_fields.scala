@@ -17,7 +17,7 @@ import scala.xml.{Elem, NodeSeq, Unparsed}
 
 class F6RawHtmlField(
                       gen: => NodeSeq
-                    ) extends StandardFormField
+                    ) extends StandardF6Field
   with F6FieldWithDisabled
   with F6FieldWithReadOnly
   with F6FieldWithDependencies
@@ -26,15 +26,15 @@ class F6RawHtmlField(
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{gen}</div>
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6SurroundWithHtmlField[T <: FormField](
+class F6SurroundWithHtmlField[T <: F6Field](
                                                wrap: Elem => Elem
                                              )(
                                                field: T
                                              )
-  extends StandardFormField
+  extends StandardF6Field
     with F6FieldWithReadOnly
     with F6FieldWithDependencies
     with F6FieldWithDisabled
@@ -44,15 +44,15 @@ class F6SurroundWithHtmlField[T <: FormField](
     else <div id={aroundId}>{wrap(field.render())}</div>
 
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
-    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] =
+    List(this).filter(_ => predicate.applyOrElse[F6Field, Boolean](this, _ => false)) :::
       List(field).flatMap(_.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
 }
 
-class F6VerticalField()(children: FormField*)
-  extends StandardFormField
+class F6VerticalField()(children: F6Field*)
+  extends StandardF6Field
     with F6FieldWithEnabled
     with F6FieldWithDependencies
     with F6FieldWithDisabled
@@ -74,19 +74,19 @@ class F6VerticalField()(children: FormField*)
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
-    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] =
+    List(this).filter(_ => predicate.applyOrElse[F6Field, Boolean](this, _ => false)) :::
       children.toList.flatMap(_.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
 }
 
 object F6VerticalField {
-  def apply()(children: FormField*) = new F6VerticalField()(children: _*)
+  def apply()(children: F6Field*) = new F6VerticalField()(children: _*)
 }
 
-class F6HorizontalField()(children: (String, FormField)*)
-  extends StandardFormField
+class F6HorizontalField()(children: (String, F6Field)*)
+  extends StandardF6Field
     with F6FieldWithEnabled
     with F6FieldWithDependencies
     with F6FieldWithDisabled
@@ -115,8 +115,8 @@ class F6HorizontalField()(children: (String, FormField)*)
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
-    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] =
+    List(this).filter(_ => predicate.applyOrElse[F6Field, Boolean](this, _ => false)) :::
       children.toList.flatMap(_._2.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js =
@@ -124,24 +124,24 @@ class F6HorizontalField()(children: (String, FormField)*)
 }
 
 object F6HorizontalField {
-  def apply()(children: (String, FormField)*) = new F6HorizontalField()(children: _*)
+  def apply()(children: (String, F6Field)*) = new F6HorizontalField()(children: _*)
 }
 
-trait TextFieldRenderer {
+trait TextF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
   def render[T](field: F6TextField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
-trait TextareaFieldRenderer {
+trait TextareaF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
   def render[T](field: F6TextareaField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
-trait SelectFieldRenderer {
+trait SelectF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
@@ -161,7 +161,7 @@ trait SelectFieldRenderer {
 //  def render[T](field: F6MultiSelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 //}
 //
-trait CheckboxFieldRenderer {
+trait CheckboxF6FieldRenderer {
 
   def render(field: F6CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
@@ -672,7 +672,7 @@ trait CheckboxFieldRenderer {
 //  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 //}
 //
-trait ButtonFieldRenderer {
+trait ButtonF6FieldRenderer {
   def render(field: F6SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
@@ -681,14 +681,14 @@ class F6SaveButtonField[B <% Elem](
                                     , val toInitialState: B => B = identity[B] _
                                     , val toChangedState: B => B = identity[B] _
                                     , val toErrorState: B => B = identity[B] _
-                                  )(implicit renderer: ButtonFieldRenderer)
-  extends StandardFormField
+                                  )(implicit renderer: ButtonF6FieldRenderer)
+  extends StandardF6Field
     with F6FieldWithReadOnly
     with F6FieldWithDependencies
     with F6FieldWithDisabled
     with F6FieldWithEnabled {
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = Js.rerenderableP[(B => B, Form6)](_ => implicit fsc => {
     case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)

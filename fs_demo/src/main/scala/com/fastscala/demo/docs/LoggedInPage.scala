@@ -16,7 +16,7 @@ abstract class LoggedInPage() extends BasePage {
 
   override def navBarTopRight()(implicit fsc: FSContext): NodeSeq =
     <div class="text-end justify-content-end">
-        <a href="https://us02web.zoom.us/meeting/register/tZMpc-iqqjkpHtOqjEqc2AIIFQKYifbeZrhi" class="btn btn-warning">Register for Free Training!</a>
+        <a href="https://training.fastscala.com/" class="btn btn-warning">Register for Free Training!</a>
     </div>
   //      <div class="text-end justify-content-end ms-2">
   //        <a href="https://github.com/fastscala/fastscala" class="btn btn-warning">GitHub</a>

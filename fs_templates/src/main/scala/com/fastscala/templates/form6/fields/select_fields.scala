@@ -120,12 +120,12 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),
-            <select
+          processInputElem(<select
               name={name.getOrElse(null)}
               onblur={onchangeJs}
               onchange={onchangeJs}
               id={elemId}
-            >{optionsRendered}</select>,
+            >{optionsRendered}</select>),
           errorsAtRenderTime.headOption.map(_._2)
         )
       }
@@ -139,4 +139,93 @@ class F6SelectOptField[T]()(implicit renderer: SelectF6FieldRenderer) extends F6
   override def defaultValue: Option[T] = None
 
   def optionsValid(v: Seq[T]): F6SelectOptField.this.type = options(None +: v.map(Some(_)))
+}
+
+class F6SelectField[T](options: Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] {
+  options(options)
+
+  override def defaultValue: T = options.head
+}
+
+abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6FieldRenderer) extends StandardF6Field
+  with F6FieldWithOptions[T]
+  with F6FieldWithOptionIds[T]
+  with ValidatableField
+  with StringSerializableField
+  with FocusableF6Field
+  with F6FieldWithDisabled
+  with F6FieldWithRequired
+  with F6FieldWithReadOnly
+  with F6FieldWithEnabled
+  with F6FieldWithTabIndex
+  with F6FieldWithName
+  with F6FieldWithSize
+  with F6FieldWithLabel
+  with F6FieldWithAdditionalAttrs
+  with F6FieldWithDependencies
+  with F6FieldWithValue[Set[T]]
+  with F6FieldWithOptionsNsLabel[T] {
+
+  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+    val all = options()
+    val id2Option: Map[String, T] = all.map(opt => _option2Id(opt, all) -> opt).toMap
+    val selected: Seq[T] = str.split(";").toList.flatMap(id => {
+      id2Option.get(id)
+    })
+    currentValue = selected.toSet
+    _setter(currentValue)
+    Nil
+  }
+
+  override def saveToString(): Option[String] = Some(currentValue.map(opt => _option2Id(opt, options())).mkString(";"))
+
+  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+    case PerformSave => _setter(currentValue)
+    case _ => Js.void
+  })
+
+  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+
+  def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
+
+  def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+    val renderedOptions = options()
+    val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
+    val option2Id: Map[T, String] = ids2Option.map(_.swap)
+    val optionsRendered = renderedOptions.map(opt => {
+      renderer.renderOption(this)(currentValue == opt, option2Id(opt), _option2NodeSeq(opt))
+    })
+
+    val errorsAtRenderTime = errors()
+
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    else {
+      withFieldRenderHints { implicit hints =>
+        val onchangeJs = fsc.callback(Js.selectedValues(Js.elementById(elemId)), {
+          case ids =>
+            currentValue = ids.split(",").toSet.map(id => ids2Option(id))
+            form.onEvent(ChangedField(this)) &
+              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender() else Js.void)
+        }).cmd
+        renderer.render(this)(
+          label.map(label => <label for={elemId}>{label}</label>),
+          processInputElem(
+            <select
+              multiple="multiple"
+              name={name.getOrElse(null)}
+              onblur={onchangeJs}
+              onchange={onchangeJs}
+              id={elemId}
+            >{optionsRendered}</select>),
+          errorsAtRenderTime.headOption.map(_._2)
+        )
+      }
+    }
+  }
+
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
+}
+
+class F6MultiSelectField[T]()(implicit renderer: MultiSelectF6FieldRenderer) extends F6MultiSelectFieldBase[T] {
+  override def defaultValue: Set[T] = Set()
 }

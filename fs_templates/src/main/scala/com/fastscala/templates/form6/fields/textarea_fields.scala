@@ -83,7 +83,8 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
           _label().map(lbl => <label for={elemId}>{lbl}</label>),
-          processInputElem(<textarea   type="text"
+          processInputElem(<textarea
+                      type="text"
                       id={elemId}
                       onblur={
                       fsc.callback(Js.elementValueById(elemId), str => {

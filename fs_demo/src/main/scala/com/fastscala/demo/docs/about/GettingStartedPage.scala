@@ -26,7 +26,11 @@ class GettingStartedPage extends LoggedInPage() {
     div.withStyle("background('#f8fafd'); border-style: solid; border-color: #b3c7de;").border_1.shadow_sm.py_2.px_3.apply {
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3 mb-3">
         <h1 class="h3" style="color: #1b4d88;">Getting Started</h1>
-      </div>
+      </div> ++
+        alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.mb_3.apply {
+          div.apply("Interested in learning more about the FastScala framework? Register now for a free live demo/training here!:") ++
+            BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
+        }
     }
   }
 }

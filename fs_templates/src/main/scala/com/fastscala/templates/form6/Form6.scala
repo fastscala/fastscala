@@ -28,7 +28,10 @@ trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
 
   def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
-    rootField.onEvent(event)
+    event match {
+      case RequestedSubmit(_) => savePipeline()
+      case event => rootField.onEvent(event)
+    }
   }
 
   def formRenderer: F6FormRenderer
@@ -64,19 +67,23 @@ trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
     if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)
     else {
       val hasErrors = rootField.enabledFields.exists({ case field: ValidatableField => field.hasErrors_?() case _ => false })
-      implicit val renderHints = formRenderHits() :+ OnSaveRerender
+      implicit val renderHints: Seq[RenderHint] = formRenderHits() :+ OnSaveRerender
       if (hasErrors) {
         rootField.onEvent(ErrorsOnSave) &
           rootField.reRender()(this, fsc, renderHints :+ ShowValidationsHint :+ FailedSaveStateHint)
       } else {
-        beforeSave() &
-          rootField.onEvent(BeforeSave) &
-          rootField.onEvent(PerformSave) &
-          rootField.onEvent(AfterSave) &
-          afterSave() &
-          rootField.reRender()
+        savePipeline()
       }
     }
+  }
+
+  private def savePipeline()(implicit renderHints: Seq[RenderHint], fsc: FSContext): Js = {
+    beforeSave() &
+      rootField.onEvent(BeforeSave) &
+      rootField.onEvent(PerformSave) &
+      rootField.onEvent(AfterSave) &
+      afterSave() &
+      rootField.reRender()
   }
 
   def onSaveClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => onSaveServerSide())

@@ -165,7 +165,7 @@ trait F6FieldWithTabIndex extends F6FieldInputFieldMixin {
 trait F6FieldWithName extends F6FieldInputFieldMixin {
   var _name: () => Option[String] = () => None
 
-  def name() = _name()
+  def name(): Option[String] = _name()
 
   def name(v: String): this.type = mutate {
     _name = () => Some(v)
@@ -182,6 +182,30 @@ trait F6FieldWithName extends F6FieldInputFieldMixin {
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
     _name().map(name => {
       input.withAttr("name", name)
+    }).getOrElse(input)
+  }
+}
+
+trait F6FieldWithSize extends F6FieldInputFieldMixin {
+  var _size: () => Option[Int] = () => None
+
+  def size(): Option[Int] = _size()
+
+  def size(v: Int): this.type = mutate {
+    _size = () => Some(v)
+  }
+
+  def size(v: Option[Int]): this.type = mutate {
+    _size = () => v
+  }
+
+  def size(f: () => Option[Int]): this.type = mutate {
+    _size = f
+  }
+
+  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+    _size().map(size => {
+      input.withAttr("size", size.toString)
     }).getOrElse(input)
   }
 }

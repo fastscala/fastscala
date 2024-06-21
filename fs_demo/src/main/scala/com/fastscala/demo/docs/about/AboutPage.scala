@@ -27,7 +27,7 @@ class AboutPage extends MultipleCodeExamples2Page {
     renderHtml() {
       alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.apply {
         div.apply("Interested in learning more about the FastScala framework? Register now for a free live demo/training here!:") ++
-          BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://us02web.zoom.us/meeting/register/tZMpc-iqqjkpHtOqjEqc2AIIFQKYifbeZrhi").btnLink.ms_3
+          BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
       } ++
         h3.apply("What is the FastScala framework?") ++
         <p>

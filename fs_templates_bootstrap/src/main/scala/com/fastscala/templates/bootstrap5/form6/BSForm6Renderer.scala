@@ -109,30 +109,27 @@ abstract class BSForm6Renderer {
 
   def multiSelectFieldRendererSelectElemClasses: String = form_select.form_control.getClassAttr
 
-  //  implicit val multiSelectFieldRenderer = new MultiSelectFieldRenderer {
-  //
-  //    def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
-  //
-  //    override def render[T](
-  //                            field: F5MultiSelectField[T]
-  //                          )(
-  //                            label: Option[Elem],
-  //                            elem: Elem,
-  //                            error: Option[NodeSeq]
-  //                          )(implicit hints: Seq[RenderHint]): Elem = {
-  //      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
-  //      else div.mb_3.withId(field.aroundId) {
-  //        val showErrors = true // hints.contains(ShowValidationsHint)
-  //        label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
-  //          elem
-  //            .addClass(multiSelectFieldRendererSelectElemClasses)
-  //            .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
-  //            .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
-  //            .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
-  //          error.filter(_ => showErrors).map(error => invalid_feedback(error)).getOrElse(NodeSeq.Empty)
-  //      }
-  //    }
-  //  }
+  implicit val multiSelectFieldRenderer = new MultiSelectF6FieldRenderer {
+
+    def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
+
+    override def render[T](field: F6MultiSelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem = {
+      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      else div.mb_3.withId(field.aroundId).apply {
+        val showErrors = true // hints.contains(ShowValidationsHint)
+        label.map(lbl => <label/>.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
+          elem
+            .addClass(selectFieldRendererSelectElemClasses)
+            .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+            .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
+            .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
+          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(NodeSeq.Empty)
+      }
+    }
+
+    override def renderOption[T](field: F6MultiSelectFieldBase[T])(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
+      <option selected={if (selected) "true" else null} value={value}>{label}</option>
+  }
 
   def checkboxFieldRendererCheckboxElemClasses: String = form_check_input.getClassAttr
 

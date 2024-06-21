@@ -148,7 +148,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         }.render()
       }
     }
-    renderSnippet("Select") {
+    renderSnippet("Select (Optional)") {
       val colors: List[Color] = List(
         java.awt.Color.WHITE
         , java.awt.Color.LIGHT_GRAY
@@ -181,9 +181,92 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         }.render()
       }
     }
+    renderSnippet("Select (one always must be selected)") {
+      val colors: List[Color] = List(
+        java.awt.Color.WHITE
+        , java.awt.Color.LIGHT_GRAY
+        , java.awt.Color.GRAY
+        , java.awt.Color.DARK_GRAY
+        , java.awt.Color.BLACK
+        , java.awt.Color.RED
+        , java.awt.Color.PINK
+        , java.awt.Color.ORANGE
+        , java.awt.Color.YELLOW
+        , java.awt.Color.GREEN
+        , java.awt.Color.MAGENTA
+        , java.awt.Color.CYAN
+        , java.awt.Color.BLUE
+      )
+      val inputField = new F6SelectField[Color](colors).label("Color")
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm6() {
+          override def afterSave()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              fs_4.apply(s"Your selection:") ++
+                pre.apply(inputField.currentValue.toString)
+            )
+
+          override lazy val rootField: F6Field = F6VerticalField()(
+            inputField
+            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Multi Select") {
+      val continents: List[String] = List(
+        "Asia"
+        , "Africa"
+        , "North America"
+        , "South America"
+        , "Antarctica"
+        , "Europe"
+        , "Australia"
+      )
+      val inputField = new F6MultiSelectField().options(continents).label("Continents").size(10)
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm6() {
+          override def afterSave()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              fs_4.apply(s"Your selected continents:") ++
+                pre.apply(inputField.currentValue.mkString(", "))
+            )
+
+          override lazy val rootField: F6Field = F6VerticalField()(
+            inputField
+            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
     renderSnippet("Checkbox") {
 
       val inputField = new F6CheckboxField().label("Has driving license")
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm6() {
+          override def afterSave()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              fs_4.apply(s"Your selection:") ++
+                pre.apply(inputField.currentValue.toString)
+            )
+
+          override lazy val rootField: F6Field = F6VerticalField()(
+            inputField
+            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Enum-based") {
+
+      object OutputState extends Enumeration {
+        val High, Low, HighZ = Value
+      }
+
+      val inputField = EnumField.Nullable(OutputState).label("Output State").option2String(_.map(_.toString).getOrElse("--"))
 
       div.border.p_2.rounded.apply {
         new DefaultForm6() {

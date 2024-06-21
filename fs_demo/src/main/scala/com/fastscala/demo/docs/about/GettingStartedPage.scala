@@ -1,25 +1,12 @@
 package com.fastscala.demo.docs.about
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{LoggedInPage, MultipleCodeExamples2Page}
-import com.fastscala.demo.docs.forms.DefaultBSForm6Renderer
-import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.modals.BSModal5
+import com.fastscala.demo.docs.LoggedInPage
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form6.DefaultForm6
-import com.fastscala.templates.form6.fields.{F6Field, F6SaveButtonField, F6StringField, F6VerticalField}
-import io.circe.Decoder
-import io.circe.generic.semiauto
 
-import java.net.{HttpURLConnection, URL, URLEncoder}
-import java.util.Date
-import scala.io.Source
-import scala.util.Try
 import scala.xml.NodeSeq
 
 class GettingStartedPage extends LoggedInPage() {
-
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
     import com.fastscala.templates.bootstrap5.classes.BSHelpers._
@@ -27,9 +14,21 @@ class GettingStartedPage extends LoggedInPage() {
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3 mb-3">
         <h1 class="h3" style="color: #1b4d88;">Getting Started</h1>
       </div> ++
-        alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.mb_3.apply {
+        alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.mb_5.apply {
           div.apply("Interested in learning more about the FastScala framework? Register now for a free live demo/training here!:") ++
             BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
+        } ++
+        h2.apply("Github repo") ++
+        <p>You can access the FastScala framework repo at: <a href="https://github.com/fastscala/fastscala">https://github.com/fastscala/fastscala</a></p> ++
+        mb_5 ++
+        text_center.apply {
+          h2.apply("Basic Scala Environment Installation") ++
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/DyvwpBI9wms?" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen="true"></iframe>
+        } ++
+        mb_5 ++
+        text_center.apply {
+          h2.apply("Running the Demo locally") ++
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/9dVYEipQg18?" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen="true"></iframe>
         }
     }
   }

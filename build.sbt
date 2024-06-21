@@ -31,6 +31,7 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "org.slf4j" % "slf4j-api" % "2.0.7",
       "com.github.loki4j" % "loki-logback-appender" % "1.4.0",
       "io.prometheus" % "simpleclient_servlet_jakarta" % "0.16.0",
+      "com.typesafe" % "config" % "1.4.3",
 
       "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
 

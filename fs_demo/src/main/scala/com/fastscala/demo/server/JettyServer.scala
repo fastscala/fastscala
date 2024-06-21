@@ -1,6 +1,7 @@
 package com.fastscala.demo.server
 
 import com.fastscala.server.JettyServerHelper
+import com.typesafe.config.ConfigFactory
 import org.eclipse.jetty.server.Handler
 
 import java.awt.Desktop
@@ -8,7 +9,9 @@ import java.net.URI
 
 object JettyServer extends JettyServerHelper() {
 
-  override def Port: Int = 9064
+  val config = ConfigFactory.load()
+
+  override def Port: Int = config.getInt("com.fastscala.demo.server.port")
 
   override def isLocal: Boolean = System.getProperty("user.name") != "fs_demo"
 

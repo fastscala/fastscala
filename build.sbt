@@ -51,7 +51,7 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
     name := "fs_db",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.3.5",
+      "org.postgresql" % "postgresql" % "42.6.0",
       "org.xerial" % "sqlite-jdbc" % "3.42.0.0",
       "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
       "com.google.guava" % "guava" % "32.1.1-jre",
@@ -111,4 +111,3 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
   )
   .dependsOn(fs_templates_bootstrap)
   .dependsOn(fs_chartjs)
-

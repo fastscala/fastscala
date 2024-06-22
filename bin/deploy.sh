@@ -49,12 +49,23 @@ echo "[$(( $(date +%s) - $START ))sec]: SENT RPM FILE"
 
 echo "RESTARTING..."
 
-RUN_S "
-systemctl stop $NAME.service
-rpm -ivh --force /opt/$RPM_FILE
-systemctl enable $NAME.service
-systemctl start $NAME.service
-"
+RUN_S "systemctl stop $NAME.service; rpm -ivh --force /opt/$RPM_FILE; systemctl enable $NAME.service"
+
+if [ -n "$DEFAULT_CONFIG_FILE_CONTENTS" ];
+then
+  echo "Setting default config contents to:"
+  echo "$DEFAULT_CONFIG_FILE_CONTENTS"
+  DEFAULT_CONFIG_FILE=$(mktemp -p /tmp)
+  echo "$DEFAULT_CONFIG_FILE_CONTENTS" > $DEFAULT_CONFIG_FILE
+fi
+
+if [ -n "$DEFAULT_CONFIG_FILE" ];
+then
+  echo "COPYING DEFAULT CONFIG TO SERVER..."
+  RSYNC -v "$DEFAULT_CONFIG_FILE" "$SSHUSER@$SSHHOST:/etc/default/$NAME";
+fi
+
+RUN_S "systemctl start $NAME.service"
 
 for i in "$@" ; do
     if [[ $i == "--notail" ]] ; then

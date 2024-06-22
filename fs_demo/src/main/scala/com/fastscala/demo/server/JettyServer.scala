@@ -9,12 +9,6 @@ import java.net.URI
 
 object JettyServer extends JettyServerHelper() {
 
-  val config = ConfigFactory.load()
-
-  override def Port: Int = config.getInt("com.fastscala.demo.server.port")
-
-  override def isLocal: Boolean = System.getProperty("user.name") != "fs_demo"
-
   override def appName: String = "fs_demo"
 
   override def buildMainHandler(): Handler = new RoutingHandler()

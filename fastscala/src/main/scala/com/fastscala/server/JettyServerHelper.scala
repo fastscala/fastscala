@@ -3,6 +3,7 @@ package com.fastscala.server
 import com.fastscala.core.FSSystem
 import com.fastscala.utils.FSOptimizedResourceHandler
 import com.fastscala.websockets.FSWebsocketServletContextHandler
+import com.typesafe.config.ConfigFactory
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
 import org.eclipse.jetty.http.CompressedContentFormat
 import org.eclipse.jetty.server._
@@ -18,6 +19,8 @@ import java.nio.channels.ReadableByteChannel
 
 abstract class JettyServerHelper() {
 
+  val config = ConfigFactory.load()
+
   def appName: String
 
   implicit val fss: FSSystem = new FSSystem(appName = appName)
@@ -26,9 +29,9 @@ abstract class JettyServerHelper() {
 
   def NThreads = 200
 
-  def Port: Int
+  def Port: Int = config.getInt("com.fastscala.demo.server.port")
 
-  def isLocal: Boolean
+  def isLocal: Boolean = config.getBoolean("com.fastscala.demo.server.local")
 
   val threadPool = new QueuedThreadPool(NThreads)
   threadPool.setName("http_server")

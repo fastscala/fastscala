@@ -1,7 +1,7 @@
 package com.fastscala.demo.server
 
 import com.fastscala.core.{FSSession, FSSystem}
-import com.fastscala.demo.db.{CurrentUser, DB}
+import com.fastscala.demo.db.{CurrentUser, FakeDB}
 import com.fastscala.demo.docs._
 import com.fastscala.demo.docs.bootstrap.BootstrapModalPage
 import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
@@ -37,7 +37,7 @@ class RoutingHandler()(implicit fss: FSSystem) extends RoutingHandlerHelper {
         Option(req.getCookies).getOrElse(Array()).find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(
           Option(req.getParameterValues("user_token")).getOrElse(Array[String]()).headOption.filter(_.trim != "")
         ).foreach(token => {
-          DB.users.find(_.loginToken == token).foreach(user => {
+          FakeDB.users.find(_.loginToken == token).foreach(user => {
             CurrentUser() = user
           })
         })

@@ -1,6 +1,6 @@
 package com.fastscala.demo.docs
 
-import com.fastscala.demo.docs.about.{AboutPage, GettingStartedPage}
+import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
 import com.fastscala.demo.docs.fastscala.{AnonymousPage, CallbacksPage, FileDownloadPage, FileUploadPage, RerenderablePage, ServerSidePushPage}
 import com.fastscala.demo.docs.forms.FormInputTypesPage
@@ -11,6 +11,7 @@ object FSDemoMainMenu extends Menu(
   MenuSection("About FastScala")(
     new RoutingMenuItem()("About", () => new AboutPage())
     , new RoutingMenuItem("getting_started")("Getting Started", () => new GettingStartedPage())
+    , new RoutingMenuItem("author")("Author", () => new AuthorPage())
   )
   , MenuSection("FastScala Basics")(
     new RoutingMenuItem("demo", "fastscala", "callbacks")("Callbacks", () => new CallbacksPage())
@@ -33,6 +34,10 @@ object FSDemoMainMenu extends Menu(
     , new RoutingMenuItem("demo", "bootstrap", "images")("Images", () => new BootstrapImagesPage())
     , new RoutingMenuItem("demo", "bootstrap", "modal")("Modal", () => new BootstrapModalPage())
   ),
+  MenuSection("Forms Lib")(
+    SimpleMenuItem("Simple", "/demo/simple_form")
+    , new RoutingMenuItem("demo", "forms", "input_types")("Input Types", () => new FormInputTypesPage())
+  ),
   MenuSection("Table Lib")(
     SimpleMenuItem("Simple", "/demo/simple_tables")
     , SimpleMenuItem("Sortable", "/demo/sortable_tables")
@@ -40,13 +45,7 @@ object FSDemoMainMenu extends Menu(
     , SimpleMenuItem("Selectable Rows", "/demo/selectable_rows_tables")
     , SimpleMenuItem("Selectable Columns", "/demo/tables_sel_cols")
   ),
-  MenuSection("Form Lib")(
-    SimpleMenuItem("Simple", "/demo/simple_form")
-    , new RoutingMenuItem("demo", "forms", "input_types")("Input Types", () => new FormInputTypesPage())
-  ),
   //  MenuSection("chart.js integration")(
   //    SimpleMenuItem("Simple", "/demo/chartjs/simple")
   //  ),
-  MenuSection("Other")(
-  ),
 )

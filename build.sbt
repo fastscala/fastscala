@@ -99,6 +99,9 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     rpmVendor := "kezlisolutions",
     rpmLicense := Some("none"),
 
+    Linux / daemonUser := "fs_demo",
+    Linux / daemonGroup := "fs_demo",
+
     libraryDependencies ++= Seq(
       "org.eclipse.jetty" % "jetty-server" % "11.0.21",
       "org.typelevel" %% "cats-effect" % "3.4.8",

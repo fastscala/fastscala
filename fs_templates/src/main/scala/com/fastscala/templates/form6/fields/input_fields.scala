@@ -1,10 +1,10 @@
 package com.fastscala.templates.form6.fields
 
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.templates.form6.Form6
-import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.Lazy
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
@@ -15,9 +15,8 @@ import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 import scala.util.chaining.scalaUtilChainingOps
 import scala.util.{Failure, Success, Try}
-import scala.xml.{Elem, NodeSeq}
 
-trait F6FieldMixin extends F6Field {
+trait F6FieldMixin[E <: FSXmlEnv] extends F6Field[E] {
 
   def mutate(code: => Unit): this.type = {
     code
@@ -25,12 +24,12 @@ trait F6FieldMixin extends F6Field {
   }
 }
 
-trait F6FieldInputFieldMixin extends F6FieldMixin {
+trait F6FieldInputFieldMixin[E <: FSXmlEnv] extends F6FieldMixin[E] {
 
-  def processInputElem(input: Elem): Elem = input
+  def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = input
 }
 
-trait F6FieldWithValue[T] extends F6FieldMixin {
+trait F6FieldWithValue[E <: FSXmlEnv, T] extends F6FieldMixin[E] {
 
   def defaultValue: T
 
@@ -61,6 +60,14 @@ trait F6FieldWithValue[T] extends F6FieldMixin {
 
   def set(value: T): Js = setter()(value)
 
+  def setter(setter: T => Js): this.type = mutate({
+    _setter = setter
+  })
+
+  def getter(getter: () => T): this.type = mutate({
+    _getter = getter
+  })
+
   def rw(get: => T, set: T => Unit): this.type = mutate {
     _getter = () => get
     _setter = v => {
@@ -70,7 +77,7 @@ trait F6FieldWithValue[T] extends F6FieldMixin {
   }
 }
 
-trait F6FieldWithDisabled extends F6FieldInputFieldMixin {
+trait F6FieldWithDisabled[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _disabled: () => Boolean = () => false
 
   def disabled() = _disabled()
@@ -83,12 +90,13 @@ trait F6FieldWithDisabled extends F6FieldInputFieldMixin {
     _disabled = f
   })
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
     if (_disabled()) input.withAttr("disabled", "disabled") else input
   }
 }
 
-trait F6FieldWithRequired extends F6FieldInputFieldMixin {
+trait F6FieldWithRequired[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _required: () => Boolean = () => false
 
   def required() = _required()
@@ -101,12 +109,13 @@ trait F6FieldWithRequired extends F6FieldInputFieldMixin {
     _required = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
     if (_required()) input.withAttr("required", "true") else input
   }
 }
 
-trait F6FieldWithReadOnly extends F6FieldInputFieldMixin {
+trait F6FieldWithReadOnly[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _readOnly: () => Boolean = () => false
 
   def readOnly() = _readOnly()
@@ -119,12 +128,13 @@ trait F6FieldWithReadOnly extends F6FieldInputFieldMixin {
     _readOnly = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
     if (_readOnly()) input.withAttr("readonly", "true") else input
   }
 }
 
-trait F6FieldWithEnabled extends F6FieldInputFieldMixin {
+trait F6FieldWithEnabled[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _enabled: () => Boolean = () => true
 
   def enabled(): Boolean = _enabled()
@@ -138,7 +148,7 @@ trait F6FieldWithEnabled extends F6FieldInputFieldMixin {
   }
 }
 
-trait F6FieldWithTabIndex extends F6FieldInputFieldMixin {
+trait F6FieldWithTabIndex[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _tabIndex: () => Option[Int] = () => None
 
   def tabIndex() = _tabIndex()
@@ -155,14 +165,13 @@ trait F6FieldWithTabIndex extends F6FieldInputFieldMixin {
     _tabIndex = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _tabIndex().map(tabIndex => {
-      input.withAttr("tabindex", tabIndex.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _tabIndex().map(tabIndex => input.withAttr("tabindex", tabIndex.toString)).getOrElse(input)
   }
 }
 
-trait F6FieldWithName extends F6FieldInputFieldMixin {
+trait F6FieldWithName[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _name: () => Option[String] = () => None
 
   def name(): Option[String] = _name()
@@ -179,14 +188,13 @@ trait F6FieldWithName extends F6FieldInputFieldMixin {
     _name = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _name().map(name => {
-      input.withAttr("name", name)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _name().map(name => input.withAttr("name", name)).getOrElse(input)
   }
 }
 
-trait F6FieldWithSize extends F6FieldInputFieldMixin {
+trait F6FieldWithSize[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _size: () => Option[Int] = () => None
 
   def size(): Option[Int] = _size()
@@ -203,14 +211,13 @@ trait F6FieldWithSize extends F6FieldInputFieldMixin {
     _size = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _size().map(size => {
-      input.withAttr("size", size.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _size().map(size => input.withAttr("size", size.toString)).getOrElse(input)
   }
 }
 
-trait F6FieldWithPlaceholder extends F6FieldInputFieldMixin {
+trait F6FieldWithPlaceholder[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _placeholder: () => Option[String] = () => None
 
   def placeholder() = _placeholder()
@@ -227,40 +234,39 @@ trait F6FieldWithPlaceholder extends F6FieldInputFieldMixin {
     _placeholder = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _placeholder().map(placeholder => {
-      input.withAttr("placeholder", placeholder)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _placeholder().map(placeholder => input.withAttr("placeholder", placeholder)).getOrElse(input)
   }
 }
 
-trait F6FieldWithLabel extends F6FieldInputFieldMixin {
-  var _label: () => Option[NodeSeq] = () => None
+trait F6FieldWithLabel[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
+  var _label: () => Option[E#NodeSeq] = () => None
 
   def label() = _label()
 
-  def label(v: Option[NodeSeq]): this.type = mutate {
+  def label(v: Option[E#NodeSeq]): this.type = mutate {
     _label = () => v
   }
 
-  def label(v: NodeSeq): this.type = mutate {
+  def label(v: E#NodeSeq): this.type = mutate {
     _label = () => Some(v)
   }
 
   def label(v: String): this.type = mutate {
-    _label = () => Some(scala.xml.Text(v))
+    _label = () => Some(fsXmlSupport.buildText(v))
   }
 
-  def label(f: () => Option[NodeSeq]): this.type = mutate {
+  def label(f: () => Option[E#NodeSeq]): this.type = mutate {
     _label = f
   }
 
   def withLabel(label: String): this.type = mutate {
-    _label = () => Some(<span>{label}</span>)
+    _label = () => Some(<span>{label}</span>.asFSXml())
   }
 }
 
-trait F6FieldWithMaxlength extends F6FieldInputFieldMixin {
+trait F6FieldWithMaxlength[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _maxlength: () => Option[Int] = () => None
 
   def maxlength() = _maxlength()
@@ -277,14 +283,13 @@ trait F6FieldWithMaxlength extends F6FieldInputFieldMixin {
     _maxlength = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _maxlength().map(maxlength => {
-      input.withAttr("maxlength", maxlength.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _maxlength().map(maxlength => input.withAttr("maxlength", maxlength.toString)).getOrElse(input)
   }
 }
 
-trait F6FieldWithInputType extends F6FieldInputFieldMixin {
+trait F6FieldWithInputType[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   def _inputTypeDefault: String = "text"
 
   var _inputType: () => String = () => _inputTypeDefault
@@ -299,12 +304,13 @@ trait F6FieldWithInputType extends F6FieldInputFieldMixin {
     _inputType = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
     input.withAttr("type", _inputType())
   }
 }
 
-trait F6FieldWithAdditionalAttrs extends F6FieldInputFieldMixin {
+trait F6FieldWithAdditionalAttrs[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _additionalAttrs: () => Seq[(String, String)] = () => Nil
 
   def additionalAttrs() = _additionalAttrs()
@@ -317,26 +323,27 @@ trait F6FieldWithAdditionalAttrs extends F6FieldInputFieldMixin {
     _additionalAttrs = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
     input.withAttrs(_additionalAttrs(): _*)
   }
 }
 
-trait F6FieldWithDependencies extends F6FieldInputFieldMixin {
-  var _deps: () => Set[F6Field] = () => Set()
+trait F6FieldWithDependencies[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
+  var _deps: () => Set[F6Field[_]] = () => Set()
 
   def deps() = _deps()
 
-  def deps(v: Set[F6Field]): this.type = mutate {
+  def deps(v: Set[F6Field[_]]): this.type = mutate {
     _deps = () => v
   }
 
-  def deps(f: () => Set[F6Field]): this.type = mutate {
+  def deps(f: () => Set[F6Field[_]]): this.type = mutate {
     _deps = f
   }
 }
 
-trait F6FieldWithPrefix extends F6FieldMixin {
+trait F6FieldWithPrefix[E <: FSXmlEnv] extends F6FieldMixin[E] {
 
   var _prefix: () => String = () => ""
 
@@ -351,7 +358,7 @@ trait F6FieldWithPrefix extends F6FieldMixin {
   }
 }
 
-trait F6FieldWithSuffix extends F6FieldMixin {
+trait F6FieldWithSuffix[E <: FSXmlEnv] extends F6FieldMixin[E] {
 
   var _suffix: () => String = () => ""
 
@@ -366,7 +373,7 @@ trait F6FieldWithSuffix extends F6FieldMixin {
   }
 }
 
-trait F6FieldWithMin extends F6FieldInputFieldMixin {
+trait F6FieldWithMin[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _min: () => Option[String] = () => None
 
   def min() = _min()
@@ -383,14 +390,13 @@ trait F6FieldWithMin extends F6FieldInputFieldMixin {
     _min = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _min().map(min => {
-      input.withAttr("min", min.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _min().map(min => input.withAttr("min", min)).getOrElse(input)
   }
 }
 
-trait F6FieldWithStep extends F6FieldInputFieldMixin {
+trait F6FieldWithStep[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _step: () => Option[Int] = () => None
 
   def step(): Option[Int] = _step()
@@ -407,14 +413,13 @@ trait F6FieldWithStep extends F6FieldInputFieldMixin {
     _step = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _step().map(step => {
-      input.withAttr("step", step.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _step().map(step => input.withAttr("step", step.toString)).getOrElse(input)
   }
 }
 
-trait F6FieldWithMax extends F6FieldInputFieldMixin {
+trait F6FieldWithMax[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _max: () => Option[String] = () => None
 
   def max() = _max()
@@ -431,49 +436,50 @@ trait F6FieldWithMax extends F6FieldInputFieldMixin {
     _max = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _max().map(max => {
-      input.withAttr("max", max.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _max().map(max => input.withAttr("max", max)).getOrElse(input)
   }
 }
 
-abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends StandardF6Field
-  with ValidatableField
-  with StringSerializableField
-  with FocusableF6Field
-  with F6FieldWithDisabled
-  with F6FieldWithRequired
-  with F6FieldWithReadOnly
-  with F6FieldWithEnabled
-  with F6FieldWithTabIndex
-  with F6FieldWithName
-  with F6FieldWithPlaceholder
-  with F6FieldWithLabel
-  with F6FieldWithMaxlength
-  with F6FieldWithInputType
-  with F6FieldWithAdditionalAttrs
-  with F6FieldWithDependencies
-  with F6FieldWithValue[T] {
+abstract class F6TextField[E <: FSXmlEnv, T]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E]) extends StandardF6Field[E]
+  with ValidatableField[E]
+  with StringSerializableField[E]
+  with FocusableF6Field[E]
+  with F6FieldWithDisabled[E]
+  with F6FieldWithRequired[E]
+  with F6FieldWithReadOnly[E]
+  with F6FieldWithEnabled[E]
+  with F6FieldWithTabIndex[E]
+  with F6FieldWithName[E]
+  with F6FieldWithPlaceholder[E]
+  with F6FieldWithLabel[E]
+  with F6FieldWithMaxlength[E]
+  with F6FieldWithInputType[E]
+  with F6FieldWithAdditionalAttrs[E]
+  with F6FieldWithDependencies[E]
+  with F6FieldWithValue[E, T] {
+
+  import com.fastscala.core.FSXmlUtils._
 
   def toString(value: T): String
 
   def fromString(str: String): Either[String, T]
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     fromString(str) match {
       case Right(value) =>
         currentValue = value
         _setter(currentValue)
         Nil
       case Left(error) =>
-        List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
+        List((this, implicitly[FSXmlSupport[E]].buildText(s"Could not parse value '$str': $error")))
     }
   }
 
   override def saveToString(): Option[String] = Some(toString(currentValue)).filter(_ != "")
 
-  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => _setter(currentValue)
     case _ => Js.void
   })
@@ -482,12 +488,12 @@ abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends 
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
-  def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>.asFSXml()
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
-          _label().map(lbl => <label for={elemId}>{lbl}</label>),
+          _label().map(lbl => <label for={elemId}>{lbl}</label>.asFSXml()),
           processInputElem(<input type={inputType}
                    id={elemId}
                    onblur={fsc.callback(Js.elementValueById(elemId), str => {
@@ -497,17 +503,17 @@ abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends 
                    }).cmd}
                    onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.onSaveClientSide())}}"}
                    value={toString(currentValue)}
-            />).withAttrs(finalAdditionalAttrs: _*),
+            />.asFSXml()).withAttrs(finalAdditionalAttrs: _*),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field[E], Boolean]): List[F6Field[E]] = if (predicate.applyOrElse[F6Field[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6StringField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[String] {
+class F6StringField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E]) extends F6TextField[E, String] {
 
   override def defaultValue: String = ""
 
@@ -515,12 +521,12 @@ class F6StringField()(implicit renderer: TextF6FieldRenderer) extends F6TextFiel
 
   def fromString(str: String): Either[String, String] = Right(str)
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (_required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (_required() && currentValue.trim == "") Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
 
-class F6StringOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[String]] {
+class F6StringOptField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E]) extends F6TextField[E, Option[String]] {
 
   override def defaultValue: Option[String] = None
 
@@ -528,11 +534,11 @@ class F6StringOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextF
 
   def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DateOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[java.time.LocalDate]] {
+class F6DateOptField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E]) extends F6TextField[E, Option[java.time.LocalDate]] {
   override def _inputTypeDefault: String = "date"
 
   override def defaultValue: Option[time.LocalDate] = None
@@ -541,11 +547,11 @@ class F6DateOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextFie
 
   def fromString(str: String): Either[String, Option[java.time.LocalDate]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DateTimeOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[java.time.LocalDateTime]] {
+class F6DateTimeOptField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E]) extends F6TextField[E, Option[java.time.LocalDateTime]] {
   override def _inputTypeDefault: String = "datetime-local"
 
   override def defaultValue: Option[LocalDateTime] = None
@@ -554,17 +560,17 @@ class F6DateTimeOptField()(implicit renderer: TextF6FieldRenderer) extends F6Tex
 
   def fromString(str: String): Either[String, Option[java.time.LocalDateTime]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6DoubleOptField()(implicit renderer: TextF6FieldRenderer)
-  extends F6TextField[Option[Double]]
-    with F6FieldWithPrefix
-    with F6FieldWithSuffix
-    with F6FieldWithMin
-    with F6FieldWithStep
-    with F6FieldWithMax {
+class F6DoubleOptField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E])
+  extends F6TextField[E, Option[Double]]
+    with F6FieldWithPrefix[E]
+    with F6FieldWithSuffix[E]
+    with F6FieldWithMin[E]
+    with F6FieldWithStep[E]
+    with F6FieldWithMax[E] {
   override def _inputTypeDefault: String = "number"
 
   override def defaultValue: Option[Double] = None
@@ -587,17 +593,17 @@ class F6DoubleOptField()(implicit renderer: TextF6FieldRenderer)
     }
   }
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6IntOptField()(implicit renderer: TextF6FieldRenderer)
-  extends F6TextField[Option[Int]]
-    with F6FieldWithPrefix
-    with F6FieldWithSuffix
-    with F6FieldWithMin
-    with F6FieldWithStep
-    with F6FieldWithMax {
+class F6IntOptField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E])
+  extends F6TextField[E, Option[Int]]
+    with F6FieldWithPrefix[E]
+    with F6FieldWithSuffix[E]
+    with F6FieldWithMin[E]
+    with F6FieldWithStep[E]
+    with F6FieldWithMax[E] {
 
   override def defaultValue: Option[Int] = None
 
@@ -619,22 +625,22 @@ class F6IntOptField()(implicit renderer: TextF6FieldRenderer)
     }
   }
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6TimeOfDayField()(implicit renderer: TextF6FieldRenderer)
-  extends F6TextField[Option[Int]]
-    with F6FieldWithPrefix
-    with F6FieldWithSuffix
-    with F6FieldWithMin
-    with F6FieldWithStep
-    with F6FieldWithMax {
+class F6TimeOfDayField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E])
+  extends F6TextField[E, Option[Int]]
+    with F6FieldWithPrefix[E]
+    with F6FieldWithSuffix[E]
+    with F6FieldWithMin[E]
+    with F6FieldWithStep[E]
+    with F6FieldWithMax[E] {
 
   override def defaultValue: Option[Int] = None
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
 
   def toString(value: Option[Int]): String = value.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")
@@ -658,13 +664,13 @@ class F6TimeOfDayField()(implicit renderer: TextF6FieldRenderer)
   }
 }
 
-class F6DoubleField()(implicit renderer: TextF6FieldRenderer)
-  extends F6TextField[Double]
-    with F6FieldWithPrefix
-    with F6FieldWithSuffix
-    with F6FieldWithMin
-    with F6FieldWithStep
-    with F6FieldWithMax {
+class F6DoubleField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextF6FieldRenderer[E])
+  extends F6TextField[E, Double]
+    with F6FieldWithPrefix[E]
+    with F6FieldWithSuffix[E]
+    with F6FieldWithMin[E]
+    with F6FieldWithStep[E]
+    with F6FieldWithMax[E] {
 
   override def defaultValue: Double = 0
 

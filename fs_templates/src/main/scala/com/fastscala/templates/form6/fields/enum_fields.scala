@@ -1,13 +1,15 @@
 package com.fastscala.templates.form6.fields
 
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+
 object EnumField {
 
-  def NonNullable[T <: Enumeration](enum: T)(implicit renderer: SelectF6FieldRenderer): F6SelectField[T#Value] =
-    new F6SelectField[T#Value](`enum`.values.toList)
+  def NonNullable[E <: FSXmlEnv : FSXmlSupport, T <: Enumeration](enum: T)(implicit renderer: SelectF6FieldRenderer[E]): F6SelectField[E, T#Value] =
+    new F6SelectField[E, T#Value](`enum`.values.toList)
 
-  def Nullable[T <: Enumeration](enum: T)(implicit renderer: SelectF6FieldRenderer): F6SelectOptField[T#Value] =
-    new F6SelectOptField[T#Value]().optionsValid(`enum`.values.toList)
+  def Nullable[E <: FSXmlEnv : FSXmlSupport, T <: Enumeration](enum: T)(implicit renderer: SelectF6FieldRenderer[E]): F6SelectOptField[E, T#Value] =
+    new F6SelectOptField[E, T#Value]().optionsValid(`enum`.values.toList)
 
-  def Multi[T <: Enumeration](enum: T)(implicit renderer: MultiSelectF6FieldRenderer): F6MultiSelectField[T#Value] =
-    new F6MultiSelectField[T#Value]().options(`enum`.values.toList)
+  def Multi[E <: FSXmlEnv : FSXmlSupport, T <: Enumeration](enum: T)(implicit renderer: MultiSelectF6FieldRenderer[E]): F6MultiSelectField[E, T#Value] =
+    new F6MultiSelectField[E, T#Value]().options(`enum`.values.toList)
 }

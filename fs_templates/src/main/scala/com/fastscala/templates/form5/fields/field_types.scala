@@ -1,47 +1,48 @@
 package com.fastscala.templates.form5.fields
 
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSXmlEnv}
 import com.fastscala.js.Js
 import com.fastscala.templates.form5.Form5
 import com.fastscala.templates.utils.ElemWithRandomId
 
-import scala.xml.{Elem, NodeSeq}
 
+trait FormField[E <: FSXmlEnv] {
 
-trait FormField {
+  def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem
-
-  def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js
+  def reRender()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js
 
   /**
    * Ignores fields not matching the predicate, and their children.
    */
-  def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField]
+  def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]]
 
-  def enabledFields: List[FormField] = fieldsMatching(_.enabled())
+  def enabledFields: List[FormField[E]] = fieldsMatching(_.enabled())
 
-  def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
+  def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
 
-  def deps: Set[FormField]
+  def deps: Set[FormField[_]]
 
   def enabled: () => Boolean
 }
 
-trait FocusableFormField extends FormField {
+trait FocusableFormField[E <: FSXmlEnv] extends FormField[E] {
 
   def focusJs: Js
 }
 
-trait StandardFormField extends FormField with ElemWithRandomId {
+trait StandardFormField[E <: FSXmlEnv] extends FormField[E] with ElemWithRandomId {
 
   val aroundId: String = randomElemId
 
-  def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.replace(aroundId, render())
+  def reRender()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = {
+    import form.fsXmlSupport
+    Js.replace(aroundId, render())
+  }
 
   def visible: () => Boolean = () => enabled()
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
     case _ => Js.void
   })
@@ -57,20 +58,20 @@ trait StandardFormField extends FormField with ElemWithRandomId {
   }
 }
 
-trait ValidatableField extends StandardFormField {
+trait ValidatableField[E <: FSXmlEnv] extends StandardFormField[E] {
   def hasErrors_?() = errors().nonEmpty
 
-  def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+  def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = Nil
 }
 
-trait StringSerializableField extends StandardFormField {
+trait StringSerializableField[E <: FSXmlEnv] extends StandardFormField[E] {
 
-  def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)]
+  def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)]
 
   def saveToString(): Option[String]
 }
 
-trait QuerySerializableStringField extends StringSerializableField {
+trait QuerySerializableStringField[E <: FSXmlEnv] extends StringSerializableField[E] {
 
   def queryStringParamName: String
 }

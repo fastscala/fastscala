@@ -1,18 +1,16 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSXmlEnv}
 
-import scala.xml.{Elem, NodeSeq}
-
-trait Table5ColsRenderable {
+trait Table5ColsRenderable[E <: FSXmlEnv] {
 
   type R
   type C
 
   def renderTRTD()(
-    implicit tableBodyRerenderer: TableBodyRerenderer,
-    trRerenderer: TRRerenderer,
-    tdRerenderer: TDRerenderer,
+    implicit tableBodyRerenderer: TableBodyRerenderer[E],
+    trRerenderer: TRRerenderer[E],
+    tdRerenderer: TDRerenderer[E],
     value: R,
     rowIdx: TableRowIdx,
     columns: Seq[(String, C)],
@@ -21,17 +19,17 @@ trait Table5ColsRenderable {
     col: C,
     tableColIdx: TableColIdx,
     fsc: FSContext
-  ): Elem
+  ): E#Elem
 
   def renderTableHeadTRTH()(
-    implicit tableHeadRerenderer: TableHeadRerenderer,
-    trRerenderer: TRRerenderer,
-    thRerenderer: THRerenderer,
+    implicit tableHeadRerenderer: TableHeadRerenderer[E],
+    trRerenderer: TRRerenderer[E],
+    thRerenderer: THRerenderer[E],
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     colThId: String,
     col: C,
     tableColIdx: TableColIdx,
     fsc: FSContext
-  ): Elem
+  ): E#Elem
 }

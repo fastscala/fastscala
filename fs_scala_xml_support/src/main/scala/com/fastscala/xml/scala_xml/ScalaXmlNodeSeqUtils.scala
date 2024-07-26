@@ -1,9 +1,8 @@
-package com.fastscala.utils
+package com.fastscala.xml.scala_xml
 
-import scala.collection.mutable
 import scala.xml.{Elem, NodeSeq, Unparsed}
 
-object NodeSeqUtils {
+object ScalaXmlNodeSeqUtils {
 
   def showIf(b: Boolean)(ns: => NodeSeq) = if (b) ns else NodeSeq.Empty
 
@@ -35,22 +34,5 @@ object NodeSeqUtils {
 
   implicit class ShowNS(ns: NodeSeq) {
     def showIf(b: Boolean): NodeSeq = if (b) ns else NodeSeq.Empty
-  }
-
-  def main(args: Array[String]): Unit = {
-    val rslts = (1 to 1000).map(_ => {
-      val start = System.currentTimeMillis()
-      val rslt = (1 to 10000).map(_ => {
-        <tr>
-          <td>Alfreds Futterkiste</td>
-          <td>Maria Anders</td>
-          <td>Germany</td>
-        </tr>
-      }).mkNS
-      val took = System.currentTimeMillis() - start
-      println(took)
-      took
-    }).sorted
-    println(s"${rslts(0)}, ${rslts(99)}, ${rslts(499)}, ${rslts(899)}, ${rslts(999)}")
   }
 }

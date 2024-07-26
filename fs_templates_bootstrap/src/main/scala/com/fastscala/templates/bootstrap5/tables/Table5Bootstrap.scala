@@ -1,12 +1,9 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSContext
-import com.fastscala.js.{Js, Rerenderer}
-import com.fastscala.utils.IdGen
-import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.core.{FSContext, FSXmlEnv}
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
 
-import java.util.UUID
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.Elem
 
 object Table5BootrapStyles extends Enumeration {
   val Primary = Value("table-primary")
@@ -39,7 +36,7 @@ object Table5BootrapResponsiveSizes extends Enumeration {
   val XXL = Value("table-responsive-xxl")
 }
 
-trait Table5BaseBootrapSupport extends Table5Base {
+trait Table5BaseBootrapSupport[E <: FSXmlEnv] extends Table5Base[E] {
 
   def tableResponsive: Option[Table5BootrapResponsiveSizes.Value] = None
 
@@ -76,7 +73,7 @@ trait Table5BaseBootrapSupport extends Table5Base {
     super.tableClasses() + " table " +
       tableHeadStyle.map(" " + _ + " ").getOrElse("")
 
-  override def renderTable()(implicit fsc: FSContext): Elem = tableResponsive.map(size => {
-    <div class={size.toString}>{super.renderTable()}</div>
+  override def renderTable()(implicit fsc: FSContext): E#Elem = tableResponsive.map(size => {
+    <div class={size.toString}>{super.renderTable()}</div>.asFSXml()
   }).getOrElse(super.renderTable())
 }

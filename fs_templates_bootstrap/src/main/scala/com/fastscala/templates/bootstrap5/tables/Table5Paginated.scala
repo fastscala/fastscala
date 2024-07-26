@@ -1,12 +1,12 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSXmlEnv}
 import com.fastscala.templates.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.utils.Lazy
 
-import scala.xml.{Elem, NodeSeq}
+trait Table5Paginated[E <: FSXmlEnv] extends Table5Base[E] {
 
-trait Table5Paginated extends Table5Base {
+  import com.fastscala.core.FSXmlUtils._
   import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
   def defaultNumberOfAdditionalPagesEachSide = 2
@@ -31,28 +31,28 @@ trait Table5Paginated extends Table5Base {
       .toList
       .filter(_ >= 0)
 
-  def renderPagesButtons()(implicit fsc: FSContext): Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
-    BSBtn.BtnLight.lbl("«").ajax(implicit fsc => {
+  def renderPagesButtons()(implicit fsc: FSContext): E#Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
+    BSBtn().BtnLight.lbl("«").ajax(implicit fsc => {
       currentPage() = math.max(0, currentPage() - 1)
       rerenderTableAround()
     }).btn ++
       visiblePages().map(page => {
-        (if (currentPage() == page) BSBtn.BtnPrimary else BSBtn.BtnLight)
+        (if (currentPage() == page) BSBtn().BtnPrimary else BSBtn().BtnLight)
           .lbl((page + 1).toString)
           .ajax(implicit fsc => {
             currentPage() = page
             rerenderTableAround()
           })
           .btn
-      }) ++
-      BSBtn.BtnLight.lbl("»").ajax(implicit fsc => {
+      }).mkNS() ++
+      BSBtn().BtnLight.lbl("»").ajax(implicit fsc => {
         currentPage() = currentPage() + 1
         rerenderTableAround()
       }).btn
   }
 
-  def renderPageSizeDropdown()(implicit fsc: FSContext): Elem = {
-    ImmediateInputFields.select[Int](
+  def renderPageSizeDropdown()(implicit fsc: FSContext): E#Elem = {
+    ImmediateInputFields.select[E, Int](
       () => visiblePageSizes,
       () => currentPageSize(),
       pageSize => {
@@ -63,14 +63,14 @@ trait Table5Paginated extends Table5Base {
     ).mb_3.mx_3
   }
 
-  def renderPaginationBottomControls()(implicit fsc: FSContext): Elem = {
-    row.apply{
+  def renderPaginationBottomControls()(implicit fsc: FSContext): E#Elem = {
+    row.apply {
       col.apply(renderPagesButtons()) ++
         col.apply(renderPageSizeDropdown())
     }
   }
 
-  override def renderAroundContents()(implicit fsc: FSContext): NodeSeq = {
+  override def renderAroundContents()(implicit fsc: FSContext): E#NodeSeq = {
     super.renderAroundContents() ++
       renderPaginationBottomControls()
   }

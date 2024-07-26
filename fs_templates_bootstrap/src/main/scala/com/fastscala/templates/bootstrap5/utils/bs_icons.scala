@@ -1,12 +1,12 @@
 package com.fastscala.templates.bootstrap5.utils
 
-import scala.xml.{Elem, NodeSeq}
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 
 object BsIcn {
   type BsIcn = String
 
   implicit class RichIcn(i: BsIcn) {
-    def icn: Elem = <i class={s"bi $i"}></i>
+    def icn[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("i", "class" -> s"bi $i")()
   }
 
   val bi123: BsIcn = "bi-123"

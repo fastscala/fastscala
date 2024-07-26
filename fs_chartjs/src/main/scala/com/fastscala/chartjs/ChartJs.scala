@@ -1,13 +1,12 @@
 package com.fastscala.chartjs
 
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
-import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.IdGen
-import io.circe.{Encoder, Json}
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
 import io.circe.generic.semiauto
 import io.circe.syntax.EncoderOps
-
-import scala.xml.{Elem, NodeSeq}
+import io.circe.{Encoder, Json}
 
 object ChartJsNullable2Option {
   implicit def nullable2Option[T <: AnyRef](v: T): Option[T] = if (v == null) None else Some(v)
@@ -28,20 +27,26 @@ case class ChartJs(
                     , options: Json = Json.Null
                   ) {
 
+  import ChartJsEncoders._
   def installInCanvas(canvasId: String): Js = {
-    import ChartJsEncoders._
-    import io.circe._, io.circe.generic.auto._, io.circe.parser._, io.circe.syntax._
+    import io.circe.generic.auto._
+    import io.circe.syntax._
 
     Js(
       s"""const ctx = document.getElementById('$canvasId'); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces}); """
     )
   }
+}
 
-  def rendered(): NodeSeq = renderedOn(<canvas></canvas>)
+object ChartJs {
 
-  def renderedOn(elem: Elem): NodeSeq = {
+  import com.fastscala.core.FSXmlUtils._
+
+  def rendered[E <: FSXmlEnv : FSXmlSupport](chart: ChartJs): E#NodeSeq = renderedOn(chart, <canvas></canvas>.asFSXml())
+
+  def renderedOn[E <: FSXmlEnv : FSXmlSupport](chart: ChartJs, elem: E#Elem): E#NodeSeq = {
     val id = elem.getId.getOrElse(IdGen.id("chart_js_canvas"))
     val finalElem = elem.withId(id)
-    finalElem ++ installInCanvas(id).onDOMContentLoaded.inScriptTag
+    finalElem ++ chart.installInCanvas(id).onDOMContentLoaded.inScriptTag
   }
 }

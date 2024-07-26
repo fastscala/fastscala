@@ -1,14 +1,13 @@
 package com.fastscala.templates.form6.fields
 
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.templates.form6.Form6
-import com.fastscala.utils.ElemTransformers.RichElem
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
-import scala.xml.{Elem, NodeSeq}
 
-trait F6FieldWithNumRows extends F6FieldInputFieldMixin {
+trait F6FieldWithNumRows[E <: FSXmlEnv] extends F6FieldInputFieldMixin[E] {
   var _rows: () => Option[Int] = () => None
 
   def rows() = _rows()
@@ -25,50 +24,49 @@ trait F6FieldWithNumRows extends F6FieldInputFieldMixin {
     _rows = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _rows().map(rows => {
-      input.withAttr("rows", rows.toString)
-    }).getOrElse(input)
+  override def processInputElem(input: E#Elem)(implicit fsXmlSupport: FSXmlSupport[E]): E#Elem = super.processInputElem(input).pipe { input =>
+    import com.fastscala.core.FSXmlUtils._
+    _rows().map(rows => input.withAttr("rows", rows.toString)).getOrElse(input)
   }
 }
 
-abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) extends StandardF6Field
-  with ValidatableField
-  with StringSerializableField
-  with FocusableF6Field
-  with F6FieldWithNumRows
-  with F6FieldWithDisabled
-  with F6FieldWithRequired
-  with F6FieldWithReadOnly
-  with F6FieldWithEnabled
-  with F6FieldWithTabIndex
-  with F6FieldWithName
-  with F6FieldWithPlaceholder
-  with F6FieldWithLabel
-  with F6FieldWithMaxlength
-  with F6FieldWithInputType
-  with F6FieldWithAdditionalAttrs
-  with F6FieldWithDependencies
-  with F6FieldWithValue[T] {
+abstract class F6TextareaField[E <: FSXmlEnv, T]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextareaF6FieldRenderer[E]) extends StandardF6Field[E]
+  with ValidatableField[E]
+  with StringSerializableField[E]
+  with FocusableF6Field[E]
+  with F6FieldWithNumRows[E]
+  with F6FieldWithDisabled[E]
+  with F6FieldWithRequired[E]
+  with F6FieldWithReadOnly[E]
+  with F6FieldWithEnabled[E]
+  with F6FieldWithTabIndex[E]
+  with F6FieldWithName[E]
+  with F6FieldWithPlaceholder[E]
+  with F6FieldWithLabel[E]
+  with F6FieldWithMaxlength[E]
+  with F6FieldWithInputType[E]
+  with F6FieldWithAdditionalAttrs[E]
+  with F6FieldWithDependencies[E]
+  with F6FieldWithValue[E, T] {
 
   def toString(value: T): String
 
   def fromString(str: String): Either[String, T]
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     fromString(str) match {
       case Right(value) =>
         currentValue = value
         _setter(currentValue)
         Nil
       case Left(error) =>
-        List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
+        List((this, fsXmlSupport.buildText(s"Could not parse value '$str': $error")))
     }
   }
 
   override def saveToString(): Option[String] = Some(toString(currentValue)).filter(_ != "")
 
-  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => _setter(currentValue)
     case _ => Js.void
   })
@@ -77,12 +75,13 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
-  def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    import com.fastscala.core.FSXmlUtils._
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>.asFSXml()
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
-          _label().map(lbl => <label for={elemId}>{lbl}</label>),
+          _label().map(lbl => <label for={elemId}>{lbl}</label>.asFSXml()),
           processInputElem(<textarea
                       type="text"
                       id={elemId}
@@ -94,17 +93,17 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
                       }).cmd
                       }
                       onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13 && event.ctrlKey) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.onSaveClientSide())}}"}
-          >{toString(currentValue)}</textarea>).withAttrs(finalAdditionalAttrs: _*),
+          >{this.toString(currentValue)}</textarea>.asFSXml()).withAttrs(finalAdditionalAttrs: _*),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field[E], Boolean]): List[F6Field[E]] = if (predicate.applyOrElse[F6Field[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6StringTextareaField()(implicit renderer: TextareaF6FieldRenderer) extends F6TextareaField[String] {
+class F6StringTextareaField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextareaF6FieldRenderer[E]) extends F6TextareaField[E, String] {
 
   override def defaultValue: String = ""
 
@@ -112,11 +111,11 @@ class F6StringTextareaField()(implicit renderer: TextareaF6FieldRenderer) extend
 
   def fromString(str: String): Either[String, String] = Right(str)
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue == "") Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
-class F6StringOptTextareaField()(implicit renderer: TextareaF6FieldRenderer) extends F6TextareaField[Option[String]] {
+class F6StringOptTextareaField[E <: FSXmlEnv]()(implicit fsXmlSupport: FSXmlSupport[E], renderer: TextareaF6FieldRenderer[E]) extends F6TextareaField[E, Option[String]] {
 
   override def defaultValue: Option[String] = None
 
@@ -124,7 +123,7 @@ class F6StringOptTextareaField()(implicit renderer: TextareaF6FieldRenderer) ext
 
   def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 

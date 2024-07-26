@@ -20,7 +20,6 @@ import java.util
 import java.util.Locale
 import scala.collection.convert.ImplicitConversions.`iterable AsScalaIterable`
 import scala.jdk.CollectionConverters.MapHasAsScala
-import scala.xml.NodeSeq
 
 class FSFunc(
               val id: String
@@ -213,10 +212,10 @@ class FSContext(
     )
   }
 
-  def anonymousPageURL(
-                        render: FSContext => NodeSeq
-                        , name: String
-                      ): String = {
+  def anonymousPageURL[E <: FSXmlEnv : FSXmlSupport](
+                                                      render: FSContext => E#NodeSeq
+                                                      , name: String
+                                                    ): String = {
     session.fsSystem.checkSpace()
     val funcId = session.nextID()
     session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
@@ -225,7 +224,7 @@ class FSContext(
     s"/${session.fsSystem.FSPrefix}/anon/$funcId/$name"
   }
 
-  def createAndRedirectToAnonymousPageJS(render: FSContext => NodeSeq, name: String)(implicit fsc: FSContext) =
+  def createAndRedirectToAnonymousPageJS[E <: FSXmlEnv : FSXmlSupport](render: FSContext => E#NodeSeq, name: String)(implicit fsc: FSContext) =
     fsc.callback(() => Js.redirectTo(anonymousPageURL(render, name)))
 
   def fileDownloadAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
@@ -402,14 +401,16 @@ abstract class FSSessionVarOpt[T]() {
   def clear()(implicit hasSession: FSHasSession): Unit = hasSession.session.clear(this)
 }
 
-class FSAnonymousPage(
-                       val id: String
-                       , val session: FSSession
-                       , val render: FSContext => NodeSeq
-                       , val createdAt: Long = System.currentTimeMillis()
-                       , var keepAliveAt: Long = System.currentTimeMillis()
-                       , var debugLbl: Option[String] = None
-                     ) extends FSHasSession {
+class FSAnonymousPage[E <: FSXmlEnv : FSXmlSupport](
+                                                     val id: String
+                                                     , val session: FSSession
+                                                     , val render: FSContext => E#NodeSeq
+                                                     , val createdAt: Long = System.currentTimeMillis()
+                                                     , var keepAliveAt: Long = System.currentTimeMillis()
+                                                     , var debugLbl: Option[String] = None
+                                                   ) extends FSHasSession {
+
+  def renderAsString()(implicit fsc: FSContext): String = implicitly[FSXmlSupport[E]].render(render(fsc))
 
   def keepAlive(): Unit = {
     keepAliveAt = System.currentTimeMillis()
@@ -468,7 +469,7 @@ class FSSession(
   //  }
 
   val pages = collection.mutable.Map[String, FSPage]()
-  val anonymousPages = collection.mutable.Map[String, FSAnonymousPage]()
+  val anonymousPages = collection.mutable.Map[String, FSAnonymousPage[_]]()
 
   def nPages(): Int = pages.size
 
@@ -797,10 +798,10 @@ class FSSystem(
         sessionOpt.map(implicit session => {
           session.anonymousPages.get(anonymousPageId).map(anonymousPage => {
             anonymousPage.keepAlive()
-            val ns = session.createPage(implicit fsc => anonymousPage.render(fsc), onPageUnload = () => {
+            val nodeSeq = session.createPage(implicit fsc => anonymousPage.renderAsString(), onPageUnload = () => {
               anonymousPage.onPageUnload()
             }, debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}"))
-            Ok.html(ns)
+            Ok.html(nodeSeq)
           }).getOrElse({
             stats.event(StatEvent.NOT_FOUND_ANON_PAGE)
             onAnonymousPageNotFoundForStdReq(anonymousPageId)

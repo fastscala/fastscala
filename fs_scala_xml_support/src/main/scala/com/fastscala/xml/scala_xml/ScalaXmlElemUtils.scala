@@ -1,13 +1,11 @@
-package com.fastscala.utils
+package com.fastscala.xml.scala_xml
 
 import com.fastscala.js.Js
-import com.fastscala.utils
-import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
-import scala.util.chaining.scalaUtilChainingOps
 import scala.xml._
 
-trait ElemTransformers {
+trait ScalaXmlElemUtils {
   def elem: Elem
 
   def attributeTransform(attrName: String, transform: Option[String] => String): Elem = {
@@ -65,7 +63,7 @@ trait ElemTransformers {
 
   def withAttr(kv: (String, String)): Elem = withAttr(kv._1)(_ => kv._2)
 
-  def withAttrs(attrs: (String, String)*): Elem = attrs.foldLeft[Elem](elem)((acc, next) => new utils.ElemTransformers {
+  def withAttrs(attrs: (String, String)*): Elem = attrs.foldLeft[Elem](elem)((acc, next) => new ScalaXmlElemUtils {
     override def elem: Elem = acc
   }.withAttr(next))
 
@@ -95,6 +93,8 @@ trait ElemTransformers {
 
   def showIf(bool: Boolean): NodeSeq = if (bool) elem else NodeSeq.Empty
 
+  def getAttrs: List[(String, String)] = elem.attributes.toList.map(a => a.key -> a.value.map(_.toString()).mkString(" "))
+
   def getClassAttr: String = elem.attributes.get("class").map(_.map(_.toString()).mkString(" ")).getOrElse("")
 
   def getStyleAttr: String = elem.attributes.get("style").map(_.map(_.toString()).mkString(" ")).getOrElse("")
@@ -102,8 +102,8 @@ trait ElemTransformers {
   def getId: Option[String] = elem.attributes.get("id").map(_.map(_.toString()).mkString(" "))
 }
 
-object ElemTransformers {
+object ScalaXmlElemUtils {
 
-  implicit class RichElem(val elem: Elem) extends ElemTransformers
+  implicit class RichElem(val elem: Elem) extends ScalaXmlElemUtils
 
 }

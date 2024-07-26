@@ -1,5 +1,6 @@
 package com.fastscala.templates.bootstrap5.icons
 
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.templates.bootstrap5.alerts.SimpleAlert
 import org.apache.commons.io.IOUtils
 
@@ -11,13 +12,13 @@ class BSIcon(val name: String) {
 
   def clas = "bi-" + name
 
-  def icon = <i></i>.addClass(clas)
+  def icon[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("i", "class" -> clas)()
 
   def asCssUrl: String = s"url(\"data:image/svg+xml,$svg\")"
 
   lazy val svg: String = BSIcons.loadSVG(name)
 
-  lazy val svgNS: Elem = XML.loadString(svg).collectFirst({case elem: Elem => elem}).get
+  lazy val svgNS: Elem = XML.loadString(svg).collectFirst({ case elem: Elem => elem }).get
 }
 
 object BSIcons {

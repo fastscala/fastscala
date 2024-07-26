@@ -1,71 +1,72 @@
 package com.fastscala.templates.form5.fields
 
-import com.fastscala.core.{FSContext, FSUploadedFile}
+import com.fastscala.core.{FSContext, FSUploadedFile, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.templates.form5.Form5
-import com.fastscala.utils.ElemTransformers.RichElem
 import com.fastscala.utils.IdGen
-import org.joda.time.{DateTime, LocalDate}
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport.{RichElem, RichNodeSeq}
 import org.joda.time.format.DateTimeFormat
+import org.joda.time.{DateTime, LocalDate}
 
 import java.text.DecimalFormat
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
-import scala.util.{Failure, Success, Try}
 import scala.util.chaining.scalaUtilChainingOps
-import scala.xml.{Elem, NodeSeq, Unparsed}
+import scala.util.{Failure, Success, Try}
+import scala.xml.{NodeSeq, Unparsed}
 
-class F5RawHtmlField(
-                      gen: => NodeSeq
-                      , val enabled: () => Boolean = () => true
-                      , val deps: Set[FormField] = Set()
-                      , val disabled: () => Boolean = () => false
-                      , val readOnly: () => Boolean = () => false
-                    ) extends StandardFormField {
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
-    else <div id={aroundId}>{gen}</div>
+class F5RawHtmlField[E <: FSXmlEnv : FSXmlSupport](
+                                                    gen: => E#NodeSeq
+                                                    , val enabled: () => Boolean = () => true
+                                                    , val deps: Set[FormField[_]] = Set()
+                                                    , val disabled: () => Boolean = () => false
+                                                    , val readOnly: () => Boolean = () => false
+                                                  ) extends StandardFormField[E] {
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem =
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    else implicitly[FSXmlSupport[E]].buildElem("div", "id" -> aroundId)(gen)
+
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F5SurroundWithHtmlField[T <: FormField](
-                                               wrap: Elem => Elem
-                                             )(
-                                               field: T
-                                               , val enabled: () => Boolean = () => true
-                                               , val deps: Set[FormField] = Set()
-                                               , val disabled: () => Boolean = () => false
-                                               , val readOnly: () => Boolean = () => false
-                                             ) extends StandardFormField {
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
-    else <div id={aroundId}>{wrap(field.render())}</div>
+class F5SurroundWithHtmlField[E <: FSXmlEnv : FSXmlSupport, T <: FormField[E]](
+                                                                                wrap: E#Elem => E#Elem
+                                                                              )(
+                                                                                field: T
+                                                                                , val enabled: () => Boolean = () => true
+                                                                                , val deps: Set[FormField[_]] = Set()
+                                                                                , val disabled: () => Boolean = () => false
+                                                                                , val readOnly: () => Boolean = () => false
+                                                                              ) extends StandardFormField[E] {
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem =
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    else implicitly[FSXmlSupport[E]].buildElem("div", "id" -> aroundId)(wrap(field.render()))
 
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
-    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] =
+    List(this).filter(_ => predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) :::
       List(field).flatMap(_.fieldsMatching(predicate))
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
 }
 
-class F5VerticalField(
-                       val enabled: () => Boolean = () => true
-                       , val deps: Set[FormField] = Set()
-                       , val disabled: () => Boolean = () => false
-                       , val readOnly: () => Boolean = () => false
-                     )(children: FormField*) extends StandardFormField {
+class F5VerticalField[E <: FSXmlEnv : FSXmlSupport, T <: FormField[E]](
+                                                                        val enabled: () => Boolean = () => true
+                                                                        , val deps: Set[FormField[_]] = Set()
+                                                                        , val disabled: () => Boolean = () => false
+                                                                        , val readOnly: () => Boolean = () => false
+                                                                      )(children: FormField[E]*) extends StandardFormField[E] {
 
   var currentlyEnabled = enabled()
 
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
     currentlyEnabled = enabled()
-    if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
-    else <div id={aroundId}>{children.map(_.render()).reduceOption[NodeSeq](_ ++ _).getOrElse(NodeSeq.Empty)}</div>
+    if (!currentlyEnabled) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    else implicitly[FSXmlSupport[E]].buildElem("div", "id" -> aroundId)(children.map(_.render()): _*)
   }
 
-  override def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = {
+  override def reRender()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = {
     if (enabled() != currentlyEnabled) {
       Js.replace(aroundId, render())
     } else {
@@ -73,43 +74,44 @@ class F5VerticalField(
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
-    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] =
+    List(this).filter(_ => predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) :::
       children.toList.flatMap(_.fieldsMatching(predicate))
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
 }
 
 object F5VerticalField {
-  def apply(
-             enabled: () => Boolean = () => true
-             , deps: Set[FormField] = Set()
-           )(children: FormField*) = new F5VerticalField(enabled, deps)(children: _*)
+  def apply[E <: FSXmlEnv : FSXmlSupport](
+                                           enabled: () => Boolean = () => true
+                                           , deps: Set[FormField[_]] = Set()
+                                         )(children: FormField[E]*) = new F5VerticalField(enabled, deps)(children: _*)
 }
 
-class F5HorizontalField(
-                         val enabled: () => Boolean = () => true
-                         , val deps: Set[FormField] = Set()
-                         , val disabled: () => Boolean = () => false
-                         , val readOnly: () => Boolean = () => false
-                       )(children: (String, FormField)*) extends StandardFormField {
+class F5HorizontalField[E <: FSXmlEnv : FSXmlSupport](
+                                                       val enabled: () => Boolean = () => true
+                                                       , val deps: Set[FormField[_]] = Set()
+                                                       , val disabled: () => Boolean = () => false
+                                                       , val readOnly: () => Boolean = () => false
+                                                     )(children: (String, FormField[E])*) extends StandardFormField[E] {
 
   var currentlyEnabled = enabled()
 
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
     currentlyEnabled = enabled()
-    if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
+    if (!currentlyEnabled) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
-        val contents = children.map({
-          case (clas, field) => <div class={clas}>{field.render()}</div>
-        }).reduceOption[NodeSeq](_ ++ _).getOrElse(NodeSeq.Empty)
-        <div class="row" id={aroundId}>{contents}</div>
+        implicitly[FSXmlSupport[E]].buildElem("div", "id" -> aroundId)(
+          (children.map({
+            case (clas, field) => implicitly[FSXmlSupport[E]].buildElem("div", "class" -> clas)(field.render())
+          }): Seq[E#Elem]): _*
+        )
       }
     }
   }
 
-  override def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = {
+  override def reRender()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = {
     if (enabled() != currentlyEnabled) {
       Js.replace(aroundId, render())
     } else {
@@ -117,89 +119,56 @@ class F5HorizontalField(
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
-    List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] =
+    List(this).filter(_ => predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) :::
       children.toList.flatMap(_._2.fieldsMatching(predicate))
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js =
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js =
     super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
 }
 
 object F5HorizontalField {
-  def apply(
-             enabled: () => Boolean = () => true
-             , deps: Set[FormField] = Set()
-           )(children: (String, FormField)*) = new F5HorizontalField(enabled, deps)(children: _*)
+  def apply[E <: FSXmlEnv : FSXmlSupport, T <: FormField[E]](
+                                                              enabled: () => Boolean = () => true
+                                                              , deps: Set[FormField[_]] = Set()
+                                                            )(children: (String, FormField[E])*) = new F5HorizontalField[E](enabled, deps)(children: _*)
 }
 
-trait TextFieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F5TextField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait TextareaFieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render(field: F5TextAreaField)(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait SelectFieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F5SelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait MultiSelectFieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F5MultiSelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait CheckboxFieldRenderer {
-
-  def render(field: F5CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-abstract class F5TextField[T](
-                               getOpt: () => Option[T]
-                               , setOpt: Option[T] => Js
-                               , toString: Option[T] => String
-                               , fromString: String => Either[String, Option[T]]
-                               , label: Option[NodeSeq] = None
-                               , name: Option[String] = None
-                               , placeholder: Option[String] = None
-                               , tabindex: Option[Int] = None
-                               , maxlength: Option[Int] = None
-                               , val required: () => Boolean
-                               , inputType: String = "text"
-                               , val disabled: () => Boolean
-                               , val readOnly: () => Boolean
-                               , val enabled: () => Boolean
-                               , val deps: Set[FormField]
-                               , val additionalAttrs: Seq[(String, String)]
-                             )(implicit renderer: TextFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
+abstract class F5TextField[E <: FSXmlEnv : FSXmlSupport, T](
+                                                             getOpt: () => Option[T]
+                                                             , setOpt: Option[T] => Js
+                                                             , toString: Option[T] => String
+                                                             , fromString: String => Either[String, Option[T]]
+                                                             , label: Option[E#NodeSeq] = None
+                                                             , name: Option[String] = None
+                                                             , placeholder: Option[String] = None
+                                                             , tabindex: Option[Int] = None
+                                                             , maxlength: Option[Int] = None
+                                                             , val required: () => Boolean
+                                                             , inputType: String = "text"
+                                                             , val disabled: () => Boolean
+                                                             , val readOnly: () => Boolean
+                                                             , val enabled: () => Boolean
+                                                             , val deps: Set[FormField[_]]
+                                                             , val additionalAttrs: Seq[(String, String)]
+                                                           )(implicit renderer: TextFieldRenderer) extends StandardFormField[E] with ValidatableField[E] with StringSerializableField[E] with FocusableFormField[E] {
 
   var currentValue: Option[T] = getOpt()
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     fromString(str) match {
       case Right(value) =>
         currentValue = value
         setOpt(currentValue)
         Nil
       case Left(error) =>
-        List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
+        List((this, implicitly[FSXmlSupport[E]].buildText(s"Could not parse value '$str': $error")))
     }
   }
 
   override def saveToString(): Option[String] = Some(toString(currentValue)).filter(_ != "")
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => setOpt(currentValue)
     case _ => Js.void
   })
@@ -208,12 +177,13 @@ abstract class F5TextField[T](
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    import com.fastscala.core.FSXmlUtils._
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
-          label.map(lbl => <label for={elemId}>{lbl}</label>),
+          label.map(lbl => <label for={elemId}>{lbl}</label>.asFSXml()),
             <input type={inputType}
                    name={name.getOrElse(null)}
                    class="form-control"
@@ -225,35 +195,35 @@ abstract class F5TextField[T](
                    }).cmd}
                    onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${Js.blur(elemId) & Js.evalIf(hints.contains(SaveOnEnterHint))(form.onSaveClientSide())}}"}
                    placeholder={placeholder.getOrElse(null)}
-                   value={toString(currentValue)}
+                   value={this.toString(currentValue)}
                    tabindex={tabindex.map(_ + "").getOrElse(null)}
                    maxlength={maxlength.map(_ + "").getOrElse(null)}
-                   required={if (required()) "true" else null}/>.withAttrs(finalAdditionalAttrs: _*),
+                   required={if (required()) "true" else null}/>.asFSXml().withAttrs(finalAdditionalAttrs: _*),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F5StringField(
-                     get: () => String
-                     , set: String => Js
-                     , label: Option[NodeSeq] = None
-                     , name: Option[String] = None
-                     , placeholder: Option[String] = None
-                     , tabindex: Option[Int] = None
-                     , maxlength: Option[Int] = None
-                     , required: () => Boolean = () => false
-                     , inputType: String = "text"
-                     , disabled: () => Boolean = () => false
-                     , readOnly: () => Boolean = () => false
-                     , enabled: () => Boolean = () => true
-                     , deps: Set[FormField] = Set()
-                     , additionalAttrs: Seq[(String, String)] = Nil
-                   )(implicit renderer: TextFieldRenderer) extends F5TextField[String](
+class F5StringField[E <: FSXmlEnv : FSXmlSupport](
+                                                   get: () => String
+                                                   , set: String => Js
+                                                   , label: Option[E#NodeSeq] = None
+                                                   , name: Option[String] = None
+                                                   , placeholder: Option[String] = None
+                                                   , tabindex: Option[Int] = None
+                                                   , maxlength: Option[Int] = None
+                                                   , required: () => Boolean = () => false
+                                                   , inputType: String = "text"
+                                                   , disabled: () => Boolean = () => false
+                                                   , readOnly: () => Boolean = () => false
+                                                   , enabled: () => Boolean = () => true
+                                                   , deps: Set[FormField[_]] = Set()
+                                                   , additionalAttrs: Seq[(String, String)] = Nil
+                                                 )(implicit renderer: TextFieldRenderer) extends F5TextField[E, String](
   getOpt = () => Some(get())
   , setOpt = strOpt => set(strOpt.getOrElse(""))
   , toString = _.getOrElse("")
@@ -272,15 +242,15 @@ class F5StringField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.getOrElse("").trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.getOrElse("").trim == "") Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => String = get
             , set: String => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -290,9 +260,9 @@ class F5StringField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ): F5StringField = new F5StringField(
+          ): F5StringField[E] = new F5StringField[E](
     get = get
     , set = set
     , label = label
@@ -310,22 +280,22 @@ class F5StringField(
   )
 }
 
-class F5StringOptField(
-                        get: () => Option[String]
-                        , set: Option[String] => Js
-                        , label: Option[NodeSeq] = None
-                        , name: Option[String] = None
-                        , placeholder: Option[String] = None
-                        , tabindex: Option[Int] = None
-                        , maxlength: Option[Int] = None
-                        , required: () => Boolean = () => false
-                        , inputType: String = "text"
-                        , disabled: () => Boolean = () => false
-                        , readOnly: () => Boolean = () => false
-                        , enabled: () => Boolean = () => true
-                        , deps: Set[FormField] = Set()
-                        , additionalAttrs: Seq[(String, String)] = Nil
-                      )(implicit renderer: TextFieldRenderer) extends F5TextField[String](
+class F5StringOptField[E <: FSXmlEnv : FSXmlSupport](
+                                                      get: () => Option[String]
+                                                      , set: Option[String] => Js
+                                                      , label: Option[E#NodeSeq] = None
+                                                      , name: Option[String] = None
+                                                      , placeholder: Option[String] = None
+                                                      , tabindex: Option[Int] = None
+                                                      , maxlength: Option[Int] = None
+                                                      , required: () => Boolean = () => false
+                                                      , inputType: String = "text"
+                                                      , disabled: () => Boolean = () => false
+                                                      , readOnly: () => Boolean = () => false
+                                                      , enabled: () => Boolean = () => true
+                                                      , deps: Set[FormField[_]] = Set()
+                                                      , additionalAttrs: Seq[(String, String)] = Nil
+                                                    )(implicit renderer: TextFieldRenderer) extends F5TextField[E, String](
   getOpt = () => get()
   , setOpt = strOpt => set(strOpt.filter(_ != ""))
   , toString = _.getOrElse("")
@@ -344,15 +314,15 @@ class F5StringOptField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => Option[String] = get
             , set: Option[String] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -362,9 +332,9 @@ class F5StringOptField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ): F5StringOptField = new F5StringOptField(
+          ): F5StringOptField[E] = new F5StringOptField[E](
     get = get
     , set = set
     , label = label
@@ -382,22 +352,22 @@ class F5StringOptField(
   )
 }
 
-class F5JodaDateOptField(
-                          get: () => Option[LocalDate]
-                          , set: Option[LocalDate] => Js
-                          , label: Option[NodeSeq] = None
-                          , name: Option[String] = None
-                          , placeholder: Option[String] = None
-                          , tabindex: Option[Int] = None
-                          , maxlength: Option[Int] = None
-                          , required: () => Boolean = () => false
-                          , inputType: String = "date"
-                          , disabled: () => Boolean = () => false
-                          , readOnly: () => Boolean = () => false
-                          , enabled: () => Boolean = () => true
-                          , deps: Set[FormField] = Set()
-                          , additionalAttrs: Seq[(String, String)] = Nil
-                        )(implicit renderer: TextFieldRenderer) extends F5TextField[LocalDate](
+class F5JodaDateOptField[E <: FSXmlEnv : FSXmlSupport](
+                                                        get: () => Option[LocalDate]
+                                                        , set: Option[LocalDate] => Js
+                                                        , label: Option[E#NodeSeq] = None
+                                                        , name: Option[String] = None
+                                                        , placeholder: Option[String] = None
+                                                        , tabindex: Option[Int] = None
+                                                        , maxlength: Option[Int] = None
+                                                        , required: () => Boolean = () => false
+                                                        , inputType: String = "date"
+                                                        , disabled: () => Boolean = () => false
+                                                        , readOnly: () => Boolean = () => false
+                                                        , enabled: () => Boolean = () => true
+                                                        , deps: Set[FormField[_]] = Set()
+                                                        , additionalAttrs: Seq[(String, String)] = Nil
+                                                      )(implicit renderer: TextFieldRenderer) extends F5TextField[E, LocalDate](
   getOpt = () => get()
   , setOpt = optValue => set(optValue)
   , toString = _.map(_.toString("YYYY-MM-dd")).getOrElse("")
@@ -416,15 +386,15 @@ class F5JodaDateOptField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => Option[LocalDate] = get
             , set: Option[LocalDate] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -434,9 +404,9 @@ class F5JodaDateOptField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ): F5JodaDateOptField = new F5JodaDateOptField(
+          ): F5JodaDateOptField[E] = new F5JodaDateOptField[E](
     get = get
     , set = set
     , label = label
@@ -456,23 +426,23 @@ class F5JodaDateOptField(
 
 object F5DateOptField {
 
-  def apply(
-             pattern: String
-             , get: () => Option[String]
-             , set: Option[String] => Js
-             , label: Option[NodeSeq] = None
-             , name: Option[String] = None
-             , placeholder: Option[String] = None
-             , tabindex: Option[Int] = None
-             , maxlength: Option[Int] = None
-             , required: () => Boolean = () => false
-             , inputType: String = "date"
-             , disabled: () => Boolean = () => false
-             , readOnly: () => Boolean = () => false
-             , enabled: () => Boolean = () => true
-             , deps: Set[FormField] = Set()
-             , additionalAttrs: Seq[(String, String)] = Nil
-           )(implicit renderer: TextFieldRenderer) = new F5DateOptField(
+  def apply[E <: FSXmlEnv : FSXmlSupport](
+                                           pattern: String
+                                           , get: () => Option[String]
+                                           , set: Option[String] => Js
+                                           , label: Option[E#NodeSeq] = None
+                                           , name: Option[String] = None
+                                           , placeholder: Option[String] = None
+                                           , tabindex: Option[Int] = None
+                                           , maxlength: Option[Int] = None
+                                           , required: () => Boolean = () => false
+                                           , inputType: String = "date"
+                                           , disabled: () => Boolean = () => false
+                                           , readOnly: () => Boolean = () => false
+                                           , enabled: () => Boolean = () => true
+                                           , deps: Set[FormField[_]] = Set()
+                                           , additionalAttrs: Seq[(String, String)] = Nil
+                                         )(implicit renderer: TextFieldRenderer) = new F5DateOptField(
     get = () => get().map(date => java.time.LocalDate.parse(date, DateTimeFormatter.ofPattern(pattern))),
     set = localDate => set(localDate.map(localDate => localDate.format(DateTimeFormatter.ofPattern(pattern)))),
     label = label,
@@ -490,22 +460,22 @@ object F5DateOptField {
   )
 }
 
-class F5DateOptField(
-                      get: () => Option[java.time.LocalDate]
-                      , set: Option[java.time.LocalDate] => Js
-                      , label: Option[NodeSeq] = None
-                      , name: Option[String] = None
-                      , placeholder: Option[String] = None
-                      , tabindex: Option[Int] = None
-                      , maxlength: Option[Int] = None
-                      , required: () => Boolean = () => false
-                      , inputType: String = "date"
-                      , disabled: () => Boolean = () => false
-                      , readOnly: () => Boolean = () => false
-                      , enabled: () => Boolean = () => true
-                      , deps: Set[FormField] = Set()
-                      , additionalAttrs: Seq[(String, String)] = Nil
-                    )(implicit renderer: TextFieldRenderer) extends F5TextField[java.time.LocalDate](
+class F5DateOptField[E <: FSXmlEnv : FSXmlSupport](
+                                                    get: () => Option[java.time.LocalDate]
+                                                    , set: Option[java.time.LocalDate] => Js
+                                                    , label: Option[E#NodeSeq] = None
+                                                    , name: Option[String] = None
+                                                    , placeholder: Option[String] = None
+                                                    , tabindex: Option[Int] = None
+                                                    , maxlength: Option[Int] = None
+                                                    , required: () => Boolean = () => false
+                                                    , inputType: String = "date"
+                                                    , disabled: () => Boolean = () => false
+                                                    , readOnly: () => Boolean = () => false
+                                                    , enabled: () => Boolean = () => true
+                                                    , deps: Set[FormField[_]] = Set()
+                                                    , additionalAttrs: Seq[(String, String)] = Nil
+                                                  )(implicit renderer: TextFieldRenderer) extends F5TextField[E, java.time.LocalDate](
   getOpt = () => get()
   , setOpt = optValue => set(optValue)
   , toString = _.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).getOrElse("")
@@ -524,15 +494,15 @@ class F5DateOptField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => Option[java.time.LocalDate] = get
             , set: Option[java.time.LocalDate] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -542,9 +512,9 @@ class F5DateOptField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ): F5DateOptField = new F5DateOptField(
+          ): F5DateOptField[E] = new F5DateOptField[E](
     get = get
     , set = set
     , label = label
@@ -562,22 +532,22 @@ class F5DateOptField(
   )
 }
 
-class F5DateTimeOptField(
-                          get: () => Option[java.time.LocalDateTime]
-                          , set: Option[java.time.LocalDateTime] => Js
-                          , label: Option[NodeSeq] = None
-                          , name: Option[String] = None
-                          , placeholder: Option[String] = None
-                          , tabindex: Option[Int] = None
-                          , maxlength: Option[Int] = None
-                          , required: () => Boolean = () => false
-                          , inputType: String = "datetime-local"
-                          , disabled: () => Boolean = () => false
-                          , readOnly: () => Boolean = () => false
-                          , enabled: () => Boolean = () => true
-                          , deps: Set[FormField] = Set()
-                          , additionalAttrs: Seq[(String, String)] = Nil
-                        )(implicit renderer: TextFieldRenderer) extends F5TextField[java.time.LocalDateTime](
+class F5DateTimeOptField[E <: FSXmlEnv : FSXmlSupport](
+                                                        get: () => Option[java.time.LocalDateTime]
+                                                        , set: Option[java.time.LocalDateTime] => Js
+                                                        , label: Option[E#NodeSeq] = None
+                                                        , name: Option[String] = None
+                                                        , placeholder: Option[String] = None
+                                                        , tabindex: Option[Int] = None
+                                                        , maxlength: Option[Int] = None
+                                                        , required: () => Boolean = () => false
+                                                        , inputType: String = "datetime-local"
+                                                        , disabled: () => Boolean = () => false
+                                                        , readOnly: () => Boolean = () => false
+                                                        , enabled: () => Boolean = () => true
+                                                        , deps: Set[FormField[_]] = Set()
+                                                        , additionalAttrs: Seq[(String, String)] = Nil
+                                                      )(implicit renderer: TextFieldRenderer) extends F5TextField[E, java.time.LocalDateTime](
   getOpt = () => get()
   , setOpt = optValue => set(optValue)
   , toString = _.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))).getOrElse("")
@@ -596,15 +566,15 @@ class F5DateTimeOptField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => Option[java.time.LocalDateTime] = get
             , set: Option[java.time.LocalDateTime] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -614,9 +584,9 @@ class F5DateTimeOptField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ): F5DateTimeOptField = new F5DateTimeOptField(
+          ): F5DateTimeOptField[E] = new F5DateTimeOptField[E](
     get = get
     , set = set
     , label = label
@@ -634,26 +604,26 @@ class F5DateTimeOptField(
   )
 }
 
-class F5DoubleOptField(
-                        get: () => Option[Double]
-                        , set: Option[Double] => Js
-                        , label: Option[NodeSeq] = None
-                        , name: Option[String] = None
-                        , placeholder: Option[String] = None
-                        , tabindex: Option[Int] = None
-                        , maxlength: Option[Int] = None
-                        , min: Option[Double] = None
-                        , step: Option[Double] = None
-                        , max: Option[Double] = None
-                        , required: () => Boolean = () => false
-                        , disabled: () => Boolean = () => false
-                        , readOnly: () => Boolean = () => false
-                        , enabled: () => Boolean = () => true
-                        , deps: Set[FormField] = Set()
-                        , prefix: String = ""
-                        , suffix: String = ""
-                        , additionalAttrs: Seq[(String, String)] = Nil
-                      )(implicit renderer: TextFieldRenderer) extends F5TextField[Double](
+class F5DoubleOptField[E <: FSXmlEnv : FSXmlSupport](
+                                                      get: () => Option[Double]
+                                                      , set: Option[Double] => Js
+                                                      , label: Option[E#NodeSeq] = None
+                                                      , name: Option[String] = None
+                                                      , placeholder: Option[String] = None
+                                                      , tabindex: Option[Int] = None
+                                                      , maxlength: Option[Int] = None
+                                                      , min: Option[Double] = None
+                                                      , step: Option[Double] = None
+                                                      , max: Option[Double] = None
+                                                      , required: () => Boolean = () => false
+                                                      , disabled: () => Boolean = () => false
+                                                      , readOnly: () => Boolean = () => false
+                                                      , enabled: () => Boolean = () => true
+                                                      , deps: Set[FormField[_]] = Set()
+                                                      , prefix: String = ""
+                                                      , suffix: String = ""
+                                                      , additionalAttrs: Seq[(String, String)] = Nil
+                                                    )(implicit renderer: TextFieldRenderer) extends F5TextField[E, Double](
   getOpt = () => get()
   , setOpt = doubleOpt => set(doubleOpt)
   , toString = _.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
@@ -686,8 +656,8 @@ class F5DoubleOptField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
   override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ List(
     "min" -> min.map(_.toString).getOrElse(null),
@@ -695,12 +665,12 @@ class F5DoubleOptField(
     "max" -> max.map(_.toString).getOrElse(null)
   )
 
-  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String): F5DoubleOptField[E] = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             get: () => Option[Double] = get
             , set: Option[Double] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -712,11 +682,11 @@ class F5DoubleOptField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , prefix: String = prefix
             , suffix: String = suffix
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ) = new F5DoubleOptField(
+          ) = new F5DoubleOptField[E](
     get = get
     , set = set
     , label = label
@@ -738,26 +708,26 @@ class F5DoubleOptField(
   )
 }
 
-class F5IntOptField(
-                     get: () => Option[Int]
-                     , set: Option[Int] => Js
-                     , label: Option[NodeSeq] = None
-                     , name: Option[String] = None
-                     , placeholder: Option[String] = None
-                     , tabindex: Option[Int] = None
-                     , maxlength: Option[Int] = None
-                     , min: Option[Int] = None
-                     , step: Option[Int] = None
-                     , max: Option[Int] = None
-                     , required: () => Boolean = () => false
-                     , disabled: () => Boolean = () => false
-                     , readOnly: () => Boolean = () => false
-                     , enabled: () => Boolean = () => true
-                     , deps: Set[FormField] = Set()
-                     , prefix: String = ""
-                     , suffix: String = ""
-                     , additionalAttrs: Seq[(String, String)] = Nil
-                   )(implicit renderer: TextFieldRenderer) extends F5TextField[Int](
+class F5IntOptField[E <: FSXmlEnv : FSXmlSupport](
+                                                   get: () => Option[Int]
+                                                   , set: Option[Int] => Js
+                                                   , label: Option[E#NodeSeq] = None
+                                                   , name: Option[String] = None
+                                                   , placeholder: Option[String] = None
+                                                   , tabindex: Option[Int] = None
+                                                   , maxlength: Option[Int] = None
+                                                   , min: Option[Int] = None
+                                                   , step: Option[Int] = None
+                                                   , max: Option[Int] = None
+                                                   , required: () => Boolean = () => false
+                                                   , disabled: () => Boolean = () => false
+                                                   , readOnly: () => Boolean = () => false
+                                                   , enabled: () => Boolean = () => true
+                                                   , deps: Set[FormField[_]] = Set()
+                                                   , prefix: String = ""
+                                                   , suffix: String = ""
+                                                   , additionalAttrs: Seq[(String, String)] = Nil
+                                                 )(implicit renderer: TextFieldRenderer) extends F5TextField[E, Int](
   getOpt = () => get()
   , setOpt = intOpt => set(intOpt)
   , toString = _.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
@@ -790,8 +760,8 @@ class F5IntOptField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
   override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ List(
     "min" -> min.map(_.toString).getOrElse(null),
@@ -799,12 +769,12 @@ class F5IntOptField(
     "max" -> max.map(_.toString).getOrElse(null)
   )
 
-  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String) = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             get: () => Option[Int] = get
             , set: Option[Int] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -816,11 +786,11 @@ class F5IntOptField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , prefix: String = prefix
             , suffix: String = suffix
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ) = new F5IntOptField(
+          ) = new F5IntOptField[E](
     get = get
     , set = set
     , label = label
@@ -842,22 +812,22 @@ class F5IntOptField(
   )
 }
 
-class F5TimeOfDayField(
-                        get: () => Option[Int]
-                        , set: Option[Int] => Js
-                        , label: Option[NodeSeq] = None
-                        , name: Option[String] = None
-                        , placeholder: Option[String] = None
-                        , tabindex: Option[Int] = None
-                        , required: () => Boolean = () => false
-                        , disabled: () => Boolean = () => false
-                        , readOnly: () => Boolean = () => false
-                        , enabled: () => Boolean = () => true
-                        , deps: Set[FormField] = Set()
-                        , prefix: String = ""
-                        , suffix: String = ""
-                        , additionalAttrs: Seq[(String, String)] = Nil
-                      )(implicit renderer: TextFieldRenderer) extends F5TextField[Int](
+class F5TimeOfDayField[E <: FSXmlEnv : FSXmlSupport](
+                                                      get: () => Option[Int]
+                                                      , set: Option[Int] => Js
+                                                      , label: Option[E#NodeSeq] = None
+                                                      , name: Option[String] = None
+                                                      , placeholder: Option[String] = None
+                                                      , tabindex: Option[Int] = None
+                                                      , required: () => Boolean = () => false
+                                                      , disabled: () => Boolean = () => false
+                                                      , readOnly: () => Boolean = () => false
+                                                      , enabled: () => Boolean = () => true
+                                                      , deps: Set[FormField[_]] = Set()
+                                                      , prefix: String = ""
+                                                      , suffix: String = ""
+                                                      , additionalAttrs: Seq[(String, String)] = Nil
+                                                    )(implicit renderer: TextFieldRenderer) extends F5TextField[E, Int](
   getOpt = () => get()
   , setOpt = doubleOpt => set(doubleOpt)
   , toString = _.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")
@@ -891,15 +861,15 @@ class F5TimeOfDayField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String) = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             get: () => Option[Int] = get
             , set: Option[Int] => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -907,11 +877,11 @@ class F5TimeOfDayField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , prefix: String = prefix
             , suffix: String = suffix
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ) = new F5TimeOfDayField(
+          ) = new F5TimeOfDayField[E](
     get = get
     , set = set
     , label = label
@@ -929,26 +899,26 @@ class F5TimeOfDayField(
   )
 }
 
-class F5DoubleField(
-                     get: () => Double
-                     , set: Double => Js
-                     , label: Option[NodeSeq] = None
-                     , name: Option[String] = None
-                     , placeholder: Option[String] = None
-                     , tabindex: Option[Int] = None
-                     , maxlength: Option[Int] = None
-                     , min: Option[Double] = None
-                     , step: Option[Double] = None
-                     , max: Option[Double] = None
-                     , required: () => Boolean = () => false
-                     , disabled: () => Boolean = () => false
-                     , readOnly: () => Boolean = () => false
-                     , enabled: () => Boolean = () => true
-                     , deps: Set[FormField] = Set()
-                     , prefix: String = ""
-                     , suffix: String = ""
-                     , additionalAttrs: Seq[(String, String)] = Nil
-                   )(implicit renderer: TextFieldRenderer) extends F5TextField[Double](
+class F5DoubleField[E <: FSXmlEnv : FSXmlSupport](
+                                                   get: () => Double
+                                                   , set: Double => Js
+                                                   , label: Option[E#NodeSeq] = None
+                                                   , name: Option[String] = None
+                                                   , placeholder: Option[String] = None
+                                                   , tabindex: Option[Int] = None
+                                                   , maxlength: Option[Int] = None
+                                                   , min: Option[Double] = None
+                                                   , step: Option[Double] = None
+                                                   , max: Option[Double] = None
+                                                   , required: () => Boolean = () => false
+                                                   , disabled: () => Boolean = () => false
+                                                   , readOnly: () => Boolean = () => false
+                                                   , enabled: () => Boolean = () => true
+                                                   , deps: Set[FormField[_]] = Set()
+                                                   , prefix: String = ""
+                                                   , suffix: String = ""
+                                                   , additionalAttrs: Seq[(String, String)] = Nil
+                                                 )(implicit renderer: TextFieldRenderer) extends F5TextField[E, Double](
   getOpt = () => Some(get())
   , setOpt = doubleOpt => doubleOpt.map(double => set(double)).getOrElse(Js.void)
   , toString = _.map(value => prefix + " " + value.formatted("%.2f") + " " + suffix).map(_.trim).getOrElse("")
@@ -977,10 +947,10 @@ class F5DoubleField(
   , additionalAttrs = additionalAttrs
 ) {
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String) = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ Seq(
     min.map(min => "min" -> min.toString)
@@ -991,7 +961,7 @@ class F5DoubleField(
   def copy(
             get: () => Double = get
             , set: Double => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -1003,11 +973,11 @@ class F5DoubleField(
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , prefix: String = prefix
             , suffix: String = suffix
             , additionalAttrs: Seq[(String, String)] = additionalAttrs
-          ) = new F5DoubleField(
+          ) = new F5DoubleField[E](
     get = get
     , set = set
     , label = label
@@ -1030,48 +1000,48 @@ class F5DoubleField(
 }
 
 
-class F5CheckboxField(
-                       get: () => Boolean
-                       , set: Boolean => Js
-                       , label: Option[Elem] = None
-                       , name: Option[String] = None
-                       , tabindex: Option[Int] = None
-                       , val disabled: () => Boolean = () => false
-                       , val readOnly: () => Boolean = () => false
-                       , val enabled: () => Boolean = () => true
-                       , val deps: Set[FormField] = Set()
-                     )(implicit renderer: CheckboxFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
+class F5CheckboxField[E <: FSXmlEnv : FSXmlSupport](
+                                                     get: () => Boolean
+                                                     , set: Boolean => Js
+                                                     , label: Option[E#Elem] = None
+                                                     , name: Option[String] = None
+                                                     , tabindex: Option[Int] = None
+                                                     , val disabled: () => Boolean = () => false
+                                                     , val readOnly: () => Boolean = () => false
+                                                     , val enabled: () => Boolean = () => true
+                                                     , val deps: Set[FormField[_]] = Set()
+                                                   )(implicit renderer: CheckboxFieldRenderer) extends StandardFormField[E] with ValidatableField[E] with StringSerializableField[E] with FocusableFormField[E] {
 
   var currentValue: Boolean = get()
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     str.toBooleanOption match {
       case Some(value) =>
         currentValue = value
         set(currentValue)
         Nil
       case None =>
-        List((this, scala.xml.Text(s"Found not parse as a boolean: '$str'")))
+        List((this, implicitly[FSXmlSupport[E]].buildText(s"Found not parse as a boolean: '$str'")))
     }
   }
 
   override def saveToString(): Option[String] = Some(currentValue.toString).filter(_ != "")
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
     case _ => Js.void
   })
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = Nil
 
   override def focusJs: Js = Js.focus(elemId)
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
-          label.map(lbl => <label for={elemId}>{lbl}</label>),
+          label.map(lbl => <label for={elemId}>{lbl}</label>.asFSXml()),
           <input
             type="checkbox"
             value=""
@@ -1082,28 +1052,28 @@ class F5CheckboxField(
               form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
             }).cmd}
             tabindex={tabindex.map(_ + "").getOrElse(null)}
-            checked={if (currentValue) "checked" else null}></input>,
+            checked={if (currentValue) "checked" else null}></input>.asFSXml(),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => Boolean = get
             , set: Boolean => Js = set
-            , label: Option[Elem] = label
+            , label: Option[E#Elem] = label
             , name: Option[String] = name
             , tabindex: Option[Int] = tabindex
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
-          ): F5CheckboxField = new F5CheckboxField(
+            , deps: Set[FormField[_]] = deps
+          ): F5CheckboxField[E] = new F5CheckboxField[E](
     get = get
     , set = set
     , label = label
@@ -1116,24 +1086,24 @@ class F5CheckboxField(
   )
 }
 
-class F5SelectField[T](
-                        all: () => Seq[T]
-                        , get: () => T
-                        , set: T => Js
-                        , toString: T => String = (v: T) => v.toString
-                        , toId: (T, Int) => String = (v: T, idx: Int) => idx.toString
-                        , val label: Option[NodeSeq] = None
-                        , name: Option[String] = None
-                        , noneSelected: Option[String] = None
-                        , val disabled: () => Boolean = () => false
-                        , val readOnly: () => Boolean = () => false
-                        , val enabled: () => Boolean = () => true
-                        , val deps: Set[FormField] = Set()
-                      )(implicit renderer: SelectFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
+class F5SelectField[E <: FSXmlEnv : FSXmlSupport, T](
+                                                      all: () => Seq[T]
+                                                      , get: () => T
+                                                      , set: T => Js
+                                                      , toString: T => String = (v: T) => v.toString
+                                                      , toId: (T, Int) => String = (v: T, idx: Int) => idx.toString
+                                                      , val label: Option[E#NodeSeq] = None
+                                                      , name: Option[String] = None
+                                                      , noneSelected: Option[String] = None
+                                                      , val disabled: () => Boolean = () => false
+                                                      , val readOnly: () => Boolean = () => false
+                                                      , val enabled: () => Boolean = () => true
+                                                      , val deps: Set[FormField[_]] = Set()
+                                                    )(implicit renderer: SelectFieldRenderer) extends StandardFormField[E] with ValidatableField[E] with StringSerializableField[E] with FocusableFormField[E] {
 
   var currentlySelectedValue: T = get()
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     all().zipWithIndex.find({
       case (v, idx) => toId(v, idx) == str
     }) match {
@@ -1143,27 +1113,27 @@ class F5SelectField[T](
         set(v)
         Nil
       case None =>
-        List((this, scala.xml.Text(s"Not found id: '$str'")))
+        List((this, implicitly[FSXmlSupport[E]].buildText(s"Not found id: '$str'")))
     }
   }
 
   override def saveToString(): Option[String] = Some(toId(currentlySelectedValue, all().indexOf(currentlySelectedValue))).filter(_ != "0")
 
-  def withLabel(label: String): F5SelectField[T] = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String): F5SelectField[E, T] = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             all: () => Seq[T] = all
             , get: () => T = get
             , set: T => Js = set
             , toString: T => String = toString
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , noneSelected: Option[String] = noneSelected
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
           )(
             implicit renderer: SelectFieldRenderer
-          ): F5SelectField[T] = new F5SelectField[T](
+          ): F5SelectField[E, T] = new F5SelectField[E, T](
     all = all
     , get = get
     , set = set
@@ -1175,16 +1145,16 @@ class F5SelectField[T](
     , deps = deps
   )
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentlySelectedValue)
     case _ => Js.void
   })
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = Nil
 
   override def focusJs: Js = Js.focus(elemId)
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+  def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
     val options = all()
     val ids2Option: Map[String, T] = options.map(opt => fsc.session.nextID() -> opt).toMap
     val option2Id: Map[T, String] = ids2Option.map(kv => kv._2 -> kv._1)
@@ -1194,7 +1164,7 @@ class F5SelectField[T](
 
     val errorsAtRenderTime = errors()
 
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         val onchangeJs = fsc.callback(Js.elementValueById(elemId), {
@@ -1204,41 +1174,41 @@ class F5SelectField[T](
               (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender() else Js.void)
         }).cmd
         renderer.render(this)(
-          label.map(label => <label for={elemId}>{label}</label>),
+          label.map(label => <label for={elemId}>{label}</label>.asFSXml()),
           <select
             name={name.getOrElse(null)}
             onblur={onchangeJs}
             onchange={onchangeJs}
             id={elemId}
-          >{optionsRendered}</select>,
+          >{optionsRendered}</select>.asFSXml(),
           errorsAtRenderTime.headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F5MultiSelectField[T](
-                             all: () => Seq[T]
-                             , get: () => Set[T]
-                             , set: Set[T] => Js
-                             , toString: T => String = (v: T) => v.toString
-                             , toId: (T, Int) => String = (v: T, idx: Int) => idx.toString
-                             , val label: Option[NodeSeq] = None
-                             , name: Option[String] = None
-                             , noneSelected: Option[String] = None
-                             , val disabled: () => Boolean = () => false
-                             , val readOnly: () => Boolean = () => false
-                             , val enabled: () => Boolean = () => true
-                             , val deps: Set[FormField] = Set()
-                             , val size: Option[Int] = None
-                           )(implicit renderer: MultiSelectFieldRenderer) extends StandardFormField with ValidatableField with StringSerializableField {
+class F5MultiSelectField[E <: FSXmlEnv : FSXmlSupport, T](
+                                                           all: () => Seq[T]
+                                                           , get: () => Set[T]
+                                                           , set: Set[T] => Js
+                                                           , toString: T => String = (v: T) => v.toString
+                                                           , toId: (T, Int) => String = (v: T, idx: Int) => idx.toString
+                                                           , val label: Option[E#NodeSeq] = None
+                                                           , name: Option[String] = None
+                                                           , noneSelected: Option[String] = None
+                                                           , val disabled: () => Boolean = () => false
+                                                           , val readOnly: () => Boolean = () => false
+                                                           , val enabled: () => Boolean = () => true
+                                                           , val deps: Set[FormField[_]] = Set()
+                                                           , val size: Option[Int] = None
+                                                         )(implicit renderer: MultiSelectFieldRenderer) extends StandardFormField[E] with ValidatableField[E] with StringSerializableField[E] {
 
   var currentlySelectedValue: Set[T] = get()
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     val selected: Set[String] = str.split(";").toSet
 
     currentlySelectedValue = all().zipWithIndex.collect({
@@ -1252,22 +1222,22 @@ class F5MultiSelectField[T](
     toId(v, all().indexOf(currentlySelectedValue))
   }).mkString(";"))
 
-  def withLabel(label: String): F5MultiSelectField[T] = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String): F5MultiSelectField[E, T] = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             all: () => Seq[T] = all
             , get: () => Set[T] = get
             , set: Set[T] => Js = set
             , toString: T => String = toString
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , noneSelected: Option[String] = noneSelected
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , size: Option[Int] = size
           )(
             implicit renderer: MultiSelectFieldRenderer
-          ): F5MultiSelectField[T] = new F5MultiSelectField[T](
+          ): F5MultiSelectField[E, T] = new F5MultiSelectField[E, T](
     all = all
     , get = get
     , set = set
@@ -1280,14 +1250,14 @@ class F5MultiSelectField[T](
     , size = size
   )
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentlySelectedValue)
     case _ => Js.void
   })
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = Nil
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+  def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
     val options = all()
     val ids2Option: Map[String, T] = options.map(opt => fsc.session.nextID() -> opt).toMap
     val option2Id: Map[T, String] = ids2Option.map(kv => kv._2 -> kv._1)
@@ -1295,7 +1265,7 @@ class F5MultiSelectField[T](
       <option selected={if (currentlySelectedValue.contains(opt)) "true" else null} value={option2Id(opt)}>{toString(opt)}</option>
     })
 
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         val onchangeJs = fsc.callback(Js.selectedValues(Js.elementById(elemId)), {
@@ -1304,7 +1274,7 @@ class F5MultiSelectField[T](
             form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
         }).cmd
         renderer.render(this)(
-          label.map(label => <label for={elemId}>{label}</label>),
+          label.map(label => <label for={elemId}>{label}</label>.asFSXml()),
           <select
             multiple="multiple"
             name={name.getOrElse(null)}
@@ -1312,28 +1282,28 @@ class F5MultiSelectField[T](
             onchange={onchangeJs}
             id={elemId}
             size={size.map(_ + "").getOrElse(null)}
-          >{optionsRendered}</select>,
+          >{optionsRendered}</select>.asFSXml(),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
 object EnumField {
 
-  def NonNullable[T <: Enumeration](
-                                     enum: T
-                                     , get: () => T#Value
-                                     , set: T#Value => Js
-                                     , toString: T#Value => String = (v: T#Value) => v.toString
-                                     , label: Option[NodeSeq] = None
-                                     , name: Option[String] = None
-                                     , enabled: () => Boolean = () => true
-                                     , deps: Set[FormField] = Set()
-                                   )(implicit renderer: SelectFieldRenderer) = new F5SelectField[T#Value](
+  def NonNullable[E <: FSXmlEnv : FSXmlSupport, T <: Enumeration](
+                                                                   enum: T
+                                                                   , get: () => T#Value
+                                                                   , set: T#Value => Js
+                                                                   , toString: T#Value => String = (v: T#Value) => v.toString
+                                                                   , label: Option[E#NodeSeq] = None
+                                                                   , name: Option[String] = None
+                                                                   , enabled: () => Boolean = () => true
+                                                                   , deps: Set[FormField[_]] = Set()
+                                                                 )(implicit renderer: SelectFieldRenderer) = new F5SelectField[E, T#Value](
     all = () => `enum`.values.toList.sortBy(_.id),
     get = get,
     set = set,
@@ -1344,17 +1314,17 @@ object EnumField {
     deps = deps
   )
 
-  def Multi[T <: Enumeration](
-                               enum: T
-                               , get: () => Set[T#Value]
-                               , set: Set[T#Value] => Js
-                               , toString: T#Value => String = (v: T#Value) => v.toString
-                               , label: Option[NodeSeq] = None
-                               , name: Option[String] = None
-                               , enabled: () => Boolean = () => true
-                               , deps: Set[FormField] = Set()
-                               , size: Option[Int] = None
-                             )(implicit renderer: MultiSelectFieldRenderer) = new F5MultiSelectField[T#Value](
+  def Multi[E <: FSXmlEnv : FSXmlSupport, T <: Enumeration](
+                                                             enum: T
+                                                             , get: () => Set[T#Value]
+                                                             , set: Set[T#Value] => Js
+                                                             , toString: T#Value => String = (v: T#Value) => v.toString
+                                                             , label: Option[E#NodeSeq] = None
+                                                             , name: Option[String] = None
+                                                             , enabled: () => Boolean = () => true
+                                                             , deps: Set[FormField[_]] = Set()
+                                                             , size: Option[Int] = None
+                                                           )(implicit renderer: MultiSelectFieldRenderer) = new F5MultiSelectField[E, T#Value](
     all = () => `enum`.values.toList.sortBy(_.id),
     get = get,
     set = set,
@@ -1366,17 +1336,17 @@ object EnumField {
     size = size
   )
 
-  def Nullable[T <: Enumeration](
-                                  enum: T
-                                  , get: () => Option[T#Value]
-                                  , set: Option[T#Value] => Js
-                                  , toString: Option[T#Value] => String = (v: Option[T#Value]) => v.map(_.toString).getOrElse("--")
-                                  , label: Option[NodeSeq] = None
-                                  , name: Option[String] = None
-                                  , required: () => Boolean = () => false
-                                  , enabled: () => Boolean = () => true
-                                  , deps: Set[FormField] = Set()
-                                )(implicit renderer: SelectFieldRenderer) = new F5SelectField[Option[T#Value]](
+  def Nullable[E <: FSXmlEnv : FSXmlSupport, T <: Enumeration](
+                                                                enum: T
+                                                                , get: () => Option[T#Value]
+                                                                , set: Option[T#Value] => Js
+                                                                , toString: Option[T#Value] => String = (v: Option[T#Value]) => v.map(_.toString).getOrElse("--")
+                                                                , label: Option[E#NodeSeq] = None
+                                                                , name: Option[String] = None
+                                                                , required: () => Boolean = () => false
+                                                                , enabled: () => Boolean = () => true
+                                                                , deps: Set[FormField[_]] = Set()
+                                                              )(implicit renderer: SelectFieldRenderer) = new F5SelectField[E, Option[T#Value]](
     all = () => None :: `enum`.values.toList.sortBy(_.id).map(Some(_)),
     get = get,
     set = set,
@@ -1386,33 +1356,33 @@ object EnumField {
     enabled = enabled,
     deps = deps
   ) {
-    override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-      (if (required() && currentlySelectedValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+    override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+      (if (required() && currentlySelectedValue.isEmpty) Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
   }
 }
 
-class F5TextAreaField(
-                       get: () => String
-                       , set: String => Js
-                       , label: Option[NodeSeq] = None
-                       , name: Option[String] = None
-                       , placeholder: Option[String] = None
-                       , tabindex: Option[Int] = None
-                       , maxlength: Option[Int] = None
-                       , nRows: Int = 3
-                       , additionalStyle: String = ""
-                       , required: () => Boolean = () => false
-                       , val disabled: () => Boolean = () => false
-                       , val readOnly: () => Boolean = () => false
-                       , val enabled: () => Boolean = () => true
-                       , val deps: Set[FormField] = Set()
-                     )(
-                       implicit renderer: TextareaFieldRenderer
-                     ) extends StandardFormField with ValidatableField with StringSerializableField with FocusableFormField {
+class F5TextAreaField[E <: FSXmlEnv : FSXmlSupport](
+                                                     get: () => String
+                                                     , set: String => Js
+                                                     , label: Option[E#NodeSeq] = None
+                                                     , name: Option[String] = None
+                                                     , placeholder: Option[String] = None
+                                                     , tabindex: Option[Int] = None
+                                                     , maxlength: Option[Int] = None
+                                                     , nRows: Int = 3
+                                                     , additionalStyle: String = ""
+                                                     , required: () => Boolean = () => false
+                                                     , val disabled: () => Boolean = () => false
+                                                     , val readOnly: () => Boolean = () => false
+                                                     , val enabled: () => Boolean = () => true
+                                                     , val deps: Set[FormField[_]] = Set()
+                                                   )(
+                                                     implicit renderer: TextareaFieldRenderer
+                                                   ) extends StandardFormField[E] with ValidatableField[E] with StringSerializableField[E] with FocusableFormField[E] {
 
   var currentValue = get()
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     currentValue = str
     set(currentValue)
     Nil
@@ -1420,12 +1390,12 @@ class F5TextAreaField(
 
   override def saveToString(): Option[String] = Some(currentValue).filter(_ != "")
 
-  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String) = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             get: () => String = get
             , set: String => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
@@ -1434,9 +1404,9 @@ class F5TextAreaField(
             , additionalStyle: String = additionalStyle
             , required: () => Boolean = required
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
-          ): F5TextAreaField = {
-    new F5TextAreaField(
+            , deps: Set[FormField[_]] = deps
+          ): F5TextAreaField[E] = {
+    new F5TextAreaField[E](
       get = get
       , set = set
       , label = label
@@ -1452,19 +1422,19 @@ class F5TextAreaField(
     )
   }
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
     case _ => Js.void
   })
 
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.trim == "") Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
   override def focusJs: Js = Js.focus(elemId)
 
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         val changedJs = fsc.callback(Js.elementValueById(elemId), value => {
@@ -1483,47 +1453,47 @@ class F5TextAreaField(
                     rows={nRows.toString}
                     tabindex={tabindex.map(_ + "").getOrElse(null)}
                     maxlength={maxlength.map(_ + "").getOrElse(null)}
-                    required={if (required()) "true" else null}>{get()}</textarea>,
+                    required={if (required()) "true" else null}>{get()}</textarea>.asFSXml(),
           errors().headOption.map(_._2)
         )
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
 object F5CodeField {
 
-  def cssImports: NodeSeq = {
-    <link href={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/css/ace.min.css"} rel="stylesheet"></link>
+  def cssImports[E <: FSXmlEnv : FSXmlSupport]: E#NodeSeq = {
+    <link href={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/css/ace.min.css"} rel="stylesheet"></link>.asFSXml()
   }
 
-  def jsImports: NodeSeq = {
-    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/ace.min.js"}></script>
-    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/mode-html.js"}></script>
+  def jsImports[E <: FSXmlEnv : FSXmlSupport]: E#NodeSeq = {
+    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/ace.min.js"}></script> ++
+    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/mode-html.js"}></script> ++
     <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/theme-textmate.js"}></script>
-  }
+  }.asFSXml()
 }
 
-class F5CodeField(
-                   get: () => String
-                   , set: String => Js
-                   , label: Option[NodeSeq] = None
-                   , name: Option[String] = None
-                   , placeholder: Option[String] = None
-                   , tabindex: Option[Int] = None
-                   , maxlength: Option[Int] = None
-                   , required: () => Boolean = () => false
-                   , val disabled: () => Boolean = () => false
-                   , val readOnly: () => Boolean = () => false
-                   , val enabled: () => Boolean = () => true
-                   , val deps: Set[FormField] = Set(),
-                   saveEveryMillis: Int = 1000,
-                   height: String = "800px"
-                 )(
-                   implicit renderer: TextareaFieldRenderer
-                 ) extends StandardFormField with ValidatableField with StringSerializableField {
+class F5CodeField[E <: FSXmlEnv : FSXmlSupport](
+                                                 get: () => String
+                                                 , set: String => Js
+                                                 , label: Option[E#NodeSeq] = None
+                                                 , name: Option[String] = None
+                                                 , placeholder: Option[String] = None
+                                                 , tabindex: Option[Int] = None
+                                                 , maxlength: Option[Int] = None
+                                                 , required: () => Boolean = () => false
+                                                 , val disabled: () => Boolean = () => false
+                                                 , val readOnly: () => Boolean = () => false
+                                                 , val enabled: () => Boolean = () => true
+                                                 , val deps: Set[FormField[_]] = Set(),
+                                                 saveEveryMillis: Int = 1000,
+                                                 height: String = "800px"
+                                               )(
+                                                 implicit renderer: TextareaFieldRenderer
+                                               ) extends StandardFormField[E] with ValidatableField[E] with StringSerializableField[E] {
 
   lazy val editorId = "__editor" + IdGen.id
   lazy val timeoutId = editorId + "_TO"
@@ -1532,12 +1502,12 @@ class F5CodeField(
 
   var currentValue = get()
 
-  override def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = {
+  override def reRender()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = {
     if (!hints.contains(OnSaveRerender)) super.reRender()
     else Js.void
   }
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)] = {
     currentValue = str
     set(currentValue)
     Nil
@@ -1545,23 +1515,23 @@ class F5CodeField(
 
   override def saveToString(): Option[String] = Some(currentValue).filter(_ != "")
 
-  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
+  def withLabel(label: String) = copy(label = Some(implicitly[FSXmlSupport[E]].buildText(label)))
 
   def copy(
             get: () => String = get
             , set: String => Js = set
-            , label: Option[NodeSeq] = label
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , placeholder: Option[String] = placeholder
             , tabindex: Option[Int] = tabindex
             , maxlength: Option[Int] = maxlength
             , required: () => Boolean = required
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
+            , deps: Set[FormField[_]] = deps
             , saveEveryMillis: Int = saveEveryMillis
             , height: String = height
-          ): F5CodeField = {
-    new F5CodeField(
+          ): F5CodeField[E] = {
+    new F5CodeField[E](
       get = get
       , set = set
       , label = label
@@ -1577,16 +1547,16 @@ class F5CodeField(
     )
   }
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
     case _ => Js.void
   })
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = super.errors() ++
+    (if (required() && currentValue.trim == "") Seq((this, implicitly[FSXmlSupport[E]].buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
 
@@ -1630,37 +1600,34 @@ class F5CodeField(
                  |window.$editorId.session.on('change', ${onChangeJS});</script>""".stripMargin
             )
           }
-        </div>
+        </div>.asFSXml()
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 }
 
-trait ButtonFieldRenderer {
-  def render(field: F5SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
-}
-
-class F5SaveButtonField[B <% Elem](
-                                    btn: FSContext => B
-                                    , val disabled: () => Boolean = () => false
-                                    , val enabled: () => Boolean = () => true
-                                    , val deps: Set[FormField] = Set()
-                                    , val toInitialState: B => B = identity[B] _
-                                    , val toChangedState: B => B = identity[B] _
-                                    , val toErrorState: B => B = identity[B] _
-                                  )(implicit renderer: ButtonFieldRenderer) extends StandardFormField {
+class F5SaveButtonField[E <: FSXmlEnv : FSXmlSupport, B <% E#Elem](
+                                                                    btn: FSContext => B
+                                                                    , val disabled: () => Boolean = () => false
+                                                                    , val enabled: () => Boolean = () => true
+                                                                    , val deps: Set[FormField[_]] = Set()
+                                                                    , val toInitialState: B => B = identity[B] _
+                                                                    , val toChangedState: B => B = identity[B] _
+                                                                    , val toErrorState: B => B = identity[B] _
+                                                                  )(implicit renderer: ButtonFieldRenderer) extends StandardFormField[E] {
+  import com.fastscala.core.FSXmlUtils._
 
   def readOnly: () => Boolean = () => false
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 
-  val btnRenderer = Js.rerenderableP[(B => B, Form5)](_ => implicit fsc => {
-    case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+  val btnRenderer = Js.rerenderableP[E, (B => B, Form5[E])](_ => implicit fsc => {
+    case (transformer, form) => (transformer(btn(fsc)): E#Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case AfterSave =>
       //btnRenderer.rerender((toInitialState, form)).printToConsoleBefore()
       Js.void
@@ -1675,8 +1642,8 @@ class F5SaveButtonField[B <% Elem](
     case _ => Js.void
   })
 
-  override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  override def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem =
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)({
@@ -1687,52 +1654,42 @@ class F5SaveButtonField[B <% Elem](
     }
 }
 
-trait FileUploadFieldRenderer {
+class F5FileUploadField[E <: FSXmlEnv : FSXmlSupport](
+                                                       get: () => Option[(String, Array[Byte])]
+                                                       , set: Option[(String, Array[Byte])] => Js
+                                                       , submitBtn: E#Elem
+                                                       , resetBtn: Option[E#Elem] = None
+                                                       , label: Option[E#NodeSeq] = None
+                                                       , name: Option[String] = None
+                                                       , tabindex: Option[Int] = None
 
-  def transformFormElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+                                                       , val disabled: () => Boolean = () => false
+                                                       , val readOnly: () => Boolean = () => false
+                                                       , val enabled: () => Boolean = () => true
+                                                       , val deps: Set[FormField[_]] = Set()
 
-  def transforLabelElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+                                                       , val transformFormElem: E#Elem => E#Elem = identity[E#Elem] _
+                                                       , val transforLabelElem: E#Elem => E#Elem = identity[E#Elem] _
+                                                       , val transforSubmitButtonElem: E#Elem => E#Elem = identity[E#Elem] _
+                                                       , val transforResetButtonElem: E#Elem => E#Elem = identity[E#Elem] _
+                                                       , val transforFileInputElem: E#Elem => E#Elem = identity[E#Elem] _
+                                                     )(implicit renderer: FileUploadFieldRenderer) extends StandardFormField[E] with ValidatableField[E] {
 
-  def transforSubmitButtonElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
-
-  def transforResetButtonElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
-
-  def transforFileInputElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
-}
-
-class F5FileUploadField(
-                         get: () => Option[(String, Array[Byte])]
-                         , set: Option[(String, Array[Byte])] => Js
-                         , submitBtn: Elem
-                         , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = _ => _ => <div></div>
-                         , resetBtn: Option[Elem] = None
-                         , label: Option[NodeSeq] = None
-                         , name: Option[String] = None
-                         , tabindex: Option[Int] = None
-
-                         , val disabled: () => Boolean = () => false
-                         , val readOnly: () => Boolean = () => false
-                         , val enabled: () => Boolean = () => true
-                         , val deps: Set[FormField] = Set()
-
-                         , val transformFormElem: Elem => Elem = identity[Elem]
-                         , val transforLabelElem: Elem => Elem = identity[Elem]
-                         , val transforSubmitButtonElem: Elem => Elem = identity[Elem]
-                         , val transforResetButtonElem: Elem => Elem = identity[Elem]
-                         , val transforFileInputElem: Elem => Elem = identity[Elem]
-                       )(implicit renderer: FileUploadFieldRenderer) extends StandardFormField with ValidatableField {
+  import com.fastscala.core.FSXmlUtils._
 
   var currentValue: Option[(String, Array[Byte])] = get()
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  def renderPreview(render: Option[(String, Array[Byte])])(implicit fsc: FSContext): E#Elem = implicitly[FSXmlSupport[E]].buildElem("div")()
+
+  override def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
     case _ => Js.void
   })
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+  override def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = Nil
 
-  def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+  def render()(implicit form: Form5[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+    if (!enabled()) implicitly[FSXmlSupport[E]].buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
         val targetId = IdGen.id("targetFrame")
@@ -1740,7 +1697,7 @@ class F5FileUploadField(
         val buttonId = IdGen.id("btn")
         val resetButtonId = IdGen.id("reset-btn")
 
-        val previewRenderer = Js.rerenderable(rerenderer => implicit fsc => renderPreview(fsc)(currentValue))
+        val previewRenderer = Js.rerenderable[E](rerenderer => implicit fsc => renderPreview(currentValue)(fsc))
         val actionUrl = fsc.fileUploadActionUrl({
           case Seq(uploadedFile: FSUploadedFile, _ *) =>
             currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))
@@ -1752,13 +1709,13 @@ class F5FileUploadField(
         <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" id={aroundId}>
           <iframe id={targetId} name={targetId} src="about:blank" onload="eval(this.contentWindow.document.body.innerText)" style="width:0;height:0;border:0px solid #fff;"><html><body></body></html></iframe>
           {
-          label.map(label => <label for={elemId}>{label}</label>).map(_.pipe(renderer.transforLabelElem(this)).pipe(transforLabelElem)).getOrElse(NodeSeq.Empty)
+          label.map(label => <label for={elemId}>{label}</label>.asFSXml()).map(_.pipe(renderer.transforLabelElem[E](this)(_)).pipe(transforLabelElem)).getOrElse(NodeSeq.Empty)
           }
           {
           previewRenderer.render()
           }
           {
-            <input name="file" type="file" id={inputId} onchange={Js.show(buttonId).cmd}/>.pipe(renderer.transforFileInputElem(this)).pipe(transforFileInputElem)
+            <input name="file" type="file" id={inputId} onchange={Js.show(buttonId).cmd}/>.asFSXml().pipe(renderer.transforFileInputElem(this)(_)).pipe(transforFileInputElem)
           }
           {
           submitBtn.pipe(renderer.transforSubmitButtonElem(this)).pipe(transforSubmitButtonElem).withId(buttonId).withStyle("display:none").withTypeSubmit()
@@ -1772,38 +1729,36 @@ class F5FileUploadField(
               Js.hide(resetButtonId)
           }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(NodeSeq.Empty)
           }
-        </form>.pipe(renderer.transformFormElem(this)).pipe(transformFormElem)
+        </form>.asFSXml().pipe(renderer.transformFormElem(this)(_)).pipe(transformFormElem)
       }
     }
   }
 
-  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[FormField[E], Boolean]): List[FormField[E]] = if (predicate.applyOrElse[FormField[E], Boolean](this, _ => false)) List(this) else Nil
 
-  def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
+  def withLabel(label: String) = copy(label = Some(<span>{label}</span>.asFSXml()))
 
   def copy(
             get: () => Option[(String, Array[Byte])] = get
             , set: Option[(String, Array[Byte])] => Js = set
-            , submitBtn: Elem = submitBtn
-            , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = renderPreview
-            , resetBtn: Option[Elem] = resetBtn
-            , label: Option[NodeSeq] = label
+            , submitBtn: E#Elem = submitBtn
+            , resetBtn: Option[E#Elem] = resetBtn
+            , label: Option[E#NodeSeq] = label
             , name: Option[String] = name
             , tabindex: Option[Int] = tabindex
             , disabled: () => Boolean = disabled
             , readOnly: () => Boolean = readOnly
             , enabled: () => Boolean = enabled
-            , deps: Set[FormField] = deps
-            , transformFormElem: Elem => Elem = transformFormElem
-            , transforLabelElem: Elem => Elem = transforLabelElem
-            , transforSubmitButtonElem: Elem => Elem = transforSubmitButtonElem
-            , transforResetButtonElem: Elem => Elem = transforResetButtonElem
-            , transforFileInputElem: Elem => Elem = transforFileInputElem
-          ): F5FileUploadField = new F5FileUploadField(
+            , deps: Set[FormField[_]] = deps
+            , transformFormElem: E#Elem => E#Elem = transformFormElem
+            , transforLabelElem: E#Elem => E#Elem = transforLabelElem
+            , transforSubmitButtonElem: E#Elem => E#Elem = transforSubmitButtonElem
+            , transforResetButtonElem: E#Elem => E#Elem = transforResetButtonElem
+            , transforFileInputElem: E#Elem => E#Elem = transforFileInputElem
+          ): F5FileUploadField[E] = new F5FileUploadField[E](
     get = get
     , set = set
     , submitBtn = submitBtn
-    , renderPreview = renderPreview
     , resetBtn = resetBtn
     , label = label
     , name = name

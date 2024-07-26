@@ -1,6 +1,7 @@
 package com.fastscala.utils
 
-import com.fastscala.server.{ClientError, Ok, Response, RoutingHandlerHelper, RoutingHandlerNoSessionHelper}
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import com.fastscala.server._
 import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.io.IOUtils
 
@@ -14,13 +15,13 @@ import javax.imageio.{IIOImage, ImageIO, ImageWriteParam}
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Using
-import scala.xml.{Elem, NodeSeq}
 
 object FSOptimizedResourceHandler {
 
   def cssLoaderUrl(files: String*): String = "/static/optimized/css_loader.css?" + files.map("f=" + URLEncoder.encode(_, "UTF-8")).mkString("&")
 
-  def cssLoaderElem(files: String*): Elem = <link rel="stylesheet" href={cssLoaderUrl(files: _*)} type="text/css"/>
+  def cssLoaderElem[E <: FSXmlEnv : FSXmlSupport](files: String*): E#Elem =
+    implicitly[FSXmlSupport[E]].buildElem("link", "rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files: _*))(implicitly[FSXmlSupport[E]].Empty)
 }
 
 class FSOptimizedResourceHandler(
@@ -167,7 +168,11 @@ class FSOptimizedResourceHandler(
 
   var version = System.currentTimeMillis()
 
-  def optimizedCss(cssFiles: String*): NodeSeq = {
-    <link rel="stylesheet" href={s"/static/css_loader.css?version=$version&" + cssFiles.map("f=" + _).mkString("&")} type="text/css" media="all"/>
-  }
+  def optimizedCss[E <: FSXmlEnv : FSXmlSupport](cssFiles: String*): E#NodeSeq =
+    implicitly[FSXmlSupport[E]].buildElem("link",
+      "rel" -> "stylesheet",
+      "type" -> "text/css",
+      "media" -> "all",
+      "href" -> (s"/static/css_loader.css?version=$version&" + cssFiles.map("f=" + _).mkString("&"))
+    )(implicitly[FSXmlSupport[E]].Empty)
 }

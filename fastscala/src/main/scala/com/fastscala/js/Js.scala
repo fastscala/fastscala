@@ -1,14 +1,13 @@
 package com.fastscala.js
 
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js.consoleLog
-import com.fastscala.utils.ElemTransformers.RichElem
+import com.fastscala.js.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
 import com.fastscala.utils.IdGen
 import jakarta.servlet.http.HttpServletResponse
 import org.apache.commons.text.StringEscapeUtils
 
 import java.util.Date
-import scala.xml.{Elem, NodeSeq, Unparsed}
 
 trait Js {
 
@@ -39,14 +38,17 @@ trait Js {
        |else { document.addEventListener('DOMContentLoaded', function() {$cmd}, false); }""".stripMargin
   }
 
-  def inScriptTag: Elem = {
-    <script type="text/javascript">{Unparsed(
-      """
+  def inScriptTag[E <: FSXmlEnv : FSXmlSupport]: E#Elem = {
+    implicitly[FSXmlSupport[E]].buildElem("script", "type" -> "javascript")(
+      implicitly[FSXmlSupport[E]].buildUnparsed(
+        """
 // <![CDATA[
 """ + cmd +
-        """
+          """
 // ]]>
-""")}</script>
+"""
+      )
+    )
   }
 
   def writeTo(
@@ -64,140 +66,6 @@ trait Js {
 
 case class RawJs(js: String) extends Js {
   override def cmd: String = js
-}
-
-class Rerenderer(
-                  renderFunc: Rerenderer => FSContext => Elem,
-                  idOpt: Option[String] = None,
-                  debugLabel: Option[String] = None,
-                  gcOldFSContext: Boolean = true
-                ) {
-
-  var aroundId = idOpt.getOrElse("around" + IdGen.id)
-  var rootRenderContext: Option[FSContext] = None
-
-  def render()(implicit fsc: FSContext) = {
-    rootRenderContext = Some(fsc)
-    val rendered = renderFunc(this)({
-      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
-      else fsc
-    })
-    rendered.getId match {
-      case Some(id) =>
-        aroundId = id
-        rendered
-      case None => rendered.withIdIfNotSet(aroundId)
-    }
-  }
-
-  def rerender() = Js.replace(aroundId, render()(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-
-  def replaceBy(elem: Elem): Js = Js.replace(aroundId, elem.withId(aroundId))
-
-  def replaceContentsBy(elem: Elem): Js = Js.setContents(aroundId, elem)
-
-  def map(f: Elem => Elem) = {
-    val out = this
-    new Rerenderer(null, None, None) {
-      override def render()(implicit fsc: FSContext): Elem = f(out.render())
-
-      override def rerender() = Js.replace(out.aroundId,
-        f(out.render()(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?"))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-
-      override def replaceBy(elem: Elem): Js = out.replaceBy(elem)
-
-      override def replaceContentsBy(elem: Elem): Js = out.replaceContentsBy(elem)
-    }
-  }
-}
-
-class RerendererP[P](
-                      renderFunc: RerendererP[P] => FSContext => P => Elem,
-                      idOpt: Option[String] = None,
-                      debugLabel: Option[String] = None,
-                      gcOldFSContext: Boolean = true
-                    ) {
-
-  var aroundId = idOpt.getOrElse("around" + IdGen.id)
-  var rootRenderContext: Option[FSContext] = None
-
-  def render(param: P)(implicit fsc: FSContext) = {
-    rootRenderContext = Some(fsc)
-    val rendered = renderFunc(this)({
-      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
-      else fsc
-    })(param)
-    rendered.getId match {
-      case Some(id) =>
-        aroundId = id
-        rendered
-      case None => rendered.withIdIfNotSet(aroundId)
-    }
-  }
-
-  def rerender(param: P) = Js.replace(aroundId, render(param)(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-
-  def replaceBy(elem: Elem): Js = Js.replace(aroundId, elem.withId(aroundId))
-
-  def replaceContentsBy(elem: Elem): Js = Js.setContents(aroundId, elem)
-
-  def map(f: Elem => Elem) = {
-    val out = this
-    new RerendererP[P](null, None, None) {
-      override def render(param: P)(implicit fsc: FSContext): Elem = f(out.render(param))
-
-      override def rerender(param: P) = Js.replace(out.aroundId,
-        f(out.render(param)(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?"))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-
-      override def replaceBy(elem: Elem): Js = out.replaceBy(elem)
-
-      override def replaceContentsBy(elem: Elem): Js = out.replaceContentsBy(elem)
-    }
-  }
-}
-
-class ContentRerenderer(
-                         renderFunc: ContentRerenderer => FSContext => NodeSeq
-                         , outterElem: Elem = <div></div>,
-                         id: Option[String] = None,
-                         debugLabel: Option[String] = None,
-                         gcOldFSContext: Boolean = true
-                       ) {
-
-  val aroundId = id.getOrElse("around" + IdGen.id)
-  var rootRenderContext: Option[FSContext] = None
-
-  def render()(implicit fsc: FSContext) = {
-    rootRenderContext = Some(fsc)
-    outterElem.withIdIfNotSet(aroundId).apply(renderFunc(this)({
-      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
-      else fsc
-    }))
-  }
-
-  def rerender() = Js.replace(aroundId, render()(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-}
-
-class ContentRerendererP[P](
-                             renderFunc: ContentRerendererP[P] => FSContext => P => NodeSeq
-                             , outterElem: Elem = <div></div>,
-                             id: Option[String] = None,
-                             debugLabel: Option[String] = None,
-                             gcOldFSContext: Boolean = true
-                           ) {
-
-  val aroundId = id.getOrElse("around" + IdGen.id)
-  var rootRenderContext: Option[FSContext] = None
-
-  def render(param: P)(implicit fsc: FSContext) = {
-    rootRenderContext = Some(fsc)
-    outterElem.withIdIfNotSet(aroundId)(renderFunc.apply(this)({
-      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
-      else fsc
-    })(param))
-  }
-
-  def rerender(param: P) = Js.replace(aroundId, render(param)(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
 }
 
 object Js {
@@ -229,38 +97,36 @@ object Js {
     def `_=`(other: Js): Js = Js(s"${js.cmd} = ${other.cmd};")
   }
 
-  def rerenderable(
-                    render: Rerenderer => FSContext => Elem,
-                    idOpt: Option[String] = None,
-                    debugLabel: Option[String] = None,
-                    gcOldFSContext: Boolean = true
-                  ): Rerenderer = new Rerenderer(render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
+  def rerenderable[E <: FSXmlEnv : FSXmlSupport](
+                                                  render: Rerenderer[E] => FSContext => E#Elem,
+                                                  idOpt: Option[String] = None,
+                                                  debugLabel: Option[String] = None,
+                                                  gcOldFSContext: Boolean = true
+                                                ): Rerenderer[E] =
+    new Rerenderer[E](render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
-  def rerenderableP[P](
-                        render: RerendererP[P] => FSContext => P => Elem,
-                        idOpt: Option[String] = None,
-                        debugLabel: Option[String] = None,
-                        gcOldFSContext: Boolean = true
-                      ): RerendererP[P] = new RerendererP[P](render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
+  def rerenderableP[E <: FSXmlEnv : FSXmlSupport, P](
+                                                      render: RerendererP[P, E] => FSContext => P => E#Elem,
+                                                      idOpt: Option[String] = None,
+                                                      debugLabel: Option[String] = None,
+                                                      gcOldFSContext: Boolean = true
+                                                    ): RerendererP[P, E] = new RerendererP[P, E](render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
-  def rerenderableContents(
-                            render: ContentRerenderer => FSContext => NodeSeq,
-                            outterElem: Elem = <div></div>,
-                            id: Option[String] = None,
-                            debugLabel: Option[String] = None,
-                            gcOldFSContext: Boolean = true
-                          ): ContentRerenderer =
-    new ContentRerenderer(render, outterElem = outterElem, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
+  def rerenderableContents[E <: FSXmlEnv : FSXmlSupport](
+                                                          render: ContentRerenderer[E] => FSContext => E#NodeSeq,
+                                                          id: Option[String] = None,
+                                                          debugLabel: Option[String] = None,
+                                                          gcOldFSContext: Boolean = true
+                                                        ): ContentRerenderer[E] =
+    new ContentRerenderer[E](render, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
-
-  def rerenderableContentsP[P](
-                                render: ContentRerendererP[P] => FSContext => P => NodeSeq,
-                                outterElem: Elem = <div></div>,
-                                id: Option[String] = None,
-                                debugLabel: Option[String] = None,
-                                gcOldFSContext: Boolean = true
-                              ): ContentRerendererP[P] =
-    new ContentRerendererP[P](render, outterElem = outterElem, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
+  def rerenderableContentsP[E <: FSXmlEnv : FSXmlSupport, P](
+                                                              render: ContentRerendererP[E, P] => FSContext => P => E#NodeSeq,
+                                                              id: Option[String] = None,
+                                                              debugLabel: Option[String] = None,
+                                                              gcOldFSContext: Boolean = true
+                                                            ): ContentRerendererP[E, P] =
+    new ContentRerendererP[E, P](render, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def evalIf(cond: Boolean)(js: => Js): Js = if (cond) js else Js.void
 
@@ -310,19 +176,19 @@ object Js {
 
   def checkboxIsChecked(id: String) = Js(s"""document.getElementById("${escapeStr(id)}").checked""")
 
-  def append2Body(ns: NodeSeq): Js = {
+  def append2Body[E <: FSXmlEnv : FSXmlSupport](ns: E#NodeSeq): Js = {
     val elemId = IdGen.id("template")
     Js(s"document.body.appendChild(${htmlToElement(ns, elemId).cmd})") &
       removeId(elemId)
   }
 
-  def append2(id: String, ns: NodeSeq): Js = {
+  def append2[E <: FSXmlEnv : FSXmlSupport](id: String, ns: E#NodeSeq): Js = {
     val elemId = IdGen.id("template")
     Js(s"""document.getElementById("${escapeStr(id)}").appendChild(${htmlToElement(ns, elemId).cmd})""") &
       removeId(elemId)
   }
 
-  def prepend2(id: String, ns: NodeSeq): Js = {
+  def prepend2[E <: FSXmlEnv : FSXmlSupport](id: String, ns: E#NodeSeq): Js = {
     val elemId = IdGen.id("template")
     Js(s"""document.getElementById("${escapeStr(id)}").insertBefore(${htmlToElement(ns, elemId).cmd}, document.getElementById("${escapeStr(id)}").firstChild)""") &
       removeId(elemId)
@@ -358,9 +224,9 @@ object Js {
 
   def removeId(id: String): Js = Js(s"""document.getElementById("$id").remove();""")
 
-  def replace(id: String, by: NodeSeq): Js = Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
+  def replace[E <: FSXmlEnv : FSXmlSupport](id: String, by: E#NodeSeq): Js = Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
 
-  def setContents(id: String, ns: NodeSeq): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
+  def setContents[E <: FSXmlEnv : FSXmlSupport](id: String, ns: E#NodeSeq): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
 
   def show(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "block";""")
 
@@ -381,15 +247,17 @@ object Js {
 
   def deleteCookie(name: String, path: String): Js = setCookie(name, "", expires = Some(0), path = Some(path))
 
-  def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js = Js {
+  def htmlToElement[E <: FSXmlEnv : FSXmlSupport](html: E#NodeSeq, templateId: String = IdGen.id): Js = Js {
     s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${StringEscapeUtils.escapeEcmaScript(html.toString())}"))).content"""
   }
 
-  def forceHttps: Elem = {
-    <script type="text/javascript">
-      //<![CDATA[
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') { location.protocol = 'https:'; }
-      //]]>
-    </script>
+  def forceHttps[E <: FSXmlEnv : FSXmlSupport]: E#Elem = {
+    implicitly[FSXmlSupport[E]].buildElem("script", "type" -> "text/javascript")(
+      implicitly[FSXmlSupport[E]].buildUnparsed(
+        """//<![CDATA[
+          |if (location.protocol !== 'https:' && location.hostname !== 'localhost') { location.protocol = 'https:'; }
+          |//]]>""".stripMargin
+      )
+    )
   }
 }

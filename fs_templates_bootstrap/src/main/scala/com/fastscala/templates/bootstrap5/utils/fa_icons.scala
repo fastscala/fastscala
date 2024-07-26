@@ -1,12 +1,14 @@
 package com.fastscala.templates.bootstrap5.utils
 
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+
 import scala.xml.{Elem, NodeSeq}
 
 object IcnFA {
   type FaIcn = String
 
   implicit class RichIcn(i: FaIcn) {
-    def icn: Elem = <i class={i}></i>
+    def icn[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("i", "class" -> i)()
   }
 
   val adjust: FaIcn = " fa fa-adjust "

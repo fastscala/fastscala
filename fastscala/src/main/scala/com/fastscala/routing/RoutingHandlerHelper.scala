@@ -1,6 +1,6 @@
 package com.fastscala.server
 
-import com.fastscala.core.{FSSession, FSSystem}
+import com.fastscala.core.{FSSession, FSSystem, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.utils.RenderableWithFSContext
 import jakarta.servlet.http.{Cookie, HttpServletRequest, HttpServletResponse}
@@ -10,7 +10,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler
 
 import java.io.File
 import java.nio.file.Files
-import scala.xml.NodeSeq
 
 case class HttpStatus(name: String, code: Int)
 
@@ -166,11 +165,12 @@ trait RedirectResponse extends TextResponse {
 
   def contentType: String = "text/css;charset=utf-8"
 
-  override def contents: String =
-    <html>
-    <head><title>Moved</title></head>
-    <body>=Moved=<p>This page has moved to <a href={redirectTo}>{redirectTo}</a>.</p></body>
-    </html>.toString
+  override def contents: String = {
+    s"""<html>
+       |<head><title>Moved</title></head>
+       |<body>=Moved=<p>This page has moved to <a href="$redirectTo">$redirectTo</a>.</p></body>
+       |</html>""".stripMargin
+  }
 
   override def respond(response: HttpServletResponse): Unit = {
     super.respond(response)
@@ -180,7 +180,9 @@ trait RedirectResponse extends TextResponse {
 }
 
 object Ok {
-  def html(ns: NodeSeq) = new OkHtml(ns)
+  def html[E <: FSXmlEnv : FSXmlSupport](ns: E#NodeSeq) = new OkHtml(implicitly[FSXmlSupport[E]].render(ns))
+
+  def html(ns: String) = new OkHtml(ns)
 
   def plain(text: String) = new OkTextBased(text, "text/plain;charset=utf-8")
 
@@ -361,14 +363,14 @@ object ServerError {
   def NetworkConnectTimeout = apply(HttpStatuses.NetworkConnectTimeout)
 }
 
-class OkHtml(ns: NodeSeq) extends Response with TextResponse {
+class OkHtml(ns: String) extends Response with TextResponse {
   override def status: HttpStatus = HttpStatuses.OK
 
   override def contentType: String = "text/html;charset=utf-8"
 
   def docType: String = "<!DOCTYPE html>"
 
-  override def contents: String = docType + "\n" + ns.toString()
+  override def contents: String = docType + "\n" + ns
 }
 
 class OkTextBased(text: String, val contentType: String) extends TextResponse {
@@ -469,7 +471,7 @@ abstract class RoutingHandlerNoSessionHelper extends AbstractHandler {
   }
 }
 
-abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
+abstract class RoutingHandlerHelper[E <: FSXmlEnv : FSXmlSupport](implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
 
   def servePage(renderable: RenderableWithFSContext, debugLbl: Option[String] = None)(implicit req: HttpServletRequest, session: FSSession): Response = {
     session.createPage(implicit fsc => Ok.html(renderable.render())

@@ -1,7 +1,6 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
-import com.fastscala.js.rerenderers.Rerenderer
+import com.fastscala.xml.scala_xml.JS.ScalaXmlRerenderer
 
 
 class AroundId(val id: String) extends AnyVal
@@ -12,16 +11,16 @@ class TableRowIdx(val idx: Int) extends AnyVal
 
 class TableColIdx(val idx: Int) extends AnyVal
 
-case class AroundRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class AroundRerenderer(rerenderer: ScalaXmlRerenderer)
 
-case class TableRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class TableRerenderer(rerenderer: ScalaXmlRerenderer)
 
-case class TableHeadRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class TableHeadRerenderer(rerenderer: ScalaXmlRerenderer)
 
-case class TableBodyRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class TableBodyRerenderer(rerenderer: ScalaXmlRerenderer)
 
-case class THRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class THRerenderer(rerenderer: ScalaXmlRerenderer)
 
-case class TRRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class TRRerenderer(rerenderer: ScalaXmlRerenderer)
 
-case class TDRerenderer[E <: FSXmlEnv : FSXmlSupport](rerenderer: Rerenderer[E])
+case class TDRerenderer(rerenderer: ScalaXmlRerenderer)

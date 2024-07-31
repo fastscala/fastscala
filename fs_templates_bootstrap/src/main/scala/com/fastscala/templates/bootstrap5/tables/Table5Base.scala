@@ -1,20 +1,19 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSXmlUtils.EnrichSeqNodeSeq
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 
 import java.util.UUID
 import scala.util.chaining.scalaUtilChainingOps
+import scala.xml.{Elem, NodeSeq}
 
-abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSupport[E]) extends Table5ColsRenderable[E] {
+abstract class Table5Base() extends Table5ColsRenderable {
 
   type R
   type C
-
-  import com.fastscala.core.FSXmlUtils._
 
   lazy val aroundId: AroundId = new AroundId(IdGen.id("around"))
   lazy val tableId: TableId = new TableId(IdGen.id("table"))
@@ -29,10 +28,10 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def idForColumn(col: C): String = "colId" + UUID.randomUUID()
 
-  def render()(implicit fsc: FSContext): E#Elem = aroundRenderer.rerenderer.render()
+  def render()(implicit fsc: FSContext): Elem = aroundRenderer.rerenderer.render()
 
   // ### Around level: ###
-  protected implicit lazy val aroundRenderer: AroundRerenderer[E] = AroundRerenderer[E](Js.rerenderable[E](implicit rerenderer => implicit fsc => {
+  protected implicit lazy val aroundRenderer: AroundRerenderer = AroundRerenderer(JS.rerenderable(implicit rerenderer => implicit fsc => {
     renderTableAround()
   }, idOpt = Some(aroundId.id), debugLabel = Some("around_table")))
 
@@ -42,60 +41,60 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def aroundStyle()(implicit fsc: FSContext): String = ""
 
-  def renderTableAround()(implicit fsc: FSContext): E#Elem = <div class={aroundClasses()} style={aroundStyle()}>{renderAroundContents()}</div>.asFSXml()
+  def renderTableAround()(implicit fsc: FSContext): Elem = <div class={aroundClasses()} style={aroundStyle()}>{renderAroundContents()}</div>
 
-  def renderAroundContents()(implicit fsc: FSContext): E#NodeSeq = tableRenderer.rerenderer.render()
+  def renderAroundContents()(implicit fsc: FSContext): NodeSeq = tableRenderer.rerenderer.render()
 
   // ### Table level: ###
-  protected implicit lazy val tableRenderer: TableRerenderer[E] = TableRerenderer[E](Js.rerenderable[E](implicit rerenderer => implicit fsc => {
+  protected implicit lazy val tableRenderer: TableRerenderer = TableRerenderer(JS.rerenderable(implicit rerenderer => implicit fsc => {
     renderTable()
   }, idOpt = Some(tableId.id), debugLabel = Some("table")))
 
-  def transformTableElem(elem: E#Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): E#Elem = elem
+  def transformTableElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = elem
 
-  def transformTableHeadElem(elem: E#Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): E#Elem = elem
+  def transformTableHeadElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = elem
 
-  def transformTableBodyElem(elem: E#Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): E#Elem = elem
+  def transformTableBodyElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = elem
 
-  def transformTableHeadTRElem(elem: E#Elem)(
+  def transformTableHeadTRElem(elem: Elem)(
     implicit
-    tableHeadRerenderer: TableHeadRerenderer[E]
+    tableHeadRerenderer: TableHeadRerenderer
     , rowsWithIds: Seq[(String, R)]
     , columns: Seq[(String, C)]
     , fsc: FSContext
-  ): E#Elem = elem
+  ): Elem = elem
 
-  def transformTRElem(elem: E#Elem)(
+  def transformTRElem(elem: Elem)(
     implicit
-    tableBodyRerenderer: TableBodyRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableBodyRerenderer: TableBodyRerenderer,
+    trRerenderer: TRRerenderer,
     value: R,
     rowIdx: TableRowIdx,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#Elem = elem
+  ): Elem = elem
 
-  def transformTableHeadTRTDElem(elem: E#Elem)(
+  def transformTableHeadTRTDElem(elem: Elem)(
     implicit
-    tableHeadRerenderer: TableHeadRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableHeadRerenderer: TableHeadRerenderer,
+    trRerenderer: TRRerenderer,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#Elem = elem
+  ): Elem = elem
 
-  def transformTRTDElem(elem: E#Elem)(
+  def transformTRTDElem(elem: Elem)(
     implicit
-    tableBodyRerenderer: TableBodyRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableBodyRerenderer: TableBodyRerenderer,
+    trRerenderer: TRRerenderer,
     col: C,
     value: R,
     rowIdx: TableRowIdx,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#Elem = elem
+  ): Elem = elem
 
   def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
@@ -103,7 +102,7 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def rerenderTable()(implicit fsc: FSContext): Js = tableRenderer.rerenderer.rerender()
 
-  def renderTable()(implicit fsc: FSContext): E#Elem = {
+  def renderTable()(implicit fsc: FSContext): Elem = {
 
     implicit val rowsWithIds: Seq[(String, R)] = rows().zipWithIndex.map({
       case (row, rowIdx) => (idForRow(row, rowIdx), row)
@@ -115,7 +114,7 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
     val tableContents = renderTableContents()
 
-    <table class={classes} style={style} id={tableId.id}>{tableContents}</table>.asFSXml().pipe(transformTableElem)
+    <table class={classes} style={style} id={tableId.id}>{tableContents}</table>.pipe(transformTableElem)
   }
 
   def renderTableContents()(
@@ -123,7 +122,7 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
     columns: Seq[(String, C)]
     , rows: Seq[(String, R)]
     , fsc: FSContext
-  ): E#NodeSeq = {
+  ): NodeSeq = {
     renderTableHead().pipe(transformTableHeadElem) ++
       renderTableBody().pipe(transformTableBodyElem)
   }
@@ -133,33 +132,33 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def tableBodyStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def renderTableBody()(implicit columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], fsc: FSContext): E#Elem = {
+  def renderTableBody()(implicit columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], fsc: FSContext): Elem = {
     val classes = tableBodyClasses()
     val style = tableBodyStyle()
 
-    Js.rerenderable[E](implicit rerenderer => implicit fsc => {
-      implicit val tableBodyRerenderer: TableBodyRerenderer[E] = TableBodyRerenderer[E](rerenderer)
+    JS.rerenderable(implicit rerenderer => implicit fsc => {
+      implicit val tableBodyRerenderer: TableBodyRerenderer = TableBodyRerenderer(rerenderer)
       val contents = renderTableBodyContents()
-      <tbody class={classes} style={style} id={rerenderer.aroundId}>{contents}</tbody>.asFSXml()
+      <tbody class={classes} style={style} id={rerenderer.aroundId}>{contents}</tbody>
     }, debugLabel = Some("table_body")).render()
   }
 
   def renderTableBodyContents()(
     implicit
-    tableBodyRerenderer: TableBodyRerenderer[E]
+    tableBodyRerenderer: TableBodyRerenderer
     , rowsWithIds: Seq[(String, R)]
     , columns: Seq[(String, C)]
     , fsc: FSContext
-  ): E#NodeSeq = {
+  ): NodeSeq = {
     rowsWithIds.zipWithIndex.map({
       case ((rowId, value), rowIdx) =>
         implicit val _rowId = rowId
         implicit val _value = value
         implicit val _rowIdx = new TableRowIdx(rowIdx)
-        Js.rerenderable[E](
+        JS.rerenderable(
           implicit rerenderer =>
             implicit fsc => {
-              implicit val trRerenderer: TRRerenderer[E] = TRRerenderer[E](rerenderer)
+              implicit val trRerenderer: TRRerenderer = TRRerenderer(rerenderer)
               renderTR().pipe(transformTRElem)
             },
           idOpt = Some(rowId),
@@ -174,39 +173,39 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def renderTR()(
     implicit
-    tableBodyRerenderer: TableBodyRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableBodyRerenderer: TableBodyRerenderer,
+    trRerenderer: TRRerenderer,
     value: R,
     rowIdx: TableRowIdx,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#Elem = {
+  ): Elem = {
 
     val classes = trClasses()
     val style = trStyle()
 
     val trContents = renderTRContents()
-    <tr class={classes} style={style}>{trContents}</tr>.asFSXml()
+    <tr class={classes} style={style}>{trContents}</tr>
   }
 
   def renderTRContents()(
     implicit
-    tableBodyRerenderer: TableBodyRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableBodyRerenderer: TableBodyRerenderer,
+    trRerenderer: TRRerenderer,
     value: R,
     rowIdx: TableRowIdx,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#NodeSeq = {
+  ): NodeSeq = {
 
     columns.zipWithIndex.map({
       case ((colThId, col), colIdx) =>
-        Js.rerenderable[E](
+        JS.rerenderable(
           implicit rerenderer =>
             implicit fsc => {
-              implicit val tdRerenderer: TDRerenderer[E] = TDRerenderer[E](rerenderer)
+              implicit val tdRerenderer: TDRerenderer = TDRerenderer(rerenderer)
               implicit val _colThId: String = colThId
               implicit val _col: C = col
               implicit val _tableColIdx: TableColIdx = new TableColIdx(colIdx)
@@ -222,14 +221,14 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def tableHeadStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def renderTableHead()(implicit columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], fsc: FSContext): E#Elem = {
+  def renderTableHead()(implicit columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], fsc: FSContext): Elem = {
     val classes = tableHeadClasses()
     val style = tableHeadStyle()
 
-    Js.rerenderable[E](implicit rerenderer => implicit fsc => {
-      implicit val tableHeadRerenderer: TableHeadRerenderer[E] = TableHeadRerenderer[E](rerenderer)
+    JS.rerenderable(implicit rerenderer => implicit fsc => {
+      implicit val tableHeadRerenderer: TableHeadRerenderer = TableHeadRerenderer(rerenderer)
       val contents = renderTableHeadContents()
-      <thead class={classes} style={style} id={rerenderer.aroundId}>{contents}</thead>.asFSXml()
+      <thead class={classes} style={style} id={rerenderer.aroundId}>{contents}</thead>
     },
       debugLabel = Some(s"table_head")
     ).render()
@@ -237,14 +236,14 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def renderTableHeadContents()(
     implicit
-    tableHeadRerenderer: TableHeadRerenderer[E]
+    tableHeadRerenderer: TableHeadRerenderer
     , rowsWithIds: Seq[(String, R)]
     , columns: Seq[(String, C)]
     , fsc: FSContext
-  ): E#NodeSeq = {
-    Js.rerenderable[E](implicit rerenderer =>
+  ): NodeSeq = {
+    JS.rerenderable(implicit rerenderer =>
       implicit fsc => {
-        implicit val trRerenderer: TRRerenderer[E] = TRRerenderer[E](rerenderer)
+        implicit val trRerenderer: TRRerenderer = TRRerenderer(rerenderer)
         renderTableHeadTR().pipe(transformTableHeadTRElem)
       },
       debugLabel = Some(s"table_head_row")
@@ -257,35 +256,35 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
 
   def renderTableHeadTR()(
     implicit
-    tableHeadRerenderer: TableHeadRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableHeadRerenderer: TableHeadRerenderer,
+    trRerenderer: TRRerenderer,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#Elem = {
+  ): Elem = {
 
     val classes = theadTRClasses()
     val style = theadTRStyle()
 
     val trContents = renderTableHeadTRContents()
-    <tr class={classes} style={style}>{trContents}</tr>.asFSXml()
+    <tr class={classes} style={style}>{trContents}</tr>
   }
 
   def renderTableHeadTRContents()(
     implicit
-    tableHeadRerenderer: TableHeadRerenderer[E],
-    trRerenderer: TRRerenderer[E],
+    tableHeadRerenderer: TableHeadRerenderer,
+    trRerenderer: TRRerenderer,
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): E#NodeSeq = {
+  ): NodeSeq = {
 
     columns.zipWithIndex.map({
       case ((colThId, col), colIdx) =>
-        Js.rerenderable[E](
+        JS.rerenderable(
           implicit rerenderer =>
             implicit fsc => {
-              implicit val thRerenderer: THRerenderer[E] = THRerenderer[E](rerenderer)
+              implicit val thRerenderer: THRerenderer = THRerenderer(rerenderer)
               implicit val _colThId: String = colThId
               implicit val _col: C = col
               implicit val _tableColIdx: TableColIdx = new TableColIdx(colIdx)
@@ -293,6 +292,6 @@ abstract class Table5Base[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSuppo
             },
           debugLabel = Some(s"table_head_row_col_${colIdx}")
         ).render()
-    }).mkNS()
+    }).mkNS
   }
 }

@@ -3,6 +3,7 @@ package com.fastscala.demo.docs.bootstrap
 import com.fastscala.core.FSContext
 import com.fastscala.demo.db.User
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 class BootstrapImagesPage extends MultipleCodeExamples2Page() {
 

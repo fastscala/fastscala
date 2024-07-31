@@ -1,6 +1,7 @@
 package com.fastscala.xml.scala_xml
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.utils.{Renderable, RenderableWithFSContext}
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import scala.xml._
@@ -12,13 +13,15 @@ object FSScalaXmlEnv extends FSXmlEnv {
   implicit def env: FSXmlEnv = this
 }
 
+trait ScalaXmlRenderable extends Renderable[FSScalaXmlEnv.type]
+
+trait ScalaXmlRenderableWithFSContext extends RenderableWithFSContext[FSScalaXmlEnv.type]
+
 object FSScalaXmlSupport {
 
-  implicit def toFSScalaXmlEnvNodeSeq[E <: FSXmlEnv : FSXmlSupport](ns: scala.xml.NodeSeq): E#NodeSeq = ns.asFSXml()
+  //  implicit def toFSScalaXmlEnvNodeSeq[E <: FSXmlEnv : FSXmlSupport](ns: scala.xml.NodeSeq): E#NodeSeq = ns.asFSXml()
 
-  implicit def toFSScalaXmlEnvElem[E <: FSXmlEnv : FSXmlSupport](ns: scala.xml.Elem): E#Elem = ns.asFSXml()
-
-  implicit def elem2NodeSeq[E <: FSXmlEnv : FSXmlSupport](elem: E#Elem): E#NodeSeq = elem
+  //  implicit def toFSScalaXmlEnvElem[E <: FSXmlEnv : FSXmlSupport](ns: scala.xml.Elem): E#Elem = ns.asFSXml()
 
   implicit class RichElem(elem: scala.xml.Elem) {
     def asFSXml[E <: FSXmlEnv : FSXmlSupport](): E#Elem = implicitly[FSXmlSupport[E]].buildElemFrom[FSScalaXmlEnv.type](elem)
@@ -36,7 +39,9 @@ object FSScalaXmlSupport {
 
   implicit val fsXmlSupport: FSXmlSupport[FSScalaXmlEnv.type] = new FSXmlSupport[FSScalaXmlEnv.type] {
 
-    override def buildUnparsed(unparsed: String): NodeSeq = scala.xml.Unparsed("")
+    override def elem2NodeSeq(elem: Elem): NodeSeq = elem
+
+    override def buildUnparsed(unparsed: String): NodeSeq = scala.xml.Unparsed(unparsed)
 
     override def concat(ns1: NodeSeq, ns2: NodeSeq): NodeSeq = ns1 ++ ns2
 
@@ -44,7 +49,7 @@ object FSScalaXmlSupport {
 
     override def buildElemFrom[E <: FSXmlEnv : FSXmlSupport](other: E#Elem): Elem = other match {
       case elem: scala.xml.Elem => elem
-      case other => XML.loadString(implicitly[FSXmlSupport[E]].render(other))
+      case other => XML.loadString(implicitly[FSXmlSupport[E]].render(implicitly[FSXmlSupport[E]].elem2NodeSeq(other)))
     }
 
     override def buildNodeSeqFrom[E <: FSXmlEnv : FSXmlSupport](other: E#NodeSeq): NodeSeq = other match {
@@ -53,7 +58,7 @@ object FSScalaXmlSupport {
     }
 
     override def buildElem(label: String, attrs: (String, String)*)(children: NodeSeq*): Elem = {
-      new ScalaXmlElemUtils.RichElem(new Elem(prefix = null, label = label, attributes1 = null, scope = null, minimizeEmpty = false, child = children.mkNS: _*)).withAttrs(attrs: _*)
+      new ScalaXmlElemUtils.RichElem(new Elem(prefix = null, label = label, attributes1 = Null, scope = TopScope, minimizeEmpty = false, child = children.mkNS: _*)).withAttrs(attrs: _*)
     }
 
     override def render(elem: NodeSeq): String = elem.toString()

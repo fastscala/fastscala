@@ -1,7 +1,7 @@
 package com.fastscala.js.rerenderers
 
 import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
-import com.fastscala.js.Js
+import com.fastscala.js.{Js, JsUtils, JsXmlUtils}
 import com.fastscala.utils.IdGen
 
 import scala.util.chaining.scalaUtilChainingOps
@@ -13,6 +13,7 @@ class ContentRerendererP[E <: FSXmlEnv : FSXmlSupport, P](
                                                            gcOldFSContext: Boolean = true
                                                          ) {
 
+  implicit val Js: JsXmlUtils[E] = JsUtils.generic
   import com.fastscala.core.FSXmlUtils._
 
   val outterElem: E#Elem = implicitly[FSXmlSupport[E]].buildElem("div")()
@@ -30,5 +31,5 @@ class ContentRerendererP[E <: FSXmlEnv : FSXmlSupport, P](
     })
   }
 
-  def rerender(param: P) = Js.replace(aroundId, render(param)(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
+  def rerender(param: P) = Js.replace(aroundId, elem2NodeSeq(render(param)(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?"))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
 }

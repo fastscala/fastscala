@@ -1,44 +1,45 @@
 package com.fastscala.templates.form6.fields
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
+
+import scala.xml.{Elem, NodeSeq}
 
 
-class F6RawHtmlField[E <: FSXmlEnv](
-                                     gen: => E#NodeSeq
-                                   )(implicit fsXmlSupport: FSXmlSupport[E]) extends StandardF6Field[E]
-  with F6FieldWithDisabled[E]
-  with F6FieldWithReadOnly[E]
-  with F6FieldWithDependencies[E]
-  with F6FieldWithEnabled[E] {
+class F6RawHtmlField(
+                                     gen: => NodeSeq
+                                   ) extends StandardF6Field
+  with F6FieldWithDisabled
+  with F6FieldWithReadOnly
+  with F6FieldWithDependencies
+  with F6FieldWithEnabled {
 
-  override def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>.asFSXml()
-    else <div id={aroundId}>{gen}</div>.asFSXml()
+  override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem =
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    else <div id={aroundId}>{gen}</div>
 
-  override def fieldsMatching(predicate: PartialFunction[F6Field[E], Boolean]): List[F6Field[E]] = if (predicate.applyOrElse[F6Field[E], Boolean](this, _ => false)) List(this) else Nil
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F6SurroundWithHtmlField[E <: FSXmlEnv, T <: F6Field[E]](
-                                                               wrap: E#Elem => E#Elem
+class F6SurroundWithHtmlField[T <: F6Field](
+                                                               wrap: Elem => Elem
                                                              )(
                                                                field: T
-                                                             )(implicit fsXmlSupport: FSXmlSupport[E])
-  extends StandardF6Field[E]
-    with F6FieldWithReadOnly[E]
-    with F6FieldWithDependencies[E]
-    with F6FieldWithDisabled[E]
-    with F6FieldWithEnabled[E] {
-  override def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>.asFSXml()
-    else <div id={aroundId}>{wrap(field.render())}</div>.asFSXml()
+                                                             )
+  extends StandardF6Field
+    with F6FieldWithReadOnly
+    with F6FieldWithDependencies
+    with F6FieldWithDisabled
+    with F6FieldWithEnabled {
+  override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem =
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    else <div id={aroundId}>{wrap(field.render())}</div>
 
-  override def fieldsMatching(predicate: PartialFunction[F6Field[E], Boolean]): List[F6Field[E]] =
-    List(this).filter(_ => predicate.applyOrElse[F6Field[E], Boolean](this, _ => false)) :::
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] =
+    List(this).filter(_ => predicate.applyOrElse[F6Field, Boolean](this, _ => false)) :::
       List(field).flatMap(_.fieldsMatching(predicate))
 
-  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
+  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
 }
 

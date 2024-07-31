@@ -3,6 +3,7 @@ package com.fastscala.demo.docs.about
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.LoggedInPage
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -18,7 +19,7 @@ class GettingStartedPage extends LoggedInPage() {
       </div> ++
         alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.mb_5.apply {
           div.apply("Interested in learning more about the FastScala framework? Register now for a free live demo/training here!:") ++
-            BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
+            BSBtn().BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
         } ++
         h2.apply("Github repo") ++
         <p>You can access the FastScala framework repo at: <a href="https://github.com/fastscala/fastscala">https://github.com/fastscala/fastscala</a></p> ++
@@ -31,6 +32,11 @@ class GettingStartedPage extends LoggedInPage() {
         text_center.apply {
           h2.apply("Running the Demo locally") ++
           <iframe width="560" height="315" src="https://www.youtube.com/embed/9dVYEipQg18?" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen="true"></iframe>
+        } ++
+        mb_5 ++
+        text_center.apply {
+          h2.apply("Deploying online in 5min!") ++
+          <iframe width="560" height="315" src="https://www.youtube.com/embed/miTc2kx80cs?" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen="true"></iframe>
         }
     }
   }

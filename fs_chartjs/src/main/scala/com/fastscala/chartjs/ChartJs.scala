@@ -1,12 +1,14 @@
 package com.fastscala.chartjs
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import io.circe.generic.semiauto
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
+
+import scala.xml.{Elem, NodeSeq}
 
 object ChartJsNullable2Option {
   implicit def nullable2Option[T <: AnyRef](v: T): Option[T] = if (v == null) None else Some(v)
@@ -40,13 +42,11 @@ case class ChartJs(
 
 object ChartJs {
 
-  import com.fastscala.core.FSXmlUtils._
+  def rendered[E, P](chart: ChartJs): NodeSeq = renderedOn(chart, <canvas></canvas>)
 
-  def rendered[E <: FSXmlEnv : FSXmlSupport](chart: ChartJs): E#NodeSeq = renderedOn(chart, <canvas></canvas>.asFSXml())
-
-  def renderedOn[E <: FSXmlEnv : FSXmlSupport](chart: ChartJs, elem: E#Elem): E#NodeSeq = {
+  def renderedOn(chart: ChartJs, elem: Elem): NodeSeq = {
     val id = elem.getId.getOrElse(IdGen.id("chart_js_canvas"))
     val finalElem = elem.withId(id)
-    finalElem ++ chart.installInCanvas(id).onDOMContentLoaded.inScriptTag
+    finalElem ++ JS.inScriptTag(chart.installInCanvas(id).onDOMContentLoaded)
   }
 }

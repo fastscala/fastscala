@@ -1,39 +1,41 @@
 package com.fastscala.templates.form5
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form5.fields._
 import com.fastscala.templates.utils.ElemWithRandomId
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
-trait FormRenderer[E <: FSXmlEnv] {
+import scala.xml.{Elem, NodeSeq}
 
-  def render(form: E#Elem): E#NodeSeq
+trait FormRenderer {
+
+  def render(form: Elem): NodeSeq
 }
 
-abstract class DefaultForm5[E <: FSXmlEnv]()(implicit val formRenderer: FormRenderer[E]) extends Form5[E]
+abstract class DefaultForm5()(implicit val formRenderer: FormRenderer) extends Form5
 
-trait Form5[E <: FSXmlEnv] extends ElemWithRandomId {
-
-  implicit def fsXmlSupport: FSXmlSupport[E]
+trait Form5 extends ElemWithRandomId {
 
   implicit def form = this
 
-  val rootField: FormField[E]
+  val rootField: FormField
 
   def initForm()(implicit fsc: FSContext): Unit = ()
 
   def formRenderHits(): Seq[RenderHint] = Nil
 
-  def onEvent(event: FormEvent)(implicit form: Form5[E], fsc: FSContext): Js = {
+  def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
     rootField.onEvent(event)
   }
 
-  def formRenderer: FormRenderer[E]
+  def formRenderer: FormRenderer
 
   def focusFirstFocusableFieldJs(): Js =
-    rootField.fieldsMatching({ case _: FocusableFormField[E] => true })
-      .collectFirst({ case fff: FocusableFormField[E] => fff })
+    rootField.fieldsMatching({ case _: FocusableFormField => true })
+      .collectFirst({ case fff: FocusableFormField => fff })
       .map(_.focusJs)
       .getOrElse(Js.void)
 
@@ -44,12 +46,11 @@ trait Form5[E <: FSXmlEnv] extends ElemWithRandomId {
     rootField.reRender() & afterRendering()
   }
 
-  def render()(implicit fsc: FSContext): E#Elem = {
-    import com.fastscala.core.FSXmlUtils._
+  def render()(implicit fsc: FSContext): Elem = {
     implicit val renderHints = formRenderHits()
     val rendered = rootField.render()
     if (afterRendering() != Js.void) {
-      rendered.withAppendedToContents(afterRendering().onDOMContentLoaded.inScriptTag)
+      rendered.withAppendedToContents(JS.inScriptTag(afterRendering().onDOMContentLoaded))
     } else {
       rendered
     }
@@ -62,7 +63,7 @@ trait Form5[E <: FSXmlEnv] extends ElemWithRandomId {
   def onSaveServerSide()(implicit fsc: FSContext): Js = {
     if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)
     else {
-      val hasErrors = rootField.enabledFields.exists({ case field: ValidatableField[E] => field.hasErrors_?() case _ => false })
+      val hasErrors = rootField.enabledFields.exists({ case field: ValidatableField => field.hasErrors_?() case _ => false })
       implicit val renderHints = formRenderHits() :+ OnSaveRerender
       if (hasErrors) {
         rootField.onEvent(ErrorsOnSave) &

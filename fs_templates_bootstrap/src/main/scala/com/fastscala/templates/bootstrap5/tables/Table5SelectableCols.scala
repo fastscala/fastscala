@@ -1,13 +1,16 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSXmlUtils.EnrichSeqNodeSeq
-import com.fastscala.core.{FSContext, FSXmlEnv}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.utils.Lazy
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 
-trait Table5SelectableCols[E <: FSXmlEnv] extends Table5Base[E] with Table5ColsLabeled {
+import scala.xml.Elem
+
+trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
 
   lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns().filter(columnStartsVisible): _*))
 
@@ -19,10 +22,10 @@ trait Table5SelectableCols[E <: FSXmlEnv] extends Table5Base[E] with Table5ColsL
 
   def colLabel(col: C): String
 
-  def renderSelectColsButton()(implicit fsc: FSContext): E#Elem =
+  def renderSelectColsButton()(implicit fsc: FSContext): Elem =
     BSBtn().BtnPrimary.lbl("Columns").ajax(implicit fsc => openColumnSelectionModal()).btn
 
-  def openColumnSelectionModal()(implicit fsc: FSContext): Js = BSModal5.verySimple[E](
+  def openColumnSelectionModal()(implicit fsc: FSContext): Js = BSModal5.verySimple(
     "Select Columns",
     "Done",
     onHidden = fsc.callback(() => rerenderTableAround())
@@ -33,13 +36,13 @@ trait Table5SelectableCols[E <: FSXmlEnv] extends Table5Base[E] with Table5ColsL
         {
           case true =>
             currentSelectedCols() += col
-            Js.void
+            JS.void
           case false =>
             currentSelectedCols() -= col
-            Js.void
+            JS.void
         },
         colLabel(col)
       )
-    }).mkNS()
+    }).mkNS
   })
 }

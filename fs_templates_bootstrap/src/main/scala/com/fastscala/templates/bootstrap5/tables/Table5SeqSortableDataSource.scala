@@ -1,10 +1,8 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSXmlEnv
-
 import scala.util.chaining.scalaUtilChainingOps
 
-trait Table5SeqSortableDataSource[E <: FSXmlEnv] extends Table5Base[E] with Table5Sortable[E] {
+trait Table5SeqSortableDataSource extends Table5Base with Table5Sortable {
 
   def seqRowsSource: Seq[R]
 

@@ -3,11 +3,18 @@ package com.fastscala.demo.docs
 import com.fastscala.core.FSContext
 import com.fastscala.templates.bootstrap5.classes.BSHelpers
 import com.fastscala.utils.RenderableWithFSContext
+import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, FSScalaXmlSupport, JS, ScalaXmlRenderableWithFSContext}
+import com.typesafe.config.ConfigFactory
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
+import scala.io.Source
+import scala.util.Try
 import scala.xml.NodeSeq
 
 
-trait BasePage extends RenderableWithFSContext {
+trait BasePage extends ScalaXmlRenderableWithFSContext {
+
+  val config = ConfigFactory.load()
 
   def navBarTopRight()(implicit fsc: FSContext): NodeSeq
 
@@ -21,7 +28,10 @@ trait BasePage extends RenderableWithFSContext {
 
   def pageTitle: String
 
-  override def render()(implicit fsc: FSContext): NodeSeq = {
+  /*
+com.fastscala.demo.pages.include_file_in_body
+   */
+  def render()(implicit fsc: FSContext): NodeSeq = {
     import BSHelpers._
 
     <html>
@@ -35,8 +45,9 @@ trait BasePage extends RenderableWithFSContext {
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous"/>
         <link href="//cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css" rel="stylesheet"/>
         <link href="/static/custom_base_page.css" rel="stylesheet"/>
-        {fsc.fsPageScript().inScriptTag}
+        {JS.inScriptTag(fsc.fsPageScript())}
         {append2Head()}
+        {Try(config.getString("com.fastscala.demo.pages.include_file_in_head")).map(Source.fromFile(_).getLines().mkString("\n")).map(scala.xml.Unparsed(_)).getOrElse(NodeSeq.Empty)}
       </head>
       <body>
 
@@ -87,6 +98,7 @@ trait BasePage extends RenderableWithFSContext {
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script src="//cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/feather.min.js" integrity="sha384-uO3SXW5IuS1ZpFPKugNNWqTZRRglnUJK6UAZ/gxOX80nxEkN9NcGZTftn6RzhGWE" crossorigin="anonymous"></script>
         {append2Body()}
+        {Try(config.getString("com.fastscala.demo.pages.include_file_in_body")).map(Source.fromFile(_).getLines().mkString("\n")).map(scala.xml.Unparsed(_)).getOrElse(NodeSeq.Empty)}
       </body>
     </html>
 

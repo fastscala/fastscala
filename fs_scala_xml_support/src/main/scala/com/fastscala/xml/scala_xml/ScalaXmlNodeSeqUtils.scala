@@ -4,8 +4,6 @@ import scala.xml.{Elem, NodeSeq, Unparsed}
 
 object ScalaXmlNodeSeqUtils {
 
-  def showIf(b: Boolean)(ns: => NodeSeq) = if (b) ns else NodeSeq.Empty
-
   implicit class MkNSFromNodeSeq(elems: Iterable[NodeSeq]) {
     def mkNS: NodeSeq = {
       val sb = new StringBuilder()

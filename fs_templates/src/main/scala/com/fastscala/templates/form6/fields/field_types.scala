@@ -1,50 +1,50 @@
 package com.fastscala.templates.form6.fields
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form6.Form6
 import com.fastscala.templates.utils.ElemWithRandomId
+import com.fastscala.xml.scala_xml.JS
+
+import scala.xml.{Elem, NodeSeq}
 
 
-trait F6Field[E <: FSXmlEnv] {
+trait F6Field {
 
-  implicit def fsXmlSupport: FSXmlSupport[E]
+  def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem
 
-  def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem
-
-  def reRender()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js
+  def reRender()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js
 
   /**
    * Ignores fields not matching the predicate, and their children.
    */
-  def fieldsMatching(predicate: PartialFunction[F6Field[E], Boolean]): List[F6Field[E]]
+  def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field]
 
-  def enabledFields: List[F6Field[E]] = fieldsMatching(_.enabled())
+  def enabledFields: List[F6Field] = fieldsMatching(_.enabled())
 
-  def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
+  def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
 
-  def deps: Set[F6Field[_]]
+  def deps: Set[F6Field]
 
   def enabled(): Boolean
 }
 
-trait FocusableF6Field[E <: FSXmlEnv] extends F6Field[E] {
+trait FocusableF6Field extends F6Field {
 
   def focusJs: Js
 }
 
-abstract class StandardF6Field[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXmlSupport[E]) extends F6Field[E] with ElemWithRandomId {
+abstract class StandardF6Field() extends F6Field with ElemWithRandomId {
 
   val aroundId: String = randomElemId
 
-  def reRender()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = {
-    import com.fastscala.core.FSXmlUtils._
-    Js.replace(aroundId, render())
+  def reRender()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = {
+    JS.replace(aroundId, render())
   }
 
   def visible: () => Boolean = () => enabled()
 
-  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
     case _ => Js.void
   })
@@ -60,20 +60,20 @@ abstract class StandardF6Field[E <: FSXmlEnv]()(implicit val fsXmlSupport: FSXml
   }
 }
 
-trait ValidatableField[E <: FSXmlEnv] extends StandardF6Field[E] {
+trait ValidatableField extends StandardF6Field {
   def hasErrors_?() = errors().nonEmpty
 
-  def errors(): Seq[(ValidatableField[E], E#NodeSeq)] = Nil
+  def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 }
 
-trait StringSerializableField[E <: FSXmlEnv] extends StandardF6Field[E] {
+trait StringSerializableField extends StandardF6Field {
 
-  def loadFromString(str: String): Seq[(ValidatableField[E], E#NodeSeq)]
+  def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)]
 
   def saveToString(): Option[String]
 }
 
-trait QuerySerializableStringField[E <: FSXmlEnv] extends StringSerializableField[E] {
+trait QuerySerializableStringField extends StringSerializableField {
 
   def queryStringParamName: String
 }

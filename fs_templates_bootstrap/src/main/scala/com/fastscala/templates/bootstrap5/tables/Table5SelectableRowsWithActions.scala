@@ -1,22 +1,23 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.{FSContext, FSXmlEnv}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.js.rerenderers.Rerenderer
 import com.fastscala.templates.bootstrap5.components.BSBtnDropdown
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.JS.ScalaXmlRerenderer
 
-trait Table5SelectableRowsWithActions[E <: FSXmlEnv] extends Table5SelectableRows[E] {
+trait Table5SelectableRowsWithActions extends Table5SelectableRows {
 
-  def actionsForRows(rows: Set[R]): Seq[BSBtn[E]] = Nil
+  def actionsForRows(rows: Set[R]): Seq[BSBtn] = Nil
 
-  def actionsBtnToIncludeInDropdown: BSBtn[E] = BSBtn().BtnPrimary.lbl("Actions")
+  def actionsBtnToIncludeInDropdown: BSBtn = BSBtn().BtnPrimary.lbl("Actions")
 
   override def onSelectedRowsChange()(implicit fsc: FSContext): Js = super.onSelectedRowsChange() &
     actionsDropdownBtnRenderer.rerender()
 
 
-  lazy val actionsDropdownBtnRenderer: Rerenderer[E] = Js.rerenderable(rerenderer => implicit fsc => {
+  lazy val actionsDropdownBtnRenderer: ScalaXmlRerenderer = JS.rerenderable(rerenderer => implicit fsc => {
     BSBtnDropdown(actionsBtnToIncludeInDropdown)(
       actionsForRows(selectedVisibleRows): _*
     )

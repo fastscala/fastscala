@@ -5,6 +5,8 @@ import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.{BSModal5Base, BSModal5Size}
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.utils.IdGen
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -45,7 +47,7 @@ class LoggerUISysoutOnly(val title: String) extends LoggerUI {
 
   def continue_?(): Boolean = true
 
-  def finished(): Unit = Js.void
+  def finished(): Unit = JS.void
 }
 
 class LoggerUIImpl(val title: String)(implicit fsc: FSContext) extends LoggerUI {
@@ -56,17 +58,17 @@ class LoggerUIImpl(val title: String)(implicit fsc: FSContext) extends LoggerUI 
   private var continue: Boolean = true
   private var hasFinished: Boolean = false
 
-  def log(mesg: String): Unit = fsc.sendToPage(Js.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;">{mesg}</pre>))
+  def log(mesg: String): Unit = fsc.sendToPage(JS.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;">{mesg}</pre>))
 
-  def info(mesg: String): Unit = fsc.sendToPage(Js.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-info">{mesg}</pre>))
+  def info(mesg: String): Unit = fsc.sendToPage(JS.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-info">{mesg}</pre>))
 
-  def success(mesg: String): Unit = fsc.sendToPage(Js.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-success">{mesg}</pre>))
+  def success(mesg: String): Unit = fsc.sendToPage(JS.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-success">{mesg}</pre>))
 
-  def danger(mesg: String): Unit = fsc.sendToPage(Js.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-danger">{mesg}</pre>))
+  def danger(mesg: String): Unit = fsc.sendToPage(JS.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-danger">{mesg}</pre>))
 
-  def warn(mesg: String): Unit = fsc.sendToPage(Js.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-warning">{mesg}</pre>))
+  def warn(mesg: String): Unit = fsc.sendToPage(JS.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-warning">{mesg}</pre>))
 
-  def debug(mesg: String): Unit = fsc.sendToPage(Js.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-black-50">{mesg}</pre>))
+  def debug(mesg: String): Unit = fsc.sendToPage(JS.prepend2(loggerOutputId, <pre style="white-space: pre-wrap; margin: 0;" class="text-black-50">{mesg}</pre>))
 
   override def continue_?(): Boolean = continue
 
@@ -83,9 +85,9 @@ class LoggerUIImpl(val title: String)(implicit fsc: FSContext) extends LoggerUI 
 
     override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some {
       if (hasFinished) {
-        BSBtn.BtnSecondary.lbl("Close").onclick(hideAndRemove()).btn
+        BSBtn().BtnSecondary.lbl("Close").onclick(hideAndRemove()).btn
       } else {
-        val btn: BSBtn = BSBtn.BtnDark.lbl("Stop").withRandomId
+        val btn: BSBtn = BSBtn().BtnDark.lbl("Stop").withRandomId
         btn.ajax(implicit fsc => {
           continue = false
           btn.disable()

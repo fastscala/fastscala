@@ -1,12 +1,8 @@
 package com.fastscala.demo.docs.bootstrap
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, MultipleCodeExamplesPage}
-import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-
-import scala.xml.NodeSeq
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 class BootstrapTypographyPage extends MultipleCodeExamples2Page() {
 

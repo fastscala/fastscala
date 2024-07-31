@@ -37,6 +37,8 @@ trait ScalaXmlElemUtils {
 
   def addClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
 
+  def withClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
+
   def addOnClick(js: String): Elem = attributeTransform("onclick", _.getOrElse("") + ";" + js)
 
   def addOnClick(js: Js): Elem = addOnClick(js.cmd)
@@ -106,4 +108,5 @@ object ScalaXmlElemUtils {
 
   implicit class RichElem(val elem: Elem) extends ScalaXmlElemUtils
 
+  def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
 }

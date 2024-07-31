@@ -1,18 +1,17 @@
 package com.fastscala.templates.bootstrap5.form5
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.templates.bootstrap5.classes.BSHelpers
 import com.fastscala.templates.form5.fields._
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 object BSHorizontalField {
 
   import BSHelpers._
-  import com.fastscala.core.FSXmlUtils._
 
-  def apply[E <: FSXmlEnv : FSXmlSupport](
-                                           enabled: () => Boolean = () => true
-                                           , deps: Set[FormField[_]] = Set()
-                                         )(children: FormField[E]*) =
-    new F5HorizontalField[E](enabled, deps)(children.map[(String, FormField[E])](f => col.getClassAttr -> f): _*)
+  def apply(
+             enabled: () => Boolean = () => true
+             , deps: Set[FormField] = Set()
+           )(children: FormField*) =
+    new F5HorizontalField(enabled, deps)(children.map[(String, FormField)](f => col.getClassAttr -> f): _*)
 }

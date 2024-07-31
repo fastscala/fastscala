@@ -4,6 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.db.User
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.xml.scala_xml.JS
 
 import java.time.LocalDate
 import scala.xml.{Elem, NodeSeq}
@@ -21,7 +22,7 @@ abstract class LoggedInPage() extends BasePage {
   //      <div class="text-end justify-content-end ms-2">
   //        <a href="https://github.com/fastscala/fastscala" class="btn btn-warning">GitHub</a>
   //    </div> // ++
-  //      BSBtn.BtnOutlineWarning.lbl("Logout").ajax(implicit fsc => {
+  //      BSBtn().BtnOutlineWarning.lbl("Logout").ajax(implicit fsc => {
   //        user.logOut()
   //      }).btn.ms_2
 
@@ -34,7 +35,7 @@ abstract class LoggedInPage() extends BasePage {
     //      }
   }
 
-  lazy val pageRenderer = Js.rerenderableContents(rerenderer => implicit fsc => {
+  lazy val pageRenderer = JS.rerenderableContents(rerenderer => implicit fsc => {
     renderPageContents()
   })
 

@@ -2,7 +2,7 @@ package com.fastscala.core
 
 trait FSXmlEnv {
   type NodeSeq
-  type Elem <: NodeSeq
+  type Elem
 }
 
 trait FSXmlSupport[Env <: FSXmlEnv] {
@@ -32,4 +32,6 @@ trait FSXmlSupport[Env <: FSXmlEnv] {
   def transformContents[E <: FSXmlEnv : FSXmlSupport](elem: Env#Elem, transform: Env#NodeSeq => E#NodeSeq): Env#Elem
 
   def concat(ns1: Env#NodeSeq, ns2: Env#NodeSeq): Env#NodeSeq
+
+  def elem2NodeSeq(elem: Env#Elem): Env#NodeSeq
 }

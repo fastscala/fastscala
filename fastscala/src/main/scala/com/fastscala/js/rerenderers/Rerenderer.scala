@@ -1,7 +1,7 @@
 package com.fastscala.js.rerenderers
 
 import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
-import com.fastscala.js.Js
+import com.fastscala.js.{Js, JsUtils, JsXmlUtils}
 import com.fastscala.utils.IdGen
 
 
@@ -11,6 +11,8 @@ class Rerenderer[E <: FSXmlEnv : FSXmlSupport](
                                                 debugLabel: Option[String] = None,
                                                 gcOldFSContext: Boolean = true
                                               ) {
+
+  implicit val Js: JsXmlUtils[E] = JsUtils.generic
   import com.fastscala.core.FSXmlUtils._
 
   var aroundId = idOpt.getOrElse("around" + IdGen.id)
@@ -30,11 +32,11 @@ class Rerenderer[E <: FSXmlEnv : FSXmlSupport](
     }
   }
 
-  def rerender(): Js = Js.replace(aroundId, render()(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
+  def rerender(): Js = Js.replace(aroundId, elem2NodeSeq(render()(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?"))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
 
-  def replaceBy(elem: E#Elem): Js = Js.replace(aroundId, elem.withId(aroundId))
+  def replaceBy(elem: E#Elem): Js = Js.replace(aroundId, elem2NodeSeq(elem.withId(aroundId)))
 
-  def replaceContentsBy(elem: E#Elem): Js = Js.setContents(aroundId, elem)
+  def replaceContentsBy(elem: E#Elem): Js = Js.setContents(aroundId, elem2NodeSeq(elem))
 
   def map(f: E#Elem => E#Elem) = {
     val out = this
@@ -42,7 +44,7 @@ class Rerenderer[E <: FSXmlEnv : FSXmlSupport](
       override def render()(implicit fsc: FSContext): E#Elem = f(out.render())
 
       override def rerender(): Js = Js.replace(out.aroundId,
-        f(out.render()(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?"))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
+        elem2NodeSeq(f(out.render()(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
 
       override def replaceBy(elem: E#Elem): Js = out.replaceBy(elem)
 

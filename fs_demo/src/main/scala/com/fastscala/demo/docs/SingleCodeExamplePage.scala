@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils
 import java.nio.charset.StandardCharsets
 import scala.util.matching.Regex
 import scala.xml.NodeSeq
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 abstract class SingleCodeExamplePage() extends PageWithTopTitle {

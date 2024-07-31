@@ -7,6 +7,7 @@ import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5Base
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.xml.scala_xml.JS
 import io.circe.syntax.EncoderOps
 
 import scala.xml.NodeSeq
@@ -21,7 +22,7 @@ class SimpleChartjsPage extends SingleCodeExamplePage() {
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===
     import com.fastscala.chartjs.ChartJsNullable2Option._
-    <canvas id="chart"></canvas> ++ ChartJs(
+    <canvas id="chart"></canvas> ++ JS.inScriptTag(ChartJs(
       `type` = BarChartType,
       data = ChartData(
         datasets = List(
@@ -34,7 +35,7 @@ class SimpleChartjsPage extends SingleCodeExamplePage() {
         ),
         labels = List("Test", "Test", "Test", "Test")
       )
-    ).installInCanvas("chart").onDOMContentLoaded.inScriptTag
+    ).installInCanvas("chart").onDOMContentLoaded)
     // === code snippet ===
   }
 }

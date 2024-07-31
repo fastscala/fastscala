@@ -471,9 +471,9 @@ abstract class RoutingHandlerNoSessionHelper extends AbstractHandler {
   }
 }
 
-abstract class RoutingHandlerHelper[E <: FSXmlEnv : FSXmlSupport](implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
+abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
 
-  def servePage(renderable: RenderableWithFSContext, debugLbl: Option[String] = None)(implicit req: HttpServletRequest, session: FSSession): Response = {
+  def servePage[E <: FSXmlEnv : FSXmlSupport](renderable: RenderableWithFSContext[E], debugLbl: Option[String] = None)(implicit req: HttpServletRequest, session: FSSession): Response = {
     session.createPage(implicit fsc => Ok.html(renderable.render())
       .addHeaders(
         "Cache-Control" -> "no-cache, max-age=0, no-store"

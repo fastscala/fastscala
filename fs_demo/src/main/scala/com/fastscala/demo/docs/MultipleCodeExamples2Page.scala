@@ -3,7 +3,8 @@ package com.fastscala.demo.docs
 import com.fastscala.core.FSContext
 import com.fastscala.demo.db.User
 import com.fastscala.templates.bootstrap5.classes.BSHelpers.{div, h4}
-import com.fastscala.utils.NodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import org.apache.commons.io.IOUtils
 
 import java.nio.charset.StandardCharsets
@@ -41,7 +42,7 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   def renderStandardPageContents()(implicit fsc: FSContext): NodeSeq = {
     renderContentsWithSnippets()
     renderExplanation() ++
-      sections.reverse.mkNS(NodeSeq.Empty)
+      sections.reverse.mkNS
   }
 
   def renderCodeSnippet(title: String, rendered: NodeSeq, contents: NodeSeq): NodeSeq = {

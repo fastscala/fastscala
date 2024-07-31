@@ -7,7 +7,9 @@ import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form6.DefaultForm6
-import com.fastscala.templates.form6.fields.{F6SaveButtonField, F6StringField, F6VerticalField, F6Field}
+import com.fastscala.templates.form6.fields.{F6Field, F6SaveButtonField, F6StringField, F6VerticalField}
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import io.circe.Decoder
 import io.circe.generic.semiauto
 
@@ -27,7 +29,7 @@ class AboutPage extends MultipleCodeExamples2Page {
     renderHtml() {
       alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.apply {
         div.apply("Interested in learning more about the FastScala framework? Register now for a free live demo/training here!:") ++
-          BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
+          BSBtn().BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
       } ++
         h3.apply("What is the FastScala framework?") ++
         <p>
@@ -41,7 +43,7 @@ class AboutPage extends MultipleCodeExamples2Page {
     }
 
     renderSnippet("Create a callback") {
-      val callbackJs = fsc.callback(() => Js.alert(s"Current date/time on server: ${new Date().toString}"))
+      val callbackJs = fsc.callback(() => JS.alert(s"Current date/time on server: ${new Date().toString}"))
       <p>Clicking the button runs the javacript:</p>
       <pre>{callbackJs.cmd}</pre>
       <button class="btn btn-primary d-block mx-auto" onclick={callbackJs.cmd}>Check time on server</button>
@@ -56,8 +58,8 @@ class AboutPage extends MultipleCodeExamples2Page {
       </p>
     }
     renderSnippet("Building on top of the basics") {
-      BSBtn.BtnPrimary.lg.lbl("Check time on server")
-        .ajax(_ => Js.alert(s"Current date/time on server: ${new Date().toString}"))
+      BSBtn().BtnPrimary.lg.lbl("Check time on server")
+        .ajax(_ => JS.alert(s"Current date/time on server: ${new Date().toString}"))
         .btn.m_3.shadow.mx_auto.d_block
     }
     renderHtml() {
@@ -67,8 +69,8 @@ class AboutPage extends MultipleCodeExamples2Page {
     }
     renderSnippet("Check time on server basic example") {
       <div id="current-time"><span>{new Date().toString}</span></div> ++
-        BSBtn.BtnPrimary.sm.lbl("Update time")
-          .ajax(_ => Js.setContents("current-time", <span>{new Date().toString}</span>)).sm.btn
+        BSBtn().BtnPrimary.sm.lbl("Update time")
+          .ajax(_ => JS.setContents("current-time", <span>{new Date().toString}</span>)).sm.btn
     }
     renderHtml() {
       <p>
@@ -76,15 +78,15 @@ class AboutPage extends MultipleCodeExamples2Page {
       </p>
     }
     renderSnippet("Check time on server example 2") {
-      val rerenderable = Js.rerenderable(_ => _ => <span>{new Date().toString}</span>)
+      val rerenderable = JS.rerenderable(_ => _ => <span>{new Date().toString}</span>)
       rerenderable.render() ++
-        BSBtn.BtnPrimary.sm.lbl("Update time")
+        BSBtn().BtnPrimary.sm.lbl("Update time")
           .ajax(_ => rerenderable.rerender()).sm.btn.ms_2
     }
     renderSnippet("Check time on server example 3") {
-      Js.rerenderableContents(rerenderer => implicit fsc => {
+      JS.rerenderableContents(rerenderer => implicit fsc => {
         <span>{new Date().toString}</span> ++
-          BSBtn.BtnPrimary.sm.lbl("Update time")
+          BSBtn().BtnPrimary.sm.lbl("Update time")
             .ajax(_ => rerenderer.rerender()).sm.btn.ms_2
       }).render()
     }
@@ -95,37 +97,37 @@ class AboutPage extends MultipleCodeExamples2Page {
     }
     renderSnippet("Variable number of input buttons") {
       var numBtns = 3
-      Js.rerenderableContents(rerenderer => implicit fsc => {
+      JS.rerenderableContents(rerenderer => implicit fsc => {
         val buttons = (0 until numBtns).map(btnNum => {
           val points = btnNum + 1
-          BSBtn.BtnSecondary.lg.lbl(points.toString)
-            .onclick(Js.alert(points + " points")).btn.mx_3
+          BSBtn().BtnSecondary.lg.lbl(points.toString)
+            .onclick(JS.alert(points + " points")).btn.mx_3
         })
         d_flex.justify_content_center.apply(buttons: _*).mb_2 ++
           d_flex.justify_content_center.apply {
-            BSBtn.BtnPrimary.sm.lbl("-").ajax(_ => {
+            BSBtn().BtnPrimary.sm.lbl("-").ajax(_ => {
               numBtns -= 1
               rerenderer.rerender()
             }).btn ++
-              BSBtn.BtnPrimary.sm.lbl("+").ajax(_ => {
+              BSBtn().BtnPrimary.sm.lbl("+").ajax(_ => {
                 numBtns += 1
                 rerenderer.rerender()
               }).btn.ms_2
           }
       }).render()
     }
-    renderSnippet("Variable number of input buttons - more elegant/functional approach, with Js.rerenderableContentsP") {
-      Js.rerenderableContentsP[Int](rerenderer => implicit fsc => numBtns => {
+    renderSnippet("Variable number of input buttons - more elegant/functional approach, with JS.rerenderableContentsP") {
+      JS.rerenderableContentsP[Int](rerenderer => implicit fsc => numBtns => {
         val buttons = (0 until numBtns).map(_ + 1).map(points => {
-          BSBtn.BtnSecondary.lg.lbl(points.toString)
-            .onclick(Js.alert(points + " points")).btn.mx_3
+          BSBtn().BtnSecondary.lg.lbl(points.toString)
+            .onclick(JS.alert(points + " points")).btn.mx_3
         })
         d_flex.justify_content_center.apply(buttons: _*).mb_2 ++
           d_flex.justify_content_center.apply {
-            BSBtn.BtnPrimary.sm.lbl("-").ajax(_ => {
+            BSBtn().BtnPrimary.sm.lbl("-").ajax(_ => {
               rerenderer.rerender(math.max(1, numBtns - 1))
             }).btn ++
-              BSBtn.BtnPrimary.sm.lbl("+").ajax(_ => {
+              BSBtn().BtnPrimary.sm.lbl("+").ajax(_ => {
                 rerenderer.rerender(math.min(10, numBtns + 1))
               }).btn.ms_2
           }
@@ -142,7 +144,7 @@ class AboutPage extends MultipleCodeExamples2Page {
       val emailField = new F6StringField().label("Email").inputType("email").required(true)
 
       new DefaultForm6() {
-        override def afterSave()(implicit fsc: FSContext): Js =
+        override def postSave()(implicit fsc: FSContext): Js =
           BSModal5.verySimple("Your input data", "Done")(modal => implicit fsc => {
             fs_4.apply(s"Your entered the name '${nameField.currentValue}' and email '${emailField.currentValue}'")
           })
@@ -150,7 +152,7 @@ class AboutPage extends MultipleCodeExamples2Page {
         override lazy val rootField: F6Field = F6VerticalField()(
           nameField
           , emailField
-          , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+          , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
         )
       }.render()
     }
@@ -176,7 +178,7 @@ class AboutPage extends MultipleCodeExamples2Page {
 
       def renderResponses(responses:  List[Response]) = responses.flatMap(_.render())
 
-      val resultsRenderer = Js.rerenderableContentsP[Option[String]](_ => implicit fsc => queryOpt => {
+      val resultsRenderer = JS.rerenderableContentsP[Option[String]](_ => implicit fsc => queryOpt => {
         queryOpt match {
           case Some(query) =>
             val url = new URL(s"https://api.dictionaryapi.dev/api/v2/entries/en/${URLEncoder.encode(query)}")
@@ -201,11 +203,11 @@ class AboutPage extends MultipleCodeExamples2Page {
 
       resultsRenderer.render(None) ++
         new DefaultForm6() {
-          override def afterSave()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
+          override def postSave()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
 
           override lazy val rootField: F6Field = F6VerticalField()(
             queryField
-            , new F6SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Submit").btn.d_block)
+            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
     }

@@ -5,6 +5,8 @@ import com.fastscala.demo.db.User
 import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.FileUpload
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.Base64
 import scala.xml.NodeSeq
@@ -20,7 +22,7 @@ class FileUploadPage extends SingleCodeExamplePage() {
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===
     import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-    Js.rerenderable(rerenderer => implicit fsc => {
+    JS.rerenderable(rerenderer => implicit fsc => {
       div.border.p_2.rounded.apply {
         UploadedImage() match {
           case Some(uploadedFile) =>

@@ -1,63 +1,66 @@
 package com.fastscala.templates.form6.fields
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+
+import scala.xml.{Elem, NodeSeq}
 
 
-trait TextF6FieldRenderer[E <: FSXmlEnv] {
+trait TextF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[T](field: F6TextField[E, T])(label: Option[E#NodeSeq], inputElem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F6TextField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
-trait TextareaF6FieldRenderer[E <: FSXmlEnv] {
+trait TextareaF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[T](field: F6TextareaField[E, T])(label: Option[E#NodeSeq], inputElem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F6TextareaField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
-trait SelectF6FieldRenderer[E <: FSXmlEnv] {
+trait SelectF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[T](field: F6SelectFieldBase[E, T])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F6SelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 
-  def renderOption[T](field: F6SelectFieldBase[E, T])(
+  def renderOption[T](field: F6SelectFieldBase[T])(
     selected: Boolean,
     value: String,
-    label: E#NodeSeq
-  )(implicit hints: Seq[RenderHint]): E#Elem
+    label: NodeSeq
+  )(implicit hints: Seq[RenderHint]): Elem
 }
 
-trait MultiSelectF6FieldRenderer[E <: FSXmlEnv] {
+trait MultiSelectF6FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[T](field: F6MultiSelectFieldBase[E, T])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F6MultiSelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 
-  def renderOption[T](field: F6MultiSelectFieldBase[E, T])(
+  def renderOption[T](field: F6MultiSelectFieldBase[T])(
     selected: Boolean,
     value: String,
-    label: E#NodeSeq
-  )(implicit hints: Seq[RenderHint]): E#Elem
+    label: NodeSeq
+  )(implicit hints: Seq[RenderHint]): Elem
 }
 
-trait CheckboxF6FieldRenderer[E <: FSXmlEnv] {
+trait CheckboxF6FieldRenderer {
 
-  def render(field: F6CheckboxField[E])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render(field: F6CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
 //object F6CodeField {
 //
-//  def cssImports: E#NodeSeq = {
+//  def cssImports: NodeSeq = {
 //    <link href={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/css/ace.min.css"} rel="stylesheet"></link>
 //  }
 //
-//  def jsImports: E#NodeSeq = {
+//  def jsImports: NodeSeq = {
 //    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/ace.min.js"}></script>
 //    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/mode-html.js"}></script>
 //    <script src={"https://cdn.jsdelivr.net/npm/ace-builds@1.31.1/src-min-noconflict/theme-textmate.js"}></script>
@@ -67,7 +70,7 @@ trait CheckboxF6FieldRenderer[E <: FSXmlEnv] {
 //class F6CodeField(
 //                   get: () => String
 //                   , set: String => Js
-//                   , label: Option[E#NodeSeq] = None
+//                   , label: Option[NodeSeq] = None
 //                   , name: Option[String] = None
 //                   , placeholder: Option[String] = None
 //                   , tabindex: Option[Int] = None
@@ -90,12 +93,12 @@ trait CheckboxF6FieldRenderer[E <: FSXmlEnv] {
 //
 //  var currentValue = get()
 //
-//  override def reRender()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = {
+//  override def reRender()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = {
 //    if (!hints.contains(OnSaveRerender)) super.reRender()
 //    else Js.void
 //  }
 //
-//  override def loadFromString(str: String): Seq[(ValidatableField, E#NodeSeq)] = {
+//  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
 //    currentValue = str
 //    set(currentValue)
 //    Nil
@@ -108,7 +111,7 @@ trait CheckboxF6FieldRenderer[E <: FSXmlEnv] {
 //  def copy(
 //            get: () => String = get
 //            , set: String => Js = set
-//            , label: Option[E#NodeSeq] = label
+//            , label: Option[NodeSeq] = label
 //            , name: Option[String] = name
 //            , placeholder: Option[String] = placeholder
 //            , tabindex: Option[Int] = tabindex
@@ -135,15 +138,15 @@ trait CheckboxF6FieldRenderer[E <: FSXmlEnv] {
 //    )
 //  }
 //
-//  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+//  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
 //    case PerformSave => set(currentValue)
 //    case _ => Js.void
 //  })
 //
-//  override def errors(): Seq[(ValidatableField, E#NodeSeq)] = super.errors() ++
+//  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
 //    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 //
-//  override def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+//  override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
 //    if (!enabled()) <div style="display:none;" id={aroundId}></div>
 //    else {
 //      withFieldRenderHints { implicit hints =>
@@ -196,31 +199,29 @@ trait CheckboxF6FieldRenderer[E <: FSXmlEnv] {
 //  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 //}
 //
-trait ButtonF6FieldRenderer[E <: FSXmlEnv] {
-  def render(field: F6SaveButtonField[E, _])(btn: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem
+trait ButtonF6FieldRenderer {
+  def render(field: F6SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
-class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
+class F6SaveButtonField[B <% Elem](
                                                      btn: FSContext => B
                                                      , val toInitialState: B => B = identity[B] _
                                                      , val toChangedState: B => B = identity[B] _
                                                      , val toErrorState: B => B = identity[B] _
-                                                   )(implicit fsXmlSupport: FSXmlSupport[E], renderer: ButtonF6FieldRenderer[E])
-  extends StandardF6Field[E]
-    with F6FieldWithReadOnly[E]
-    with F6FieldWithDependencies[E]
-    with F6FieldWithDisabled[E]
-    with F6FieldWithEnabled[E] {
+                                                   )(implicit renderer: ButtonF6FieldRenderer)
+  extends StandardF6Field
+    with F6FieldWithReadOnly
+    with F6FieldWithDependencies
+    with F6FieldWithDisabled
+    with F6FieldWithEnabled {
 
-  import com.fastscala.core.FSXmlUtils._
+  override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 
-  override def fieldsMatching(predicate: PartialFunction[F6Field[E], Boolean]): List[F6Field[E]] = if (predicate.applyOrElse[F6Field[E], Boolean](this, _ => false)) List(this) else Nil
-
-  val btnRenderer = Js.rerenderableP[E, (B => B, Form6[E])](_ => implicit fsc => {
-    case (transformer, form) => (transformer(btn(fsc)): E#Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+  val btnRenderer = JS.rerenderableP[(B => B, Form6)](_ => implicit fsc => {
+    case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
-  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case AfterSave =>
       //btnRenderer.rerender((toInitialState, form)).printToConsoleBefore()
       Js.void
@@ -235,8 +236,8 @@ class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
     case _ => Js.void
   })
 
-  override def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>.asFSXml()
+  override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem =
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)({
@@ -247,26 +248,26 @@ class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
     }
 }
 //
-//trait FileUploadFieldRenderer[E <: FSXmlEnv] {
+//trait FileUploadFieldRenderer {
 //
-//  def transformFormElem(field: F6FileUploadField)(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+//  def transformFormElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 //
-//  def transforLabelElem(field: F6FileUploadField)(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+//  def transforLabelElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 //
-//  def transforSubmitButtonElem(field: F6FileUploadField)(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+//  def transforSubmitButtonElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 //
-//  def transforResetButtonElem(field: F6FileUploadField)(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+//  def transforResetButtonElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 //
-//  def transforFileInputElem(field: F6FileUploadField)(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+//  def transforFileInputElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 //}
 //
 //class F6FileUploadField(
 //                         get: () => Option[(String, Array[Byte])]
 //                         , set: Option[(String, Array[Byte])] => Js
-//                         , submitBtn: E#Elem
-//                         , renderPreview: FSContext => Option[(String, Array[Byte])] => E#Elem = _ => _ => <div></div>
-//                         , resetBtn: Option[E#Elem] = None
-//                         , label: Option[E#NodeSeq] = None
+//                         , submitBtn: Elem
+//                         , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = _ => _ => <div></div>
+//                         , resetBtn: Option[Elem] = None
+//                         , label: Option[NodeSeq] = None
 //                         , name: Option[String] = None
 //                         , tabindex: Option[Int] = None
 //
@@ -275,23 +276,23 @@ class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
 //                         , val enabled: () => Boolean = () => true
 //                         , val deps: Set[FormField] = Set()
 //
-//                         , val transformFormElem: E#Elem => E#Elem = identity[E#Elem]
-//                         , val transforLabelElem: E#Elem => E#Elem = identity[E#Elem]
-//                         , val transforSubmitButtonElem: E#Elem => E#Elem = identity[E#Elem]
-//                         , val transforResetButtonElem: E#Elem => E#Elem = identity[E#Elem]
-//                         , val transforFileInputElem: E#Elem => E#Elem = identity[E#Elem]
+//                         , val transformFormElem: Elem => Elem = identity[Elem]
+//                         , val transforLabelElem: Elem => Elem = identity[Elem]
+//                         , val transforSubmitButtonElem: Elem => Elem = identity[Elem]
+//                         , val transforResetButtonElem: Elem => Elem = identity[Elem]
+//                         , val transforFileInputElem: Elem => Elem = identity[Elem]
 //                       )(implicit renderer: FileUploadFieldRenderer) extends StandardFormField with ValidatableField {
 //
 //  var currentValue: Option[(String, Array[Byte])] = get()
 //
-//  override def onEvent(event: FormEvent)(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+//  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
 //    case PerformSave => set(currentValue)
 //    case _ => Js.void
 //  })
 //
-//  override def errors(): Seq[(ValidatableField, E#NodeSeq)] = Nil
+//  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 //
-//  def render()(implicit form: Form6[E], fsc: FSContext, hints: Seq[RenderHint]): E#Elem = {
+//  def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
 //    if (!enabled()) <div style="display:none;" id={aroundId}></div>
 //    else {
 //      withFieldRenderHints { implicit hints =>
@@ -312,7 +313,7 @@ class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
 //        <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" id={aroundId}>
 //          <iframe id={targetId} name={targetId} src="about:blank" onload="eval(this.contentWindow.document.body.innerText)" style="width:0;height:0;border:0px solid #fff;"><html><body></body></html></iframe>
 //          {
-//          label.map(label => <label for={elemId}>{label}</label>).map(_.pipe(renderer.transforLabelElem(this)).pipe(transforLabelElem)).getOrElse(E#NodeSeq.Empty)
+//          label.map(label => <label for={elemId}>{label}</label>).map(_.pipe(renderer.transforLabelElem(this)).pipe(transforLabelElem)).getOrElse(NodeSeq.Empty)
 //          }
 //          {
 //          previewRenderer.render()
@@ -330,7 +331,7 @@ class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
 //              form.onEvent(ChangedField(this)) &
 //              (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &
 //              Js.hide(resetButtonId)
-//          }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(E#NodeSeq.Empty)
+//          }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(NodeSeq.Empty)
 //          }
 //        </form>.pipe(renderer.transformFormElem(this)).pipe(transformFormElem)
 //      }
@@ -344,21 +345,21 @@ class F6SaveButtonField[E <: FSXmlEnv, B <% E#Elem](
 //  def copy(
 //            get: () => Option[(String, Array[Byte])] = get
 //            , set: Option[(String, Array[Byte])] => Js = set
-//            , submitBtn: E#Elem = submitBtn
-//            , renderPreview: FSContext => Option[(String, Array[Byte])] => E#Elem = renderPreview
-//            , resetBtn: Option[E#Elem] = resetBtn
-//            , label: Option[E#NodeSeq] = label
+//            , submitBtn: Elem = submitBtn
+//            , renderPreview: FSContext => Option[(String, Array[Byte])] => Elem = renderPreview
+//            , resetBtn: Option[Elem] = resetBtn
+//            , label: Option[NodeSeq] = label
 //            , name: Option[String] = name
 //            , tabindex: Option[Int] = tabindex
 //            , disabled: () => Boolean = disabled
 //            , readOnly: () => Boolean = readOnly
 //            , enabled: () => Boolean = enabled
 //            , deps: Set[FormField] = deps
-//            , transformFormElem: E#Elem => E#Elem = transformFormElem
-//            , transforLabelElem: E#Elem => E#Elem = transforLabelElem
-//            , transforSubmitButtonElem: E#Elem => E#Elem = transforSubmitButtonElem
-//            , transforResetButtonElem: E#Elem => E#Elem = transforResetButtonElem
-//            , transforFileInputElem: E#Elem => E#Elem = transforFileInputElem
+//            , transformFormElem: Elem => Elem = transformFormElem
+//            , transforLabelElem: Elem => Elem = transforLabelElem
+//            , transforSubmitButtonElem: Elem => Elem = transforSubmitButtonElem
+//            , transforResetButtonElem: Elem => Elem = transforResetButtonElem
+//            , transforFileInputElem: Elem => Elem = transforFileInputElem
 //          ): F6FileUploadField = new F6FileUploadField(
 //    get = get
 //    , set = set

@@ -1,18 +1,15 @@
 package com.fastscala.templates.bootstrap5.icons
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
-import com.fastscala.templates.bootstrap5.alerts.SimpleAlert
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 import org.apache.commons.io.IOUtils
 
-import scala.xml.{Elem, NodeSeq, Unparsed, XML}
+import scala.xml.{Elem, XML}
 
 class BSIcon(val name: String) {
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-
   def clas = "bi-" + name
 
-  def icon[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("i", "class" -> clas)()
+  def icon: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("i", "class" -> clas)()
 
   def asCssUrl: String = s"url(\"data:image/svg+xml,$svg\")"
 

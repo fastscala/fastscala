@@ -1,54 +1,54 @@
 package com.fastscala.templates.form5.fields
 
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import scala.xml.{Elem, NodeSeq}
 
 trait TextFieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[E <: FSXmlEnv : FSXmlSupport, T](field: F5TextField[E, T])(label: Option[E#NodeSeq], inputElem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F5TextField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait TextareaFieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[E <: FSXmlEnv : FSXmlSupport](field: F5TextAreaField[E])(label: Option[E#NodeSeq], inputElem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render(field: F5TextAreaField)(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait SelectFieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[E <: FSXmlEnv : FSXmlSupport, T](field: F5SelectField[E, T])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F5SelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait MultiSelectFieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  def render[E <: FSXmlEnv : FSXmlSupport, T](field: F5MultiSelectField[E, T])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render[T](field: F5MultiSelectField[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait CheckboxFieldRenderer {
 
-  def render[E <: FSXmlEnv : FSXmlSupport](field: F5CheckboxField[E])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem
+  def render(field: F5CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait ButtonFieldRenderer {
-  def render[E <: FSXmlEnv : FSXmlSupport](field: F5SaveButtonField[E, _])(btn: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem
+  def render(field: F5SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait FileUploadFieldRenderer {
 
-  def transformFormElem[E <: FSXmlEnv : FSXmlSupport](field: F5FileUploadField[E])(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+  def transformFormElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforLabelElem[E <: FSXmlEnv : FSXmlSupport](field: F5FileUploadField[E])(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+  def transforLabelElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforSubmitButtonElem[E <: FSXmlEnv : FSXmlSupport](field: F5FileUploadField[E])(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+  def transforSubmitButtonElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforResetButtonElem[E <: FSXmlEnv : FSXmlSupport](field: F5FileUploadField[E])(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+  def transforResetButtonElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 
-  def transforFileInputElem[E <: FSXmlEnv : FSXmlSupport](field: F5FileUploadField[E])(elem: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = elem
+  def transforFileInputElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
 }

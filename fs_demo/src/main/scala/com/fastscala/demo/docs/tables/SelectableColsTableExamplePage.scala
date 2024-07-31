@@ -40,7 +40,7 @@ class SelectableColsTableExamplePage extends SingleCodeExamplePage() {
 
     override def tableResponsive: Option[Table5BootrapResponsiveSizes.Value] = Some(Table5BootrapResponsiveSizes.ALL)
 
-    val ColActions = ColNs("Actions", implicit fsc => row => BSBtn.BtnPrimary.sm.lbl("Time?").ajax(implicit fsc => {
+    val ColActions = ColNs("Actions", implicit fsc => row => BSBtn().BtnPrimary.sm.lbl("Time?").ajax(implicit fsc => {
       Js.alert(s"Time on server is: ${new Date().toGMTString}")
     }).btn)
     val ColName = ColStr("Name", _.name.common)

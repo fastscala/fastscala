@@ -1,78 +1,80 @@
 package com.fastscala.templates.bootstrap5.classes
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+
+import scala.xml.{Elem, NodeSeq}
 
 trait ElemHelper {
 
-  def Empty[E <: FSXmlEnv : FSXmlSupport]: E#NodeSeq = implicitly[FSXmlSupport[E]].Empty
+  def Empty: NodeSeq = FSScalaXmlSupport.fsXmlSupport.Empty
 
-  def del[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("del")()
+  def del: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("del")()
 
-  def s[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("s")()
+  def s: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("s")()
 
-  def ins[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("ins")()
+  def ins: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("ins")()
 
-  def u[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("u")()
+  def u: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("u")()
 
-  def a[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("a")()
+  def a: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("a")()
 
-  def small[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("small")()
+  def small: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("small")()
 
-  def strong[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("strong")()
+  def strong: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("strong")()
 
-  def em[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("em")()
+  def em: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("em")()
 
-  def mark[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("mark")()
+  def mark: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("mark")()
 
-  def pre[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("pre")()
+  def pre: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("pre")()
 
-  def td[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("td")()
+  def td: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("td")()
 
-  def tr[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("tr")()
+  def tr: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("tr")()
 
-  def tbody[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("tbody")()
+  def tbody: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("tbody")()
 
-  def thead[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("thead")()
+  def thead: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("thead")()
 
-  def img[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("img")()
+  def img: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("img")()
 
-  def div[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("div")()
+  def div: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("div")()
 
-  def ul[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("ul")()
+  def ul: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("ul")()
 
-  def li[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("li")()
+  def li: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("li")()
 
-  def style[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("style")()
+  def style: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("style")()
 
-  def input[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("input")()
+  def input: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("input")()
 
-  def button[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("button")()
+  def button: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("button")()
 
-  def span[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("span")()
+  def span: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("span")()
 
-  def label[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("label")()
+  def label: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("label")()
 
-  def b[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("b")()
+  def b: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("b")()
 
-  def p[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("p")()
+  def p: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("p")()
 
-  def abbr[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("abbr")()
+  def abbr: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("abbr")()
 
-  def h1[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("h1")()
+  def h1: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h1")()
 
-  def h2[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("h2")()
+  def h2: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h2")()
 
-  def h3[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("h3")()
+  def h3: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h3")()
 
-  def h4[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("h4")()
+  def h4: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h4")()
 
-  def h5[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("h5")()
+  def h5: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h5")()
 
-  def h6[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("h6")()
+  def h6: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h6")()
 
-  def hr[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("hr")()
+  def hr: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("hr")()
 
-  def br[E <: FSXmlEnv : FSXmlSupport]: E#Elem = implicitly[FSXmlSupport[E]].buildElem("br")()
+  def br: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("br")()
 }
 
   

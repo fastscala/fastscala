@@ -4,7 +4,7 @@ import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
 import com.fastscala.demo.docs.fastscala.{AnonymousPage, CallbacksPage, FileDownloadPage, FileUploadPage, RerenderablePage, ServerSidePushPage}
 import com.fastscala.demo.docs.forms.FormInputTypesPage
-import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage}
+import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
 
 object FSDemoMainMenu extends Menu(
@@ -24,6 +24,7 @@ object FSDemoMainMenu extends Menu(
   MenuSection("HTML utils")(
     new RoutingMenuItem("demo", "html", "tags")("tags", () => new HtmlTagsPage())
     , new RoutingMenuItem("demo", "html", "utils")("utils", () => new HtmlUtilsPage())
+    , new RoutingMenuItem("demo", "html", "scala-tags")("Integrating ScalaTags", () => new ScalaTagsPage())
   ),
   MenuSection("Js utils")(
     new RoutingMenuItem("demo", "js", "overview")("Overview", () => new JsUtilsPage())

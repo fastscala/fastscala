@@ -4,6 +4,8 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 import com.fastscala.core.{FSContext, FSSessionVarOpt}
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
+import com.fastscala.xml.scala_xml.JS
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.io.File
 import java.nio.file.Files
@@ -33,7 +35,7 @@ class User(
   def logOut()(implicit fg: FSContext): Js = fg.callback(() => {
     loginToken = IdGen.id
     CurrentUser.clear()
-    Js.deleteCookie("user_token", "/") & Js.redirectTo("/login")
+    JS.deleteCookie("user_token", "/") & JS.redirectTo("/login")
   })
 
   def miniHeadshotOrPlaceholderRendered: Elem = {

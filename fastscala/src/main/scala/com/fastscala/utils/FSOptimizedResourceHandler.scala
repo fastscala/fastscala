@@ -1,5 +1,6 @@
 package com.fastscala.utils
 
+import com.fastscala.core.FSXmlUtils.elem2NodeSeq
 import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.server._
 import jakarta.servlet.http.HttpServletRequest
@@ -169,10 +170,10 @@ class FSOptimizedResourceHandler(
   var version = System.currentTimeMillis()
 
   def optimizedCss[E <: FSXmlEnv : FSXmlSupport](cssFiles: String*): E#NodeSeq =
-    implicitly[FSXmlSupport[E]].buildElem("link",
+    elem2NodeSeq(implicitly[FSXmlSupport[E]].buildElem("link",
       "rel" -> "stylesheet",
       "type" -> "text/css",
       "media" -> "all",
       "href" -> (s"/static/css_loader.css?version=$version&" + cssFiles.map("f=" + _).mkString("&"))
-    )(implicitly[FSXmlSupport[E]].Empty)
+    )(implicitly[FSXmlSupport[E]].Empty))
 }

@@ -1,18 +1,18 @@
 package com.fastscala.templates.form4
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.utils.ElemWithRandomId
 
-trait Form[E <: FSXmlEnv] extends ElemWithRandomId {
+import scala.xml.NodeSeq
 
-  implicit def fsXmlSupport: FSXmlSupport[E]
+trait Form extends ElemWithRandomId {
 
-  implicit def form: Form[E] = this
+  implicit def form: Form = this
 
-  val rootField: FormField[E]
+  val rootField: FormField
 
   def reRender()(implicit fsc: FSContext): Js = rootField.reRender()
 
-  def render()(implicit fsc: FSContext): E#NodeSeq = rootField.render()
+  def render()(implicit fsc: FSContext): NodeSeq = rootField.render()
 }

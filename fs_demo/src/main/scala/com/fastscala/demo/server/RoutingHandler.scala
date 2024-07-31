@@ -1,6 +1,6 @@
 package com.fastscala.demo.server
 
-import com.fastscala.core.{FSSession, FSSystem}
+import com.fastscala.core.{FSSession, FSSystem, FSXmlSupport}
 import com.fastscala.demo.db.{CurrentUser, FakeDB}
 import com.fastscala.demo.docs._
 import com.fastscala.demo.docs.bootstrap.BootstrapModalPage
@@ -8,6 +8,8 @@ import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
 import com.fastscala.demo.docs.forms.BasicFormExamplePage
 import com.fastscala.demo.docs.tables._
 import com.fastscala.server.{Ok, Redirect, Response, RoutingHandlerHelper}
+import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
+import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, FSScalaXmlSupport}
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 
@@ -43,7 +45,7 @@ class RoutingHandler()(implicit fss: FSSystem) extends RoutingHandlerHelper {
         })
       }
 
-      FSDemoMainMenu.serve().map(servePage(_)).orElse({
+      FSDemoMainMenu.serve().map(servePage[FSScalaXmlEnv.type](_)).orElse({
         Some(req).collect {
           case Get("demo") => servePage(new SimpleTableExamplePage())
           case Get("demo", "simple_tables") => servePage(new SimpleTableExamplePage())

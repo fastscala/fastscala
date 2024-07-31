@@ -1,14 +1,15 @@
 package com.fastscala.demo.docs.forms
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
 import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.form5.BSFormRenderer
+import com.fastscala.templates.bootstrap5.form6.BSForm6Renderer
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form5.{Form5, FormRenderer}
+import com.fastscala.templates.form6._
+import com.fastscala.templates.form6.fields._
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -28,7 +29,6 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===
     import com.fastscala.templates.bootstrap5.classes.BSHelpers._
-    import com.fastscala.templates.form5.fields._
     var editing = new User1(
       firstName = "",
       lastName = "",
@@ -37,14 +37,13 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
       securityLevel = 0,
       countryOfResidence = CountriesData.data(0)
     )
-    val BSFormRenderer = new BSFormRenderer() {
+    val BSFormRenderer = new BSForm6Renderer {
       override def defaultRequiredFieldLabel: String = "Required Field"
     }
     import BSFormRenderer._
     div.border.p_2.rounded.apply {
-      new Form5 {
-
-        override def afterSave()(implicit fsc: FSContext): Js = {
+      new Form6 {
+        override def postSave()(implicit fsc: FSContext): Js = {
           BSModal5.verySimple(
             "Created User",
             "Done"
@@ -58,18 +57,19 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
           })
         }
 
-        override lazy val rootField: FormField = F5VerticalField()(
-          F5HorizontalField()(
-            "col" -> new F5StringField(() => editing.firstName, str => {editing.firstName = str; Js.void}).withLabel("First Name")
-            , "col" -> new F5StringField(() => editing.lastName, str => {editing.lastName = str; Js.void}).withLabel("Last Name")
+        override lazy val rootField: F6Field = F6VerticalField()(
+          F6HorizontalRowField()(
+            "col" -> new F6StringField().label("First Name").rw(editing.firstName, editing.firstName = _)
+            , "col" -> new F6StringField().label("Last Name").rw(editing.lastName, editing.lastName = _)
           )
-          , new F5StringField(() => editing.email, str => {editing.email = str; Js.void}, inputType = "email").withLabel("Email")
-          , new F5StringField(() => editing.phoneNumber, str => {editing.phoneNumber = str; Js.void}, inputType = "tel").withLabel("Phone Number")
-          , new F5SelectField[Country](() => CountriesData.data.toList, () => editing.countryOfResidence, v => {editing.countryOfResidence = v; Js.void}, _.name.common).withLabel("Country of Residence")
-          , new F5SaveButtonField(implicit fsc => BSBtn.BtnPrimary.lbl("Create User").btn.d_block)
+          , new F6StringField().label("Email").rw(editing.email, editing.email = _).inputType("email")
+          , new F6StringField().label("Phone Number").rw(editing.phoneNumber, editing.phoneNumber = _).inputType("tel")
+          , new F6StringField().label("Email").rw(editing.email, editing.email = _).inputType("email")
+          , new F6SelectField[Country](CountriesData.data.toList).label("Country of Residence").rw(editing.countryOfResidence, editing.countryOfResidence = _).option2String(_.name.common)
+          , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
         )
 
-        override def formRenderer: FormRenderer = formRenderer
+        override def formRenderer: F6FormRenderer = formRenderer
       }.render()
     }
     // === code snippet ===

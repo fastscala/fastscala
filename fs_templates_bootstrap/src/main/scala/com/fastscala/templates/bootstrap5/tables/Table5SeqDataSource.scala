@@ -1,8 +1,6 @@
 package com.fastscala.templates.bootstrap5.tables
 
-import com.fastscala.core.FSXmlEnv
-
-trait Table5SeqDataSource[E <: FSXmlEnv] extends Table5Base[E] {
+trait Table5SeqDataSource extends Table5Base {
 
   def seqRowsSource: Seq[R]
 

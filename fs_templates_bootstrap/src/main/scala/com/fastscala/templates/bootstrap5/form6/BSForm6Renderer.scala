@@ -1,16 +1,14 @@
 package com.fastscala.templates.bootstrap5.form6
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.templates.bootstrap5.classes.BSHelpers
 import com.fastscala.templates.form6.F6FormRenderer
 import com.fastscala.templates.form6.fields._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.RichElem
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
 abstract class BSForm6Renderer {
 
-  import com.fastscala.core.FSXmlUtils._
   import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
   def defaultRequiredFieldLabel: String
@@ -21,21 +19,21 @@ abstract class BSForm6Renderer {
   //    override def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
   //  }
 
-  def textFieldRendererInputElemClasses[E <: FSXmlEnv : FSXmlSupport]: String = form_control.getClassAttr
+  def textFieldRendererInputElemClasses: String = form_control.getClassAttr
 
-  def textFieldRendererInputElemStyle[E <: FSXmlEnv : FSXmlSupport]: String = form_control.getStyleAttr
+  def textFieldRendererInputElemStyle: String = form_control.getStyleAttr
 
-  implicit def textFieldRenderer[E <: FSXmlEnv : FSXmlSupport]: TextF6FieldRenderer[E] = new TextF6FieldRenderer[E] {
+  implicit def textFieldRenderer: TextF6FieldRenderer = new TextF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
     override def render[T](
-                            field: F6TextField[E, T]
+                            field: F6TextField[T]
                           )(
-                            label: Option[E#NodeSeq],
-                            inputElem: E#Elem,
-                            error: Option[E#NodeSeq]
-                          )(implicit hints: Seq[RenderHint]): E#Elem = {
+                            label: Option[NodeSeq],
+                            inputElem: Elem,
+                            error: Option[NodeSeq]
+                          )(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
@@ -51,21 +49,21 @@ abstract class BSForm6Renderer {
     }
   }
 
-  def textareaFieldRendererTextareaElemClasses[E <: FSXmlEnv : FSXmlSupport]: String = form_control.getClassAttr
+  def textareaFieldRendererTextareaElemClasses: String = form_control.getClassAttr
 
-  def textareaFieldRendererTextareaElemStyle[E <: FSXmlEnv : FSXmlSupport]: String = form_control.getStyleAttr
+  def textareaFieldRendererTextareaElemStyle: String = form_control.getStyleAttr
 
-  implicit def textareaFieldRenderer[E <: FSXmlEnv : FSXmlSupport]: TextareaF6FieldRenderer[E] = new TextareaF6FieldRenderer[E] {
+  implicit def textareaFieldRenderer: TextareaF6FieldRenderer = new TextareaF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
     override def render[T](
-                            field: F6TextareaField[E, T]
+                            field: F6TextareaField[T]
                           )(
-                            label: Option[E#NodeSeq],
-                            inputElem: E#Elem,
-                            error: Option[E#NodeSeq]
-                          )(implicit hints: Seq[RenderHint]): E#Elem = {
+                            label: Option[NodeSeq],
+                            inputElem: Elem,
+                            error: Option[NodeSeq]
+                          )(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
@@ -81,19 +79,19 @@ abstract class BSForm6Renderer {
     }
   }
 
-  def selectFieldRendererSelectElemClasses[E <: FSXmlEnv : FSXmlSupport]: String = form_select.form_control.getClassAttr
+  def selectFieldRendererSelectElemClasses: String = form_select.form_control.getClassAttr
 
-  implicit def selectFieldRenderer[E <: FSXmlEnv : FSXmlSupport]: SelectF6FieldRenderer[E] = new SelectF6FieldRenderer[E] {
+  implicit def selectFieldRenderer: SelectF6FieldRenderer = new SelectF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
     override def render[T](
-                            field: F6SelectFieldBase[E, T]
+                            field: F6SelectFieldBase[T]
                           )(
-                            label: Option[E#Elem],
-                            elem: E#Elem,
-                            error: Option[E#NodeSeq]
-                          )(implicit hints: Seq[RenderHint]): E#Elem = {
+                            label: Option[Elem],
+                            elem: Elem,
+                            error: Option[NodeSeq]
+                          )(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = true // hints.contains(ShowValidationsHint)
@@ -107,17 +105,17 @@ abstract class BSForm6Renderer {
       }
     }
 
-    override def renderOption[T](field: F6SelectFieldBase[E, T])(selected: Boolean, value: String, label: E#NodeSeq)(implicit hints: Seq[RenderHint]): E#Elem =
-      <option selected={if (selected) "true" else null} value={value}>{label}</option>.asFSXml()
+    override def renderOption[T](field: F6SelectFieldBase[T])(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
+      <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
-  def multiSelectFieldRendererSelectElemClasses[E <: FSXmlEnv : FSXmlSupport]: String = form_select.form_control.getClassAttr
+  def multiSelectFieldRendererSelectElemClasses: String = form_select.form_control.getClassAttr
 
-  implicit def multiSelectFieldRenderer[E <: FSXmlEnv : FSXmlSupport]: MultiSelectF6FieldRenderer[E] = new MultiSelectF6FieldRenderer[E] {
+  implicit def multiSelectFieldRenderer: MultiSelectF6FieldRenderer = new MultiSelectF6FieldRenderer {
 
     def defaultRequiredFieldLabel: String = BSForm6Renderer.this.defaultRequiredFieldLabel
 
-    override def render[T](field: F6MultiSelectFieldBase[E, T])(label: Option[E#Elem], elem: E#Elem, error: Option[E#NodeSeq])(implicit hints: Seq[RenderHint]): E#Elem = {
+    override def render[T](field: F6MultiSelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = true // hints.contains(ShowValidationsHint)
@@ -131,21 +129,21 @@ abstract class BSForm6Renderer {
       }
     }
 
-    override def renderOption[T](field: F6MultiSelectFieldBase[E, T])(selected: Boolean, value: String, label: E#NodeSeq)(implicit hints: Seq[RenderHint]): E#Elem =
-      <option selected={if (selected) "true" else null} value={value}>{label}</option>.asFSXml()
+    override def renderOption[T](field: F6MultiSelectFieldBase[T])(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
+      <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
-  def checkboxFieldRendererCheckboxElemClasses[E <: FSXmlEnv : FSXmlSupport]: String = form_check_input.getClassAttr
+  def checkboxFieldRendererCheckboxElemClasses: String = form_check_input.getClassAttr
 
-  implicit def checkboxFieldRenderer[E <: FSXmlEnv : FSXmlSupport]: CheckboxF6FieldRenderer[E] = new CheckboxF6FieldRenderer[E] {
+  implicit def checkboxFieldRenderer: CheckboxF6FieldRenderer = new CheckboxF6FieldRenderer {
 
     override def render(
-                         field: F6CheckboxField[E]
+                         field: F6CheckboxField
                        )(
-                         label: Option[E#Elem],
-                         elem: E#Elem,
-                         error: Option[E#NodeSeq]
-                       )(implicit hints: Seq[RenderHint]): E#Elem = {
+                         label: Option[Elem],
+                         elem: Elem,
+                         error: Option[NodeSeq]
+                       )(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.form_check.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
@@ -164,8 +162,8 @@ abstract class BSForm6Renderer {
   //    override def transformFormElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = super.transformFormElem(field)(elem).mb_3
   //  }
 
-  implicit def buttonFieldRenderer[E <: FSXmlEnv : FSXmlSupport]: ButtonF6FieldRenderer[E] = new ButtonF6FieldRenderer[E] {
-    override def render(field: F6SaveButtonField[E, _])(btn: E#Elem)(implicit hints: Seq[RenderHint]): E#Elem = {
+  implicit def buttonFieldRenderer: ButtonF6FieldRenderer = new ButtonF6FieldRenderer {
+    override def render(field: F6SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
         btn
@@ -175,7 +173,7 @@ abstract class BSForm6Renderer {
     }
   }
 
-  implicit def formRenderer[E <: FSXmlEnv : FSXmlSupport]: F6FormRenderer[E] = new F6FormRenderer[E] {
-    override def render(form: E#Elem): E#Elem = form.mb_5.w_100.addClass("form")
+  implicit def formRenderer: F6FormRenderer = new F6FormRenderer {
+    override def render(form: Elem): Elem = form.mb_5.w_100.addClass("form")
   }
 }

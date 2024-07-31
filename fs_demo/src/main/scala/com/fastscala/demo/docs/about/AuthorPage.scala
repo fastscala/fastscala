@@ -3,6 +3,7 @@ package com.fastscala.demo.docs.about
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.LoggedInPage
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -18,7 +19,7 @@ class AuthorPage extends LoggedInPage() {
       </div> ++
         alert.alert_success.withRole("alert").d_flex.justify_content_between.align_items_center.mb_5.apply {
           div.apply("Interested in learning more about the FastScala framework? Register now for a free live demo/training here!:") ++
-            BSBtn.BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
+            BSBtn().BtnPrimary.lbl("Register for Free Training!").href("https://training.fastscala.com/").btnLink.ms_3
         } ++
         h2.apply("FastScala Author") ++
         row.apply {

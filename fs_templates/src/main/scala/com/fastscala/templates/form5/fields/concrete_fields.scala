@@ -427,7 +427,7 @@ class F5JodaDateOptField(
 object F5DateOptField {
 
   def apply(
-             pattern: String
+             pattern: String = "yyyy-MM-dd"
              , get: () => Option[String]
              , set: Option[String] => Js
              , label: Option[NodeSeq] = None

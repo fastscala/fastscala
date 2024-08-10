@@ -140,8 +140,10 @@ class F6SelectOptField[T]()(implicit renderer: SelectF6FieldRenderer) extends F6
   def optionsValid(v: Seq[T]): F6SelectOptField.this.type = options(None +: v.map(Some(_)))
 }
 
-class F6SelectField[T](options: Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] {
-  options(options)
+class F6SelectField[T](opts: () => Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] {
+  options(opts)
+
+  def this(opts: Seq[T])(implicit renderer: SelectF6FieldRenderer) = this(() => opts)
 
   override def defaultValue: T = options.head
 }

@@ -525,6 +525,17 @@ class F6StringOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextF
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
+object F6DateOptField {
+  def apply(
+             get: => Option[String]
+             , set: Option[String] => Unit
+             , pattern: String = "yyyy-MM-dd"
+           )(implicit renderer: TextF6FieldRenderer): F6DateOptField = new F6DateOptField().rw(
+    get.map(date => java.time.LocalDate.parse(date, DateTimeFormatter.ofPattern(pattern))),
+    dateOpt => set(dateOpt.map(_.format(DateTimeFormatter.ofPattern(pattern))))
+  )
+}
+
 class F6DateOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[java.time.LocalDate]] {
   override def _inputTypeDefault: String = "date"
 

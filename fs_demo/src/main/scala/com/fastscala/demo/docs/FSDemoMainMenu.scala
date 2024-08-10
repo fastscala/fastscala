@@ -27,7 +27,8 @@ object FSDemoMainMenu extends Menu(
     , new RoutingMenuItem("demo", "html", "scala-tags")("Integrating ScalaTags", () => new ScalaTagsPage())
   ),
   MenuSection("Js utils")(
-    new RoutingMenuItem("demo", "js", "overview")("Overview", () => new JsUtilsPage())
+    new RoutingMenuItem("demo", "js", "overview")("Overview", () => new JsUtilsPage()),
+    SimpleMenuItem("BarChart", "/demo/chartjs/simple")
   ),
   MenuSection("Bootstrap utils")(
     new RoutingMenuItem("demo", "bootstrap", "buttons")("Buttons", () => new BootstrapButtonsPage())

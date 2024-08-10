@@ -69,7 +69,7 @@ trait Table5BaseBootrapSupport extends Table5Base {
       tableBorderStyle.map(" " + _ + " ").getOrElse("")
 
   override def tableHeadClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String =
-    super.tableClasses() + " table " +
+    super.tableHeadClasses() + " table " +
       tableHeadStyle.map(" " + _ + " ").getOrElse("")
 
   override def renderTable()(implicit fsc: FSContext): Elem = tableResponsive.map(size => {

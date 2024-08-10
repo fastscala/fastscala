@@ -20,6 +20,7 @@ class SimpleTableExamplePage extends SingleCodeExamplePage() {
       with Table5StandardColumns {
       override type R = Country
 
+      override def tableStriped: Boolean = true
 
 
       val ColName = ColStr("Name", _.name.common)

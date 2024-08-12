@@ -10,16 +10,11 @@ ThisBuild / scalaVersion := "2.13.14"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
-val AkkaVersion = "2.7.0"
-val AkkaHttpVersion = "10.2.10"
-
-executableScriptName := "router-prod"
-
 scalacOptions += "-Ypartial-unification"
 
-val LiftVersion = "3.5.0"
-
 val FSRoot = "./"
+
+lazy val root = (project in file(".")).aggregate(fs_demo)
 
 lazy val fastscala = (project in file(FSRoot + "fastscala"))
   .settings(
@@ -94,7 +89,7 @@ lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
   .dependsOn(fs_scala_xml)
 
 lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
-  .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
+  // .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
   .settings(
     name := "fs_demo",
 
@@ -104,13 +99,6 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "main" / "scala",
 
     publishArtifact := true,
-    bashScriptEnvConfigLocation := Some("/etc/default/" + (Linux / packageName).value),
-    rpmRelease := "1.0.0",
-    rpmVendor := "kezlisolutions",
-    rpmLicense := Some("none"),
-
-    Linux / daemonUser := "fs_demo",
-    Linux / daemonGroup := "fs_demo",
 
     libraryDependencies ++= Seq(
       "org.eclipse.jetty" % "jetty-server" % "11.0.22",

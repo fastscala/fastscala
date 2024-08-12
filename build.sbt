@@ -55,11 +55,11 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
     name := "fs_db",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.6.0",
-      "org.xerial" % "sqlite-jdbc" % "3.42.0.0",
-      "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
-      "com.google.guava" % "guava" % "32.1.1-jre",
-      "org.scalatest" %% "scalatest" % "3.2.16" % Test,
+      "org.postgresql" % "postgresql" % "42.7.3",
+      "org.xerial" % "sqlite-jdbc" % "3.46.0.1",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.3.1",
+      "com.google.guava" % "guava" % "33.2.1-jre",
+      "org.scalatest" %% "scalatest" % "3.2.19" % Test,
     ),
     Test / parallelExecution := false
   )

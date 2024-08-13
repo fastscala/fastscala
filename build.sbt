@@ -6,7 +6,7 @@ import scala.concurrent.duration.*
 resolvers += Resolver.mavenLocal
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / scalaVersion := "2.13.11"
+ThisBuild / scalaVersion := "2.13.14"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
@@ -26,27 +26,35 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
     name := "fastscala",
 
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.4.3",
-      "net.logstash.logback" % "logstash-logback-encoder" % "7.3",
-      "org.slf4j" % "slf4j-api" % "2.0.7",
-      "com.github.loki4j" % "loki-logback-appender" % "1.4.0",
+      "ch.qos.logback" % "logback-classic" % "1.5.6",
+      // "net.logstash.logback" % "logstash-logback-encoder" % "8.0",
+      "org.slf4j" % "slf4j-api" % "2.0.16",
+      "com.github.loki4j" % "loki-logback-appender" % "1.5.2",
       "io.prometheus" % "simpleclient_servlet_jakarta" % "0.16.0",
       "com.typesafe" % "config" % "1.4.3",
 
-      "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
+      "org.apache.commons" % "commons-text" % "1.12.0",
+      "commons-io" % "commons-io" % "2.16.1",
 
-      "org.apache.commons" % "commons-text" % "1.10.0",
-      "commons-io" % "commons-io" % "2.11.0",
-
-      "org.eclipse.jetty" % "jetty-servlet" % "11.0.21",
+      "org.eclipse.jetty" % "jetty-servlet" % "11.0.22",
       "org.eclipse.jetty.toolchain" % "jetty-jakarta-websocket-api" % "2.0.0",
-      "org.eclipse.jetty.websocket" % "websocket-jakarta-server" % "11.0.21",
+      "org.eclipse.jetty.websocket" % "websocket-jakarta-server" % "11.0.22",
 
-      "io.circe" %% "circe-core" % "0.14.3",
-      "io.circe" %% "circe-generic" % "0.14.3",
-      "io.circe" %% "circe-parser" % "0.14.3",
+      "io.circe" %% "circe-core" % "0.14.9",
+      "io.circe" %% "circe-generic" % "0.14.9",
+      "io.circe" %% "circe-parser" % "0.14.9",
     ),
   )
+
+lazy val fs_scala_xml = (project in file(FSRoot + "fs_scala_xml_support"))
+  .settings(
+    name := "fs_scala_xml",
+
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-xml" % "2.3.0",
+    ),
+  )
+  .dependsOn(fastscala)
 
 lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
@@ -61,13 +69,14 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
     Test / parallelExecution := false
   )
   .dependsOn(fastscala)
+  .dependsOn(fs_scala_xml)
 
 lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
   .settings(
     name := "fs_templates",
 
     libraryDependencies ++= Seq(
-      "joda-time" % "joda-time" % "2.12.5"
+      "joda-time" % "joda-time" % "2.12.7"
     ),
   )
   .dependsOn(fastscala)
@@ -82,6 +91,7 @@ lazy val fs_templates_bootstrap = (project in file(FSRoot + "fs_templates_bootst
 lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
   .settings(name := "fs_chartjs")
   .dependsOn(fastscala)
+  .dependsOn(fs_scala_xml)
 
 lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
   .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
@@ -103,9 +113,10 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     Linux / daemonGroup := "fs_demo",
 
     libraryDependencies ++= Seq(
-      "org.eclipse.jetty" % "jetty-server" % "11.0.21",
-      "org.typelevel" %% "cats-effect" % "3.4.8",
+      "org.eclipse.jetty" % "jetty-server" % "11.0.22",
+      "org.typelevel" %% "cats-effect" % "3.5.4",
       "at.favre.lib" % "bcrypt" % "0.10.2",
+      "com.lihaoyi" %% "scalatags" % "0.13.1",
     ),
 
     Compile / run / fork := true,

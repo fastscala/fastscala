@@ -8,11 +8,11 @@ import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 
 import scala.xml.{Elem, NodeSeq}
 
-trait Table5Paginated extends Table5Base {
+trait Table5Paginated extends Table5SeqDataSource {
 
   import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
-  def defaultNumberOfAdditionalPagesEachSide = 2
+  def defaultNumberOfAdditionalPagesEachSide = 3
 
   def defaultCurrentPage = 0
 
@@ -24,13 +24,15 @@ trait Table5Paginated extends Table5Base {
 
   lazy val currentPage = Lazy(defaultCurrentPage)
 
+  def maxPages = (seqRowsSource.size - 1) / currentPageSize()
+
   override def rowsHints(): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
     offset = currentPage() * currentPageSize()
     , limit = currentPageSize()
   )
 
   def visiblePages(): List[Int] =
-    (math.max(0, currentPage() - defaultNumberOfAdditionalPagesEachSide) to (currentPage() + (defaultNumberOfAdditionalPagesEachSide * 2))).take(defaultNumberOfAdditionalPagesEachSide * 2 + 1)
+    (math.max(0, currentPage() - defaultNumberOfAdditionalPagesEachSide) to math.min(maxPages, (currentPage() + (defaultNumberOfAdditionalPagesEachSide * 2)))).take(defaultNumberOfAdditionalPagesEachSide * 2 + 1)
       .toList
       .filter(_ >= 0)
 
@@ -49,7 +51,7 @@ trait Table5Paginated extends Table5Base {
           .btn
       }).mkNS ++
       BSBtn().BtnLight.lbl("»").ajax(implicit fsc => {
-        currentPage() = currentPage() + 1
+        currentPage() = math.min(maxPages, currentPage() + 1)
         rerenderTableAround()
       }).btn
   }
@@ -60,7 +62,8 @@ trait Table5Paginated extends Table5Base {
       () => currentPageSize(),
       pageSize => {
         currentPageSize() = pageSize
-        tableRenderer.rerenderer.rerender()
+        currentPage() = 0
+        rerenderTableAround()
       },
       style = "max-width: 200px; float: right;"
     ).mb_3.mx_3

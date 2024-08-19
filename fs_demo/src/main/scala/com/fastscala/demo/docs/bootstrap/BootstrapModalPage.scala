@@ -4,7 +4,6 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.templates.bootstrap5.modals.BSModal5Base
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 

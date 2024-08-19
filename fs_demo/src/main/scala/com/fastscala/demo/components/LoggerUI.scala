@@ -6,7 +6,6 @@ import com.fastscala.templates.bootstrap5.modals.{BSModal5Base, BSModal5Size}
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 

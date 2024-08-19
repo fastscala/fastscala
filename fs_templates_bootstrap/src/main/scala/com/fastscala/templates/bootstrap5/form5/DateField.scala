@@ -5,7 +5,6 @@ import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.ImmediateInputFields
 import com.fastscala.templates.form5.Form5
 import com.fastscala.templates.form5.fields._
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, JS}
 import org.joda.time.{DateTime, LocalDate}
 

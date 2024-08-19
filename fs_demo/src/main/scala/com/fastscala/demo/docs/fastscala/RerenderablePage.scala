@@ -1,14 +1,9 @@
 package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
-import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
-import io.circe.Decoder
-import io.circe.generic.semiauto
 
 import java.util.Date
 import scala.xml.NodeSeq

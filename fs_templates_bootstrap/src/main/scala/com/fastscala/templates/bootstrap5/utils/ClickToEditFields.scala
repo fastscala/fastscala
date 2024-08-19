@@ -11,10 +11,6 @@ import java.time.format.DateTimeFormatter
 import scala.xml.{Elem, NodeSeq}
 
 object ClickToEditFields {
-  def apply = new ClickToEditFields()
-}
-
-class ClickToEditFields {
 
   def Select[T](
                  all: () => List[T],

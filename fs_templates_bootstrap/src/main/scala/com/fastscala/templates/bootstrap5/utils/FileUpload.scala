@@ -3,7 +3,6 @@ package com.fastscala.templates.bootstrap5.utils
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.xml.scala_xml.{JS, ScalaXmlElemUtils}
 
 import java.io.ByteArrayInputStream

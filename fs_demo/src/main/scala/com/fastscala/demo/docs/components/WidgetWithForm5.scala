@@ -1,12 +1,9 @@
 package com.fastscala.demo.docs.components
 
 import com.fastscala.core.FSContext
-import com.fastscala.js.Js
 import com.fastscala.templates.form5.{Form5, FormRenderer}
-import com.fastscala.utils.IdGen
 
-import scala.util.chaining.scalaUtilChainingOps
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.NodeSeq
 
 abstract class WidgetWithForm5(
                                 val widgetTitle: String

@@ -34,7 +34,8 @@ case class Country(
 object CountriesData {
 
   lazy val data = {
-    import io.circe._, io.circe.parser.parse
+    import io.circe._
+    import io.circe.parser.parse
     implicit val CountryNameDecoder: Decoder[CountryName] = semiauto.deriveDecoder[CountryName]
     implicit val CountryDecoder: Decoder[Country] = semiauto.deriveDecoder[Country]
     parse(Source.fromInputStream(getClass.getResourceAsStream("/countries.json")).getLines().mkString("\n")).right.get.as[Array[Country]].right.get

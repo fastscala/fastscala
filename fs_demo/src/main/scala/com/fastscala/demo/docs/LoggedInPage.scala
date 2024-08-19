@@ -1,17 +1,13 @@
 package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.xml.scala_xml.JS
 
 import java.time.LocalDate
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.NodeSeq
 
 abstract class LoggedInPage() extends BasePage {
-
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
 
   implicit val atTime: LocalDate = LocalDate.now()
 

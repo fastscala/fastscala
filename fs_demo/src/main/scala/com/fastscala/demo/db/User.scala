@@ -5,7 +5,6 @@ import com.fastscala.core.{FSContext, FSSessionVarOpt}
 import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.io.File
 import java.nio.file.Files

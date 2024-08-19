@@ -103,7 +103,7 @@ class F5HorizontalField(
     if (!currentlyEnabled) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
     else {
       withFieldRenderHints { implicit hints =>
-        FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId)(
+        FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId, "class" -> "row")(
           (children.map({
             case (clas, field) => FSScalaXmlSupport.fsXmlSupport.buildElem("div", "class" -> clas)(field.render())
           }): Seq[Elem]): _*

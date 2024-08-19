@@ -1,7 +1,6 @@
 package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.{FakeDB, User}
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import io.circe.Decoder

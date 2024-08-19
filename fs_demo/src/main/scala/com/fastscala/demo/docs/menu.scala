@@ -1,9 +1,7 @@
 package com.fastscala.demo.docs
 
 import com.fastscala.core.{FSContext, FSSession}
-import com.fastscala.demo.db.User
-import com.fastscala.demo.docs.bootstrap.{BootstrapImagesPage, BootstrapTypographyPage}
-import com.fastscala.utils.{IdGen, RenderableWithFSContext}
+import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.ScalaXmlRenderableWithFSContext
 import jakarta.servlet.http.HttpServletRequest
 

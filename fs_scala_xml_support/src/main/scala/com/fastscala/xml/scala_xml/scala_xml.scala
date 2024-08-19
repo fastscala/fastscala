@@ -13,10 +13,6 @@ object FSScalaXmlEnv extends FSXmlEnv {
   implicit def env: FSXmlEnv = this
 }
 
-trait ScalaXmlRenderable extends Renderable[FSScalaXmlEnv.type]
-
-trait ScalaXmlRenderableWithFSContext extends RenderableWithFSContext[FSScalaXmlEnv.type]
-
 object FSScalaXmlSupport {
 
   //  implicit def toFSScalaXmlEnvNodeSeq[E <: FSXmlEnv : FSXmlSupport](ns: scala.xml.NodeSeq): E#NodeSeq = ns.asFSXml()

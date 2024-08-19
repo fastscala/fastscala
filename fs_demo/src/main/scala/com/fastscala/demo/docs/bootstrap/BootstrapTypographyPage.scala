@@ -2,7 +2,6 @@ package com.fastscala.demo.docs.bootstrap
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 class BootstrapTypographyPage extends MultipleCodeExamples2Page() {
 

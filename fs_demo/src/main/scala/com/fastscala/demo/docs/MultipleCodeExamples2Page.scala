@@ -1,9 +1,6 @@
 package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
-import com.fastscala.templates.bootstrap5.classes.BSHelpers.{div, h4}
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import org.apache.commons.io.IOUtils
 

@@ -2,7 +2,6 @@ package com.fastscala.demo.docs
 
 import com.fastscala.demo.db.User
 import org.apache.commons.io.IOUtils
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.nio.charset.StandardCharsets
 import scala.util.matching.Regex

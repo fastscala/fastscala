@@ -1,7 +1,6 @@
 package com.fastscala.templates.bootstrap5.alerts
 
 import com.fastscala.js.rerenderers.Rerenderer
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, JS}
 
 import scala.xml.{Elem, NodeSeq}

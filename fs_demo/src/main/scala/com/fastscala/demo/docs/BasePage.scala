@@ -2,10 +2,8 @@ package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
 import com.fastscala.templates.bootstrap5.classes.BSHelpers
-import com.fastscala.utils.RenderableWithFSContext
-import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, FSScalaXmlSupport, JS, ScalaXmlRenderableWithFSContext}
+import com.fastscala.xml.scala_xml.{JS, ScalaXmlRenderableWithFSContext}
 import com.typesafe.config.ConfigFactory
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.io.Source
 import scala.util.Try

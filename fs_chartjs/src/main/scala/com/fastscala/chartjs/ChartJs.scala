@@ -30,6 +30,7 @@ case class ChartJs(
                   ) {
 
   import ChartJsEncoders._
+
   def installInCanvas(canvasId: String): Js = {
     import io.circe.generic.auto._
     import io.circe.syntax._
@@ -38,15 +39,12 @@ case class ChartJs(
       s"""const ctx = document.getElementById('$canvasId'); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces}); """
     )
   }
-}
 
-object ChartJs {
+  def rendered(): NodeSeq = renderedOn(<canvas></canvas>)
 
-  def rendered[E, P](chart: ChartJs): NodeSeq = renderedOn(chart, <canvas></canvas>)
-
-  def renderedOn(chart: ChartJs, elem: Elem): NodeSeq = {
+  def renderedOn(elem: Elem): NodeSeq = {
     val id = elem.getId.getOrElse(IdGen.id("chart_js_canvas"))
     val finalElem = elem.withId(id)
-    finalElem ++ JS.inScriptTag(chart.installInCanvas(id).onDOMContentLoaded)
+    finalElem ++ JS.inScriptTag(installInCanvas(id).onDOMContentLoaded)
   }
 }

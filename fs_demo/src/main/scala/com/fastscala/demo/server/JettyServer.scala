@@ -1,7 +1,6 @@
 package com.fastscala.demo.server
 
 import com.fastscala.server.JettyServerHelper
-import com.typesafe.config.ConfigFactory
 import org.eclipse.jetty.server.Handler
 
 import java.awt.Desktop

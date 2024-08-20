@@ -1,12 +1,9 @@
 package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.{FSContext, FSSessionVarOpt, FSUploadedFile}
-import com.fastscala.demo.db.User
 import com.fastscala.demo.docs.SingleCodeExamplePage
-import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.FileUpload
 import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.Base64
 import scala.xml.NodeSeq

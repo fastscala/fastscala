@@ -1,13 +1,11 @@
 package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
 import org.apache.commons.io.IOUtils
 
 import java.nio.charset.StandardCharsets
 import scala.util.matching.Regex
 import scala.xml.NodeSeq
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 abstract class SingleCodeExamplePage() extends PageWithTopTitle {

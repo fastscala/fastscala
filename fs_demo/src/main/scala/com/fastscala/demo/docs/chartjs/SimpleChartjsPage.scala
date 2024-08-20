@@ -1,14 +1,9 @@
 package com.fastscala.demo.docs.chartjs
 
-import com.fastscala.chartjs.{BarChartDataset, BarChartType, ChartData, ChartDataset, ChartJs, SimpleNumbersChartDatasetData}
+import com.fastscala.chartjs._
 import com.fastscala.core.FSContext
-import com.fastscala.demo.db.User
 import com.fastscala.demo.docs.SingleCodeExamplePage
-import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.modals.BSModal5Base
-import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.xml.scala_xml.JS
-import io.circe.syntax.EncoderOps
 
 import scala.xml.NodeSeq
 

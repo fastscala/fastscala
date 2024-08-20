@@ -3,10 +3,8 @@ package com.fastscala.demo.docs.fastscala
 import cats.effect.IO
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.SingleCodeExamplePage
-import com.fastscala.js.Js
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.concurrent.duration.DurationInt
 import scala.xml.NodeSeq

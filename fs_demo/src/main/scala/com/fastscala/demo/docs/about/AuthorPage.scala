@@ -3,7 +3,6 @@ package com.fastscala.demo.docs.about
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.LoggedInPage
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 

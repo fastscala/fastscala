@@ -2,7 +2,7 @@ package com.fastscala.demo.docs
 
 import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
-import com.fastscala.demo.docs.fastscala.{AnonymousPage, CallbacksPage, FileDownloadPage, FileUploadPage, RerenderablePage, ServerSidePushPage}
+import com.fastscala.demo.docs.fastscala._
 import com.fastscala.demo.docs.forms.FormInputTypesPage
 import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage

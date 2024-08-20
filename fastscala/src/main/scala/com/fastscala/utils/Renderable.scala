@@ -17,10 +17,3 @@ object RenderableWithFSContext {
     override def render(): E#NodeSeq = renderableWithFuncGen.render()
   }
 }
-
-object Renderable {
-
-  //  def apply[E <: FSXmlEnv : FSXmlSupport](ns: => E#NodeSeq): Renderable = new Renderable {
-  //    override def render[Env <: FSXmlEnv : FSXmlSupport](): E#NodeSeq = ns
-  //  }
-}

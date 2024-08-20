@@ -4,7 +4,6 @@ import com.fastscala.templates.bootstrap5.classes.BSHelpers
 import com.fastscala.templates.form5.FormRenderer
 import com.fastscala.templates.form5.fields._
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 

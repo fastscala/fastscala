@@ -3,7 +3,6 @@ package com.fastscala.templates.bootstrap5.form6
 import com.fastscala.templates.bootstrap5.classes.BSHelpers
 import com.fastscala.templates.form6.F6FormRenderer
 import com.fastscala.templates.form6.fields._
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 

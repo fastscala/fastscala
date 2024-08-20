@@ -1,7 +1,6 @@
 package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 

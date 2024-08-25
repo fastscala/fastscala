@@ -2,9 +2,11 @@ package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
-import org.apache.commons.io.IOUtils
+import org.eclipse.jetty.util.{IO, VirtualThreads}
 
 import java.nio.charset.StandardCharsets
+import java.nio.file.Path
+
 import scala.xml.NodeSeq
 
 abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
@@ -65,18 +67,19 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   var lastSection: Option[(Int, String, NodeSeq)] = None
   var sections: List[NodeSeq] = Nil
 
-  val lines = IOUtils.resourceToString(file, StandardCharsets.UTF_8).split("\\n")
+  val lines = IO.toString(Path.of(getClass.getResource(file).toURI()), StandardCharsets.UTF_8).split("\\n")
+  val stackTracePos = if (VirtualThreads.areSupported) 2 else 3
 
   def renderSnippet(
                      title: String,
-                     thisSectionStartsAt: Int = Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head.getLineNumber
+                     thisSectionStartsAt: Int = Thread.currentThread.getStackTrace.apply(stackTracePos).getLineNumber
                    )(contents: => NodeSeq): Unit = {
     collectSection(thisSectionStartsAt)
     lastSection = Some((thisSectionStartsAt, title, contents))
   }
 
   def renderHtml(
-                  thisSectionStartsAt: Int = Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head.getLineNumber
+                  thisSectionStartsAt: Int = Thread.currentThread.getStackTrace.apply(stackTracePos).getLineNumber
                 )(contents: => NodeSeq): Unit = {
     collectSection(thisSectionStartsAt)
     lastSection = None
@@ -98,5 +101,5 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
     })
   }
 
-  def closeSnippet(): Unit = renderSnippet("", Thread.getAllStackTraces.get(Thread.currentThread()).drop(3).head.getLineNumber)(NodeSeq.Empty)
+  def closeSnippet(): Unit = renderSnippet("", Thread.currentThread.getStackTrace.apply(stackTracePos).getLineNumber)(NodeSeq.Empty)
 }

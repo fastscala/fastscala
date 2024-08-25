@@ -5,21 +5,17 @@ import com.fastscala.server._
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.IdGen
 import io.circe.{Decoder, Json}
-import jakarta.servlet._
-import jakarta.servlet.http._
 import jakarta.websocket.Session
-import org.apache.commons.io.IOUtils
-import org.eclipse.jetty.server.Request
+import org.eclipse.jetty.server.{Request, Response => JettyServerResponse, Handler}
+import org.eclipse.jetty.http._
+import org.eclipse.jetty.util.Callback
+import org.eclipse.jetty.io.Content
 import org.slf4j.LoggerFactory
 
-import java.io.{BufferedReader, File}
 import java.net.URLEncoder
-import java.nio.file.Files
-import java.security.Principal
-import java.util
-import java.util.Locale
-import scala.collection.convert.ImplicitConversions.`iterable AsScalaIterable`
-import scala.jdk.CollectionConverters.MapHasAsScala
+import java.nio.file.{Path, Files}
+import java.util.Collections
+import scala.jdk.CollectionConverters.{IteratorHasAsScala, IterableHasAsScala, MapHasAsScala}
 
 class FSFunc(
               val id: String
@@ -228,7 +224,7 @@ class FSContext(
     fsc.callback(() => Js.redirectTo(anonymousPageURL(render, name)))
 
   def fileDownloadAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
-    fileDownload(fileName, Files.probeContentType(new File(fileName).toPath()), download)
+    fileDownload(fileName, Files.probeContentType(Path.of(fileName)), download)
 
   def fileDownload(fileName: String, contentType: String, download: () => Array[Byte]): String = {
     session.fsSystem.checkSpace()
@@ -300,7 +296,7 @@ object FSPage {
 class FSPage(
               val id: String
               , val session: FSSession
-              , val req: HttpServletRequest
+              , val req: Request
               , val createdAt: Long = System.currentTimeMillis()
               , val onPageUnload: () => Js = () => Js.void
               , var keepAliveAt: Long = System.currentTimeMillis()
@@ -485,109 +481,9 @@ class FSSession(
                      code: FSContext => T,
                      debugLbl: Option[String] = None,
                      onPageUnload: () => Js = () => Js.void
-                   )(implicit req: HttpServletRequest): T = try {
+                   )(implicit req: Request): T = try {
     session.fsSystem.checkSpace()
-    val copy = new HttpServletRequest {
-      override val getAuthType: String = req.getAuthType
-      override val getCookies: Array[Cookie] = req.getCookies
-      override val getHeaderNames: util.Enumeration[String] = req.getHeaderNames
-      override val getMethod: String = req.getMethod
-      override val getPathInfo: String = req.getPathInfo
-      override val getPathTranslated: String = req.getPathTranslated
-      override val getContextPath: String = req.getContextPath
-      override val getQueryString: String = req.getQueryString
-      override val getRemoteUser: String = req.getRemoteUser
-      override val getUserPrincipal: Principal = req.getUserPrincipal
-      override val getRequestedSessionId: String = req.getRequestedSessionId
-      override val getRequestURI: String = req.getRequestURI
-      override val getRequestURL: StringBuffer = req.getRequestURL
-      override val getServletPath: String = req.getServletPath
-      override val isRequestedSessionIdValid: Boolean = req.isRequestedSessionIdValid
-      override val isRequestedSessionIdFromCookie: Boolean = req.isRequestedSessionIdFromCookie
-      override val isRequestedSessionIdFromURL: Boolean = req.isRequestedSessionIdFromURL
-      override val isRequestedSessionIdFromUrl: Boolean = req.isRequestedSessionIdFromUrl
-
-      override def getParts: util.Collection[Part] = ???
-
-      override val getCharacterEncoding: String = req.getCharacterEncoding
-      override val getContentLength: Int = req.getContentLength
-      override val getContentLengthLong: Long = req.getContentLengthLong
-      override val getContentType: String = req.getContentType
-      override val getParameterNames: util.Enumeration[String] = req.getParameterNames
-      override val getParameterMap: util.Map[String, Array[String]] = req.getParameterMap
-      override val getProtocol: String = req.getProtocol
-      override val getScheme: String = req.getScheme
-      override val getServerName: String = req.getServerName
-      override val getServerPort: Int = req.getServerPort
-      override val getReader: BufferedReader = req.getReader
-      override val getRemoteAddr: String = req.getRemoteAddr
-      override val getRemoteHost: String = req.getRemoteHost
-      override val getLocale: Locale = req.getLocale
-      override val getLocales: util.Enumeration[Locale] = req.getLocales
-      override val isSecure: Boolean = req.isSecure
-      override val getRemotePort: Int = req.getRemotePort
-      override val getLocalName: String = req.getLocalName
-      override val getLocalAddr: String = req.getLocalAddr
-      override val getLocalPort: Int = req.getLocalPort
-      override val getServletContext: ServletContext = req.getServletContext
-      override val isAsyncStarted: Boolean = req.isAsyncStarted
-      override val isAsyncSupported: Boolean = req.isAsyncSupported
-
-      override def getAsyncContext: AsyncContext = ???
-
-      override val getDispatcherType: DispatcherType = req.getDispatcherType
-
-      override def getDateHeader(name: String): Long = ???
-
-      override def getHeader(name: String): String = ???
-
-      override def getHeaders(name: String): util.Enumeration[String] = ???
-
-      override def getIntHeader(name: String): Int = ???
-
-      override def isUserInRole(role: String): Boolean = ???
-
-      override def getSession(create: Boolean): HttpSession = ???
-
-      override def getSession: HttpSession = ???
-
-      override def changeSessionId(): String = ???
-
-      override def authenticate(response: HttpServletResponse): Boolean = ???
-
-      override def login(username: String, password: String): Unit = ???
-
-      override def logout(): Unit = ???
-
-      override def getPart(name: String): Part = ???
-
-      override def upgrade[T <: HttpUpgradeHandler](handlerClass: Class[T]): T = ???
-
-      override def getAttribute(name: String): AnyRef = ???
-
-      override def getAttributeNames: util.Enumeration[String] = ???
-
-      override def setCharacterEncoding(env: String): Unit = ???
-
-      override def getInputStream: ServletInputStream = ???
-
-      override def getParameter(name: String): String = Option(getParameterMap).flatMap(map => Option(map.get(name)).flatMap(_.headOption)).getOrElse(null)
-
-      override def getParameterValues(name: String): Array[String] = getParameterMap.get(name)
-
-      override def setAttribute(name: String, o: Any): Unit = ???
-
-      override def removeAttribute(name: String): Unit = ???
-
-      override def getRequestDispatcher(path: String): RequestDispatcher = ???
-
-      override def getRealPath(path: String): String = ???
-
-      override def startAsync(): AsyncContext = ???
-
-      override def startAsync(servletRequest: ServletRequest, servletResponse: ServletResponse): AsyncContext = ???
-
-    }
+    val copy = new Request.Wrapper(req)
     val page = new FSPage(nextID(), this, copy, onPageUnload = onPageUnload, debugLbl = debugLbl)
     fsSystem.stats.event(StatEvent.CREATE_PAGE)
     this.synchronized {
@@ -637,10 +533,11 @@ class FSSystem(
 
   val FSPrefix = "fs"
 
-  def inSession[T](inSession: FSSession => T)(implicit req: HttpServletRequest): Option[(List[Cookie], T)] = {
-    Option(req.getCookies).getOrElse(Array()).filter(_.getName == FSSessionIdCookieName).map(_.getValue).flatMap(sessions.get(_)).headOption match {
+  def inSession[T](inSession: FSSession => T)(implicit req: Request): Option[(List[HttpCookie], T)] = {
+    val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
+    cookies.filter(_.getName == FSSessionIdCookieName).map(_.getValue).flatMap(sessions.get(_)).headOption match {
       case Some(session) => Option((Nil, inSession(session)))
-      case None if !req.getRequestURI.startsWith("/" + FSPrefix + "/ws") =>
+      case None if !req.getHttpURI.getPath.startsWith("/" + FSPrefix + "/ws") =>
         checkSpace()
         val id = IdGen.secureId()
         val session = new FSSession(id, this)
@@ -650,30 +547,29 @@ class FSSystem(
         stats.event(StatEvent.CREATE_SESSION)
         this.synchronized(sessions.put(session.id, session))
         FSSession.logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
-        Option((List(new Cookie(FSSessionIdCookieName, session.id) {
-          setPath("/")
-        }), inSession(session)))
+        Option((List(HttpCookie.build(FSSessionIdCookieName, session.id).path("/").build()), inSession(session)))
       case None => None
     }
   }
 
-  def handleCallbackException(ex: Exception): Js = {
+  def handleCallbackException(ex: Throwable): Js = {
     ex.printStackTrace()
     Js.alert("Internal error")
   }
 
-  def handleFileUploadCallbackException(ex: Exception): Js = {
+  def handleFileUploadCallbackException(ex: Throwable): Js = {
     ex.printStackTrace()
     Js.alert("Internal error")
   }
 
-  def handleFileDownloadCallbackException(ex: Exception): Response = {
+  def handleFileDownloadCallbackException(ex: Throwable): Response = {
     ex.printStackTrace()
     ServerError.InternalServerError
   }
 
-  override def handlerNoSession(implicit req: HttpServletRequest): Option[Response] = {
-    val sessionIdOpt = Option(req.getCookies).getOrElse(Array()).find(_.getName == FSSessionIdCookieName).map(_.getValue)
+  override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = {
+    val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
+    val sessionIdOpt = cookies.find(_.getName == FSSessionIdCookieName).map(_.getValue)
     val sessionOpt = sessionIdOpt.flatMap(sessionId => sessions.get(sessionId))
 
     import RoutingHandlerHelper._
@@ -695,14 +591,18 @@ class FSSystem(
               implicit val __fsContextOpt: Option[FSContext] = __fsFuncOpt.map(_.fsc)
               fsFunc.keepAlive()
               val start = System.currentTimeMillis()
-              val rslt = try {
-                fsFunc.func(IOUtils.toString(req.getReader))
-              } catch {
-                case ex: Exception => handleCallbackException(ex)
-              }
-              logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
-              stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
-              Ok.js(rslt)
+              Content.Source.asStringAsync(req, Request.getCharset(req)).whenComplete((arg, failure) => {
+                val rslt: Js = Option(failure) match {
+                  case Some(failure) =>
+                    handleCallbackException(failure)
+                  case None =>
+                    fsFunc.func(arg)
+                }
+                logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
+                stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
+                Ok.js(rslt).respond(response, callback)
+              })
+              VoidResponse
             }).getOrElse({
               stats.event(StatEvent.NOT_FOUND_CALLBACK)
               onFuncNotFoundForAjaxReq(funcId)(page, req)
@@ -732,27 +632,42 @@ class FSSystem(
 
                   fSFileUpload.keepAlive()
 
-                  req.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, new MultipartConfigElement("/tmp"))
-
-                  val rslt: Js = try {
-                    fSFileUpload.func(req.getParts.map(part => try {
-                      new FSUploadedFile(
-                        name = part.getName,
-                        submittedFileName = part.getSubmittedFileName,
-                        contentType = part.getContentType,
-                        content = IOUtils.toByteArray(part.getInputStream)
-                      )
-                    } finally {
-                      try {
-                        part.getInputStream.close()
-                      } finally {
-                        part.delete()
+                  val contentType = req.getHeaders.get(HttpHeader.CONTENT_TYPE)
+                  if (MimeTypes.Type.MULTIPART_FORM_DATA == MimeTypes.getBaseType(contentType)) {
+                    // Extract the multipart boundary.
+                    val boundary = MultiPart.extractBoundary(contentType)
+                    // Create and configure the multipart parser.
+                    val parser = new MultiPartFormData.Parser(boundary)
+                    // By default, uploaded files are stored in this directory, to
+                    // avoid to read the file content (which can be large) in memory.
+                    parser.setFilesDirectory(Path.of(System.getProperty("java.io.tmpdir")))
+                    // Convert the request content into parts.
+                    parser.parse(req).whenComplete((parts, failure) => {
+                      val rslt: Js = Option(failure) match {
+                        case Some(failure) =>
+                          handleFileUploadCallbackException(failure)
+                        case None =>
+                          fSFileUpload.func(parts.asScala.map(part => try {
+                            new FSUploadedFile(
+                              name = part.getName,
+                              submittedFileName = part.getFileName,
+                              contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
+                              content = Content.Source.asByteBuffer(part.getContentSource).array
+                            )
+                          } finally {
+                            try {
+                              part.close()
+                            } finally {
+                              part.delete()
+                            }
+                          }).toSeq)
                       }
-                    }).toSeq)
-                  } catch {
-                    case ex: Exception => handleFileUploadCallbackException(ex)
-                  }
-                  Ok.js(rslt)
+                      Ok.js(rslt).respond(response, callback)
+                    })
+                    VoidResponse
+                  } else
+                    Ok.js(Js.alert("Not multipart form data"))
+
                 case None =>
                   stats.event(StatEvent.NOT_FOUND_FILE_UPLOAD)
                   onFuncNotFoundForAjaxReq(funcId)(page, req)
@@ -813,53 +728,53 @@ class FSSystem(
     }
   }
 
-  def onSessionNotFoundForAjaxReq(sessionId: Option[String])(implicit req: HttpServletRequest): Response = {
+  def onSessionNotFoundForAjaxReq(sessionId: Option[String])(implicit req: Request): Response = {
     logger.warn(s"Session not found: session_id=$sessionId, evt_type=session_id_not_found")
-    val js: Js = if (Option(req.getParameter("ignore_errors")).map(_ == "true").getOrElse(false)) Js.void
+    val js: Js = if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) Js.void
     else Js.confirm(s"Session $sessionId not found, will reload", Js.reload())
     Ok.js(js)
   }
 
   def onSessionNotFoundForWebsocketReq(sessionId: String)(implicit session: Session): Js = {
     logger.warn(s"Session not found: session_id=$sessionId, evt_type=session_id_not_found")
-    val js: Js = if (session.getRequestParameterMap.asScala.get("ignore_errors").flatMap(_.headOption).map(_ == "true").getOrElse(false)) Js.void
+    val js: Js = if (session.getRequestParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
     else Js.confirm(s"Session $sessionId not found, will reload", Js.reload())
     js
   }
 
-  def onSessionNotFoundForStdReq(sessionId: Option[String])(implicit req: HttpServletRequest): Response = {
-    logger.warn(s"Anonymous page not found: session_id=$sessionId, evt_type=session_not_found")
+  def onSessionNotFoundForStdReq(sessionId: Option[String])(implicit req: Request): Response = {
+    logger.warn(s"Session not found: session_id=$sessionId, evt_type=session_not_found")
     Redirect.temporaryRedirect("/")
   }
 
-  def onPageNotFoundForAjaxReq(pageId: String, funcId: String)(implicit session: FSSession, req: HttpServletRequest): Response = {
+  def onPageNotFoundForAjaxReq(pageId: String, funcId: String)(implicit session: FSSession, req: Request): Response = {
     logger.warn(s"Page not found: session_id=${session.id}, page_id=$pageId, func_id=$funcId, evt_type=page_id_not_found")
-    val js: Js = if (Option(req.getParameter("ignore_errors")).map(_ == "true").getOrElse(false)) Js.void
+    val js: Js = if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) Js.void
     else Js.confirm(s"Page $pageId not found", Js.redirectTo("/"))
     Ok.js(js)
   }
 
   def onPageNotFoundForWebsocketReq(sessionId: String, pageId: String)(implicit session: Session): Js = {
     logger.warn(s"Page not found: session_id=$sessionId, page_id=$pageId, evt_type=page_id_not_found")
-    val js: Js = if (session.getRequestParameterMap.asScala.get("ignore_errors").flatMap(_.headOption).map(_ == "true").getOrElse(false)) Js.void
+    val js: Js = if (session.getRequestParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
     else Js.confirm(s"Page $pageId not found, will reload", Js.reload())
     js
   }
 
-  def onPageNotFoundForStdReq(pageId: String)(implicit session: FSSession, req: HttpServletRequest): Response = {
+  def onPageNotFoundForStdReq(pageId: String)(implicit session: FSSession, req: Request): Response = {
     logger.warn(s"Page not found: session_id=${session.id}, page_id=$pageId, evt_type=page_id_not_found")
     Redirect.temporaryRedirect("/")
   }
 
-  def onFuncNotFoundForAjaxReq(funcId: String)(implicit page: FSPage, req: HttpServletRequest): Response = {
-    val ignoreErrors = Option(req.getParameter("ignore_errors")).map(_ == "true").getOrElse(false)
+  def onFuncNotFoundForAjaxReq(funcId: String)(implicit page: FSPage, req: Request): Response = {
+    val ignoreErrors = Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)
     logger.warn(s"Function not found: session_id=${page.session.id}, page_id=${page.id}, func_id=$funcId, evt_type=func_id_not_found, ignore_errors=$ignoreErrors")
     val js: Js = if (ignoreErrors) Js.void
     else Js.confirm(s"Func $funcId not found, will reload", Js.reload())
     Ok.js(js)
   }
 
-  def onFuncNotFoundForStdReq(pageId: String, funcId: String)(implicit session: FSSession, req: HttpServletRequest): Response = {
+  def onFuncNotFoundForStdReq(pageId: String, funcId: String)(implicit session: FSSession, req: Request): Response = {
     logger.warn(s"Function not found: session_id=${session.id}, page_id=${pageId}, func_id=$funcId, evt_type=func_id_not_found")
     Redirect.temporaryRedirect("/")
   }

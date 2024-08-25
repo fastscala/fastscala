@@ -29,11 +29,10 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "com.typesafe" % "config" % "1.4.3",
 
       "org.apache.commons" % "commons-text" % "1.12.0",
-      "commons-io" % "commons-io" % "2.16.1",
 
-      "org.eclipse.jetty" % "jetty-servlet" % "11.0.22",
+      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % "12.0.12",
       "org.eclipse.jetty.toolchain" % "jetty-jakarta-websocket-api" % "2.0.0",
-      "org.eclipse.jetty.websocket" % "websocket-jakarta-server" % "11.0.22",
+      "org.eclipse.jetty.ee10.websocket" % "jetty-ee10-websocket-jakarta-server" % "12.0.12",
 
       "io.circe" %% "circe-core" % "0.14.9",
       "io.circe" %% "circe-generic" % "0.14.9",
@@ -101,7 +100,7 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     publishArtifact := true,
 
     libraryDependencies ++= Seq(
-      "org.eclipse.jetty" % "jetty-server" % "11.0.22",
+      "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.typelevel" %% "cats-effect" % "3.5.4",
       "at.favre.lib" % "bcrypt" % "0.10.2",
       "com.lihaoyi" %% "scalatags" % "0.13.1",

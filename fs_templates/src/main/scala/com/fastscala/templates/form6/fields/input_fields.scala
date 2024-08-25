@@ -26,7 +26,7 @@ trait F6FieldMixin extends F6Field {
   }
 }
 
-trait F6FieldInputFieldMixin extends F6FieldMixin {
+trait F6FieldInputFieldMixin extends F6FieldWithValidations with F6FieldMixin {
 
   def processInputElem(input: Elem): Elem = input
 }
@@ -432,8 +432,8 @@ trait F6FieldWithMax extends F6FieldInputFieldMixin {
 }
 
 abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends StandardF6Field
-  with ValidatableField
-  with StringSerializableField
+  with ValidatableF6Field
+  with StringSerializableF6Field
   with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithRequired
@@ -453,7 +453,7 @@ abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends 
 
   def fromString(str: String): Either[String, T]
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = {
     fromString(str) match {
       case Right(value) =>
         currentValue = value
@@ -508,7 +508,7 @@ class F6StringField()(implicit renderer: TextF6FieldRenderer) extends F6TextFiel
 
   def fromString(str: String): Either[String, String] = Right(str)
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (_required() && currentValue.trim == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
@@ -521,7 +521,7 @@ class F6StringOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextF
 
   def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
@@ -545,8 +545,18 @@ class F6DateOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextFie
 
   def fromString(str: String): Either[String, Option[java.time.LocalDate]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+}
+
+class F6DateField(dflt: time.LocalDate = time.LocalDate.now())(implicit renderer: TextF6FieldRenderer) extends F6TextField[java.time.LocalDate] {
+  override def _inputTypeDefault: String = "date"
+
+  override def defaultValue: time.LocalDate = dflt
+
+  def toString(value: java.time.LocalDate): String = value.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+  def fromString(str: String): Either[String, java.time.LocalDate] = scala.util.Try(java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))).toEither.left.map(_ => "Invalid input")
 }
 
 class F6DateTimeOptField()(implicit renderer: TextF6FieldRenderer) extends F6TextField[Option[java.time.LocalDateTime]] {
@@ -558,7 +568,7 @@ class F6DateTimeOptField()(implicit renderer: TextF6FieldRenderer) extends F6Tex
 
   def fromString(str: String): Either[String, Option[java.time.LocalDateTime]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
@@ -591,7 +601,7 @@ class F6DoubleOptField()(implicit renderer: TextF6FieldRenderer)
     }
   }
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
@@ -623,7 +633,7 @@ class F6IntOptField()(implicit renderer: TextF6FieldRenderer)
     }
   }
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
@@ -637,7 +647,7 @@ class F6TimeOfDayField()(implicit renderer: TextF6FieldRenderer)
 
   override def defaultValue: Option[Int] = None
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
 

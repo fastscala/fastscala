@@ -4,6 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.utils.IcnFA.RichIcn
 import com.fastscala.utils.IdGen
+import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, JS}
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -22,7 +23,8 @@ case class BSBtn(
                   targetOpt: Option[String] = None,
                   styleOpt: Option[String] = None,
                   idOpt: Option[String] = None,
-                  titleOpt: Option[String] = None
+                  titleOpt: Option[String] = None,
+                  additionalAttrs: Seq[(String, String)] = Nil
                 ) {
 
   override def toString: String = cls
@@ -46,6 +48,8 @@ case class BSBtn(
   def withContent(content: NodeSeq): BSBtn = copy(content = content)
 
   def withClass(s: String): BSBtn = copy(cls = cls + " " + s)
+
+  def withAdditionalAttrs(attrs: (String, String)*): BSBtn = copy(additionalAttrs = additionalAttrs ++ attrs)
 
   def icn(i: BsIcn.type => BsIcn.BsIcn): BSBtn = icn(i(BsIcn).icn)
 
@@ -86,8 +90,6 @@ case class BSBtn(
 
   def id: String = idOpt.getOrElse(null)
 
-  def btn(implicit fsc: FSContext): Elem = <button class={cls} id={id} type="button" style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>
-
   def toggle(
               get: => Boolean,
               set: Boolean => Js,
@@ -106,10 +108,6 @@ case class BSBtn(
 
     generate
   }
-
-  def span(implicit fsc: FSContext): Elem = <span class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</span>
-
-  def btnLink(implicit fsc: FSContext): Elem = <a class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} href={hrefOpt.getOrElse("javascript:void(0)")} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</a>
 
   def disableAfterOneClick(): BSBtn = copy(onclickOpt = Some(fsc => disable() & onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc)))
 
@@ -223,5 +221,19 @@ case class BSBtn(
   def BtnOutlineSuccess: BSBtn = withClass("btn btn-outline-success")
 
   def BtnOutlineWarning: BSBtn = withClass("btn btn-outline-warning")
+
+  // ================================== RENDERING ==================================
+
+  def btn(implicit fsc: FSContext): Elem = <button class={cls} id={id} type="button" style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>.withAttrs(additionalAttrs: _*)
+
+  def btnRerender(implicit fsc: FSContext): Js = JS.replace(id, btn)
+
+  def span(implicit fsc: FSContext): Elem = <span class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</span>.withAttrs(additionalAttrs: _*)
+
+  def spanRerender(implicit fsc: FSContext): Js = JS.replace(id, span)
+
+  def btnLink(implicit fsc: FSContext): Elem = <a class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} href={hrefOpt.getOrElse("javascript:void(0)")} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</a>.withAttrs(additionalAttrs: _*)
+
+  def btnLinkRerender(implicit fsc: FSContext): Js = JS.replace(id, btnLink)
 }
 

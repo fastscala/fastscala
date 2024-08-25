@@ -42,7 +42,7 @@ object F6VerticalField {
   def apply()(children: F6Field*) = new F6VerticalField()(children: _*)
 }
 
-class F6HorizontalRowField()(children: (String, F6Field)*)
+class F6ContainerField(aroundClass: String)(children: (String, F6Field)*)
   extends StandardF6Field
     with F6FieldWithEnabled
     with F6FieldWithDependencies
@@ -59,7 +59,7 @@ class F6HorizontalRowField()(children: (String, F6Field)*)
         val contents = children.map({
           case (clas, field) => <div class={clas}>{field.render()}</div>
         }).reduceOption[NodeSeq](_ ++ _).getOrElse(NodeSeq.Empty)
-        <div class="row" id={aroundId}>{contents}</div>
+        <div class={aroundClass} id={aroundId}>{contents}</div>
       }
     }
   }
@@ -80,6 +80,6 @@ class F6HorizontalRowField()(children: (String, F6Field)*)
     super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
 }
 
-object F6HorizontalRowField {
-  def apply()(children: (String, F6Field)*) = new F6HorizontalRowField()(children: _*)
+object F6ContainerField {
+  def apply(aroundClass: String)(children: (String, F6Field)*) = new F6ContainerField(aroundClass)(children: _*)
 }

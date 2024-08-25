@@ -5,6 +5,7 @@ import org.apache.commons.text.StringEscapeUtils
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
+import java.time.format.DateTimeFormatter
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -226,9 +227,9 @@ trait TableBase {
     case v: String => SQLSyntax.createUnsafely("'" + org.postgresql.core.Utils.escapeLiteral(null, v, true) + "'" + "::text")
     case v: Array[Byte] => ???
     case v: Enumeration#Value => valueToLiteral(v.id)
-    case v: java.time.LocalDate => ???
-    case v: java.time.LocalTime => ???
-    case v: java.time.LocalDateTime => ???
+    case v: java.time.LocalDate => SQLSyntax.createUnsafely("'" + v.format(DateTimeFormatter.ISO_LOCAL_DATE) + "'")
+    case v: java.time.LocalTime => SQLSyntax.createUnsafely(v.format(DateTimeFormatter.ISO_LOCAL_TIME))
+    case v: java.time.LocalDateTime => SQLSyntax.createUnsafely(v.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
     case v: java.time.OffsetDateTime => ???
   }
 

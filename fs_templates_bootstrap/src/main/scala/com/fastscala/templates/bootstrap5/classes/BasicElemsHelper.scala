@@ -4,7 +4,7 @@ import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
 import scala.xml.{Elem, NodeSeq}
 
-trait ElemHelper {
+trait BasicElemsHelper {
 
   def Empty: NodeSeq = FSScalaXmlSupport.fsXmlSupport.Empty
 

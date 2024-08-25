@@ -56,8 +56,8 @@ trait F6FieldWithOptionIds[T] extends F6FieldMixin {
 abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) extends StandardF6Field
   with F6FieldWithOptions[T]
   with F6FieldWithOptionIds[T]
-  with ValidatableField
-  with StringSerializableField
+  with ValidatableF6Field
+  with StringSerializableF6Field
   with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithRequired
@@ -71,7 +71,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
   with F6FieldWithValue[T]
   with F6FieldWithOptionsNsLabel[T] {
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = {
     val all = options()
     all.find({
       case opt => _option2Id(opt, all) == str
@@ -140,7 +140,7 @@ class F6SelectOptField[T]()(implicit renderer: SelectF6FieldRenderer) extends F6
   def optionsValid(v: Seq[T]): F6SelectOptField.this.type = options(None +: v.map(Some(_)))
 }
 
-class F6SelectField[T](opts: () => Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] {
+class F6SelectField[T](opts: () => Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] with F6FieldWithValidations {
   options(opts)
 
   def this(opts: Seq[T])(implicit renderer: SelectF6FieldRenderer) = this(() => opts)
@@ -151,8 +151,8 @@ class F6SelectField[T](opts: () => Seq[T])(implicit renderer: SelectF6FieldRende
 abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6FieldRenderer) extends StandardF6Field
   with F6FieldWithOptions[T]
   with F6FieldWithOptionIds[T]
-  with ValidatableField
-  with StringSerializableField
+  with ValidatableF6Field
+  with StringSerializableF6Field
   with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithRequired
@@ -167,7 +167,7 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
   with F6FieldWithValue[Set[T]]
   with F6FieldWithOptionsNsLabel[T] {
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = {
     val all = options()
     val id2Option: Map[String, T] = all.map(opt => _option2Id(opt, all) -> opt).toMap
     val selected: Seq[T] = str.split(";").toList.flatMap(id => {

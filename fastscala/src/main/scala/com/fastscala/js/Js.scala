@@ -272,3 +272,10 @@ class JsXmlUtils[E <: FSXmlEnv](implicit fsXmlSupport: FSXmlSupport[E]) extends 
 
   def showIf(b: Boolean)(ns: => E#NodeSeq): E#NodeSeq = if (b) ns else fsXmlSupport.Empty
 }
+
+class RichJsXmlUtils[E <: FSXmlEnv](js: Js, utils: JsXmlUtils[E])(implicit fsXmlSupport: FSXmlSupport[E]) {
+
+  def inScriptTag: E#Elem = utils.inScriptTag(js)
+
+  def printBeforeExec: Js = utils.consoleLog(js.cmd) & js
+}

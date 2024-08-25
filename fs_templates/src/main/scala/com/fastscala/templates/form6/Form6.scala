@@ -67,7 +67,7 @@ trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   def onSaveServerSide()(implicit fsc: FSContext): Js = {
     if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)
     else {
-      val hasErrors = rootField.enabledFields.exists({ case field: ValidatableField => field.hasErrors_?() case _ => false })
+      val hasErrors = rootField.enabledFields.exists({ case field: ValidatableF6Field => field.hasErrors_?() case _ => false })
       implicit val renderHints: Seq[RenderHint] = formRenderHits() :+ OnSaveRerender
       if (hasErrors) {
         rootField.onEvent(ErrorsOnSave) &

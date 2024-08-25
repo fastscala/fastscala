@@ -9,8 +9,8 @@ import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import scala.xml.{Elem, NodeSeq}
 
 class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends StandardF6Field
-  with ValidatableField
-  with StringSerializableField
+  with ValidatableF6Field
+  with StringSerializableF6Field
   with FocusableF6Field
   with F6FieldWithDisabled
   with F6FieldWithReadOnly
@@ -24,7 +24,7 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
 
   override def defaultValue: Boolean = false
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = str.toBooleanOption match {
+  override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = str.toBooleanOption match {
     case Some(value) =>
       currentValue = value
       _setter(currentValue)

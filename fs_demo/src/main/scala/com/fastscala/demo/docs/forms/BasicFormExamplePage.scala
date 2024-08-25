@@ -82,7 +82,7 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
         lazy val _provField: F6SelectField[Province] = new F6SelectField[Province](CitiesData.data.keys.toList.sortBy(_.no)).label("Province").rw(editing.province, editing.province = _).option2String(_.name)
 
         override lazy val rootField: F6Field = F6VerticalField()(
-          F6HorizontalRowField()(
+          F6ContainerField("row")(
             "col" -> new F6StringField().label("First Name").rw(editing.firstName, editing.firstName = _)
             , "col" -> new F6StringField().label("Last Name").rw(editing.lastName, editing.lastName = _)
           )

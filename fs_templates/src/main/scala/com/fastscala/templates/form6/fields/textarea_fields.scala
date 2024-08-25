@@ -33,8 +33,8 @@ trait F6FieldWithNumRows extends F6FieldInputFieldMixin {
 }
 
 abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) extends StandardF6Field
-  with ValidatableField
-  with StringSerializableField
+  with ValidatableF6Field
+  with StringSerializableF6Field
   with FocusableF6Field
   with F6FieldWithNumRows
   with F6FieldWithDisabled
@@ -55,7 +55,7 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
 
   def fromString(str: String): Either[String, T]
 
-  override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
+  override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = {
     fromString(str) match {
       case Right(value) =>
         currentValue = value
@@ -112,7 +112,7 @@ class F6StringTextareaField()(implicit renderer: TextareaF6FieldRenderer) extend
 
   def fromString(str: String): Either[String, String] = Right(str)
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
@@ -124,7 +124,7 @@ class F6StringOptTextareaField()(implicit renderer: TextareaF6FieldRenderer) ext
 
   def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
-  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
+  override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
     (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 

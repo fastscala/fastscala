@@ -60,20 +60,20 @@ abstract class StandardF6Field() extends F6Field with ElemWithRandomId {
   }
 }
 
-trait ValidatableField extends StandardF6Field {
+trait ValidatableF6Field extends StandardF6Field {
   def hasErrors_?() = errors().nonEmpty
 
-  def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
+  def errors(): Seq[(ValidatableF6Field, NodeSeq)] = Nil
 }
 
-trait StringSerializableField extends StandardF6Field {
+trait StringSerializableF6Field extends StandardF6Field {
 
-  def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)]
+  def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)]
 
   def saveToString(): Option[String]
 }
 
-trait QuerySerializableStringField extends StringSerializableField {
+trait QuerySerializableStringF6Field extends StringSerializableF6Field {
 
   def queryStringParamName: String
 }

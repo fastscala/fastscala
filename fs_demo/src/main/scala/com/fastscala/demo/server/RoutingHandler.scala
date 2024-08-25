@@ -10,19 +10,24 @@ import com.fastscala.demo.docs.tables._
 import com.fastscala.server.{Ok, Redirect, Response, RoutingHandlerHelper}
 import com.fastscala.xml.scala_xml.FSScalaXmlEnv
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
-import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
+import java.util.Collections
 
-class RoutingHandler()(implicit fss: FSSystem) extends RoutingHandlerHelper {
+import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.util.Callback
+
+import scala.jdk.CollectionConverters.ListHasAsScala
+
+class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
   import com.fastscala.server.RoutingHandlerHelper._
 
-  override def handlerNoSession(implicit req: HttpServletRequest): Option[Response] = Some(req).collect {
+  override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = Some(req).collect {
     case Get("loaderio-4370139ed4f90c60359531343155344a") =>
       Ok.plain("loaderio-4370139ed4f90c60359531343155344a")
     case Get(".well-known", "acme-challenge", code) =>
@@ -33,11 +38,12 @@ class RoutingHandler()(implicit fss: FSSystem) extends RoutingHandlerHelper {
       Ok.plain(contents)
   }
 
-  override def handlerInSession(implicit req: HttpServletRequest, session: FSSession): Option[Response] = {
+  override def handlerInSession(response: JettyServerResponse, callback: Callback)(implicit req: Request, session: FSSession): Option[Response] = {
     onlyHandleHtmlRequests {
       if (CurrentUser().isEmpty) {
-        Option(req.getCookies).getOrElse(Array()).find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(
-          Option(req.getParameterValues("user_token")).getOrElse(Array[String]()).headOption.filter(_.trim != "")
+        val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
+        cookies.find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(
+          Option(Request.getParameters(req).getValues("user_token")).getOrElse(Collections.emptyList).asScala.headOption.filter(_.trim != "")
         ).foreach(token => {
           FakeDB.users.find(_.loginToken == token).foreach(user => {
             CurrentUser() = user

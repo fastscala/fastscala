@@ -16,8 +16,8 @@ object JettyServer extends JettyServerHelper() {
     super.postStart()
 
     if (isLocal && Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-      val desktop = Desktop.getDesktop()
-      desktop.browse(new URI(s"http://localhost:$Port"))
+      // val desktop = Desktop.getDesktop()
+      // desktop.browse(new URI(s"http://localhost:$Port"))
       println(s"Available at: http://localhost:$Port")
     }
   }

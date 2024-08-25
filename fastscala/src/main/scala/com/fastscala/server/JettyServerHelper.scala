@@ -8,14 +8,16 @@ import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
 import org.eclipse.jetty.http.CompressedContentFormat
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.handler.gzip.GzipHandler
-import org.eclipse.jetty.server.handler.{ContextHandler, HandlerList, ResourceHandler}
-import org.eclipse.jetty.servlet.{ServletContextHandler, ServletHolder}
-import org.eclipse.jetty.util.resource.{EmptyResource, Resource}
+import org.eclipse.jetty.server.handler.{ContextHandler, ResourceHandler}
+import org.eclipse.jetty.ee10.servlet.{ServletContextHandler, ServletHolder}
+import org.eclipse.jetty.util.resource.{Resources, ResourceFactory, Resource}
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 
 import java.io.{File, InputStream}
 import java.net.URI
 import java.nio.channels.ReadableByteChannel
+import java.util.concurrent.Executors
+import org.eclipse.jetty.util.VirtualThreads
 
 abstract class JettyServerHelper() {
 
@@ -35,6 +37,8 @@ abstract class JettyServerHelper() {
 
   val threadPool = new QueuedThreadPool(NThreads)
   threadPool.setName("http_server")
+  // enable virtual thread support on JDK21+
+  threadPool.setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor())
 
   val server = new Server(threadPool)
 
@@ -61,75 +65,36 @@ abstract class JettyServerHelper() {
     server.addConnector(connector)
 
     val jettyStaticFilesHandler = new FSOptimizedResourceHandler(resourceRoots)
-    val resourceService: ResourceService = new ResourceService()
-    val precompressedFormats = Array(CompressedContentFormat.GZIP, CompressedContentFormat.BR, new CompressedContentFormat("bzip", ".bz"))
-    val resourceHandler: ResourceHandler = new ResourceHandler(resourceService) {
-      override def doStart(): Unit = {
-        super.doStart()
-        val cachedContentFactory = new CachedContentFactory(null, this, getMimeTypes, true, true, precompressedFormats)
-        resourceService.setContentFactory(cachedContentFactory)
-      }
-    }
+
     val metricsHandler = new ServletContextHandler()
     metricsHandler.addServlet(new ServletHolder(new MetricsServlet()), "/")
+
+    val resourceHandler = new ResourceHandler()
+    resourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP, CompressedContentFormat.BR, new CompressedContentFormat("bzip", ".bz"))
+    resourceHandler.setEtags(true)
     resourceHandler.setCacheControl("public, max-age=31536000")
-    resourceHandler.setBaseResource(new Resource {
-      override def isContainedIn(r: Resource): Boolean = ???
-
-      override def close(): Unit = ???
-
-      override def exists(): Boolean = ???
-
-      override def isDirectory: Boolean = ???
-
-      override def lastModified(): Long = ???
-
-      override def length(): Long = ???
-
-      override def getURI: URI = ???
-
-      override def getFile: File = ???
-
-      override def getName: String = ???
-
-      override def getInputStream: InputStream = ???
-
-      override def getReadableByteChannel: ReadableByteChannel = ???
-
-      override def delete(): Boolean = ???
-
-      override def renameTo(dest: Resource): Boolean = ???
-
-      override def list(): Array[String] = ???
-
-      override def addPath(path: String): Resource =
-        resourceRoots.iterator.map(root => {
-          Option(Resource.newClassPathResource(root + path)).filter(!_.isDirectory)
-        }).find(_.isDefined).flatten.getOrElse(EmptyResource.INSTANCE)
-    })
     resourceHandler.setDirAllowed(false)
-    resourceHandler.setDirectoriesListed(false)
-    val wsHandler = new FSWebsocketServletContextHandler(server)
+    resourceHandler.setBaseResource(ResourceFactory.combine({
+      val resourceFactory = ResourceFactory.of(resourceHandler)
+      resourceRoots.map(resourceFactory.newClassLoaderResource(_))
+                   .filter(Resources.isReadableDirectory(_))
+    }: _*))
+
+    val wsHandler = new FSWebsocketServletContextHandler()
     val gzipHandler = new GzipHandler() {
-      override def isMimeTypeGzipable(mimetype: String): Boolean = true
+      override def isMimeTypeDeflatable(mimetype: String): Boolean = true
     }
     gzipHandler.setInflateBufferSize(4096)
     gzipHandler.addIncludedMethods("GET", "POST", "PUT")
 
     val mainHandler = buildMainHandler()
 
-    gzipHandler.setHandler(new HandlerList(
+    gzipHandler.setHandler(new Handler.Sequence(
       (prependToHandlerList :::
         List(
-          new ContextHandler("/metrics") {
-            setHandler(metricsHandler)
-          }
-          , new ContextHandler("/static/optimized") {
-            setHandler(new HandlerList(
-              jettyStaticFilesHandler
-            ))
-          },
-          fss
+          new ContextHandler(metricsHandler, "/metrics")
+          , new ContextHandler(jettyStaticFilesHandler, "/static/optimized")
+          , fss
           , mainHandler
           , wsHandler
           , resourceHandler

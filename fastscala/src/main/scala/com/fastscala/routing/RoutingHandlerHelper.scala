@@ -3,13 +3,12 @@ package com.fastscala.server
 import com.fastscala.core.{FSSession, FSSystem, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.utils.RenderableWithFSContext
-import jakarta.servlet.http.{Cookie, HttpServletRequest, HttpServletResponse}
-import org.apache.commons.io.IOUtils
-import org.eclipse.jetty.server.Request
-import org.eclipse.jetty.server.handler.AbstractHandler
+import org.eclipse.jetty.http.{HttpHeader, HttpCookie, MimeTypes}
+import org.eclipse.jetty.server.{Request, Response => JettyServerResponse, Handler}
+import org.eclipse.jetty.util.{BufferUtil, Callback}
 
-import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Path, Files}
+import java.nio.charset.StandardCharsets.UTF_8
 
 case class HttpStatus(name: String, code: Int)
 
@@ -107,14 +106,14 @@ trait Response {
 
   val headers = collection.mutable.ListBuffer[(String, String)]()
 
-  val cookiesToAdd = collection.mutable.ListBuffer[Cookie]()
+  val cookiesToAdd = collection.mutable.ListBuffer[HttpCookie]()
 
   def addHeader(name: String, value: String): this.type = {
     headers += ((name, value))
     this
   }
 
-  def addCookie(cookie: Cookie): this.type = {
+  def addCookie(cookie: HttpCookie): this.type = {
     cookiesToAdd += cookie
     this
   }
@@ -126,13 +125,21 @@ trait Response {
     this
   }
 
-  def respond(response: HttpServletResponse): Unit = {
+  def respond(response: JettyServerResponse, callback: Callback): Boolean = {
     response.setStatus(status.code)
-    headers.foreach({
-      case (name, value) => response.setHeader(name, value)
-    })
-    cookiesToAdd.foreach(response.addCookie)
+    val responseHeaders = response.getHeaders
+    headers.foreach {
+      case (name, value) => responseHeaders.put(name, value)
+    }
+    cookiesToAdd.foreach(JettyServerResponse.addCookie(response, _))
+    false
   }
+}
+
+object VoidResponse extends Response {
+  val status = HttpStatuses.NoContent
+
+  override def respond(response: JettyServerResponse, callback: Callback): Boolean = true
 }
 
 trait TextResponse extends Response {
@@ -140,10 +147,12 @@ trait TextResponse extends Response {
 
   def contentType: String
 
-  override def respond(response: HttpServletResponse): Unit = {
-    response.setContentType(contentType)
-    super.respond(response)
-    response.getWriter.write(contents)
+  override def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+    super.respond(response, callback)
+    response.getHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
+    val charsetName = Option(MimeTypes.getCharsetFromContentType(contentType)).getOrElse("UTF-8")
+    response.write(true, BufferUtil.toBuffer(contents.getBytes(charsetName)), callback)
+    true
   }
 }
 
@@ -152,10 +161,13 @@ trait BinaryResponse extends Response {
 
   def contentType: String
 
-  override def respond(response: HttpServletResponse): Unit = {
-    super.respond(response)
-    response.setContentType(contentType)
-    IOUtils.write(contents, response.getOutputStream)
+  override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+    super.respond(response, callback)
+    val responseHeaders = response.getHeaders
+    responseHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
+    responseHeaders.put(HttpHeader.CONTENT_LENGTH, contents.length)
+    response.write(true, BufferUtil.toBuffer(contents), callback)
+    true
   }
 }
 
@@ -172,10 +184,9 @@ trait RedirectResponse extends TextResponse {
        |</html>""".stripMargin
   }
 
-  override def respond(response: HttpServletResponse): Unit = {
-    super.respond(response)
-    response.setContentType(contentType)
-    response.setHeader("Location", redirectTo)
+  override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+    response.getHeaders.put(HttpHeader.LOCATION, redirectTo)
+    super.respond(response, callback)
   }
 }
 
@@ -204,7 +215,7 @@ object Ok {
   def utf8AutoDetectContentType(text: String, fileName: String) = new BinaryResponse {
     override def contents: Array[Byte] = text.getBytes("UTF-8")
 
-    override def contentType: String = Files.probeContentType(new File(fileName).toPath())
+    override def contentType: String = Files.probeContentType(Path.of(fileName))
 
     override def status: HttpStatus = HttpStatuses.OK
   }
@@ -212,7 +223,7 @@ object Ok {
   def binaryAutoDetectContentType(bytes: Array[Byte], fileName: String) = new BinaryResponse {
     override def contents: Array[Byte] = bytes
 
-    override def contentType: String = Files.probeContentType(new File(fileName).toPath())
+    override def contentType: String = Files.probeContentType(Path.of(fileName))
 
     override def status: HttpStatus = HttpStatuses.OK
   }
@@ -260,110 +271,126 @@ object Redirect {
 }
 
 object ClientError {
-  def apply(httpStatus: HttpStatus) = new Response {
+  def apply(httpStatus: HttpStatus, cause: String = null) = new Response {
     override def status: HttpStatus = httpStatus
+
+    override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+      super.respond(response, callback)
+      JettyServerResponse.writeError(response.getRequest(), response, callback, status.code, cause)
+      true
+    }
   }
 
-  def BadRequest = apply(HttpStatuses.BadRequest)
+  def BadRequest(cause: String) = apply(HttpStatuses.BadRequest, cause)
 
-  def Unauthorized = apply(HttpStatuses.Unauthorized)
+  val BadRequest = apply(HttpStatuses.BadRequest)
 
-  def PaymentRequired = apply(HttpStatuses.PaymentRequired)
+  val Unauthorized = apply(HttpStatuses.Unauthorized)
 
-  def Forbidden = apply(HttpStatuses.Forbidden)
+  val PaymentRequired = apply(HttpStatuses.PaymentRequired)
 
-  def NotFound = apply(HttpStatuses.NotFound)
+  val Forbidden = apply(HttpStatuses.Forbidden)
 
-  def MethodNotAllowed = apply(HttpStatuses.MethodNotAllowed)
+  val NotFound = apply(HttpStatuses.NotFound)
 
-  def NotAcceptable = apply(HttpStatuses.NotAcceptable)
+  val MethodNotAllowed = apply(HttpStatuses.MethodNotAllowed)
 
-  def ProxyAuthenticationRequired = apply(HttpStatuses.ProxyAuthenticationRequired)
+  val NotAcceptable = apply(HttpStatuses.NotAcceptable)
 
-  def RequestTimeout = apply(HttpStatuses.RequestTimeout)
+  val ProxyAuthenticationRequired = apply(HttpStatuses.ProxyAuthenticationRequired)
 
-  def Conflict = apply(HttpStatuses.Conflict)
+  val RequestTimeout = apply(HttpStatuses.RequestTimeout)
 
-  def Gone = apply(HttpStatuses.Gone)
+  val Conflict = apply(HttpStatuses.Conflict)
 
-  def LengthRequired = apply(HttpStatuses.LengthRequired)
+  val Gone = apply(HttpStatuses.Gone)
 
-  def PreconditionFailed = apply(HttpStatuses.PreconditionFailed)
+  val LengthRequired = apply(HttpStatuses.LengthRequired)
 
-  def PayloadTooLarge = apply(HttpStatuses.PayloadTooLarge)
+  val PreconditionFailed = apply(HttpStatuses.PreconditionFailed)
 
-  def UriTooLong = apply(HttpStatuses.UriTooLong)
+  val PayloadTooLarge = apply(HttpStatuses.PayloadTooLarge)
 
-  def UnsupportedMediaType = apply(HttpStatuses.UnsupportedMediaType)
+  val UriTooLong = apply(HttpStatuses.UriTooLong)
 
-  def RangeNotSatisfiable = apply(HttpStatuses.RangeNotSatisfiable)
+  val UnsupportedMediaType = apply(HttpStatuses.UnsupportedMediaType)
 
-  def ExpectationFailed = apply(HttpStatuses.ExpectationFailed)
+  val RangeNotSatisfiable = apply(HttpStatuses.RangeNotSatisfiable)
 
-  def ImATeapot = apply(HttpStatuses.ImATeapot)
+  val ExpectationFailed = apply(HttpStatuses.ExpectationFailed)
 
-  def EnhanceYourCalm = apply(HttpStatuses.EnhanceYourCalm)
+  val ImATeapot = apply(HttpStatuses.ImATeapot)
 
-  def MisdirectedRequest = apply(HttpStatuses.MisdirectedRequest)
+  val EnhanceYourCalm = apply(HttpStatuses.EnhanceYourCalm)
 
-  def UnprocessableEntity = apply(HttpStatuses.UnprocessableEntity)
+  val MisdirectedRequest = apply(HttpStatuses.MisdirectedRequest)
 
-  def Locked = apply(HttpStatuses.Locked)
+  val UnprocessableEntity = apply(HttpStatuses.UnprocessableEntity)
 
-  def FailedDependency = apply(HttpStatuses.FailedDependency)
+  val Locked = apply(HttpStatuses.Locked)
 
-  def TooEarly = apply(HttpStatuses.TooEarly)
+  val FailedDependency = apply(HttpStatuses.FailedDependency)
 
-  def UpgradeRequired = apply(HttpStatuses.UpgradeRequired)
+  val TooEarly = apply(HttpStatuses.TooEarly)
 
-  def PreconditionRequired = apply(HttpStatuses.PreconditionRequired)
+  val UpgradeRequired = apply(HttpStatuses.UpgradeRequired)
 
-  def TooManyRequests = apply(HttpStatuses.TooManyRequests)
+  val PreconditionRequired = apply(HttpStatuses.PreconditionRequired)
 
-  def RequestHeaderFieldsTooLarge = apply(HttpStatuses.RequestHeaderFieldsTooLarge)
+  val TooManyRequests = apply(HttpStatuses.TooManyRequests)
 
-  def RetryWith = apply(HttpStatuses.RetryWith)
+  val RequestHeaderFieldsTooLarge = apply(HttpStatuses.RequestHeaderFieldsTooLarge)
 
-  def BlockedByParentalControls = apply(HttpStatuses.BlockedByParentalControls)
+  val RetryWith = apply(HttpStatuses.RetryWith)
 
-  def UnavailableForLegalReasons = apply(HttpStatuses.UnavailableForLegalReasons)
+  val BlockedByParentalControls = apply(HttpStatuses.BlockedByParentalControls)
+
+  val UnavailableForLegalReasons = apply(HttpStatuses.UnavailableForLegalReasons)
 }
 
 object ServerError {
-  def apply(httpStatus: HttpStatus) = new Response {
+  def apply(httpStatus: HttpStatus, cause: String = null) = new Response {
     override def status: HttpStatus = httpStatus
+
+    override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+      super.respond(response, callback)
+      JettyServerResponse.writeError(response.getRequest(), response, callback, status.code, cause)
+      true
+    }
   }
 
-  def InternalServerError = apply(HttpStatuses.InternalServerError)
+  def InternalServerError(cause: String) = apply(HttpStatuses.InternalServerError, cause)
 
-  def NotImplemented = apply(HttpStatuses.NotImplemented)
+  val InternalServerError = apply(HttpStatuses.InternalServerError)
 
-  def BadGateway = apply(HttpStatuses.BadGateway)
+  val NotImplemented = apply(HttpStatuses.NotImplemented)
 
-  def ServiceUnavailable = apply(HttpStatuses.ServiceUnavailable)
+  val BadGateway = apply(HttpStatuses.BadGateway)
 
-  def GatewayTimeout = apply(HttpStatuses.GatewayTimeout)
+  val ServiceUnavailable = apply(HttpStatuses.ServiceUnavailable)
 
-  def HttpVersionNotSupported = apply(HttpStatuses.HttpVersionNotSupported)
+  val GatewayTimeout = apply(HttpStatuses.GatewayTimeout)
 
-  def VariantAlsoNegotiates = apply(HttpStatuses.VariantAlsoNegotiates)
+  val HttpVersionNotSupported = apply(HttpStatuses.HttpVersionNotSupported)
 
-  def InsufficientStorage = apply(HttpStatuses.InsufficientStorage)
+  val VariantAlsoNegotiates = apply(HttpStatuses.VariantAlsoNegotiates)
 
-  def LoopDetected = apply(HttpStatuses.LoopDetected)
+  val InsufficientStorage = apply(HttpStatuses.InsufficientStorage)
 
-  def BandwidthLimitExceeded = apply(HttpStatuses.BandwidthLimitExceeded)
+  val LoopDetected = apply(HttpStatuses.LoopDetected)
 
-  def NotExtended = apply(HttpStatuses.NotExtended)
+  val BandwidthLimitExceeded = apply(HttpStatuses.BandwidthLimitExceeded)
 
-  def NetworkAuthenticationRequired = apply(HttpStatuses.NetworkAuthenticationRequired)
+  val NotExtended = apply(HttpStatuses.NotExtended)
 
-  def NetworkReadTimeout = apply(HttpStatuses.NetworkReadTimeout)
+  val NetworkAuthenticationRequired = apply(HttpStatuses.NetworkAuthenticationRequired)
 
-  def NetworkConnectTimeout = apply(HttpStatuses.NetworkConnectTimeout)
+  val NetworkReadTimeout = apply(HttpStatuses.NetworkReadTimeout)
+
+  val NetworkConnectTimeout = apply(HttpStatuses.NetworkConnectTimeout)
 }
 
-class OkHtml(ns: String) extends Response with TextResponse {
+class OkHtml(ns: String) extends TextResponse {
   override def status: HttpStatus = HttpStatuses.OK
 
   override def contentType: String = "text/html;charset=utf-8"
@@ -416,23 +443,20 @@ object RoutingHandlerHelper {
   object PATCH extends Method
 
   abstract class UnapplyHelper1(methodName: String) {
-    //    def unapply(req: HttpServletRequest): Option[List[String]] = {
-    //      Some(req.getRequestURI.replaceAll("^/", "").split("/").toList.filter(_ != "")).filter(_ => req.getMethod == methodName)
-    //    }
-
-    def unapplySeq(req: HttpServletRequest): Option[Seq[String]] =
-      Some(req.getRequestURI.replaceAll("^/", "").split("/").toList.filter(_ != "")).filter(_ => req.getMethod == methodName)
+    def unapplySeq(req: Request): Option[Seq[String]] =
+      Some(req.getHttpURI.getPath.replaceAll("^/", "").split("/").toList.filter(_ != "")).filter(_ => req.getMethod == methodName)
   }
 
   object Req {
 
-    def unapply(req: HttpServletRequest): Option[(Method, List[String], String, Boolean)] = {
+    def unapply(req: Request): Option[(Method, List[String], String, Boolean)] = {
       Method.fromString.unapply(req.getMethod).map(method => {
-        val ext = req.getRequestURI.replaceAll(".*\\.(\\w+)$", "$1").toLowerCase
+        val path = req.getHttpURI.getPath
+        val ext = path.replaceAll(".*\\.(\\w+)$", "$1").toLowerCase
         (method,
-          req.getRequestURI.replaceAll("^/", "").replaceAll(s"\\.$ext$$", "").split("/").toList.filter(_ != ""),
+          path.replaceAll("^/", "").replaceAll(s"\\.$ext$$", "").split("/").toList.filter(_ != ""),
           ext,
-          req.getRequestURI.endsWith("/"))
+          path.endsWith("/"))
       })
     }
   }
@@ -455,55 +479,50 @@ object RoutingHandlerHelper {
 
   object Patch extends UnapplyHelper1("PATCH")
 
-  def onlyHandleHtmlRequests(handle: => Option[Response])(implicit req: HttpServletRequest): Option[Response] =
-    if (Option(req.getHeader("Accept")).getOrElse("").contains("text/html")) handle else None
+  def onlyHandleHtmlRequests(handle: => Option[Response])(implicit req: Request): Option[Response] =
+    if (Option(req.getHeaders.get(HttpHeader.ACCEPT)).getOrElse("").contains("text/html")) handle else None
 }
 
-abstract class RoutingHandlerNoSessionHelper extends AbstractHandler {
+abstract class RoutingHandlerNoSessionHelper extends Handler.Abstract {
 
-  def handlerNoSession(implicit req: HttpServletRequest): Option[Response]
+  def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response]
 
-  override def handle(target: String, baseRequest: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
-    handlerNoSession(request).foreach(resp => {
-      resp.respond(response)
-      baseRequest.setHandled(true)
-    })
+  override def handle(request: Request, response: JettyServerResponse, callback: Callback): Boolean = {
+    handlerNoSession(response, callback)(request).map(resp => {
+      resp.respond(response, callback)
+    }).getOrElse(false)
   }
 }
 
 abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
 
-  def servePage[E <: FSXmlEnv : FSXmlSupport](renderable: RenderableWithFSContext[E], debugLbl: Option[String] = None)(implicit req: HttpServletRequest, session: FSSession): Response = {
+  def servePage[E <: FSXmlEnv : FSXmlSupport](renderable: RenderableWithFSContext[E], debugLbl: Option[String] = None)(implicit req: Request, session: FSSession): Response = {
     session.createPage(implicit fsc => Ok.html(renderable.render())
       .addHeaders(
         "Cache-Control" -> "no-cache, max-age=0, no-store"
         , "Pragma" -> "no-cache"
         , "Expires" -> "-1"
-      ), debugLbl = debugLbl.orElse(Some(req.getRequestURI))
+      ), debugLbl = debugLbl.orElse(Some(req.getHttpURI.getPath))
     )
   }
 
-  def handlerInSession(implicit req: HttpServletRequest, session: FSSession): Option[Response]
+  def handlerInSession(response: JettyServerResponse, callback: Callback)(implicit req: Request, session: FSSession): Option[Response]
 
 
-  override def handle(target: String, baseRequest: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
-    handlerNoSession(request) match {
+  override def handle(request: Request, response: JettyServerResponse, callback: Callback): Boolean = {
+    handlerNoSession(response, callback)(request) match {
       case Some(resp) =>
-        resp.respond(response)
-        baseRequest.setHandled(true)
+        resp.respond(response, callback)
       case None =>
-        fss.inSession[Option[Response]]({
-          implicit session => handlerInSession(request, session)
-        })(request).foreach({
+        fss.inSession{
+          implicit session => handlerInSession(response, callback)(request, session)
+        }(request).flatMap({
           case (cookies, resp) =>
-            cookies.foreach(cookie => {
-              response.addCookie(cookie)
+            cookies.foreach(JettyServerResponse.addCookie(response, _))
+            resp.map(resp => {
+              resp.respond(response, callback)
             })
-            resp.foreach(resp => {
-              resp.respond(response)
-              baseRequest.setHandled(true)
-            })
-        })
+        }).getOrElse(false)
     }
   }
 }

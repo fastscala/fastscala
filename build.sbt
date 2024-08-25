@@ -10,16 +10,11 @@ ThisBuild / scalaVersion := "2.13.14"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
-val AkkaVersion = "2.7.0"
-val AkkaHttpVersion = "10.2.10"
-
-executableScriptName := "router-prod"
-
 scalacOptions += "-Ypartial-unification"
 
-val LiftVersion = "3.5.0"
-
 val FSRoot = "./"
+
+lazy val root = (project in file(".")).aggregate(fs_demo)
 
 lazy val fastscala = (project in file(FSRoot + "fastscala"))
   .settings(
@@ -34,11 +29,10 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "com.typesafe" % "config" % "1.4.3",
 
       "org.apache.commons" % "commons-text" % "1.12.0",
-      "commons-io" % "commons-io" % "2.16.1",
 
-      "org.eclipse.jetty" % "jetty-servlet" % "11.0.22",
+      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % "12.0.12",
       "org.eclipse.jetty.toolchain" % "jetty-jakarta-websocket-api" % "2.0.0",
-      "org.eclipse.jetty.websocket" % "websocket-jakarta-server" % "11.0.22",
+      "org.eclipse.jetty.ee10.websocket" % "jetty-ee10-websocket-jakarta-server" % "12.0.12",
 
       "io.circe" %% "circe-core" % "0.14.9",
       "io.circe" %% "circe-generic" % "0.14.9",
@@ -80,11 +74,11 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
     name := "fs_db",
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.6.0",
-      "org.xerial" % "sqlite-jdbc" % "3.42.0.0",
-      "org.scalikejdbc" %% "scalikejdbc" % "4.0.0",
-      "com.google.guava" % "guava" % "32.1.1-jre",
-      "org.scalatest" %% "scalatest" % "3.2.16" % Test,
+      "org.postgresql" % "postgresql" % "42.7.3",
+      "org.xerial" % "sqlite-jdbc" % "3.46.0.1",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.3.1",
+      "com.google.guava" % "guava" % "33.2.1-jre",
+      "org.scalatest" %% "scalatest" % "3.2.19" % Test,
     ),
     Test / parallelExecution := false
   )
@@ -114,7 +108,7 @@ lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
   .dependsOn(fs_scala_xml)
 
 lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
-  .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
+  // .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
   .settings(
     name := "fs_demo",
 
@@ -124,16 +118,9 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "main" / "scala",
 
     publishArtifact := true,
-    bashScriptEnvConfigLocation := Some("/etc/default/" + (Linux / packageName).value),
-    rpmRelease := "1.0.0",
-    rpmVendor := "kezlisolutions",
-    rpmLicense := Some("none"),
-
-    Linux / daemonUser := "fs_demo",
-    Linux / daemonGroup := "fs_demo",
 
     libraryDependencies ++= Seq(
-      "org.eclipse.jetty" % "jetty-server" % "11.0.22",
+      "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.typelevel" %% "cats-effect" % "3.5.4",
       "at.favre.lib" % "bcrypt" % "0.10.2",
       "com.lihaoyi" %% "scalatags" % "0.13.1",

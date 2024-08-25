@@ -1,7 +1,7 @@
 package com.fastscala.templates.bootstrap5.icons
 
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import org.apache.commons.io.IOUtils
+import org.eclipse.jetty.util.IO
 
 import scala.xml.{Elem, XML}
 
@@ -25,7 +25,7 @@ object BSIcons {
   def loadSVG(name: String): String = {
     val is = getClass.getResource(s"/web/static/bootstrap-icons/$name.svg").openStream()
     try {
-      IOUtils.toString(is, "UTF-8")
+      IO.toString(is, "UTF-8")
     } finally {
       is.close()
     }

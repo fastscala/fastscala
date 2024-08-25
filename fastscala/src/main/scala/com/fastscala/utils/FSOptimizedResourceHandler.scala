@@ -3,19 +3,23 @@ package com.fastscala.utils
 import com.fastscala.core.FSXmlUtils.elem2NodeSeq
 import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.server._
-import jakarta.servlet.http.HttpServletRequest
-import org.apache.commons.io.IOUtils
 
 import java.awt.geom.AffineTransform
 import java.awt.image.{AffineTransformOp, BufferedImage}
 import java.io.{ByteArrayOutputStream, InputStream}
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.Collections
 import javax.imageio.stream.MemoryCacheImageOutputStream
 import javax.imageio.{IIOImage, ImageIO, ImageWriteParam}
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Using
+import scala.jdk.CollectionConverters.ListHasAsScala
+
+import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.util.{Callback, IO}
 
 object FSOptimizedResourceHandler {
 
@@ -101,13 +105,13 @@ class FSOptimizedResourceHandler(
   val cssLoaderCache = mutable.WeakHashMap[String, String]()
   val imgCache = mutable.WeakHashMap[String, Response]()
 
-  override def handlerNoSession(implicit req: HttpServletRequest): Option[Response] = Some(req).collect({
+  override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = Some(req).collect({
     case Get("static", "optimized", "css_loader.css") =>
-      val files = Option(req.getParameterValues("f")).getOrElse(Array()).reverse
+      val files = Option(Request.getParameters(req).getValues("f")).getOrElse(Collections.emptyList).asScala.reverse
       val css: String = cssLoaderCache.getOrElseUpdate(files.mkString(";"), {
         files.toList.map(java.net.URLDecoder.decode(_, "UTF-8")).reverse.map(file => {
           openResource(file) match {
-            case Some(is) => Using(is)(is => IOUtils.toString(is, StandardCharsets.UTF_8)).get
+            case Some(is) => Using(is)(is => IO.toString(is, StandardCharsets.UTF_8)).get
             case None => s"/* File '$file': NOT FOUND*/" + "\n"
           }
         }).mkString("\n\n")
@@ -119,7 +123,7 @@ class FSOptimizedResourceHandler(
       if (imgCache.size > 50) {
         imgCache --= imgCache.keys.take(25)
       }
-      imgCache.getOrElseUpdate(r.getRequestURI, {
+      imgCache.getOrElseUpdate(r.getHttpURI.getPath, {
         val remaining = java.net.URLDecoder.decode(restOfPath.mkString("", "/", "." + suf), "UTF-8")
         val resourceName = "/web/static/" + remaining
         val resource = getClass.getResource(resourceName)
@@ -128,16 +132,16 @@ class FSOptimizedResourceHandler(
           System.err.println(s"Not found: $resourceName")
           ClientError.NotFound
         } else if (remaining.toLowerCase.endsWith("jpg") || remaining.toLowerCase.endsWith("jpeg")) {
-          val maxWidth: Option[Int] = Option(req.getParameter("max-width")).flatMap(_.toIntOption)
-          val maxHeight: Option[Int] = Option(req.getParameter("max-height")).flatMap(_.toIntOption)
-          val compression: Option[Int] = Option(req.getParameter("compression")).flatMap(_.toIntOption)
-          val original: Boolean = Option(req.getParameter("original")).flatMap(_.toBooleanOption).getOrElse(false)
-          val resource = getClass.getResource(resourceName)
+          val parms = Request.getParameters(req)
+          val maxWidth: Option[Int] = Option(parms.getValue("max-width")).flatMap(_.toIntOption)
+          val maxHeight: Option[Int] = Option(parms.getValue("max-height")).flatMap(_.toIntOption)
+          val compression: Option[Int] = Option(parms.getValue("compression")).flatMap(_.toIntOption)
+          val original: Boolean = Option(parms.getValue("original")).flatMap(_.toBooleanOption).getOrElse(false)
           val is = resource.openStream()
           try {
             val byteArray: Array[Byte] = {
               if (original) {
-                IOUtils.toByteArray(is)
+                IO.readBytes(is)
               } else {
                 val br: BufferedImage = ImageIO.read(is)
                 val resizedWidth: BufferedImage = maxWidth.orElse(Some(defaultMaxWidth)).filter(_ > 0).map(maxWidth => {
@@ -158,7 +162,7 @@ class FSOptimizedResourceHandler(
         } else {
           val is = resource.openStream()
           try {
-            Ok.binaryAutoDetectContentType(IOUtils.toByteArray(is), restOfPath.last)
+            Ok.binaryAutoDetectContentType(IO.readBytes(is), restOfPath.last)
               .addHeader("Cache-control", "public, max-age=7776000")
           } finally {
             is.close()

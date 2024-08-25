@@ -3,8 +3,12 @@ package com.fastscala.js
 import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
 import com.fastscala.utils.IdGen
-import jakarta.servlet.http.HttpServletResponse
 import org.apache.commons.text.StringEscapeUtils
+
+import org.eclipse.jetty.http.{HttpHeader, MimeTypes}
+import org.eclipse.jetty.server.Response
+import org.eclipse.jetty.io.Content
+import org.eclipse.jetty.util.BufferUtil
 
 import java.util.Date
 
@@ -26,13 +30,14 @@ trait Js {
   }
 
   def writeTo(
-               resp: HttpServletResponse,
+               resp: Response,
                status: Int = 200,
                contentType: String = "application/javascript; charset=utf-8"
              ): Unit = {
     resp.setStatus(status)
-    resp.setContentType(contentType)
-    resp.getWriter.write(cmd)
+    resp.getHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
+    val charsetName = Option(MimeTypes.getCharsetFromContentType(contentType)).getOrElse("UTF-8")
+    Content.Sink.write(resp, true, BufferUtil.toBuffer(cmd.getBytes(charsetName)))
   }
 
   override def toString: String = cmd

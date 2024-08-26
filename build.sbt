@@ -31,7 +31,6 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "org.apache.commons" % "commons-text" % "1.12.0",
 
       "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % "12.0.12",
-      "org.eclipse.jetty.toolchain" % "jetty-jakarta-websocket-api" % "2.0.0",
       "org.eclipse.jetty.ee10.websocket" % "jetty-ee10-websocket-jakarta-server" % "12.0.12",
 
       "io.circe" %% "circe-core" % "0.14.9",

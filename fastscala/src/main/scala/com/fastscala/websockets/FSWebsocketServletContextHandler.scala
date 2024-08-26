@@ -12,6 +12,7 @@ class FSWebsocketServletContextHandler(implicit fss: FSSystem)
 
   JakartaWebSocketServletContainerInitializer.configure(this, (servletContext, serverContainer) => {
     serverContainer.setDefaultMaxTextMessageBufferSize(65535)
+    serverContainer.setDefaultMaxSessionIdleTimeout(600000)
     serverContainer.addEndpoint(
       ServerEndpointConfig.Builder
         .create(classOf[FSJakartaWebsocketEndpoint], "/ws")

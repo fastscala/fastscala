@@ -271,10 +271,14 @@ class FSContext(
          |      window._fs.ws.onmessage = function(event) {
          |        try {eval(event.data);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + event.data); }
          |      };
+         |      window._fs.ws.onclose = function(){
+         |        window._fs.ws = null
+         |        setTimeout(window._fs.initWebSocket, 1000);
+         |      };
          |    }
          |  },
          |};
-         |${if (openWSSessionAtStart) initWebSocket() else Js.void.cmd}
+         |${if (openWSSessionAtStart) initWebSocket.cmd else Js.void.cmd}
          |""".stripMargin
     }
   }

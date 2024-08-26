@@ -1,16 +1,17 @@
 package com.fastscala.websockets
 
 import com.fastscala.core.FSSystem
-import jakarta.websocket.{Endpoint, EndpointConfig, Session}
+import jakarta.websocket.{Session, OnOpen}
 
 import scala.util.Try
 
 @jakarta.websocket.server.ServerEndpoint("/ws")
-class FSJakartaWebsocketEndpoint()(implicit fss: FSSystem) extends Endpoint {
+class FSJakartaWebsocketEndpoint(implicit fss: FSSystem) {
 
-  override def onOpen(session: Session, config: EndpointConfig): Unit = {
+  @OnOpen
+  def onOpen(session: Session): Unit = {
     implicit val _session = session
-    (for {
+    for {
       sessionIdValues <- Option(session.getRequestParameterMap.get("sessionId"))
       sessionId <- Try(sessionIdValues.get(0)).toOption
       pageIdValues <- Option(session.getRequestParameterMap.get("pageId"))
@@ -31,6 +32,6 @@ class FSJakartaWebsocketEndpoint()(implicit fss: FSSystem) extends Endpoint {
       }).getOrElse({
         session.getBasicRemote.sendText(fss.onSessionNotFoundForWebsocketReq(sessionId).cmd)
       })
-    })
+    }
   }
 }

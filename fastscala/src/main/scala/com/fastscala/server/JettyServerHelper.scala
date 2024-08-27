@@ -1,22 +1,16 @@
 package com.fastscala.server
 
 import com.fastscala.core.FSSystem
-import com.fastscala.utils.FSOptimizedResourceHandler
+import com.fastscala.utils.{FSOptimizedResourceHandler, Jetty12StatisticsCollector}
 import com.fastscala.websockets.FSWebsocketJettyContextHandler
 import com.typesafe.config.ConfigFactory
-import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
 import org.eclipse.jetty.http.CompressedContentFormat
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.handler.gzip.GzipHandler
-import org.eclipse.jetty.server.handler.{ContextHandler, ResourceHandler}
-import org.eclipse.jetty.ee10.servlet.{ServletContextHandler, ServletHolder}
-import org.eclipse.jetty.util.resource.{Resources, ResourceFactory, Resource}
+import org.eclipse.jetty.server.handler.{ContextHandler, ResourceHandler, StatisticsHandler}
+import org.eclipse.jetty.util.resource.{Resources, ResourceFactory}
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 
-import java.io.{File, InputStream}
-import java.net.URI
-import java.nio.channels.ReadableByteChannel
-import java.util.concurrent.Executors
 import org.eclipse.jetty.util.VirtualThreads
 
 abstract class JettyServerHelper() {
@@ -66,9 +60,6 @@ abstract class JettyServerHelper() {
 
     val jettyStaticFilesHandler = new FSOptimizedResourceHandler(resourceRoots)
 
-    val metricsHandler = new ServletContextHandler()
-    metricsHandler.addServlet(new ServletHolder(new MetricsServlet()), "/")
-
     val resourceHandler = new ResourceHandler()
     resourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP, CompressedContentFormat.BR, new CompressedContentFormat("bzip", ".bz"))
     resourceHandler.setEtags(true)
@@ -92,8 +83,7 @@ abstract class JettyServerHelper() {
     gzipHandler.setHandler(new Handler.Sequence(
       (prependToHandlerList :::
         List(
-          new ContextHandler(metricsHandler, "/metrics")
-          , new ContextHandler(jettyStaticFilesHandler, "/static/optimized")
+          new ContextHandler(jettyStaticFilesHandler, "/static/optimized")
           , fss
           , mainHandler
           , wsHandler
@@ -101,7 +91,12 @@ abstract class JettyServerHelper() {
         ) :::
         appendToHandlerList): _*
     ))
-    server.setHandler(gzipHandler)
+
+    val statHandler = new StatisticsHandler(gzipHandler)
+    // register prometheus metrics
+    new Jetty12StatisticsCollector(statHandler).register()
+
+    server.setHandler(statHandler)
 
     server.start()
     println(s"Binded to port $Port")

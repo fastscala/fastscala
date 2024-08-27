@@ -280,7 +280,7 @@ class FSContext(
          |    }
          |  },
          |};
-         |${if (openWSSessionAtStart) initWebSocket.cmd else Js.void.cmd}
+         |${if (openWSSessionAtStart) initWebSocket().cmd else Js.void.cmd}
          |""".stripMargin
     }
   }

@@ -25,12 +25,12 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       // "net.logstash.logback" % "logstash-logback-encoder" % "8.0",
       "org.slf4j" % "slf4j-api" % "2.0.16",
       "com.github.loki4j" % "loki-logback-appender" % "1.5.2",
-      "io.prometheus" % "simpleclient_servlet_jakarta" % "0.16.0",
+      "io.prometheus" % "prometheus-metrics-core" % "1.3.1",
       "com.typesafe" % "config" % "1.4.3",
 
       "org.apache.commons" % "commons-text" % "1.12.0",
 
-      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % "12.0.12",
+      "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
 
       "io.circe" %% "circe-core" % "0.14.9",
@@ -99,7 +99,6 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     publishArtifact := true,
 
     libraryDependencies ++= Seq(
-      "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.typelevel" %% "cats-effect" % "3.5.4",
       "at.favre.lib" % "bcrypt" % "0.10.2",
       "com.lihaoyi" %% "scalatags" % "0.13.1",

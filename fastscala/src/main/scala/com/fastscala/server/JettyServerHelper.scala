@@ -2,7 +2,7 @@ package com.fastscala.server
 
 import com.fastscala.core.FSSystem
 import com.fastscala.utils.FSOptimizedResourceHandler
-import com.fastscala.websockets.FSWebsocketServletContextHandler
+import com.fastscala.websockets.FSWebsocketJettyContextHandler
 import com.typesafe.config.ConfigFactory
 import io.prometheus.client.servlet.jakarta.exporter.MetricsServlet
 import org.eclipse.jetty.http.CompressedContentFormat
@@ -80,7 +80,7 @@ abstract class JettyServerHelper() {
                    .filter(Resources.isReadableDirectory(_))
     }: _*))
 
-    val wsHandler = new FSWebsocketServletContextHandler()
+    val wsHandler = FSWebsocketJettyContextHandler(server, "/" + fss.FSPrefix)
     val gzipHandler = new GzipHandler() {
       override def isMimeTypeDeflatable(mimetype: String): Boolean = true
     }

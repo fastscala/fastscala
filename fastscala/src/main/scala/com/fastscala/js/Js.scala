@@ -278,4 +278,5 @@ class RichJsXmlUtils[E <: FSXmlEnv](js: Js, utils: JsXmlUtils[E])(implicit fsXml
   def inScriptTag: E#Elem = utils.inScriptTag(js)
 
   def printBeforeExec: Js = utils.consoleLog(js.cmd) & js
+
 }

@@ -74,3 +74,4 @@ class HeaderMenuItem(val title: String)(implicit renderer: HeaderMenuItemRendere
 
   override def matches(uri: String): Boolean = false
 }
+

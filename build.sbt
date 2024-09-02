@@ -49,6 +49,26 @@ lazy val fs_scala_xml = (project in file(FSRoot + "fs_scala_xml_support"))
   )
   .dependsOn(fastscala)
 
+lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
+  .settings(
+    name := "fs-scala-xml",
+
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
+    ),
+  )
+  .dependsOn(fastscala)
+
+lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
+  .settings(
+    name := "fs-scala-xml",
+
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-xml" % "1.3.0",
+    ),
+  )
+  .dependsOn(fastscala)
+
 lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
     name := "fs_db",

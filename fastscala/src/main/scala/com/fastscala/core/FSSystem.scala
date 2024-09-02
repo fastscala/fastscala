@@ -5,11 +5,12 @@ import com.fastscala.server._
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.IdGen
 import io.circe.{Decoder, Json}
-import jakarta.websocket.Session
 import org.eclipse.jetty.server.{Request, Response => JettyServerResponse, Handler}
 import org.eclipse.jetty.http._
 import org.eclipse.jetty.util.Callback
 import org.eclipse.jetty.io.Content
+import org.eclipse.jetty.websocket.api.Session
+import org.eclipse.jetty.websocket.api.Callback.Completable
 import org.slf4j.LoggerFactory
 
 import java.net.URLEncoder
@@ -100,7 +101,8 @@ class FSContext(
       page.wsSession.filter(_.isOpen) match {
         case Some(session) =>
           try {
-            session.getBasicRemote.sendText((js :: page.wsQueue).reverse.reduce(_ & _).cmd)
+            // block until session complete sendText
+            Completable.`with`(cb => session.sendText((js :: page.wsQueue).reverse.reduce(_ & _).cmd, cb)).get()
             page.wsQueue = Nil
           } catch {
             case ex: Exception =>
@@ -271,10 +273,14 @@ class FSContext(
          |      window._fs.ws.onmessage = function(event) {
          |        try {eval(event.data);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + event.data); }
          |      };
+         |      window._fs.ws.onclose = function(){
+         |        window._fs.ws = null
+         |        setTimeout(window._fs.initWebSocket, 1000);
+         |      };
          |    }
          |  },
          |};
-         |${if (openWSSessionAtStart) initWebSocket() else Js.void.cmd}
+         |${if (openWSSessionAtStart) initWebSocket().cmd else Js.void.cmd}
          |""".stripMargin
     }
   }
@@ -300,7 +306,7 @@ class FSPage(
               , val createdAt: Long = System.currentTimeMillis()
               , val onPageUnload: () => Js = () => Js.void
               , var keepAliveAt: Long = System.currentTimeMillis()
-              , var wsSession: Option[jakarta.websocket.Session] = None
+              , var wsSession: Option[Session] = None
               , var wsQueue: List[Js] = Nil
               , var wsLock: AnyRef = new AnyRef
               , val debugLbl: Option[String] = None
@@ -737,7 +743,7 @@ class FSSystem(
 
   def onSessionNotFoundForWebsocketReq(sessionId: String)(implicit session: Session): Js = {
     logger.warn(s"Session not found: session_id=$sessionId, evt_type=session_id_not_found")
-    val js: Js = if (session.getRequestParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
+    val js: Js = if (session.getUpgradeRequest.getParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
     else Js.confirm(s"Session $sessionId not found, will reload", Js.reload())
     js
   }
@@ -756,7 +762,7 @@ class FSSystem(
 
   def onPageNotFoundForWebsocketReq(sessionId: String, pageId: String)(implicit session: Session): Js = {
     logger.warn(s"Page not found: session_id=$sessionId, page_id=$pageId, evt_type=page_id_not_found")
-    val js: Js = if (session.getRequestParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
+    val js: Js = if (session.getUpgradeRequest.getParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
     else Js.confirm(s"Page $pageId not found, will reload", Js.reload())
     js
   }

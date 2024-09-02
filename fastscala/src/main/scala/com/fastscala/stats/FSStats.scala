@@ -3,7 +3,8 @@ package com.fastscala.stats
 import com.fastscala.core.{FSContext, FSPage, FSSession, FSSystem}
 import com.github.loki4j.slf4j.marker.LabelMarker
 import io.circe.syntax.EncoderOps
-import io.prometheus.client.Counter
+import io.prometheus.metrics.core.metrics.Counter
+import io.prometheus.metrics.model.snapshots.PrometheusNaming
 import org.slf4j.{Logger, LoggerFactory}
 import org.slf4j.event.Level
 
@@ -16,7 +17,7 @@ class FSStats(
   import StatEvent._
 
   val data: Map[StatEvent, Counter] = StatEvent.all.map(evt =>
-    evt -> Counter.build().name(evt.name).help(evt.name).register()
+    evt -> Counter.builder().name(PrometheusNaming.sanitizeLabelName(evt.name)).help(evt.name).register()
   ).toMap
 
   def eventLevel(event: StatEvent): Level = event match {

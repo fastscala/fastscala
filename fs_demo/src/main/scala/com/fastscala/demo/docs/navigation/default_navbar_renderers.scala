@@ -43,7 +43,7 @@ trait DefaultBSNavBarRenderer extends BSNavBarRenderer {
 
 trait DefaultBSNavBarSectionRenderer extends MenuSectionRenderer {
   def render(elem: MenuSection)(implicit fsc: FSContext): NodeSeq = {
-    val isOpen = elem.items.exists(_.matches(fsc.page.req.getRequestURI))
+    val isOpen = elem.items.exists(_.matches(fsc.page.req.getHttpURI.getPath))
     val id = IdGen.id
     <li class="mb-1">
       <button class={"text-white btn bi btn-toggle d-inline-flex align-items-center rounded border-0" + (if (isOpen) "" else " collapsed")} data-bs-toggle="collapse" data-bs-target={s"#$id"} aria-expanded={isOpen.toString}>

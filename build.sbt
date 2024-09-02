@@ -108,7 +108,7 @@ lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
   .dependsOn(fs_scala_xml)
 
 lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
-  // .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
+  .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
   .settings(
     name := "fs_demo",
 
@@ -125,6 +125,14 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
       "at.favre.lib" % "bcrypt" % "0.10.2",
       "com.lihaoyi" %% "scalatags" % "0.13.1",
     ),
+
+    bashScriptEnvConfigLocation := Some("/etc/default/" + (Linux / packageName).value),
+    rpmRelease := "1.0.0",
+    rpmVendor := "kezlisolutions",
+    rpmLicense := Some("none"),
+
+    Linux / daemonUser := "fs_demo",
+    Linux / daemonGroup := "fs_demo",
 
     Compile / run / fork := true,
     Compile / run / connectInput := true,

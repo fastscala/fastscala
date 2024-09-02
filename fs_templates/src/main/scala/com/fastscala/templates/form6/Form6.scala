@@ -9,6 +9,7 @@ import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, JS}
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 trait F6FormRenderer {
 

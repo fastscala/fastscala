@@ -1676,7 +1676,7 @@ class F5FileUploadField(
 
   var currentValue: Option[(String, Array[Byte])] = get()
 
-  def renderPreview(render: Option[(String, Array[Byte])])(implicit fsc: FSContext): Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("div")()
+  def renderPreview(file: Option[(String, Array[Byte])])(implicit fsc: FSContext): Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("div")()
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)

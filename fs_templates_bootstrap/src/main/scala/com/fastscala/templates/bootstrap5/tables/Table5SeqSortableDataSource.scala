@@ -2,7 +2,7 @@ package com.fastscala.templates.bootstrap5.tables
 
 import scala.util.chaining.scalaUtilChainingOps
 
-trait Table5SeqSortableDataSource extends Table5Base with Table5Sortable {
+trait Table5SeqSortableDataSource extends Table5SeqDataSource with Table5Sortable {
 
   def seqRowsSource: Seq[R]
 

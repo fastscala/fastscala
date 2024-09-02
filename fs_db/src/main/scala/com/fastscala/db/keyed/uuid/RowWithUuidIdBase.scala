@@ -11,6 +11,8 @@ trait RowWithUuidIdBase extends RowWithIdBase {
 
   var uuid: Option[UUID] = None
 
+  def id: UUID = uuid.get
+
   def isPersisted_?(): Boolean = uuid.isDefined
 
   def saveSQL(): SQL[Nothing, NoExtractor]

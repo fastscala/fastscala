@@ -4,18 +4,17 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form5.fields.QuerySerializableStringField
 import com.fastscala.xml.scala_xml.JS
+import org.eclipse.jetty.server.Request
 
 import java.net.URLEncoder
 import scala.jdk.CollectionConverters.MapHasAsScala
-
-import org.eclipse.jetty.server.Request
 
 trait QueryStringSavedForm extends Form5 {
 
   override def initForm()(implicit fsc: FSContext): Unit = {
     super.initForm()
     rootField.fieldsMatching(_ => true).foreach({
-      case f: QuerySerializableStringField => Option(Request.getParameters(fsc.page.req).getValue(f.queryStringParamName)).foreach(str => {
+      case f: QuerySerializableStringField => Option(org.eclipse.jetty.server.Request.getParameters(fsc.page.req).getValue(f.queryStringParamName)).foreach(str => {
         f.loadFromString(str)
       })
       case _ =>

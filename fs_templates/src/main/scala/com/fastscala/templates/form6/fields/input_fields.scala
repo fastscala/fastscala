@@ -84,6 +84,8 @@ trait F6FieldWithDisabled extends F6FieldInputFieldMixin {
 
   def disabled() = _disabled()
 
+  def isDisabled: this.type = disabled(true)
+
   def disabled(v: Boolean): this.type = mutate {
     _disabled = () => v
   }
@@ -101,6 +103,8 @@ trait F6FieldWithRequired extends F6FieldInputFieldMixin {
   var _required: () => Boolean = () => false
 
   def required() = _required()
+
+  def isRequired: this.type = required(true)
 
   def required(v: Boolean): this.type = mutate {
     _required = () => v
@@ -120,6 +124,8 @@ trait F6FieldWithReadOnly extends F6FieldInputFieldMixin {
 
   def readOnly() = _readOnly()
 
+  def isReadOnly: this.type = readOnly(true)
+
   def readOnly(v: Boolean): this.type = mutate {
     _readOnly = () => v
   }
@@ -137,6 +143,8 @@ trait F6FieldWithEnabled extends F6FieldInputFieldMixin {
   var _enabled: () => Boolean = () => true
 
   def enabled(): Boolean = _enabled()
+
+  def isEnabled: this.type = enabled(true)
 
   def enabled(v: Boolean): this.type = mutate {
     _enabled = () => v

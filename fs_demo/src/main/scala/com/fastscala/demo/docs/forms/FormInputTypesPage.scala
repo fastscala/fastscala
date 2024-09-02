@@ -164,7 +164,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         , java.awt.Color.CYAN
         , java.awt.Color.BLUE
       )
-      val inputField = new F6SelectOptField[Color]().optionsValid(colors).label("Color")
+      val inputField = new F6SelectOptField[Color]().optionsNonEmpty(colors).label("Color")
 
       div.border.p_2.rounded.apply {
         new DefaultForm6() {

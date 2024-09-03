@@ -4,19 +4,20 @@ import com.fastscala.js.Js
 import com.fastscala.server._
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.IdGen
+import com.typesafe.config.ConfigFactory
 import io.circe.{Decoder, Json}
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse, Handler}
 import org.eclipse.jetty.http._
-import org.eclipse.jetty.util.Callback
 import org.eclipse.jetty.io.Content
-import org.eclipse.jetty.websocket.api.Session
+import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.util.Callback
 import org.eclipse.jetty.websocket.api.Callback.Completable
+import org.eclipse.jetty.websocket.api.Session
 import org.slf4j.LoggerFactory
 
 import java.net.URLEncoder
-import java.nio.file.{Path, Files}
+import java.nio.file.{Files, Path}
 import java.util.Collections
-import scala.jdk.CollectionConverters.{IteratorHasAsScala, IterableHasAsScala, MapHasAsScala}
+import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 
 class FSFunc(
               val id: String
@@ -527,6 +528,10 @@ class FSSystem(
                 , val stats: FSStats = new FSStats()
               ) extends RoutingHandlerNoSessionHelper {
 
+  val config = ConfigFactory.load()
+
+  def debug: Boolean = config.getBoolean("com.fastscala.core.debug")
+
   val logger = LoggerFactory.getLogger(getClass.getName)
   val sessions: collection.mutable.Map[String, FSSession] = collection.mutable.Map[String, FSSession]()
 
@@ -560,17 +565,30 @@ class FSSystem(
 
   def handleCallbackException(ex: Throwable): Js = {
     ex.printStackTrace()
-    Js.alert("Internal error")
+    if (__fsSystem.debug) {
+      Js.alert(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
+    } else {
+      Js.alert(s"Internal error")
+    }
   }
 
   def handleFileUploadCallbackException(ex: Throwable): Js = {
     ex.printStackTrace()
-    Js.alert("Internal error")
+    if (__fsSystem.debug) {
+      Js.alert(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
+    } else {
+      Js.alert(s"Internal error")
+    }
   }
 
   def handleFileDownloadCallbackException(ex: Throwable): Response = {
     ex.printStackTrace()
-    ServerError.InternalServerError
+
+    if (__fsSystem.debug) {
+      ServerError.InternalServerError(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
+    } else {
+      ServerError.InternalServerError
+    }
   }
 
   override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = {
@@ -602,7 +620,11 @@ class FSSystem(
                   case Some(failure) =>
                     handleCallbackException(failure)
                   case None =>
-                    fsFunc.func(arg)
+                    try {
+                      fsFunc.func(arg)
+                    } catch {
+                      case ex: Exception => handleCallbackException(ex)
+                    }
                 }
                 logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
                 stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))

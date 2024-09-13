@@ -9,10 +9,10 @@ case class ChangedField(field: F6Field)(implicit renderedWithHints: Seq[RenderHi
  */
 case class RequestedSubmit(onField: F6Field)(implicit renderedWithHints: Seq[RenderHint]) extends FormEvent
 
-object BeforeSave extends FormEvent
+object PreSave extends FormEvent
 
-object PerformSave extends FormEvent
+object Save extends FormEvent
 
-object ErrorsOnSave extends FormEvent
+object FailedSave extends FormEvent
 
-object AfterSave extends FormEvent
+object PostSave extends FormEvent

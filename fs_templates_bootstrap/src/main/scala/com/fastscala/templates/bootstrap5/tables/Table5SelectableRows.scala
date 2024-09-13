@@ -16,9 +16,11 @@ trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
 
   def selectedVisibleRows: Set[R] = rows(rowsHints()).toSet intersect allSelectedRowsEvenIfNotVisible.toSet
 
+  def transformSelectedRowTd(td: Elem): Elem = td.bg_primary_subtle
+
   override def transformTRTDElem(elem: Elem)(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, col: C, value: R, rowIdx: TableRowIdx, columns: Seq[(String, C)], rows: Seq[(String, R)], fsc: FSContext): Elem = {
     super.transformTRTDElem(elem)
-      .pipe(elem => if (allSelectedRowsEvenIfNotVisible.contains(value)) elem.bg_primary_subtle else elem)
+      .pipe(elem => if (allSelectedRowsEvenIfNotVisible.contains(value)) transformSelectedRowTd(elem) else elem)
       .pipe(elem => col match {
         case ColSelectRow => elem.align_middle.text_center
         case _ => elem
@@ -40,6 +42,8 @@ trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
       rerenderTableAround()
   })
 
+  def onRowSelectionChanged(trRerenderer: TRRerenderer): Js = trRerenderer.rerenderer.rerender()
+
   val ColSelectRow = new Table5StandardColumn[R] {
 
     override def label: String = ""
@@ -51,7 +55,7 @@ trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
         if (selected) allSelectedRowsEvenIfNotVisible += value
         else allSelectedRowsEvenIfNotVisible -= value
         onSelectedRowsChange() &
-          trRerenderer.rerenderer.rerender()
+          onRowSelectionChanged(trRerenderer)
       }, "").m_0.d_inline_block
       <td>{contents}</td>
     }

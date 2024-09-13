@@ -1,7 +1,5 @@
 package com.fastscala.db
 
-import com.google.common.base.CaseFormat
-import org.apache.commons.text.StringEscapeUtils
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
@@ -9,8 +7,6 @@ import java.lang.reflect.Field
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
 import scalikejdbc._
-
-import java.util.UUID
 
 trait Table[R] extends TableBase {
 

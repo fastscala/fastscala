@@ -42,12 +42,16 @@ object F6VerticalField {
   def apply()(children: F6Field*) = new F6VerticalField()(children: _*)
 }
 
-class F6ContainerField(aroundClass: String)(children: (String, F6Field)*)
+abstract class F6ContainerFieldBase
   extends StandardF6Field
     with F6FieldWithEnabled
     with F6FieldWithDependencies
     with F6FieldWithDisabled
     with F6FieldWithReadOnly {
+
+  def aroundClass: String
+
+  def children: Seq[(String, F6Field)]
 
   var currentlyEnabled = enabled()
 
@@ -79,6 +83,8 @@ class F6ContainerField(aroundClass: String)(children: (String, F6Field)*)
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js =
     super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
 }
+
+class F6ContainerField(val aroundClass: String)(val children: (String, F6Field)*) extends F6ContainerFieldBase
 
 object F6ContainerField {
   def apply(aroundClass: String)(children: (String, F6Field)*) = new F6ContainerField(aroundClass)(children: _*)

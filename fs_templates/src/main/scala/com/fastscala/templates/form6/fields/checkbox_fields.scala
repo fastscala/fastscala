@@ -37,7 +37,7 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
   override def saveToString(): Option[String] = Some(currentValue.toString).filter(_ != "")
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case PerformSave => _setter(currentValue)
+    case Save => _setter(currentValue)
     case _ => Js.void
   })
 
@@ -55,7 +55,6 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
                       id={elemId}
                       onchange={
                       fsc.callback(Js.checkboxIsCheckedById(elemId), str => {
-                        println("STR: " + str)
                         str.toBooleanOption.foreach(currentValue = _)
                         form.onEvent(ChangedField(this)) &
                           Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)

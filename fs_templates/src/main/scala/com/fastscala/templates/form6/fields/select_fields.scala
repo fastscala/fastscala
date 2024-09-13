@@ -88,7 +88,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
   override def saveToString(): Option[String] = Some(_option2Id(currentValue, options())).filter(_ != "")
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case PerformSave => _setter(currentValue)
+    case Save => _setter(currentValue)
     case _ => Js.void
   })
 
@@ -181,7 +181,7 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
   override def saveToString(): Option[String] = Some(currentValue.map(opt => _option2Id(opt, options())).mkString(";"))
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case PerformSave => _setter(currentValue)
+    case Save => _setter(currentValue)
     case _ => Js.void
   })
 

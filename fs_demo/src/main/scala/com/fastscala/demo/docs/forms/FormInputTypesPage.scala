@@ -266,7 +266,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         val High, Low, HighZ = Value
       }
 
-      val inputField = EnumField.Nullable(OutputState).label("Output State").option2String(_.map(_.toString).getOrElse("--"))
+      val inputField = F6EnumField.Nullable(OutputState).label("Output State").option2String(_.map(_.toString).getOrElse("--"))
 
       div.border.p_2.rounded.apply {
         new DefaultForm6() {

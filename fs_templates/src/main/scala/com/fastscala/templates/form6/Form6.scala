@@ -71,7 +71,7 @@ trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
       val hasErrors = rootField.enabledFields.exists({ case field: ValidatableF6Field => field.hasErrors_?() case _ => false })
       implicit val renderHints: Seq[RenderHint] = formRenderHits() :+ OnSaveRerender
       if (hasErrors) {
-        rootField.onEvent(ErrorsOnSave) &
+        rootField.onEvent(FailedSave) &
           rootField.reRender()(this, fsc, renderHints :+ ShowValidationsHint :+ FailedSaveStateHint)
       } else {
         savePipeline()
@@ -81,9 +81,9 @@ trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
 
   private def savePipeline()(implicit renderHints: Seq[RenderHint], fsc: FSContext): Js = {
     preSave() &
-      rootField.onEvent(BeforeSave) &
-      rootField.onEvent(PerformSave) &
-      rootField.onEvent(AfterSave) &
+      rootField.onEvent(PreSave) &
+      rootField.onEvent(Save) &
+      rootField.onEvent(PostSave) &
       postSave() &
       rootField.reRender()
   }

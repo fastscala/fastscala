@@ -168,4 +168,26 @@ object BSModal5 {
     }
     modal.installAndShow() & modal.onHidden(onHidden)
   }
+
+  def okCancel(
+                title: String,
+                onOk: BSModal5Base => FSContext => Js,
+                onCancel: BSModal5Base => FSContext => Js = modal => _ => modal.hideAndRemove(),
+                okBtnText: String = "OK",
+                cancelBtnText: String = "Cancel",
+                onHidden: Js = JS.void
+              )(
+                contents: BSModal5Base => FSContext => NodeSeq
+              )(implicit fsc: FSContext): Js = {
+    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    val modal = new BSModal5Base {
+      override def modalHeaderTitle: String = title
+
+      override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = contents(this)(fsc)
+
+      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] =
+        Some(BSBtn().BtnSecondary.lbl(cancelBtnText).ajax(onCancel(this)).btn ++ BSBtn().BtnPrimary.lbl(okBtnText).ajax(onOk(this)).btn.ms_2)
+    }
+    modal.installAndShow() & modal.onHidden(onHidden)
+  }
 }

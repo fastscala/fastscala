@@ -5,6 +5,8 @@
 [![Issues][issues-shield]][issues-url]
 [![Apache 2.0 License][license-shield]][license-url]
 
+![Build](https://github.com/fastscala/fastscala/actions/workflows/scala.yml/badge.svg)
+
 # 🚀 FastScala
 
 Welcome to **FastScala**!: quickly create complex web applications, leveraging Scala's type safety, modularity, reusability while ensuring security! 🌟

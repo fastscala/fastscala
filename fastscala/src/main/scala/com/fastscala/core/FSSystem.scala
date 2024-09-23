@@ -441,6 +441,8 @@ class FSSession(
                  , val debugLbl: Option[String] = None
                ) extends FSHasSession {
 
+  val logger = LoggerFactory.getLogger(getClass.getName)
+
   var idSeq = 0L
 
   private implicit def __fsContextOpt: Option[FSContext] = None
@@ -492,6 +494,7 @@ class FSSession(
     session.fsSystem.checkSpace()
     val copy = new Request.Wrapper(req)
     val page = new FSPage(nextID(), this, copy, onPageUnload = onPageUnload, debugLbl = debugLbl)
+    if (logger.isTraceEnabled) logger.trace(s"Created page ${page.id}")
     fsSystem.stats.event(StatEvent.CREATE_PAGE)
     this.synchronized {
       pages += (page.id -> page)
@@ -621,12 +624,18 @@ class FSSystem(
                     handleCallbackException(failure)
                   case None =>
                     try {
-                      fsFunc.func(arg)
+                      if (logger.isTraceEnabled) logger.trace(s"Running callback on thread ${Thread.currentThread()}...")
+                      val start = System.currentTimeMillis()
+                      val rslt = fsFunc.func(arg)
+                      if (logger.isTraceEnabled) logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
+                      rslt
                     } catch {
-                      case ex: Exception => handleCallbackException(ex)
+                      case trowable =>
+                        if (logger.isTraceEnabled) logger.trace(s"Finished with EXCEPTION in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}): $trowable")
+                        handleCallbackException(trowable)
                     }
                 }
-                logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
+                if (logger.isTraceEnabled) logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
                 stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
                 Ok.js(rslt).respond(response, callback)
               })
@@ -827,16 +836,16 @@ class FSSystem(
       Runtime.getRuntime.totalMemory() > 1000 * 1024 * 1024 &&
         Runtime.getRuntime.freeMemory() < 50 * 1024 * 1024
     ) {
-      logger.info("Less than 50MB available")
-      logger.info(s"#Sessions: ${sessions.size} #Pages: ${sessions.map(_._2.pages.size).sum} #Funcs: ${sessions.map(_._2.pages.map(_._2.functions.size).sum).sum}")
+      if (logger.isTraceEnabled) logger.trace("Less than 50MB available")
+      if (logger.isTraceEnabled) logger.trace(s"#Sessions: ${sessions.size} #Pages: ${sessions.map(_._2.pages.size).sum} #Funcs: ${sessions.map(_._2.pages.map(_._2.functions.size).sum).sum}")
       val allKeepAlives = allKeepAlivesIterable.toVector.sorted
-      logger.info(s"Found ${allKeepAlives.size} keep alives")
+      if (logger.isTraceEnabled) logger.trace(s"Found ${allKeepAlives.size} keep alives")
       val deleteOlderThan: Long = allKeepAlives.drop(allKeepAlives.size / 2).headOption.getOrElse(0L)
-      logger.info(s"Removing everything with keepalive older than ${System.currentTimeMillis() - deleteOlderThan}ms")
+      if (logger.isTraceEnabled) logger.trace(s"Removing everything with keepalive older than ${System.currentTimeMillis() - deleteOlderThan}ms")
       gc(deleteOlderThan)
       val start = System.currentTimeMillis()
       System.gc()
-      println(s"Run GC in ${System.currentTimeMillis() - start}ms")
+      if (logger.isTraceEnabled) logger.trace(s"Run GC in ${System.currentTimeMillis() - start}ms")
       checkSpace()
     }
   }
@@ -846,7 +855,7 @@ class FSSystem(
     val toRemove = current.filter(_._2.keepAliveAt < keepAliveOlderThan)
     sessions --= toRemove.map(_._1)
     stats.event(StatEvent.GC_SESSION, n = toRemove.size)
-    logger.info(s"Removed ${toRemove.size} sessions")
+    if (logger.isTraceEnabled) logger.trace(s"Removed ${toRemove.size} sessions: ${toRemove.map(_._1).mkString(", ")}")
     sessions.values.foreach(_.gc(keepAliveOlderThan))
   }
 }

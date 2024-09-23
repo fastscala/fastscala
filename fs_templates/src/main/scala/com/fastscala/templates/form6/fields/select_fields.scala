@@ -7,7 +7,7 @@ import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
 import scala.xml.{Elem, NodeSeq}
 
-trait F6FieldWithOptions[T] extends F6FieldMixin {
+trait F6FieldWithOptions[T] extends F6DefaultField {
   var _options: () => Seq[T] = () => Nil
 
   def options() = _options()
@@ -21,7 +21,7 @@ trait F6FieldWithOptions[T] extends F6FieldMixin {
   }
 }
 
-trait F6FieldWithOptionsNsLabel[T] extends F6FieldMixin {
+trait F6FieldWithOptionsNsLabel[T] extends F6DefaultField {
 
   var _option2NodeSeq: T => NodeSeq = opt => FSScalaXmlSupport.fsXmlSupport.buildText(opt.toString)
 
@@ -34,7 +34,7 @@ trait F6FieldWithOptionsNsLabel[T] extends F6FieldMixin {
   }
 }
 
-trait F6FieldWithOptionIds[T] extends F6FieldMixin {
+trait F6FieldWithOptionIds[T] extends F6DefaultField {
   var _option2Id: (T, Seq[T]) => String = (opt, options) => "%X".formatted(options.indexOf(opt).toString)
 
   var _id2Option: (String, Seq[T]) => Option[T] = (id, options) => id.toIntOption.map(idx => options(idx))

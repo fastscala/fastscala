@@ -49,6 +49,8 @@ case class BSBtn(
 
   def withClass(s: String): BSBtn = copy(cls = cls + " " + s)
 
+  def setClass(s: String): BSBtn = copy(cls = s)
+
   def withAdditionalAttrs(attrs: (String, String)*): BSBtn = copy(additionalAttrs = additionalAttrs ++ attrs)
 
   def icn(i: BsIcn.type => BsIcn.BsIcn): BSBtn = icn(i(BsIcn).icn)

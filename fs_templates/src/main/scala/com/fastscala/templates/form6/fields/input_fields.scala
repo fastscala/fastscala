@@ -18,20 +18,12 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-trait F6FieldMixin extends F6Field {
-
-  def mutate(code: => Unit): this.type = {
-    code
-    this
-  }
-}
-
-trait F6FieldInputFieldMixin extends F6FieldWithValidations with F6FieldMixin {
+trait F6FieldInputFieldMixin extends F6FieldWithValidations with F6DefaultField {
 
   def processInputElem(input: Elem): Elem = input
 }
 
-trait F6FieldWithValue[T] extends F6FieldMixin {
+trait F6FieldWithValue[T] extends F6DefaultField {
 
   def defaultValue: T
 
@@ -268,12 +260,20 @@ trait F6FieldWithLabel extends F6FieldInputFieldMixin {
     _label = () => Some(FSScalaXmlSupport.fsXmlSupport.buildText(v))
   }
 
-  def label(f: () => Option[NodeSeq]): this.type = mutate {
+  def labelNodeSeqF(f: () => Option[NodeSeq]): this.type = mutate {
     _label = f
+  }
+
+  def labelStrF(f: () => String): this.type = mutate {
+    _label = () => Some(<span>{f()}</span>)
   }
 
   def withLabel(label: String): this.type = mutate {
     _label = () => Some(<span>{label}</span>)
+  }
+
+  def withLabel(label: Elem): this.type = mutate {
+    _label = () => Some(label)
   }
 }
 
@@ -353,7 +353,7 @@ trait F6FieldWithDependencies extends F6FieldInputFieldMixin {
   }
 }
 
-trait F6FieldWithPrefix extends F6FieldMixin {
+trait F6FieldWithPrefix extends F6DefaultField {
 
   var _prefix: () => String = () => ""
 
@@ -368,7 +368,7 @@ trait F6FieldWithPrefix extends F6FieldMixin {
   }
 }
 
-trait F6FieldWithSuffix extends F6FieldMixin {
+trait F6FieldWithSuffix extends F6DefaultField {
 
   var _suffix: () => String = () => ""
 

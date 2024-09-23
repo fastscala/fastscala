@@ -8,10 +8,9 @@ import org.eclipse.jetty.http.CompressedContentFormat
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.handler.gzip.GzipHandler
 import org.eclipse.jetty.server.handler.{ContextHandler, ResourceHandler, StatisticsHandler}
-import org.eclipse.jetty.util.resource.{Resources, ResourceFactory}
-import org.eclipse.jetty.util.thread.QueuedThreadPool
-
 import org.eclipse.jetty.util.VirtualThreads
+import org.eclipse.jetty.util.resource.{ResourceFactory, Resources}
+import org.eclipse.jetty.util.thread.QueuedThreadPool
 
 abstract class JettyServerHelper() {
 
@@ -32,7 +31,12 @@ abstract class JettyServerHelper() {
   val threadPool = new QueuedThreadPool(NThreads)
   threadPool.setName("http_server")
   // enable virtual thread support on JDK21+
-  threadPool.setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor())
+
+  def useVirtualThreads: Boolean = config.getBoolean("com.fastscala.core.virtual-threads")
+
+  if (useVirtualThreads) {
+    threadPool.setVirtualThreadsExecutor(VirtualThreads.getDefaultVirtualThreadsExecutor())
+  }
 
   val server = new Server(threadPool)
 
@@ -68,7 +72,7 @@ abstract class JettyServerHelper() {
     resourceHandler.setBaseResource(ResourceFactory.combine({
       val resourceFactory = ResourceFactory.of(resourceHandler)
       resourceRoots.map(resourceFactory.newClassLoaderResource(_))
-                   .filter(Resources.isReadableDirectory(_))
+        .filter(Resources.isReadableDirectory(_))
     }: _*))
 
     val wsHandler = FSWebsocketJettyContextHandler(server, "/" + fss.FSPrefix)

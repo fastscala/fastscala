@@ -11,7 +11,7 @@ Welcome to **FastScala**!: quickly create complex web applications, leveraging S
 
 ## 🌍 Overview
 
-**FastScala* is a modern web framework that enables secure, anonymous callbacks from the client-side to the server-side, allowing developers to build complex webapps almost 100% in Scala. By leveraging the type-safety and power of Scala, FastScala enables the rapid development of complex components like forms, tables, and modals, all with minimal effort. This framework is designed to handle increasingly complex interfaces while maintaining simplicity and performance. All this without sacrificing security!
+**FastScala** is a modern web framework that enables secure, anonymous callbacks from the client-side to the server-side, allowing developers to build complex webapps almost 100% in Scala. By leveraging the type-safety and power of Scala, FastScala enables the rapid development of complex components like forms, tables, and modals, all with minimal effort. This framework is designed to handle increasingly complex interfaces while maintaining simplicity and performance. All this without sacrificing security!
 
 ### Why FastScala? 🤔
 

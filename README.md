@@ -1,10 +1,10 @@
 # 🚀 FastScala
 
-Welcome to **FastScala**, a lightweight and fast Scala framework designed to simplify your development experience! 🌟
+Welcome to **FastScala**!: quickly create complex web applications, leveraging Scala's type safety, modularity, reusability while ensuring security! 🌟
 
 ## 🌍 Overview
 
-**FastScala* is a modern web framework that enables secure, anonymous callbacks from the client-side to the server-side, allowing developers to build applications almost entirely in Scala. By leveraging the type-safety and power of Scala, FastScala enables the rapid development of complex components like forms, tables, and modals, all with minimal code. This framework is designed to handle increasingly complex interfaces while maintaining simplicity and performance. With FastScala, you can focus on building scalable, high-performance applications without sacrificing security.
+**FastScala* is a modern web framework that enables secure, anonymous callbacks from the client-side to the server-side, allowing developers to build complex webapps almost 100% in Scala. By leveraging the type-safety and power of Scala, FastScala enables the rapid development of complex components like forms, tables, and modals, all with minimal effort. This framework is designed to handle increasingly complex interfaces while maintaining simplicity and performance. All this without sacrificing security!
 
 ### Why FastScala? 🤔
 
@@ -13,7 +13,6 @@ Welcome to **FastScala**, a lightweight and fast Scala framework designed to sim
 - ⚡ **Quick Development**: Build complex interfaces like forms, tables, and modals with just a few lines of code.
 - ⚒️ **Reusable Components**: Create reusable web components easily and efficiently.
 - 🔒 **Strong Security**: Designed with security in mind, ensuring safe communication between the client and the server.
-- 🚀 **Performance and Scalability**: Optimized for performance, making it suitable for large-scale applications.
 
 ---
 
@@ -43,11 +42,9 @@ sbt
 fs_demo/run
 ```
 
-## ⚙️ Configuration
-FastScala provides a default configuration, but you can customize it to fit your needs. The main configuration file is located at `fs_demo/src/main/resources/reference.conf`. Make sure to update it based on your project's requirements.
-
 ## 🤝 Contributing
 Contributions are always welcome! Whether you want to file a bug report, suggest an enhancement, or submit a pull request, feel free to get involved.
+
 
 Steps to contribute:
 - Fork the repository 🍴

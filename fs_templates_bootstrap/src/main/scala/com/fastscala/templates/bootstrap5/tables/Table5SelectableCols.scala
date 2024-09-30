@@ -15,7 +15,7 @@ trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
 
   lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns().filter(columnStartsVisible): _*))
 
-  def allColumns(): Seq[C]
+  def allColumns(): List[C]
 
   def columnStartsVisible(c: C): Boolean = true
 

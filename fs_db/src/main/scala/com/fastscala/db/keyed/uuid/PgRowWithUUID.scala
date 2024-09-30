@@ -27,6 +27,11 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUuidIdBase
     this
   }
 
+  def save(session: DBSession): R = {
+    saveSQL().update()(session)
+    this
+  }
+
   def update(func: R => Unit): R = {
     val inDB = reload()
     func(inDB)

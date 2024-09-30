@@ -32,21 +32,25 @@ class ModifyingTableExamplePage extends MultipleCodeExamples2Page() {
           , ColArea
         )
 
-        override def rows(hints: Seq[RowsHint]): Seq[Country] = CountriesData.data.take(5)
+        override def rows(hints: Seq[RowsHint]): Seq[Country] = CountriesData.data.take(3)
       }
       buildTable().render()
     }
     renderSnippet("Modify table") {
       import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
-      buildTable().table_striped.render()
+      buildTable().border.border_danger.border_5.render()
+    }
+    renderSnippet("Modify table (alternative)") {
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      buildTable().onAllTable(_.border.border_danger.border_5).render()
     }
     renderSnippet("Modify Table Head Classes") {
       import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
-      buildTable().onAllTableHeadClasses(_.border.border_danger.border_5).render()
+      buildTable().onAllTableHead(_.border.border_danger.border_5).render()
     }
     renderSnippet("Modify Table Head TR Classes") {
       import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
-      buildTable().onAllTableHeadTRClasses(_.border.border_danger.border_5).render()
+      buildTable().onAllTableHeadTRs(_.border.border_danger.border_5).render()
     }
     renderSnippet("Modify Table Head TRTH Classes") {
       import com.fastscala.templates.bootstrap5.helpers.BSHelpers._

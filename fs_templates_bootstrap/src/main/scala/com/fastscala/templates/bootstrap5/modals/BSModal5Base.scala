@@ -3,7 +3,7 @@ package com.fastscala.templates.bootstrap5.modals
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.helpers.ClassEnrichable
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.templates.bootstrap5.utils.{BSBtn, Mutable}
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
 import com.fastscala.xml.scala_xml.JS.ScalaXmlRerenderer
@@ -17,7 +17,7 @@ object BSModal5Size extends Enumeration {
   val XL = Value("modal-xl")
 }
 
-abstract class BSModal5Base extends ClassEnrichable {
+abstract class BSModal5Base extends ClassEnrichable with Mutable {
 
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 

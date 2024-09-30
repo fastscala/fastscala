@@ -4,6 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers.RichElemBasicOps
 import com.fastscala.templates.bootstrap5.helpers.ClassEnrichable
+import com.fastscala.templates.bootstrap5.utils.Mutable
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.{MkNSFromElems, MkNSFromNodeSeq}
@@ -12,7 +13,7 @@ import java.util.UUID
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
+abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable with Mutable {
 
   type R
   type C
@@ -20,106 +21,74 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
   lazy val aroundId: AroundId = new AroundId(IdGen.id("around"))
   lazy val tableId: TableId = new TableId(IdGen.id("table"))
 
-  var additionalTableClasses: String = ""
-  var additionalTableHeadClasses: String = ""
-  var additionalTableHeadTRClasses: String = ""
-  var additionalTableHeadTRTHClasses: String = ""
-  var additionalTableBodyClasses: String = ""
-  var additionalTableBodyTRClasses: String = ""
-  var additionalTableBodyTRTDClasses: String = ""
+  var additionalTableClasses = ""
 
-  override def setClass(clas: String): this.type = {
-    additionalTableClasses += s" $clas"
-    this
+  var onTableTransforms: Elem => Elem = _.withClass(additionalTableClasses)
+  var onTableHeadTransforms: Elem => Elem = identity[Elem]
+  var onTableHeadTRTransforms: Elem => Elem = identity[Elem]
+  var onTableHeadTRTHTransforms: Elem => Elem = identity[Elem]
+  var onTableBodyTransforms: Elem => Elem = identity[Elem]
+  var onTableBodyTRTransforms: Elem => Elem = identity[Elem]
+  var onTableBodyTRTDTransforms: Elem => Elem = identity[Elem]
+
+  override def setClass(clas: String): this.type = mutate {
+    additionalTableClasses +=additionalTableClasses.pipe(additionalTableClasses =>  s" $clas")
   }
 
   def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableClasses
 
   def tableStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
+  def onAllTable(f: Elem => Elem): this.type = mutate {
+    onTableTransforms = onTableTransforms.pipe(onTableTransforms => elem => f(onTableTransforms(elem)))
+  }
 
-  def tableHeadClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableHeadClasses
+  def tableHeadClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def tableHeadStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableHeadClasses(f: ClassEnrichable => Unit): this.type = {
-    f(new ClassEnrichable {
-      override def setClass(clas: String): this.type = {
-        additionalTableHeadClasses += s" $clas"
-        this
-      }
-    })
-    this
+  def onAllTableHead(f: Elem => Elem): this.type = mutate {
+    onTableHeadTransforms = onTableHeadTransforms.pipe(onTableHeadTransforms => elem => f(onTableHeadTransforms(elem)))
   }
 
-  def tableHeadTRClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableHeadTRClasses
+  def tableHeadTRClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def tableHeadTRStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableHeadTRClasses(f: ClassEnrichable => Unit): this.type = {
-    f(new ClassEnrichable {
-      override def setClass(clas: String): this.type = {
-        additionalTableHeadTRClasses += s" $clas"
-        this
-      }
-    })
-    this
+  def onAllTableHeadTRs(f: Elem => Elem): this.type = mutate {
+    onTableHeadTRTransforms = onTableHeadTRTransforms.pipe(onTableHeadTRTransforms => elem => f(onTableHeadTRTransforms(elem)))
   }
 
-  def tableHeadTRTHClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableHeadTRTHClasses
+  def tableHeadTRTHClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def tableHeadTRTHStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableHeadTRTHClasses(f: ClassEnrichable => Unit): this.type = {
-    f(new ClassEnrichable {
-      override def setClass(clas: String): this.type = {
-        additionalTableHeadTRTHClasses += s" $clas"
-        this
-      }
-    })
-    this
+  def onAllTableHeadTRTHClasses(f: Elem => Elem): this.type = mutate {
+    onTableHeadTRTHTransforms = onTableHeadTRTHTransforms.pipe(onTableHeadTRTHTransforms => elem => f(onTableHeadTRTHTransforms(elem)))
   }
 
-  def tableBodyClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableBodyClasses
+  def tableBodyClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def tableBodyStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyClasses(f: ClassEnrichable => Unit): this.type = {
-    f(new ClassEnrichable {
-      override def setClass(clas: String): this.type = {
-        additionalTableBodyClasses += s" $clas"
-        this
-      }
-    })
-    this
+  def onAllTableBodyClasses(f: Elem => Elem): this.type = mutate {
+    onTableBodyTransforms = onTableBodyTransforms.pipe(onTableBodyTransforms => elem => f(onTableBodyTransforms(elem)))
   }
 
-  def tableBodyTRClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableBodyTRClasses
+  def tableBodyTRClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def tableBodyTRStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyTRClasses(f: ClassEnrichable => Unit): this.type = {
-    f(new ClassEnrichable {
-      override def setClass(clas: String): this.type = {
-        additionalTableBodyTRClasses += s" $clas"
-        this
-      }
-    })
-    this
+  def onAllTableBodyTRClasses(f: Elem => Elem): this.type = mutate {
+    onTableBodyTRTransforms = onTableBodyTRTransforms.pipe(onTableBodyTRTransforms => elem => f(onTableBodyTRTransforms(elem)))
   }
 
-  def tableBodyTRTDClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableBodyTRTDClasses
+  def tableBodyTRTDClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def tableBodyTRTDStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyTRTDClasses(f: ClassEnrichable => Unit): this.type = {
-    f(new ClassEnrichable {
-      override def setClass(clas: String): this.type = {
-        additionalTableBodyTRTDClasses += s" $clas"
-        this
-      }
-    })
-    this
+  def onAllTableBodyTRTDClasses(f: Elem => Elem): this.type = mutate {
+    onTableBodyTRTDTransforms = onTableBodyTRTDTransforms.pipe(onTableBodyTRTDTransforms => elem => f(onTableBodyTRTDTransforms(elem)))
   }
 
   def columns(): Seq[C]
@@ -154,11 +123,11 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
     renderTable()
   }, idOpt = Some(tableId.id), debugLabel = Some("table")))
 
-  def transformTableElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = elem.withClass(tableClasses()).withStyle(tableStyle())
+  def transformTableElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableTransforms(elem).withClass(tableClasses()).withStyle(tableStyle())
 
-  def transformTableHeadElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = elem.withClass(tableHeadClasses()).withStyle(tableHeadStyle())
+  def transformTableHeadElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableHeadTransforms(elem).withClass(tableHeadClasses()).withStyle(tableHeadStyle())
 
-  def transformTableBodyElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = elem.withClass(tableBodyClasses()).withStyle(tableBodyStyle())
+  def transformTableBodyElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableBodyTransforms(elem).withClass(tableBodyClasses()).withStyle(tableBodyStyle())
 
   def transformTableHeadTRElem(elem: Elem)(
     implicit
@@ -166,7 +135,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
     , rowsWithIds: Seq[(String, R)]
     , columns: Seq[(String, C)]
     , fsc: FSContext
-  ): Elem = elem.withClass(tableHeadTRClasses()).withStyle(tableHeadTRStyle())
+  ): Elem = onTableHeadTRTransforms(elem).withClass(tableHeadTRClasses()).withStyle(tableHeadTRStyle())
 
   def transformTRElem(elem: Elem)(
     implicit
@@ -177,7 +146,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): Elem = elem.withClass(tableBodyTRClasses()).withStyle(tableBodyTRStyle())
+  ): Elem = onTableBodyTRTransforms(elem).withClass(tableBodyTRClasses()).withStyle(tableBodyTRStyle())
 
   def transformTableHeadTRTHElem(elem: Elem)(
     implicit
@@ -186,7 +155,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): Elem = elem.withClass(tableHeadTRTHClasses()).withStyle(tableHeadTRTHStyle())
+  ): Elem = onTableHeadTRTHTransforms(elem).withClass(tableHeadTRTHClasses()).withStyle(tableHeadTRTHStyle())
 
   def transformTRTDElem(elem: Elem)(
     implicit
@@ -198,7 +167,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable {
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): Elem = elem.withClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle())
+  ): Elem = onTableBodyTRTDTransforms(elem).withClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle())
 
   def rerenderTable()(implicit fsc: FSContext): Js = tableRenderer.rerenderer.rerender()
 

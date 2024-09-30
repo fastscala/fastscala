@@ -8,6 +8,7 @@ import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
 import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer._
 import com.fastscala.demo.docs.navigation.{BSMenu, MenuSection, RoutingMenuItem, SimpleMenuItem}
+import com.fastscala.demo.docs.tables.ModifyingTableExamplePage
 
 object FSDemoMainMenu extends BSMenu(
   MenuSection("About FastScala")(
@@ -48,6 +49,7 @@ object FSDemoMainMenu extends BSMenu(
     , SimpleMenuItem("Paginated", "/demo/paginated_tables")
     , SimpleMenuItem("Selectable Rows", "/demo/selectable_rows_tables")
     , SimpleMenuItem("Selectable Columns", "/demo/tables_sel_cols")
+    , new RoutingMenuItem("demo", "tables", "modifying")("Modifying tables", () => new ModifyingTableExamplePage())
   ),
   //  MenuSection("chart.js integration")(
   //    SimpleMenuItem("Simple", "/demo/chartjs/simple")

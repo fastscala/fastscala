@@ -13,7 +13,7 @@ class SelectableRowsTableExamplePage extends SingleCodeExamplePage() {
 
   override def pageTitle: String = "Selectable rows table example"
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
     // === code snippet ===

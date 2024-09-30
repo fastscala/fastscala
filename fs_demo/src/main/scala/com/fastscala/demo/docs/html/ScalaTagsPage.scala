@@ -13,7 +13,7 @@ class ScalaTagsPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "ScalaTags interoperability"
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     <p>
       Fastscala is not tied to {span.badge.text_bg_secondary.apply("scala-xml")}, but the libraries that are on top of do use it.
     </p>

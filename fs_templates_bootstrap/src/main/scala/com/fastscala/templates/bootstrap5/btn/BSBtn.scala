@@ -2,6 +2,7 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.templates.bootstrap5.helpers.{AttrEnrichable, ClassEnrichable}
 import com.fastscala.templates.bootstrap5.utils.IcnFA.RichIcn
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
@@ -16,7 +17,7 @@ object BSBtn {
 }
 
 case class BSBtn(
-                  cls: String,
+                  var cls: String,
                   content: NodeSeq,
                   onclickOpt: Option[FSContext => Js] = None,
                   hrefOpt: Option[String] = None,
@@ -24,8 +25,18 @@ case class BSBtn(
                   styleOpt: Option[String] = None,
                   idOpt: Option[String] = None,
                   titleOpt: Option[String] = None,
-                  additionalAttrs: Seq[(String, String)] = Nil
-                ) {
+                  var additionalAttrs: Seq[(String, String)] = Nil
+                ) extends ClassEnrichable with AttrEnrichable {
+
+  override def setAttribute(name: String, value: String): BSBtn.this.type = {
+    additionalAttrs = additionalAttrs :+ (name -> value)
+    this
+  }
+
+  override def setClass(clas: String): BSBtn.this.type = {
+    cls += s" $clas"
+    this
+  }
 
   override def toString: String = cls
 
@@ -43,13 +54,13 @@ case class BSBtn(
 
   def margin(top: Int, right: Int, bottom: Int, left: Int): BSBtn = withStyle(s";margin: ${top}px ${right}px ${bottom}px ${left}px;")
 
-  def disabled: BSBtn = withClass("disabled")
+  def disabled: BSBtn = addClass("disabled")
 
   def withContent(content: NodeSeq): BSBtn = copy(content = content)
 
-  def withClass(s: String): BSBtn = copy(cls = cls + " " + s)
+  def addClass(s: String): BSBtn = copy(cls = cls + " " + s)
 
-  def setClass(s: String): BSBtn = copy(cls = s)
+  def withClass(s: String): BSBtn = copy(cls = s)
 
   def withAdditionalAttrs(attrs: (String, String)*): BSBtn = copy(additionalAttrs = additionalAttrs ++ attrs)
 
@@ -174,55 +185,55 @@ case class BSBtn(
     , "btn"
   )
 
-  def Btn: BSBtn = withClass("")
+  def Btn: BSBtn = addClass("")
 
-  def BtnClass: BSBtn = withClass(" btn ")
+  def BtnClass: BSBtn = addClass(" btn ")
 
-  def NavLink: BSBtn = withClass(" nav-link ")
+  def NavLink: BSBtn = addClass(" nav-link ")
 
-  def BtnToolbar: BSBtn = withClass("btn-toolbar")
+  def BtnToolbar: BSBtn = addClass("btn-toolbar")
 
-  def BtnCheck: BSBtn = withClass("btn-check")
+  def BtnCheck: BSBtn = addClass("btn-check")
 
-  def BtnClose: BSBtn = withClass("btn btn-close")
+  def BtnClose: BSBtn = addClass("btn btn-close")
 
-  def BtnCloseWhite: BSBtn = withClass("btn btn-close-white")
+  def BtnCloseWhite: BSBtn = addClass("btn btn-close-white")
 
-  def BtnGroupVertical: BSBtn = withClass("btn-group-vertical")
+  def BtnGroupVertical: BSBtn = addClass("btn-group-vertical")
 
-  def BtnPrimary: BSBtn = withClass("btn btn-primary")
+  def BtnPrimary: BSBtn = addClass("btn btn-primary")
 
-  def BtnSecondary: BSBtn = withClass("btn btn-secondary")
+  def BtnSecondary: BSBtn = addClass("btn btn-secondary")
 
-  def BtnInfo: BSBtn = withClass("btn btn-info")
+  def BtnInfo: BSBtn = addClass("btn btn-info")
 
-  def BtnDanger: BSBtn = withClass("btn btn-danger")
+  def BtnDanger: BSBtn = addClass("btn btn-danger")
 
-  def BtnDark: BSBtn = withClass("btn btn-dark")
+  def BtnDark: BSBtn = addClass("btn btn-dark")
 
-  def BtnLight: BSBtn = withClass("btn btn-light")
+  def BtnLight: BSBtn = addClass("btn btn-light")
 
-  def BtnSuccess: BSBtn = withClass("btn btn-success")
+  def BtnSuccess: BSBtn = addClass("btn btn-success")
 
-  def BtnWarning: BSBtn = withClass("btn btn-warning")
+  def BtnWarning: BSBtn = addClass("btn btn-warning")
 
-  def BtnLink: BSBtn = withClass("btn btn-link")
+  def BtnLink: BSBtn = addClass("btn btn-link")
 
-  def BtnOutlineDanger: BSBtn = withClass("btn btn-outline-danger")
+  def BtnOutlineDanger: BSBtn = addClass("btn btn-outline-danger")
 
-  def BtnOutlineDark: BSBtn = withClass("btn btn-outline-dark")
+  def BtnOutlineDark: BSBtn = addClass("btn btn-outline-dark")
 
-  def BtnOutlineInfo: BSBtn = withClass("btn btn-outline-info")
+  def BtnOutlineInfo: BSBtn = addClass("btn btn-outline-info")
 
-  def BtnOutlineLight: BSBtn = withClass("btn btn-outline-light")
+  def BtnOutlineLight: BSBtn = addClass("btn btn-outline-light")
 
-  def BtnOutlinePrimary: BSBtn = withClass("btn btn-outline-primary")
+  def BtnOutlinePrimary: BSBtn = addClass("btn btn-outline-primary")
 
-  def BtnOutlineSecondary: BSBtn = withClass("btn btn-outline-secondary")
+  def BtnOutlineSecondary: BSBtn = addClass("btn btn-outline-secondary")
 
-  def BtnOutlineSuccess: BSBtn = withClass("btn btn-outline-success")
+  def BtnOutlineSuccess: BSBtn = addClass("btn btn-outline-success")
 
-  def BtnOutlineWarning: BSBtn = withClass("btn btn-outline-warning")
+  def BtnOutlineWarning: BSBtn = addClass("btn btn-outline-warning")
 
   // ================================== RENDERING ==================================
 

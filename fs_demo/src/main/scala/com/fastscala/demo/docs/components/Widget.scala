@@ -15,7 +15,7 @@ abstract class Widget {
   lazy val widgetContentsId = IdGen.id("widget-contents")
 
   lazy val widgetHeaderRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetHeader(), Some(widgetHeaderId))
-  lazy val widgetContentsRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetContents(), Some(widgetContentsId))
+  lazy val widgetContentsRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetBody(), Some(widgetContentsId))
 
   def widgetTitle: String
 
@@ -38,21 +38,21 @@ abstract class Widget {
   def transformWidgetCard(elem: Elem): Elem = elem
 
   def renderWidgetHeader()(implicit fsc: FSContext): Elem = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     card_header.d_flex.justify_content_between.align_items_center.apply {
       widgetTitleNs ++ <div>{widgetTopRight}</div>
     } pipe transformWidgetCardHeader
   }
 
-  def renderWidgetContents()(implicit fsc: FSContext): Elem = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  def renderWidgetBody()(implicit fsc: FSContext): Elem = {
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     card_body.apply {
       widgetContents()
     } pipe transformWidgetCardBody
   }
 
   def renderWidget()(implicit fsc: FSContext): Elem = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     card.withId(widgetId).apply {
       widgetHeaderRenderer.render() ++
         widgetContentsRenderer.render()

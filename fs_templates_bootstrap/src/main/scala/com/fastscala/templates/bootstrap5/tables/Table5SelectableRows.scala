@@ -10,7 +10,7 @@ import scala.xml.Elem
 
 trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   lazy val allSelectedRowsEvenIfNotVisible = collection.mutable.Set[R]()
 

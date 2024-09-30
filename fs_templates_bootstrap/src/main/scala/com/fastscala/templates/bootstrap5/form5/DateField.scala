@@ -22,7 +22,7 @@ trait DateFieldOptRenderer {
     daySelectElem: Elem,
     error: Option[NodeSeq]
   )(implicit hints: Seq[RenderHint]): Elem = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     div.withId(field.aroundId).apply {
       val showErrors = hints.contains(ShowValidationsHint)
       labelOpt.map(_.form_label.withFor(field.elemId)).getOrElse(Empty) ++

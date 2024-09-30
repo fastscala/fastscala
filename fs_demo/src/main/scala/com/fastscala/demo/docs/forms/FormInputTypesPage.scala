@@ -16,7 +16,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "Form 6 Input Types"
 
   import DefaultBSForm6Renderer._
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("String input") {
@@ -99,7 +99,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
       }
     }
     renderSnippet("java.time.LocalDate input") {
-      val inputField = new F6DateOptField().label("Date")
+      val inputField = new F6LocalDateOptField().label("Date")
 
       div.border.p_2.rounded.apply {
         new DefaultForm6() {
@@ -115,7 +115,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
       }
     }
     renderSnippet("java.time.LocalDateTime input") {
-      val inputField = new F6DateTimeOptField().label("Date/time")
+      val inputField = new F6LocalDateTimeOptField().label("Date/time")
 
       div.border.p_2.rounded.apply {
         new DefaultForm6() {

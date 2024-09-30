@@ -3,6 +3,7 @@ package com.fastscala.xml.scala_xml
 import com.fastscala.js.Js
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
+import java.util.regex.Pattern
 import scala.xml._
 
 trait ScalaXmlElemUtils {
@@ -38,6 +39,8 @@ trait ScalaXmlElemUtils {
   def addClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
 
   def withClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
+
+  def removeClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("").replaceAll("(?i)" + Pattern.quote(`class`), ""))
 
   def addOnClick(js: String): Elem = attributeTransform("onclick", _.getOrElse("") + ";" + js)
 

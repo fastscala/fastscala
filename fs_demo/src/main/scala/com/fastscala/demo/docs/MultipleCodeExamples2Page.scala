@@ -29,7 +29,7 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   def renderContentsWithSnippets()(implicit fsc: FSContext): Unit
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     div.withStyle("background('#f8fafd'); border-style: solid; border-color: #b3c7de;").border_1.shadow_sm.py_2.px_3.apply {
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3 mb-3">
         <h1 class="h3" style="color: #1b4d88;">{pageTitle}</h1>
@@ -45,7 +45,7 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   }
 
   def renderCodeSnippet(title: String, rendered: NodeSeq, contents: NodeSeq): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     h4.pb_1.border_bottom.border_secondary_subtle.apply(title) ++
       div.row.apply {
         div.col_md_6.mb_2.apply {
@@ -87,7 +87,7 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   }
 
   def collectSection(thisSectionStartsAt: Int): Unit = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     lastSection.foreach({
       case (lastSectionStartedAt, title, contents) =>
         val code = lines.drop(lastSectionStartedAt).take(thisSectionStartsAt - lastSectionStartedAt - 2)

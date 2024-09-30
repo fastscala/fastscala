@@ -2,6 +2,7 @@ package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.templates.bootstrap5.components.BSBtnDropdown
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.utils.Lazy
@@ -45,4 +46,25 @@ trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
       )
     }).mkNS
   })
+
+  def colSelectionDropdownBaseBtn()(implicit fsc: FSContext): BSBtn = BSBtn()
+
+  def colSelectionDropdownBtn(
+                               transformBaseBtn: BSBtn => BSBtn = identity[BSBtn],
+                             )(implicit fsc: FSContext): Elem = BSBtnDropdown(
+    transformBaseBtn(colSelectionDropdownBaseBtn())
+  )(
+    allColumns().map(col => BSBtn().ns(ImmediateInputFields.checkbox(
+      () => currentSelectedCols().contains(col),
+      {
+        case true =>
+          currentSelectedCols() += col
+          rerenderTable()
+        case false =>
+          currentSelectedCols() -= col
+          rerenderTable()
+      },
+      colLabel(col)
+    )).withStyle("padding-top: 1px; padding-bottom: 1px;")): _*
+  )
 }

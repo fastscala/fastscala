@@ -22,7 +22,7 @@ class AboutPage extends MultipleCodeExamples2Page {
 
   override def pageTitle: String = "FastScala | About"
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderHtml() {

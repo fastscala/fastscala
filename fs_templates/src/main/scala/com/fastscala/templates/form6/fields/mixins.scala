@@ -13,8 +13,8 @@ trait F6FieldWithValidations extends ValidatableF6Field with F6FieldMixin {
     _validations += validate
   }
 
-  def addValidation(valid_? : () => Boolean, error: NodeSeq): this.type = mutate {
-    _validations += (() => if (!valid_?()) Some(error) else None)
+  def addValidation(valid_? : () => Boolean, error: () => NodeSeq): this.type = mutate {
+    _validations += (() => if (!valid_?()) Some(error()) else None)
   }
 
   override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
@@ -23,17 +23,22 @@ trait F6FieldWithValidations extends ValidatableF6Field with F6FieldMixin {
     }).map(ns => this -> ns)
 }
 
+trait F6OnChangedFieldHandler {
+  def onChanged(field: F6Field)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js
+}
+
 trait F6FieldWithOnChangedField extends F6FieldMixin {
-  var _onChangedField = collection.mutable.ListBuffer[PartialFunction[F6Field, Js]]()
 
-  def onChangedField: Seq[PartialFunction[F6Field, Js]] = _onChangedField.toSeq
+  var _onChangedField = collection.mutable.ListBuffer[F6OnChangedFieldHandler]()
 
-  def addOnChangedField(onchange: PartialFunction[F6Field, Js]): this.type = mutate {
+  def onChangedField: Seq[F6OnChangedFieldHandler] = _onChangedField.toSeq
+
+  def addOnChangedField(onchange: F6OnChangedFieldHandler): this.type = mutate {
     _onChangedField += onchange
   }
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case ChangedField(field) => _onChangedField.map(func => if (func.isDefinedAt(field)) func(field) else Js.void).reduceOption(_ & _).getOrElse(Js.void)
+    case ChangedField(field) => _onChangedField.map(_.onChanged(field)).reduceOption(_ & _).getOrElse(Js.void)
     case _ => Js.void
   })
 }

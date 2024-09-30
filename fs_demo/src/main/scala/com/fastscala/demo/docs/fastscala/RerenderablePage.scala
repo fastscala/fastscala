@@ -12,7 +12,7 @@ class RerenderablePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "FastScala Rerenderable"
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq = p.apply(
     """Use the rerenderable when you want to have a part of the page that can be rerendered."""

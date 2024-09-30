@@ -28,7 +28,7 @@ abstract class SingleCodeExamplePage() extends PageWithTopTitle {
     val codeSections: List[String] = allCode.split("\n.*" + Regex.quote(separator) + ".*\n").zipWithIndex.toList.collect({
       case (code, idx) if (idx + 1) % 2 == 0 => code
     })
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     div.border.border_secondary.rounded.apply {
       h3.apply("Source Code").bg_secondary.text_white.px_3.py_2.m_0.border_bottom.border_secondary ++
         div.apply {
@@ -40,7 +40,7 @@ abstract class SingleCodeExamplePage() extends PageWithTopTitle {
   def renderExampleContents()(implicit fsc: FSContext): NodeSeq
 
   override def renderStandardPageContents()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     row.apply {
       col_xl_6.mb_3.apply {
         codeSnippet(file)

@@ -17,7 +17,7 @@ class VisualizeUploadedImageAnonymousPage(
   override def pageTitle: String = "Visualize Uploaded Image Anonymous Page Example"
 
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     JS.rerenderable(rerenderer => implicit fsc => {
       div.border.p_2.rounded.apply {
         h3.apply("Uploaded image:") ++

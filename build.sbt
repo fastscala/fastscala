@@ -57,6 +57,7 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
       "org.xerial" % "sqlite-jdbc" % "3.46.0.1",
       "org.scalikejdbc" %% "scalikejdbc" % "4.3.1",
       "com.google.guava" % "guava" % "33.2.1-jre",
+      "commons-codec" % "commons-codec" % "1.17.1",
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
     ),
     Test / parallelExecution := false

@@ -130,7 +130,7 @@ trait JsUtils {
 
   def alert(text: String): Js = Js(s"""alert("${escapeStr(text)}");""")
 
-  def toClipboard(text: String): Js = Js(s"navigator.clipboard.writeText('${escapeStr(text)}');")
+  def copy2Clipboard(text: String): Js = Js(s"navigator.clipboard.writeText('${escapeStr(text)}');")
 
   def consoleLog(js: Js): Js = Js(s"""console.log(${js.cmd});""")
 

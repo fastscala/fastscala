@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.form6
 
-import com.fastscala.templates.bootstrap5.classes.BSHelpers
+import com.fastscala.templates.bootstrap5.helpers.BSHelpers
 import com.fastscala.templates.form6.F6FormRenderer
 import com.fastscala.templates.form6.fields._
 
@@ -8,7 +8,7 @@ import scala.xml.{Elem, NodeSeq}
 
 abstract class BSForm6Renderer {
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   def defaultRequiredFieldLabel: String
 
@@ -128,8 +128,10 @@ abstract class BSForm6Renderer {
       }
     }
 
-    override def renderOption[T](field: F6MultiSelectFieldBase[T])(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
+    override def renderOption[T](field: F6MultiSelectFieldBase[T])(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem = {
+      println(<option selected={if (selected) "true" else null} value={value}>{label}</option>)
       <option selected={if (selected) "true" else null} value={value}>{label}</option>
+    }
   }
 
   def checkboxFieldRendererCheckboxElemClasses: String = form_check_input.getClassAttr

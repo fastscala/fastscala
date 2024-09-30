@@ -3,6 +3,7 @@ package com.fastscala.db.keyed.uuid
 import com.fastscala.db.RowWithIdBase
 import scalikejdbc._
 
+import java.nio.ByteBuffer
 import java.util.UUID
 
 trait RowWithUuidIdBase extends RowWithIdBase {

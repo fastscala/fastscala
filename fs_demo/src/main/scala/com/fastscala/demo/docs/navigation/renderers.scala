@@ -9,7 +9,7 @@ trait BSMenuRenderer {
 }
 
 trait BSNavBarRenderer {
-  def render(elem: BSNav)(implicit fsc: FSContext): NodeSeq
+  def render(elem: BSNav)(implicit fsc: FSContext): Elem
 }
 
 trait MenuSectionRenderer {

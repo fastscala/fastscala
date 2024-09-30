@@ -1,4 +1,4 @@
-package com.fastscala.templates.bootstrap5.classes
+package com.fastscala.templates.bootstrap5.helpers
 
 trait BSClassesHelper[T] {
 

@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.form5
 
-import com.fastscala.templates.bootstrap5.classes.BSHelpers
+import com.fastscala.templates.bootstrap5.helpers.BSHelpers
 import com.fastscala.templates.form5.FormRenderer
 import com.fastscala.templates.form5.fields._
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport
@@ -9,7 +9,7 @@ import scala.xml.{Elem, NodeSeq}
 
 abstract class BSFormRenderer {
 
-  import com.fastscala.templates.bootstrap5.classes.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   def defaultRequiredFieldLabel: String
 

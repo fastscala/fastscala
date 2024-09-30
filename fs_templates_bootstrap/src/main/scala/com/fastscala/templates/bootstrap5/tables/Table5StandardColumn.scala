@@ -1,6 +1,8 @@
 package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
+import com.fastscala.templates.bootstrap5.helpers.BSHelpers.{RichElemBasicOps, s}
+import com.fastscala.templates.bootstrap5.helpers.ClassEnrichable
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -37,7 +39,14 @@ trait Table5StandardColumns extends Table5ColsRenderable with Table5ColsLabeled 
   override def colLabel(col: C): String = col.label
 }
 
-trait Table5StandardColumn[R] {
+trait Table5StandardColumn[R] extends ClassEnrichable {
+
+  var additionalClasses = ""
+
+  override def setClass(clas: String): this.type = {
+    additionalClasses += s" $clas"
+    this
+  }
 
   def label: String
 
@@ -76,7 +85,7 @@ trait Table5StdColsHelper {
       <th>{title}</th>
 
     override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
-      <td>{render(value)}</td>
+      <td class={additionalClasses}>{render(value)}</td>
   }
 
   def ColNs(title: String, render: FSContext => R => NodeSeq) = new Table5StandardColumn[R] {
@@ -87,7 +96,7 @@ trait Table5StdColsHelper {
       <th>{title}</th>
 
     override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
-      <td>{render(fsc)(value)}</td>
+      <td class={additionalClasses}>{render(fsc)(value)}</td>
   }
 
   def ColNsFull(
@@ -101,7 +110,7 @@ trait Table5StdColsHelper {
       <th>{title}</th>
 
     override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
-      <td>{render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows)}</td>
+      <td class={additionalClasses}>{render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows)}</td>
   }
 
   def ColNsFullTd(
@@ -115,6 +124,6 @@ trait Table5StdColsHelper {
       <th>{title}</th>
 
     override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
-      render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows)
+      render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows).withClass(additionalClasses)
   }
 }

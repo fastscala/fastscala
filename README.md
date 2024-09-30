@@ -1,10 +1,19 @@
+
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![Apache 2.0 License][license-shield]][license-url]
+
+![Build](https://github.com/fastscala/fastscala/actions/workflows/scala.yml/badge.svg)
+
 # 🚀 FastScala
 
 Welcome to **FastScala**!: quickly create complex web applications, leveraging Scala's type safety, modularity, reusability while ensuring security! 🌟
 
 ## 🌍 Overview
 
-**FastScala* is a modern web framework that enables secure, anonymous callbacks from the client-side to the server-side, allowing developers to build complex webapps almost 100% in Scala. By leveraging the type-safety and power of Scala, FastScala enables the rapid development of complex components like forms, tables, and modals, all with minimal effort. This framework is designed to handle increasingly complex interfaces while maintaining simplicity and performance. All this without sacrificing security!
+**FastScala** is a modern web framework that enables secure, anonymous callbacks from the client-side to the server-side, allowing developers to build complex webapps almost 100% in Scala. By leveraging the type-safety and power of Scala, FastScala enables the rapid development of complex components like forms, tables, and modals, all with minimal effort. This framework is designed to handle increasingly complex interfaces while maintaining simplicity and performance. All this without sacrificing security!
 
 ### Why FastScala? 🤔
 
@@ -56,3 +65,14 @@ Steps to contribute:
 
 ## 📜 License
 This project is licensed under the Apache2 License. See the LICENSE file for details.
+
+[contributors-shield]: https://img.shields.io/github/contributors/fastscala/fastscala.svg?style=for-the-badge
+[contributors-url]: https://github.com/fastscala/fastscala/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/fastscala/fastscala.svg?style=for-the-badge
+[forks-url]: https://github.com/fastscala/fastscala/network/members
+[stars-shield]: https://img.shields.io/github/stars/fastscala/fastscala.svg?style=for-the-badge
+[stars-url]: https://github.com/fastscala/fastscala/stargazers
+[issues-shield]: https://img.shields.io/github/issues/fastscala/fastscala.svg?style=for-the-badge
+[issues-url]: https://github.com/fastscala/fastscala/issues
+[license-shield]: https://img.shields.io/github/license/fastscala/fastscala.svg?style=for-the-badge
+[license-url]: https://github.com/fastscala/fastscala/blob/master/LICENSE

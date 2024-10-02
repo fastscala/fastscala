@@ -4,11 +4,11 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.form6.BSForm6Renderer
+import com.fastscala.templates.bootstrap5.form7.BSForm7Renderer
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form6._
-import com.fastscala.templates.form6.fields._
+import com.fastscala.templates.form7._
+import com.fastscala.templates.form7.fields._
 
 import scala.xml.NodeSeq
 
@@ -56,13 +56,13 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
       province = CitiesData.data.head._1,
       city = CitiesData.data.head._2.head
     )
-    val BSFormRenderer = new BSForm6Renderer {
+    val BSFormRenderer = new BSForm7Renderer {
       override def defaultRequiredFieldLabel: String = "Required Field"
     }
     import BSFormRenderer._
     div.border.p_2.rounded.apply {
-      new Form6 {
-        override def postSave()(implicit fsc: FSContext): Js = {
+      new Form7 {
+        override def postSubmit()(implicit fsc: FSContext): Js = {
           BSModal5.verySimple(
             "Created User",
             "Done"
@@ -79,24 +79,24 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
           })
         }
 
-        lazy val _provField: F6SelectField[Province] = new F6SelectField[Province](CitiesData.data.keys.toList.sortBy(_.no)).label("Province").rw(editing.province, editing.province = _).option2String(_.name)
+        lazy val _provField: F7SelectField[Province] = new F7SelectField[Province](CitiesData.data.keys.toList.sortBy(_.no)).label("Province").rw(editing.province, editing.province = _).option2String(_.name)
 
-        override lazy val rootField: F6Field = F6VerticalField()(
-          F6ContainerField("row")(
-            "col" -> new F6StringField().label("First Name").rw(editing.firstName, editing.firstName = _)
-            , "col" -> new F6StringField().label("Last Name").rw(editing.lastName, editing.lastName = _)
+        override lazy val rootField: F7Field = F7VerticalField()(
+          F7ContainerField("row")(
+            "col" -> new F7StringField().label("First Name").rw(editing.firstName, editing.firstName = _)
+            , "col" -> new F7StringField().label("Last Name").rw(editing.lastName, editing.lastName = _)
           )
-          , new F6StringField().label("Email").rw(editing.email, editing.email = _).inputType("email")
-          , new F6StringField().label("Phone Number").rw(editing.phoneNumber, editing.phoneNumber = _).inputType("tel")
-          , new F6SelectField[Country](CountriesData.data.toList).label("Country of Residence").rw(editing.countryOfResidence, editing.countryOfResidence = _).option2String(_.name.common)
-          , new F6IntOptField().label("Security Level").rw(Some(editing.securityLevel), oi => editing.securityLevel = oi.getOrElse(0))
-          , F6LocalDateOptField(editing.birthDay, editing.birthDay = _).label("BirthDay")
+          , new F7StringField().label("Email").rw(editing.email, editing.email = _).inputType("email")
+          , new F7StringField().label("Phone Number").rw(editing.phoneNumber, editing.phoneNumber = _).inputType("tel")
+          , new F7SelectField[Country](CountriesData.data.toList).label("Country of Residence").rw(editing.countryOfResidence, editing.countryOfResidence = _).option2String(_.name.common)
+          , new F7IntOptField().label("Security Level").rw(Some(editing.securityLevel), oi => editing.securityLevel = oi.getOrElse(0))
+          , F7LocalDateOptField(editing.birthDay, editing.birthDay = _).label("BirthDay")
           , _provField
-          , new F6SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set(_provField))
-          , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
+          , new F7SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set(_provField))
+          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
         )
 
-        override def formRenderer: F6FormRenderer = formRenderer
+        override def formRenderer: F7FormRenderer = formRenderer
       }.render()
     }
     // === code snippet ===

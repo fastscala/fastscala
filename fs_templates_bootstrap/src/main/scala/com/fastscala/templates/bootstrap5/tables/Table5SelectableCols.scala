@@ -19,7 +19,10 @@ trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
 
   def columnStartsVisible(c: C): Boolean = true
 
-  def columns(): Seq[C] = allColumns().filter(col => currentSelectedCols().contains(col))
+  def columns(): Seq[C] = {
+    if (currentSelectedCols().exists(!allColumns().contains(_))) throw new Exception("Column is selected but does not exist in allColumns(): is allColumns() a method and you're creating always new columns which are not equal (.equals(obj), ==) to the old ones? Maybe use a lazy val allColumns() instead of a def allColumns().")
+    allColumns().filter(col => currentSelectedCols().contains(col))
+  }
 
   def colLabel(col: C): String
 

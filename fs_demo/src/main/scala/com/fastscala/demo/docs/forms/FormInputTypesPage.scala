@@ -5,8 +5,8 @@ import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form6.DefaultForm6
-import com.fastscala.templates.form6.fields._
+import com.fastscala.templates.form7.DefaultForm7
+import com.fastscala.templates.form7.fields._
 
 import java.awt.Color
 import java.time.format.DateTimeFormatter
@@ -15,135 +15,135 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 6 Input Types"
 
-  import DefaultBSForm6Renderer._
+  import DefaultBSForm7Renderer._
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("String input") {
-      val inputField = new F6StringField().label("Name")
+      val inputField = new F7StringField().label("Name")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your name is ${inputField.currentValue}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("(Optional) String input") {
-      val inputField = new F6StringOptField().label("Name")
+      val inputField = new F7StringOptField().label("Name")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your name is ${inputField.currentValue.getOrElse("[None provided]")}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("(Optional) Double input") {
-      val inputField = new F6DoubleOptField().label("Your height")
+      val inputField = new F7DoubleOptField().label("Your height")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue.getOrElse("[None provided]")}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("Double input") {
-      val inputField = new F6DoubleField().label("Your height")
+      val inputField = new F7DoubleField().label("Your height")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("(Optional) Int input") {
-      val inputField = new F6IntOptField().label("Your age")
+      val inputField = new F7IntOptField().label("Your age")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue.getOrElse("[None provided]")}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("java.time.LocalDate input") {
-      val inputField = new F6LocalDateOptField().label("Date")
+      val inputField = new F7LocalDateOptField().label("Date")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))).getOrElse("[None selected]")}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("java.time.LocalDateTime input") {
-      val inputField = new F6LocalDateTimeOptField().label("Date/time")
+      val inputField = new F7LocalDateTimeOptField().label("Date/time")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date/time is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("HH:mm dd MMM yyyy"))).getOrElse("[None selected]")}"))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("Textarea") {
-      val inputField = new F6StringOptTextareaField().rows(6).label("Your message")
+      val inputField = new F7StringOptTextareaField().rows(6).label("Your message")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your message:") ++
                 pre.apply(inputField.currentValue.getOrElse("[No message provided]"))
             )
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -164,19 +164,19 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         , java.awt.Color.CYAN
         , java.awt.Color.BLUE
       )
-      val inputField = new F6SelectOptField[Color]().optionsNonEmpty(colors).label("Color")
+      val inputField = new F7SelectOptField[Color]().optionsNonEmpty(colors).label("Color")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.map(_.toString).getOrElse("[None selected]"))
             )
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -197,19 +197,19 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         , java.awt.Color.CYAN
         , java.awt.Color.BLUE
       )
-      val inputField = new F6SelectField[Color](colors).label("Color")
+      val inputField = new F7SelectField[Color](colors).label("Color")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.toString)
             )
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -224,38 +224,38 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         , "Europe"
         , "Australia"
       )
-      val inputField = new F6MultiSelectField().options(continents).label("Continents").size(10)
+      val inputField = new F7MultiSelectField().options(continents).label("Continents").size(10)
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selected continents:") ++
                 pre.apply(inputField.currentValue.mkString(", "))
             )
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
     }
     renderSnippet("Checkbox") {
 
-      val inputField = new F6CheckboxField().label("Has driving license")
+      val inputField = new F7CheckboxField().label("Has driving license")
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.toString)
             )
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -266,19 +266,19 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
         val High, Low, HighZ = Value
       }
 
-      val inputField = F6EnumField.Nullable(OutputState).label("Output State").option2String(_.map(_.toString).getOrElse("--"))
+      val inputField = F7EnumField.Nullable(OutputState).label("Output State").option2String(_.map(_.toString).getOrElse("--"))
 
       div.border.p_2.rounded.apply {
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js =
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.toString)
             )
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }

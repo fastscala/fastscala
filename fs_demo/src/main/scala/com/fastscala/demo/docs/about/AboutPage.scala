@@ -2,12 +2,12 @@ package com.fastscala.demo.docs.about
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
-import com.fastscala.demo.docs.forms.DefaultBSForm6Renderer
+import com.fastscala.demo.docs.forms.DefaultBSForm7Renderer
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form6.DefaultForm6
-import com.fastscala.templates.form6.fields.{F6Field, F6SaveButtonField, F6StringField, F6VerticalField}
+import com.fastscala.templates.form7.DefaultForm7
+import com.fastscala.templates.form7.fields.{F7Field, F7SaveButtonField, F7StringField, F7VerticalField}
 import com.fastscala.xml.scala_xml.JS
 import io.circe.Decoder
 import io.circe.generic.semiauto
@@ -138,25 +138,25 @@ class AboutPage extends MultipleCodeExamples2Page {
       </p>
     }
     renderSnippet("Easily create advanced forms") {
-      import DefaultBSForm6Renderer._
-      val nameField = new F6StringField().label("Name").required(true)
-      val emailField = new F6StringField().label("Email").inputType("email").required(true)
+      import DefaultBSForm7Renderer._
+      val nameField = new F7StringField().label("Name").required(true)
+      val emailField = new F7StringField().label("Email").inputType("email").required(true)
 
-      new DefaultForm6() {
-        override def postSave()(implicit fsc: FSContext): Js =
+      new DefaultForm7() {
+        override def postSubmit()(implicit fsc: FSContext): Js =
           BSModal5.verySimple("Your input data", "Done")(modal => implicit fsc => {
             fs_4.apply(s"Your entered the name '${nameField.currentValue}' and email '${emailField.currentValue}'")
           })
 
-        override lazy val rootField: F6Field = F6VerticalField()(
+        override lazy val rootField: F7Field = F7VerticalField()(
           nameField
           , emailField
-          , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
         )
       }.render()
     }
     renderSnippet("Support advanced interactions with a few lines of code") {
-      import DefaultBSForm6Renderer._
+      import DefaultBSForm7Renderer._
       case class Definition(definition: Option[String], example: Option[String], synonyms: List[String], antonyms: List[String]) {
         def render(): NodeSeq = definition.map(definition => <li><i>{definition}</i>{example.map(": " + _).getOrElse("")}</li>).getOrElse(NodeSeq.Empty)
       }
@@ -198,15 +198,15 @@ class AboutPage extends MultipleCodeExamples2Page {
         }
       })
 
-      val queryField = new F6StringField().label("Search query").required(true)
+      val queryField = new F7StringField().label("Search query").required(true)
 
       resultsRenderer.render(None) ++
-        new DefaultForm6() {
-          override def postSave()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
+        new DefaultForm7() {
+          override def postSubmit()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
 
-          override lazy val rootField: F6Field = F6VerticalField()(
+          override lazy val rootField: F7Field = F7VerticalField()(
             queryField
-            , new F6SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
     }

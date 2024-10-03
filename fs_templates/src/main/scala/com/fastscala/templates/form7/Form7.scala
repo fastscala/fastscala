@@ -2,7 +2,7 @@ package com.fastscala.templates.form7
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.fields._
+import com.fastscala.templates.form7.mixins.FocusableF7Field
 import com.fastscala.templates.utils.ElemWithRandomId
 import com.fastscala.utils.RenderableWithFSContext
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
@@ -38,36 +38,45 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   def formRenderer: F7FormRenderer
 
   def focusFirstFocusableFieldJs(): Js =
-    rootField.fieldsMatching({ case _: FocusableF7Field => true })
+    rootField.fieldAndChildreenMatchingPredicate({ case _: FocusableF7Field => true })
       .collectFirst({ case fff: FocusableF7Field => fff })
       .map(_.focusJs)
       .getOrElse(Js.void)
 
-  def afterRendering()(implicit fsc: FSContext): Js = Js.void
-
-  def reRender()(implicit fsc: FSContext): Js = {
-    implicit val renderHints = formRenderHits()
-    rootField.reRender() & afterRendering()
-  }
-
   def render()(implicit fsc: FSContext): Elem = {
     implicit val renderHints = formRenderHits()
     val rendered = rootField.render()
-    if (afterRendering() != Js.void) {
-      rendered.withAppendedToContents(JS.inScriptTag(afterRendering().onDOMContentLoaded))
+    if (postRenderSetupJs() != Js.void) {
+      rendered.withAppendedToContents(JS.inScriptTag(postRenderSetupJs().onDOMContentLoaded))
     } else {
       rendered
     }
   }
 
-  def preSave()(implicit fsc: FSContext): Js = Js.void
+  /**
+   * Used to run JS to initialize the form after it is rendered or re-rendered.
+   */
+  def postRenderSetupJs()(implicit fsc: FSContext): Js = rootField.fieldAndChildreenMatchingPredicate(_.enabled()).map(_.postRenderSetupJs()).reduceOption(_ & _).getOrElse(Js.void)
 
-  def postSubmit()(implicit fsc: FSContext): Js = Js.void
+  def reRender()(implicit fsc: FSContext): Js = {
+    implicit val renderHints = formRenderHits()
+    rootField.reRender() & postRenderSetupJs()
+  }
 
-  def onSaveServerSide()(implicit fsc: FSContext): Js = {
-    if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)
+  def preSubmitForm()(implicit fsc: FSContext): Js = Js.void
+
+  def postSubmitForm()(implicit fsc: FSContext): Js = Js.void
+
+  def submitFormClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => submitFormServerSide())
+
+  def submitFormServerSide()(implicit fsc: FSContext): Js = {
+    if (fsc != fsc.page.rootFSContext) submitFormServerSide()(fsc.page.rootFSContext)
     else {
-      val errors: List[(ValidatableF7Field, NodeSeq)] = rootField.enabledFields.collect({ case field: ValidatableF7Field => field.errors() }).flatten
+      val errors: List[(F7Field, NodeSeq)] =
+        rootField
+          .fieldAndChildreenMatchingPredicate(_.enabled())
+          .collect(_.validate())
+          .flatten
       implicit val renderHints: Seq[RenderHint] = formRenderHits() :+ OnSaveRerender
       if (errors.nonEmpty) {
         rootField.onEvent(PostValidation(errors)) &
@@ -79,13 +88,12 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   }
 
   private def savePipeline()(implicit renderHints: Seq[RenderHint], fsc: FSContext): Js = {
-    preSave() &
-      rootField.onEvent(PreSubmit) &
-      rootField.onEvent(Submit) &
-      rootField.onEvent(PostSubmit) &
-      postSubmit() &
+    val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled())
+    preSubmitForm() &
+      enabledFields.map(_.preSubmit()).reduceOption(_ & _).getOrElse(Js.void) &
+      enabledFields.map(_.submit()).reduceOption(_ & _).getOrElse(Js.void) &
+      enabledFields.map(_.postSubmit()).reduceOption(_ & _).getOrElse(Js.void) &
+      postSubmitForm() &
       rootField.reRender()
   }
-
-  def onSaveClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => onSaveServerSide())
 }

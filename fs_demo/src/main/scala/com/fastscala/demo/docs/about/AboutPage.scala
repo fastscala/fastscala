@@ -6,8 +6,10 @@ import com.fastscala.demo.docs.forms.DefaultBSForm7Renderer
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.DefaultForm7
-import com.fastscala.templates.form7.fields.{F7Field, F7SaveButtonField, F7StringField, F7VerticalField}
+import com.fastscala.templates.form7.fields.F7SaveButtonField
+import com.fastscala.templates.form7.fields.layout.F7VerticalField
+import com.fastscala.templates.form7.fields.text.F7StringField
+import com.fastscala.templates.form7.{DefaultForm7, F7Field}
 import com.fastscala.xml.scala_xml.JS
 import io.circe.Decoder
 import io.circe.generic.semiauto
@@ -143,7 +145,7 @@ class AboutPage extends MultipleCodeExamples2Page {
       val emailField = new F7StringField().label("Email").inputType("email").required(true)
 
       new DefaultForm7() {
-        override def postSubmit()(implicit fsc: FSContext): Js =
+        override def postSubmitForm()(implicit fsc: FSContext): Js =
           BSModal5.verySimple("Your input data", "Done")(modal => implicit fsc => {
             fs_4.apply(s"Your entered the name '${nameField.currentValue}' and email '${emailField.currentValue}'")
           })
@@ -202,7 +204,7 @@ class AboutPage extends MultipleCodeExamples2Page {
 
       resultsRenderer.render(None) ++
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
+          override def postSubmitForm()(implicit fsc: FSContext): Js = resultsRenderer.rerender(Some(queryField.currentValue))
 
           override lazy val rootField: F7Field = F7VerticalField()(
             queryField

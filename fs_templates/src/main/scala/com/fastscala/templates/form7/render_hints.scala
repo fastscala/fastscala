@@ -1,6 +1,4 @@
-package com.fastscala.templates.form7.fields
-
-import com.fastscala.templates.form7.Form7
+package com.fastscala.templates.form7
 
 trait RenderHint
 

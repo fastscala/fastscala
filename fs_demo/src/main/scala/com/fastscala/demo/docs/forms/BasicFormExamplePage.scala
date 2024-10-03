@@ -9,6 +9,9 @@ import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7._
 import com.fastscala.templates.form7.fields._
+import com.fastscala.templates.form7.fields.layout.{F7ContainerField, F7VerticalField}
+import com.fastscala.templates.form7.fields.select.F7SelectField
+import com.fastscala.templates.form7.fields.text.{F7IntOptField, F7LocalDateOptField, F7StringField}
 
 import scala.xml.NodeSeq
 
@@ -62,7 +65,7 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
     import BSFormRenderer._
     div.border.p_2.rounded.apply {
       new Form7 {
-        override def postSubmit()(implicit fsc: FSContext): Js = {
+        override def postSubmitForm()(implicit fsc: FSContext): Js = {
           BSModal5.verySimple(
             "Created User",
             "Done"

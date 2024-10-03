@@ -1,58 +1,5 @@
 package com.fastscala.templates.form7.fields
 
-import com.fastscala.core.FSContext
-import com.fastscala.js.Js
-import com.fastscala.templates.form7.Form7
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
-
-import scala.xml.{Elem, NodeSeq}
-
-
-trait TextF7FieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F7TextField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait TextareaF7FieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F7TextareaField[T])(label: Option[NodeSeq], inputElem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait SelectF7FieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F7SelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-
-  def renderOption[T](field: F7SelectFieldBase[T])(
-    selected: Boolean,
-    value: String,
-    label: NodeSeq
-  )(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait MultiSelectF7FieldRenderer {
-
-  def defaultRequiredFieldLabel: String
-
-  def render[T](field: F7MultiSelectFieldBase[T])(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-
-  def renderOption[T](field: F7MultiSelectFieldBase[T])(
-    selected: Boolean,
-    value: String,
-    label: NodeSeq
-  )(implicit hints: Seq[RenderHint]): Elem
-}
-
-trait CheckboxF7FieldRenderer {
-
-  def render(field: F7CheckboxField)(label: Option[Elem], elem: Elem, error: Option[NodeSeq])(implicit hints: Seq[RenderHint]): Elem
-}
 
 //object F6CodeField {
 //
@@ -199,54 +146,7 @@ trait CheckboxF7FieldRenderer {
 //  override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 //}
 //
-trait ButtonF7FieldRenderer {
-  def render(field: F7SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
-}
 
-class F7SaveButtonField[B <% Elem](
-                                    btn: FSContext => B
-                                    , val toInitialState: B => B = identity[B] _
-                                    , val toChangedState: B => B = identity[B] _
-                                    , val toErrorState: B => B = identity[B] _
-                                  )(implicit renderer: ButtonF7FieldRenderer)
-  extends StandardF7Field
-    with F7FieldWithReadOnly
-    with F7FieldWithDependencies
-    with F7FieldWithDisabled
-    with F7FieldWithEnabled {
-
-  override def fieldsMatching(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
-
-  val btnRenderer = JS.rerenderableP[(B => B, Form7)](_ => implicit fsc => {
-    case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
-  })
-
-  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case PostSubmit =>
-      //btnRenderer.rerender((toInitialState, form)).printToConsoleBefore()
-      Js.void
-    case PreSubmit => Js.void
-    case PostValidation(errors) =>
-      //btnRenderer.rerender((toErrorState, form)).printToConsoleBefore()
-      Js.void
-    case ChangedField(_) =>
-      //btnRenderer.rerender((toChangedState, form)).printToConsoleBefore()
-      Js.void
-    case Submit => Js.void
-    case _ => Js.void
-  })
-
-  override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
-    else {
-      withFieldRenderHints { implicit hints =>
-        renderer.render(this)({
-          if (hints.contains(FailedSaveStateHint)) btnRenderer.render((toErrorState, form))
-          else btnRenderer.render((toInitialState, form))
-        })
-      }
-    }
-}
 //
 //trait FileUploadFieldRenderer {
 //

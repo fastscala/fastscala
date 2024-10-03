@@ -1,4 +1,4 @@
-package com.fastscala.templates.bootstrap5.utils
+package com.fastscala.templates.utils
 
 trait Mutable {
 

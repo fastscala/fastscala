@@ -1,8 +1,11 @@
 package com.fastscala.templates.bootstrap5.form7
 
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers
-import com.fastscala.templates.form7.F7FormRenderer
+import com.fastscala.templates.form7.{DisableFieldsHint, F7FormRenderer, ReadOnlyFieldsHint, RenderHint, ShowValidationsHint}
 import com.fastscala.templates.form7.fields._
+import com.fastscala.templates.form7.fields.select.{F7MultiSelectFieldBase, F7SelectFieldBase}
+import com.fastscala.templates.form7.fields.text.{F7TextField, F7TextareaField}
+import com.fastscala.templates.form7.renderers.{ButtonF7FieldRenderer, CheckboxF7FieldRenderer, MultiSelectF7FieldRenderer, SelectF7FieldRenderer, TextF7FieldRenderer, TextareaF7FieldRenderer}
 
 import scala.xml.{Elem, NodeSeq}
 

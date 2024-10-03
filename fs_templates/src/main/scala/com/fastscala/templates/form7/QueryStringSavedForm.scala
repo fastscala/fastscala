@@ -2,7 +2,7 @@ package com.fastscala.templates.form7
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.fields.QuerySerializableStringF7Field
+import com.fastscala.templates.form7.mixins.QuerySerializableStringF7Field
 import org.eclipse.jetty.server.Request
 
 import java.net.URLEncoder
@@ -12,7 +12,7 @@ trait QueryStringSavedForm extends Form7 {
 
   override def initForm()(implicit fsc: FSContext): Unit = {
     super.initForm()
-    rootField.fieldsMatching(_ => true).foreach({
+    rootField.fieldAndChildreenMatchingPredicate(_ => true).foreach({
       case f: QuerySerializableStringF7Field => Option(Request.getParameters(fsc.page.req).getValue(f.queryStringParamName)).foreach(str => {
         f.loadFromString(str)
       })
@@ -20,9 +20,9 @@ trait QueryStringSavedForm extends Form7 {
     })
   }
 
-  override def postSubmit()(implicit fsc: FSContext): Js = {
-    super.postSubmit() & {
-      val newParams: Map[String, Array[String]] = rootField.fieldsMatching(_ => true).collect({
+  override def postSubmitForm()(implicit fsc: FSContext): Js = {
+    super.postSubmitForm() & {
+      val newParams: Map[String, Array[String]] = rootField.fieldAndChildreenMatchingPredicate(_ => true).collect({
         case f: QuerySerializableStringF7Field => f.queryStringParamName -> f.saveToString().toArray
       }).toMap
       val existingParams: Map[String, Array[String]] = (Request.getParameters(fsc.page.req).toStringArrayMap.asScala -- newParams.keys).toMap

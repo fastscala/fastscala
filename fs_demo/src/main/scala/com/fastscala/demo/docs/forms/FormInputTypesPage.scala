@@ -5,8 +5,11 @@ import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.DefaultForm7
+import com.fastscala.templates.form7.{DefaultForm7, F7Field}
 import com.fastscala.templates.form7.fields._
+import com.fastscala.templates.form7.fields.layout.F7VerticalField
+import com.fastscala.templates.form7.fields.select.{F7MultiSelectField, F7SelectField, F7SelectOptField}
+import com.fastscala.templates.form7.fields.text.{F7DoubleField, F7DoubleOptField, F7IntOptField, F7LocalDateOptField, F7LocalDateTimeOptField, F7StringField, F7StringOptField, F7StringOptTextareaField}
 
 import java.awt.Color
 import java.time.format.DateTimeFormatter
@@ -24,7 +27,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your name is ${inputField.currentValue}"))
 
           override lazy val rootField: F7Field = F7VerticalField()(
@@ -39,12 +42,12 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your name is ${inputField.currentValue.getOrElse("[None provided]")}"))
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7HtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
@@ -55,12 +58,12 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue.getOrElse("[None provided]")}"))
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7HtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
@@ -71,12 +74,12 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue}"))
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7HtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
@@ -87,12 +90,12 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc => fs_4.apply(s"Your input is: ${inputField.currentValue.getOrElse("[None provided]")}"))
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7RawHtmlField(p.apply("(Experiment with submitting an empty input)"))
+            , new F7HtmlField(p.apply("(Experiment with submitting an empty input)"))
             , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
@@ -103,7 +106,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))).getOrElse("[None selected]")}"))
 
@@ -119,7 +122,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Selected date/time is ${inputField.currentValue.map(_.format(DateTimeFormatter.ofPattern("HH:mm dd MMM yyyy"))).getOrElse("[None selected]")}"))
 
@@ -135,7 +138,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your message:") ++
                 pre.apply(inputField.currentValue.getOrElse("[No message provided]"))
@@ -168,7 +171,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.map(_.toString).getOrElse("[None selected]"))
@@ -201,7 +204,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.toString)
@@ -228,7 +231,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selected continents:") ++
                 pre.apply(inputField.currentValue.mkString(", "))
@@ -247,7 +250,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.toString)
@@ -270,7 +273,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
       div.border.p_2.rounded.apply {
         new DefaultForm7() {
-          override def postSubmit()(implicit fsc: FSContext): Js =
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
             BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
               fs_4.apply(s"Your selection:") ++
                 pre.apply(inputField.currentValue.toString)

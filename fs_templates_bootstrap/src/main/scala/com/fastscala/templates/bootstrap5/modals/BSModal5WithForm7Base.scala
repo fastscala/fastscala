@@ -19,7 +19,7 @@ abstract class BSModal5WithForm7Base(
 
   def cancelBtnEnabled: Boolean = false
 
-  def saveBtn(implicit fsc: FSContext) = BSBtn().BtnPrimary.lbl(saveBtnLbl).onclick(form.onSaveClientSide())
+  def saveBtn(implicit fsc: FSContext) = BSBtn().BtnPrimary.lbl(saveBtnLbl).onclick(form.submitFormClientSide())
 
   def cancelBtn(implicit fsc: FSContext) = BSBtn().BtnSecondary.lbl(cancelBtnLbl).onclick(hideAndRemove())
 

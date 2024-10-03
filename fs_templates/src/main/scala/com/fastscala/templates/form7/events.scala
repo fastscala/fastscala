@@ -1,4 +1,4 @@
-package com.fastscala.templates.form7.fields
+package com.fastscala.templates.form7
 
 import scala.xml.NodeSeq
 
@@ -11,14 +11,6 @@ case class ChangedField(field: F7Field)(implicit renderedWithHints: Seq[RenderHi
  */
 case class RequestedSubmit(byField: F7Field)(implicit renderedWithHints: Seq[RenderHint]) extends F7Event
 
-object PreValidation extends F7Event
-
-object Validation extends F7Event
-
 case class PostValidation(errors: Seq[(F7Field, NodeSeq)]) extends F7Event
 
-object PreSubmit extends F7Event
-
 object Submit extends F7Event
-
-object PostSubmit extends F7Event

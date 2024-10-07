@@ -2,12 +2,14 @@ package com.fastscala.templates.form7
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.templates.form7.formmixins.F7FormWithValidationStrategy
 import com.fastscala.templates.form7.mixins.FocusableF7Field
 import com.fastscala.templates.utils.ElemWithRandomId
 import com.fastscala.utils.RenderableWithFSContext
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, JS}
 
+import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
 trait F7FormRenderer {
@@ -17,9 +19,18 @@ trait F7FormRenderer {
 
 abstract class DefaultForm7()(implicit val formRenderer: F7FormRenderer) extends Form7
 
-trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRandomId {
+object Form7State extends Enumeration {
+  val Filling = Value
+  val ValidationFailed = Value
+  val Saved = Value
+}
+
+trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRandomId
+  with F7FormWithValidationStrategy {
 
   implicit def form: this.type = this
+
+  var state = Form7State.Filling
 
   val rootField: F7Field
 
@@ -30,9 +41,13 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
     event match {
-      case RequestedSubmit(_) => savePipeline()
-      case event => rootField.onEvent(event)
+      case RequestedSubmit(_) => submitFormServerSide()
+      case ChangedField(_) =>
+        state = Form7State.Filling
+        println("state = Form7State.Filling")
+      case _ =>
     }
+    rootField.onEvent(event)
   }
 
   def formRenderer: F7FormRenderer
@@ -63,6 +78,10 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
     rootField.reRender() & postRenderSetupJs()
   }
 
+  def preValidateForm()(implicit fsc: FSContext): Js = Js.void
+
+  def postValidateForm(errors: List[(F7Field, NodeSeq)])(implicit fsc: FSContext): Js = Js.void
+
   def preSubmitForm()(implicit fsc: FSContext): Js = Js.void
 
   def postSubmitForm()(implicit fsc: FSContext): Js = Js.void
@@ -72,28 +91,31 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   def submitFormServerSide()(implicit fsc: FSContext): Js = {
     if (fsc != fsc.page.rootFSContext) submitFormServerSide()(fsc.page.rootFSContext)
     else {
-      val errors: List[(F7Field, NodeSeq)] =
-        rootField
-          .fieldAndChildreenMatchingPredicate(_.enabled())
-          .collect(_.validate())
-          .flatten
-      implicit val renderHints: Seq[RenderHint] = formRenderHits() :+ OnSaveRerender
-      if (errors.nonEmpty) {
-        rootField.onEvent(PostValidation(errors)) &
-          rootField.reRender()(this, fsc, renderHints :+ ShowValidationsHint :+ FailedSaveStateHint)
-      } else {
-        savePipeline()
-      }
+      val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled())
+      preValidateForm() &
+        enabledFields.map(_.preValidation()).reduceOption(_ & _).getOrElse(Js.void) &
+        enabledFields.collect(_.validate()).flatten.pipe(errors => {
+          if (errors.nonEmpty) {
+            state = Form7State.ValidationFailed
+          }
+          enabledFields.map(_.postValidation(errors)).reduceOption(_ & _).getOrElse(Js.void) &
+            postValidateForm(errors) &
+            (if (errors.isEmpty) {
+              try {
+                savePipeline(enabledFields)
+              } finally {
+                state = Form7State.Saved
+              }
+            } else Js.void)
+        })
     }
   }
 
-  private def savePipeline()(implicit renderHints: Seq[RenderHint], fsc: FSContext): Js = {
-    val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled())
+  private def savePipeline(enabledFields: List[F7Field])(implicit fsc: FSContext): Js = {
     preSubmitForm() &
       enabledFields.map(_.preSubmit()).reduceOption(_ & _).getOrElse(Js.void) &
       enabledFields.map(_.submit()).reduceOption(_ & _).getOrElse(Js.void) &
       enabledFields.map(_.postSubmit()).reduceOption(_ & _).getOrElse(Js.void) &
-      postSubmitForm() &
-      rootField.reRender()
+      postSubmitForm() //&      rootField.reRender()
   }
 }

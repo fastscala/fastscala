@@ -1,41 +1,28 @@
 package com.fastscala.templates.form7.mixins
 
 import com.fastscala.templates.form7.fields.text.F7FieldInputFieldMixin
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.Elem
 
 
 trait F7FieldWithLabel extends F7FieldInputFieldMixin {
-  var _label: () => Option[NodeSeq] = () => None
+  var _label: () => Option[Elem] = () => None
 
   def label() = _label()
 
-  def label(v: Option[NodeSeq]): this.type = mutate {
+  def label(v: Option[Elem]): this.type = mutate {
     _label = () => v
   }
 
-  def label(v: NodeSeq): this.type = mutate {
+  def label(v: Elem): this.type = mutate {
     _label = () => Some(v)
   }
 
   def label(v: String): this.type = mutate {
-    _label = () => Some(FSScalaXmlSupport.fsXmlSupport.buildText(v))
-  }
-
-  def labelNodeSeqF(f: () => Option[NodeSeq]): this.type = mutate {
-    _label = f
+    _label = () => Some(<label>{v}</label>)
   }
 
   def labelStrF(f: () => String): this.type = mutate {
-    _label = () => Some(<span>{f()}</span>)
-  }
-
-  def withLabel(label: String): this.type = mutate {
-    _label = () => Some(<span>{label}</span>)
-  }
-
-  def withLabel(label: Elem): this.type = mutate {
-    _label = () => Some(label)
+    _label = () => Some(<label>{f()}</label>)
   }
 }

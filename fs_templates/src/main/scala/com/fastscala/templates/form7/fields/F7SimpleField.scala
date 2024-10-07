@@ -6,7 +6,6 @@ import com.fastscala.templates.utils.Mutable
 
 trait F7SimpleField extends StandardF7Field
   with Mutable
-  with F7FieldWithValidations
   with F7FieldWithOnChangedField {
 
   override def disabled(): Boolean = false

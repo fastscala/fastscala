@@ -52,7 +52,7 @@ trait ScalaXmlElemUtils {
 
   def withStyle(style: String): Elem = attributeTransform("style", _.map(_ + ";").getOrElse("") + style)
 
-  def withFor(`for`: String): Elem = attributeTransform("for", _ => `for`)
+  def withFor(id: String): Elem = attributeTransform("for", _ => id)
 
   def withType(`type`: String): Elem = attributeTransform("type", _ => `type`)
 

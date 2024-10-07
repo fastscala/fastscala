@@ -42,7 +42,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF7Field
 
   override def saveToString(): Option[String] = Some(currentValue.map(opt => _option2Id(opt, options())).mkString(";"))
 
-  override def submit()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.submit() & _setter(currentValue)
+  override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 

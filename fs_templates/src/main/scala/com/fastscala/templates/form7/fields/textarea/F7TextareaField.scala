@@ -46,7 +46,7 @@ abstract class F7TextareaField[T]()(implicit renderer: TextareaF7FieldRenderer) 
 
   override def saveToString(): Option[String] = Some(toString(currentValue)).filter(_ != "")
 
-  override def submit()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.submit() & _setter(currentValue)
+  override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 

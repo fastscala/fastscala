@@ -7,7 +7,7 @@ import com.fastscala.templates.utils.ElemWithRandomId
 import com.fastscala.xml.scala_xml.JS
 
 
-abstract class StandardF7Field() extends F7Field with ElemWithRandomId {
+abstract class StandardF7Field() extends F7Field with F7FieldWithValidations with ElemWithRandomId {
 
   val aroundId: String = randomElemId
 

@@ -73,9 +73,10 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
   def renderSnippet(
                      title: String,
                      thisSectionStartsAt: Int = Thread.currentThread.getStackTrace.apply(stackTracePos).getLineNumber
-                   )(contents: => NodeSeq): Unit = {
+                   )(contents: => NodeSeq): NodeSeq = {
     collectSection(thisSectionStartsAt)
     lastSection = Some((thisSectionStartsAt, title, contents))
+    lastSection.get._3
   }
 
   def renderHtml(

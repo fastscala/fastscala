@@ -158,7 +158,7 @@ trait JsUtils {
 
   def removeId(id: String): Js = Js(s"""document.getElementById("$id").remove();""")
 
-  def show(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "block";""")
+  def show(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "";""")
 
   def hide(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").style.display = "none";""")
 
@@ -167,6 +167,10 @@ trait JsUtils {
   def select(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").select();""")
 
   def blur(id: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").blur();""")
+
+  def setAttr(id: String)(name: String, value: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").setAttribute(${this.asJsStr(name)}, ${this.asJsStr(value)})""")
+
+  def removeAttr(id: String, name: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").removeAttribute(${this.asJsStr(name)})""")
 
   def addClass(id: String, clas: String): Js = Js(s"""document.getElementById("${escapeStr(id)}").classList.add(${this.asJsStr(clas)})""")
 

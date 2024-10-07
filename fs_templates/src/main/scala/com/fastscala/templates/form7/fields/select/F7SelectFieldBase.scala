@@ -44,7 +44,7 @@ abstract class F7SelectFieldBase[T]()(implicit renderer: SelectF7FieldRenderer) 
 
   override def saveToString(): Option[String] = Some(_option2Id(currentValue, options())).filter(_ != "")
 
-  override def submit()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.submit() & _setter(currentValue)
+  override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 

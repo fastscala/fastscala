@@ -39,7 +39,7 @@ class F7CheckboxField()(implicit renderer: CheckboxF7FieldRenderer) extends Stan
 
   override def saveToString(): Option[String] = Some(currentValue.toString).filter(_ != "")
 
-  override def submit()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.submit() & _setter(currentValue)
+  override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 

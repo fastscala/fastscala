@@ -16,34 +16,37 @@ class ValidationStrategiesPage extends MultipleCodeExamples2Page() {
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
-    renderSnippet("ValidateBeforeUserInput") {
+    renderSnippet("ValidateBeforeUserInput (always validates)") {
       new DefaultForm7() {
         validateBeforeUserInput()
         override lazy val rootField: F7Field = F7VerticalField()(
           new F7StringField().label("Name")
-            .addValidation(_.currentValue.length > 5, _ => <span>Minimum length of 5 chars</span>)
+            .addValidation(_.currentValue.length >= 5, _ => <span>Error: input less than 5 characters</span>)
+            .help("Min. 5 chars")
           , new F7IntOptField().label("Integer field")
           , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )
       }.render()
     }
-    renderSnippet("ValidateEachFieldAfterUserInput") {
+    renderSnippet("ValidateEachFieldAfterUserInput (validates immediately after input in a field)") {
       new DefaultForm7() {
         validateEachFieldAfterUserInput()
         override lazy val rootField: F7Field = F7VerticalField()(
-          new F7StringField().label("Name")
-            .addValidation(_.currentValue.length > 5, _ => <span>Minimum length of 5 chars</span>)
+          new F7StringField().label("Name (type abc and move to next field)")
+            .addValidation(_.currentValue.length >= 5, _ => <span>Error: input less than 5 characters</span>)
+            .help("Min. 5 chars")
           , new F7IntOptField().label("Integer field")
           , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )
       }.render()
     }
-    renderSnippet("ValidateOnAttemptSubmitOnly") {
+    renderSnippet("ValidateOnAttemptSubmitOnly (only validates on submit)") {
       new DefaultForm7() {
         validateOnAttemptSubmitOnly()
         override lazy val rootField: F7Field = F7VerticalField()(
           new F7StringField().label("Name")
-            .addValidation(_.currentValue.length > 5, _ => <span>Minimum length of 5 chars</span>)
+            .addValidation(_.currentValue.length >= 5, _ => <span>Error: input less than 5 characters</span>)
+            .help("Min. 5 chars")
           , new F7IntOptField().label("Integer field")
           , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )

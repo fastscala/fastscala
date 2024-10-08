@@ -13,11 +13,12 @@ class F7HtmlSurroundField[T <: F7Field](
                                        )(
                                          field: T
                                        )
-  extends StandardF7Field
+  extends F7Field with F7FieldWithValidations
     with F7FieldWithReadOnly
     with F7FieldWithDependencies
     with F7FieldWithDisabled
     with F7FieldWithEnabled {
+
   override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem =
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{surround(field.render())}</div>

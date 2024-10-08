@@ -7,7 +7,7 @@ import java.util.regex.Pattern
 
 
 class F7DoubleField()(implicit renderer: TextF7FieldRenderer)
-  extends F7TextField[Double]
+  extends F7TextFieldBase[Double]
     with F7FieldWithPrefix
     with F7FieldWithSuffix
     with F7FieldWithMin

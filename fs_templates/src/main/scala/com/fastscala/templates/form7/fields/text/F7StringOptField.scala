@@ -7,7 +7,7 @@ import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 import scala.xml.NodeSeq
 
 
-class F7StringOptField()(implicit renderer: TextF7FieldRenderer) extends F7TextField[Option[String]] {
+class F7StringOptField()(implicit renderer: TextF7FieldRenderer) extends F7TextFieldBase[Option[String]] {
 
   override def defaultValue: Option[String] = None
 

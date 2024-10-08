@@ -8,7 +8,7 @@ import scala.xml.{Elem, NodeSeq}
 
 class F7HtmlField(
                    gen: => NodeSeq
-                 ) extends StandardF7Field
+                 ) extends F7Field with F7FieldWithValidations
   with F7FieldWithDisabled
   with F7FieldWithReadOnly
   with F7FieldWithDependencies

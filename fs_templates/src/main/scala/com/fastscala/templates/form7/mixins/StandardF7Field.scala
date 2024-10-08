@@ -3,32 +3,73 @@ package com.fastscala.templates.form7.mixins
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form7._
-import com.fastscala.templates.utils.ElemWithRandomId
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.templates.form7.renderers.StandardF7FieldRenderer
+
+import scala.xml.NodeSeq
 
 
-abstract class StandardF7Field() extends F7Field with F7FieldWithValidations with ElemWithRandomId {
+abstract class StandardF7Field() extends F7Field with F7FieldWithValidations {
 
-  val aroundId: String = randomElemId
+  def renderer: StandardF7FieldRenderer
 
-  def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
-    JS.replace(aroundId, render())
-  }
+  var showingValidation = false
 
   def visible: () => Boolean = () => enabled()
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
+    case ChangedField(f) if f == this => updateValidation()
     case _ => Js.void
   })
 
-  def disabled(): Boolean
-
-  def readOnly(): Boolean
-
-  def withFieldRenderHints[T](f: Seq[RenderHint] => T)(implicit renderHints: Seq[RenderHint]): T = f {
-    List(DisableFieldsHint).filter(_ => disabled()) ++
-      List(ReadOnlyFieldsHint).filter(_ => readOnly()) ++
-      renderHints
+  override def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = {
+    implicit val renderHints: Seq[RenderHint] = form.formRenderHits()
+    updateValidation()
   }
+
+  def shouldShowValidation_?(implicit form: Form7): Boolean = {
+    import F7FormValidationStrategy._
+    import Form7State._
+    def aux(validationStrategy: F7FormValidationStrategy.Value): Boolean = {
+      validationStrategy match {
+        case ValidateBeforeUserInput => true
+        case ValidateEachFieldAfterUserInput => state match {
+          case F7FieldState.Filled => true
+          case F7FieldState.AwaitingInput => aux(ValidateOnAttemptSubmitOnly)
+        }
+        case ValidateOnAttemptSubmitOnly => form.state match {
+          case Filling => false
+          case ValidationFailed => true
+          case Saved => false
+        }
+      }
+    }
+
+    aux(form.validationStrategy)
+  }
+
+  def updateValidation()(implicit form7: Form7): Js = {
+    val shouldShowValidation = shouldShowValidation_?
+    if (shouldShowValidation) {
+      val errors = this.validate()
+      if (errors.nonEmpty) {
+        val validation = errors.headOption.map(error => <div>{error._2}</div>).getOrElse(<div></div>)
+        showingValidation = true
+        renderer.showOrUpdateValidation(this)(validation)
+      } else {
+        showingValidation = false
+        renderer.hideValidation(this)()
+      }
+    } else if (showingValidation) {
+      showingValidation = false
+      renderer.hideValidation(this)()
+    } else Js.void
+  }
+
+  override def postSubmit()(implicit form: Form7, fsc: FSContext): Js = super.postSubmit() & {
+    setFilled()
+    Js.void
+  }
+
+  override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
 }

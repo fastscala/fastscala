@@ -44,7 +44,6 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
       case RequestedSubmit(_) => submitFormServerSide()
       case ChangedField(_) =>
         state = Form7State.Filling
-        println("state = Form7State.Filling")
       case _ =>
     }
     rootField.onEvent(event)

@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 import scala.xml.NodeSeq
 
 class F7DoubleOptField()(implicit renderer: TextF7FieldRenderer)
-  extends F7TextField[Option[Double]]
+  extends F7TextFieldBase[Option[Double]]
     with F7FieldWithPrefix
     with F7FieldWithSuffix
     with F7FieldWithMin

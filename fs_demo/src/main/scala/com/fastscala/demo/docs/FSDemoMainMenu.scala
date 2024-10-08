@@ -3,7 +3,7 @@ package com.fastscala.demo.docs
 import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
 import com.fastscala.demo.docs.fastscala._
-import com.fastscala.demo.docs.forms.{FormInputTypesPage, FormValidationPage, ValidationStrategiesPage}
+import com.fastscala.demo.docs.forms.{FormInputTypesPage, FormValidationPage, ValidationByFieldTypePage, ValidationStrategiesPage}
 import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
 import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer._
@@ -44,6 +44,7 @@ object FSDemoMainMenu extends BSMenu(
     , new RoutingMenuItem("demo", "forms", "input_types")("Input Types", () => new FormInputTypesPage())
     , new RoutingMenuItem("demo", "forms", "validation")("Validation", () => new FormValidationPage())
     , new RoutingMenuItem("demo", "forms", "validation-strategies")("Validation Strategies", () => new ValidationStrategiesPage())
+    , new RoutingMenuItem("demo", "forms", "validation-by-field-type")("Validation by Field Type", () => new ValidationByFieldTypePage())
   ),
   MenuSection("Table Lib")(
     SimpleMenuItem("Simple", "/demo/simple_tables")

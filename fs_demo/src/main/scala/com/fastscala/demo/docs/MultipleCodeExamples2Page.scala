@@ -6,7 +6,6 @@ import org.eclipse.jetty.util.{IO, VirtualThreads}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
-
 import scala.xml.NodeSeq
 
 abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
@@ -92,7 +91,7 @@ abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
     lastSection.foreach({
       case (lastSectionStartedAt, title, contents) =>
         val code = lines.drop(lastSectionStartedAt).take(thisSectionStartsAt - lastSectionStartedAt - 2)
-        println(s"$lastSectionStartedAt:$thisSectionStartsAt: \n${code.mkString("\n")}")
+        //        println(s"$lastSectionStartedAt:$thisSectionStartsAt: \n${code.mkString("\n")}")
         val leftPadding: Int = code.iterator.map(_.takeWhile(_ == ' ').size).filter(_ > 0).minOption.getOrElse(0)
         val withoutPadding = code.map(_.drop(leftPadding)).mkString("\n")
         val rendered = div.apply {

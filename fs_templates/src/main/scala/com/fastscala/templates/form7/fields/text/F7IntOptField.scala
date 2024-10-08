@@ -11,7 +11,7 @@ import scala.xml.NodeSeq
 
 
 class F7IntOptField()(implicit renderer: TextF7FieldRenderer)
-  extends F7TextField[Option[Int]]
+  extends F7TextFieldBase[Option[Int]]
     with F7FieldWithPrefix
     with F7FieldWithSuffix
     with F7FieldWithMin

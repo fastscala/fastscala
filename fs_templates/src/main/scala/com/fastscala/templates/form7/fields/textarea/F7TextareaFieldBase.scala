@@ -10,7 +10,7 @@ import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7TextareaField[T]()(implicit renderer: TextareaF7FieldRenderer) extends StandardF7Field
+abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRenderer) extends StandardF7Field
   with F7Field
   with StringSerializableF7Field
   with FocusableF7Field
@@ -23,6 +23,8 @@ abstract class F7TextareaField[T]()(implicit renderer: TextareaF7FieldRenderer) 
   with F7FieldWithName
   with F7FieldWithPlaceholder
   with F7FieldWithLabel
+  with F7FieldWithValidFeedback
+  with F7FieldWithHelp
   with F7FieldWithMaxlength
   with F7FieldWithInputType
   with F7FieldWithAdditionalAttrs
@@ -53,28 +55,36 @@ abstract class F7TextareaField[T]()(implicit renderer: TextareaF7FieldRenderer) 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
-    else {
+    if (!enabled()) renderer.renderDisabled(this)
+    else
       withFieldRenderHints { implicit hints =>
+
+        val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
+        showingValidation = errorsToShow.nonEmpty
+
         renderer.render(this)(
-          _label().map(lbl => <label for={elemId}>{lbl}</label>),
-          processInputElem(<textarea
+          inputElem = processInputElem(
+            <textarea
                       type="text"
-                      id={elemId}
                       onblur={
                       fsc.callback(Js.elementValueById(elemId), str => {
-                        fromString(str).foreach(currentValue = _)
-                        form.onEvent(ChangedField(this)) &
-                          Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
+                        if (currentValue != str) {
+                          setFilled()
+                          fromString(str).foreach(currentValue = _)
+                          form.onEvent(ChangedField(this))
+                        } else {
+                          Js.void
+                        }
                       }).cmd
                       }
                       onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13 && event.ctrlKey) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.submitFormClientSide())}}"}
-          >{this.toString(currentValue)}</textarea>).withAttrs(finalAdditionalAttrs: _*),
-          validate().headOption.map(_._2)
+          >{this.toString(currentValue)}</textarea>
+          ).withAttrs(finalAdditionalAttrs: _*),
+          label = _label(),
+          invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+          validFeedback = if (errorsToShow.isEmpty) validFeedback() else None,
+          help = help()
         )
       }
-    }
   }
-
-  override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
 }

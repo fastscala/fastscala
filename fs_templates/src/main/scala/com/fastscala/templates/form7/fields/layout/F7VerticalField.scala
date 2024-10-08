@@ -4,13 +4,14 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form7._
 import com.fastscala.templates.form7.mixins._
+import com.fastscala.templates.utils.ElemWithRandomId
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, JS}
 
 import scala.xml.Elem
 
 class F7VerticalField()(children: F7Field*)
-  extends StandardF7Field
+  extends F7Field with F7FieldWithValidations with ElemWithRandomId
     with F7FieldWithEnabled
     with F7FieldWithDependencies
     with F7FieldWithDisabled

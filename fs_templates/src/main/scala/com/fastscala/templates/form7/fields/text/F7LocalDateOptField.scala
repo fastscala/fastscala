@@ -20,7 +20,7 @@ object F7LocalDateOptField {
   )
 }
 
-class F7LocalDateOptField()(implicit renderer: TextF7FieldRenderer) extends F7TextField[Option[java.time.LocalDate]] {
+class F7LocalDateOptField()(implicit renderer: TextF7FieldRenderer) extends F7TextFieldBase[Option[java.time.LocalDate]] {
   override def _inputTypeDefault: String = "date"
 
   override def defaultValue: Option[LocalDate] = None

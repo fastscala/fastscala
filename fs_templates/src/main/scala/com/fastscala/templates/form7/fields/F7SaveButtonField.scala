@@ -2,9 +2,9 @@ package com.fastscala.templates.form7.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
 import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7.renderers._
+import com.fastscala.templates.form7._
 import com.fastscala.xml.scala_xml.JS
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
@@ -16,7 +16,7 @@ class F7SaveButtonField[B <% Elem](
                                     , val toChangedState: B => B = identity[B] _
                                     , val toErrorState: B => B = identity[B] _
                                   )(implicit renderer: ButtonF7FieldRenderer)
-  extends StandardF7Field
+  extends F7Field with F7FieldWithValidations
     with F7FieldWithReadOnly
     with F7FieldWithDependencies
     with F7FieldWithDisabled

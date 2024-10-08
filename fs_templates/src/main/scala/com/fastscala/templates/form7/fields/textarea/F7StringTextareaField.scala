@@ -6,7 +6,7 @@ import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
 import scala.xml.NodeSeq
 
-class F7StringTextareaField()(implicit renderer: TextareaF7FieldRenderer) extends F7TextareaField[String] {
+class F7StringTextareaField()(implicit renderer: TextareaF7FieldRenderer) extends F7TextareaFieldBase[String] {
 
   override def defaultValue: String = ""
 

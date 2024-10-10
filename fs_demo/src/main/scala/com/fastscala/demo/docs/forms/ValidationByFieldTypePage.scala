@@ -143,6 +143,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
     renderSnippet("Radio") {
 
       val inputField = new F7RadioField[String](() => Seq("Android", "iOS", "Others")).label("Your phone")
+        .setInternalValue("Others")
         .help("Select your phone type, iOS or Android (others not supported)")
         .addValidation(_.currentValue != "Others", _ => <div>Only Android and iOS are supported.</div>)
 

@@ -48,6 +48,10 @@ abstract class StandardF7Field() extends F7Field with F7FieldWithValidations {
     aux(form.validationStrategy)
   }
 
+  def showOrUpdateValidation(ns: NodeSeq): Js
+
+  def hideValidation(): Js
+
   def updateValidation()(implicit form7: Form7): Js = {
     val shouldShowValidation = shouldShowValidation_?
     if (shouldShowValidation) {
@@ -55,14 +59,14 @@ abstract class StandardF7Field() extends F7Field with F7FieldWithValidations {
       if (errors.nonEmpty) {
         val validation = errors.headOption.map(error => <div>{error._2}</div>).getOrElse(<div></div>)
         showingValidation = true
-        renderer.showOrUpdateValidation(this)(validation)
+        showOrUpdateValidation(validation)
       } else {
         showingValidation = false
-        renderer.hideValidation(this)()
+        hideValidation()
       }
     } else if (showingValidation) {
       showingValidation = false
-      renderer.hideValidation(this)()
+      hideValidation()
     } else Js.void
   }
 

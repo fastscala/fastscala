@@ -6,38 +6,42 @@ import com.fastscala.templates.form7.renderers._
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class BSForm7Renderer {
+abstract class BSForm7Renderers {
 
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   def defaultRequiredFieldLabel: String
 
-  implicit val bsFormRenderer: BSForm7Renderer = this
+  implicit val bsFormRenderer: BSForm7Renderers = this
 
   implicit def textFieldRenderer: TextF7FieldRenderer = new TextF7FieldRenderer with BSStandardF7FieldRendererImpl {
-    def defaultRequiredFieldLabel: String = BSForm7Renderer.this.defaultRequiredFieldLabel
+    def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 
   implicit def textareaFieldRenderer: TextareaF7FieldRenderer = new TextareaF7FieldRenderer with BSStandardF7FieldRendererImpl {
-    def defaultRequiredFieldLabel: String = BSForm7Renderer.this.defaultRequiredFieldLabel
+    def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 
   implicit def selectFieldRenderer: SelectF7FieldRenderer = new SelectF7FieldRenderer with BSStandardF7FieldRendererImpl {
-    def defaultRequiredFieldLabel: String = BSForm7Renderer.this.defaultRequiredFieldLabel
+    def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
 
     override def renderOption(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
       <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
   implicit def multiSelectFieldRenderer: MultiSelectF7FieldRenderer = new MultiSelectF7FieldRenderer with BSStandardF7FieldRendererImpl {
-    def defaultRequiredFieldLabel: String = BSForm7Renderer.this.defaultRequiredFieldLabel
+    def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
 
     override def renderOption(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
       <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
   implicit def checkboxFieldRenderer: CheckboxF7FieldRenderer = new BSCheckboxF7FieldRendererImpl {
-    def defaultRequiredFieldLabel: String = BSForm7Renderer.this.defaultRequiredFieldLabel
+    def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
+  }
+
+  implicit def radioFieldRenderer: RadioF7FieldRenderer = new BSRadioF7FieldRendererImpl {
+    def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 
   //  implicit val fileUploadFieldRenderer = new FileUploadFieldRenderer {

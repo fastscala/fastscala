@@ -8,7 +8,9 @@ import com.fastscala.templates.bootstrap5.toast.BSToast2
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.fields._
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
-import com.fastscala.templates.form7.fields.select.{F7MultiSelectField, F7SelectField}
+import com.fastscala.templates.form7.fields.multiselect.F7MultiSelectField
+import com.fastscala.templates.form7.fields.radio.F7RadioField
+import com.fastscala.templates.form7.fields.select.F7SelectField
 import com.fastscala.templates.form7.fields.text._
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
 
@@ -19,7 +21,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 7 Input Types"
 
-  import DefaultBSForm7Renderer._
+  import DefaultBSForm7Renderers._
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
@@ -130,6 +132,29 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
           override def postSubmitForm()(implicit fsc: FSContext): Js = BSModal5.verySimple("Your input", "Done")(
             _ => implicit fsc => div.apply(s"Your selection: " + inputField.currentValue)
           )
+
+          override lazy val rootField: F7Field = F7VerticalField()(
+            inputField
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Radio") {
+
+      val inputField = new F7RadioField[String](() => Seq("Android", "iOS", "Others")).label("Your phone")
+        .setInternalValue("Others")
+        .help("Select your phone type, iOS or Android (others not supported)")
+        .addValidation(_.currentValue != "Others", _ => <div>Only Android and iOS are supported.</div>)
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm7() {
+          validateBeforeUserInput()
+
+          override def postSubmitForm()(implicit fsc: FSContext): Js =
+            BSModal5.verySimple("Your input", "Done")(modal => implicit fsc =>
+              div.apply(s"Your phone type: ${inputField.currentValue}")
+            )
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField

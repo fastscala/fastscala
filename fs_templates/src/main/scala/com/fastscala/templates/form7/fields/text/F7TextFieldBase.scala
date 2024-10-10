@@ -6,12 +6,11 @@ import com.fastscala.templates.form7._
 import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7.renderers._
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
 
-abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) extends StandardF7Field
+abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) extends StandardOneInputElemF7Field
   with StringSerializableF7Field
   with FocusableF7Field
   with F7FieldWithDisabled
@@ -51,8 +50,6 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 
-  def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
-
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) renderer.renderDisabled(this)
     else {
@@ -79,7 +76,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
               onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.submitFormClientSide())}}"}
               value={this.toString(currentValue)}
             />
-          ).withAttrs(finalAdditionalAttrs: _*),
+          ),
           label = _label(),
           invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
           validFeedback = if (errorsToShow.isEmpty) validFeedback() else None,

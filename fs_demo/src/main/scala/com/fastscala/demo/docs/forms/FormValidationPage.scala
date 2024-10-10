@@ -7,7 +7,8 @@ import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.fields._
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
-import com.fastscala.templates.form7.fields.select.{F7MultiSelectField, F7SelectField, F7SelectOptField}
+import com.fastscala.templates.form7.fields.multiselect.F7MultiSelectField
+import com.fastscala.templates.form7.fields.select.{F7SelectField, F7SelectOptField}
 import com.fastscala.templates.form7.fields.text._
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
 
@@ -18,7 +19,7 @@ class FormValidationPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 7 Validation"
 
-  import DefaultBSForm7Renderer._
+  import DefaultBSForm7Renderers._
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {

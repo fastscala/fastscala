@@ -1,4 +1,4 @@
 package com.fastscala.templates.form7.renderers
 
 
-trait TextF7FieldRenderer extends StandardF7FieldRenderer
+trait TextF7FieldRenderer extends StandardOneInputElemF7FieldRenderer

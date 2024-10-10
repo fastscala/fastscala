@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.SingleCodeExamplePage
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.form7.BSForm7Renderer
+import com.fastscala.templates.bootstrap5.form7.BSForm7Renderers
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7._
@@ -59,7 +59,7 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
       province = CitiesData.data.head._1,
       city = CitiesData.data.head._2.head
     )
-    val BSFormRenderer = new BSForm7Renderer {
+    val BSFormRenderer = new BSForm7Renderers {
       override def defaultRequiredFieldLabel: String = "Required Field"
     }
     import BSFormRenderer._

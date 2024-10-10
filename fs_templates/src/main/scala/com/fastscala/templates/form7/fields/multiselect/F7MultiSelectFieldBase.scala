@@ -1,5 +1,4 @@
-package com.fastscala.templates.form7.fields.select
-
+package com.fastscala.templates.form7.fields.multiselect
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -11,7 +10,7 @@ import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7FieldRenderer) extends StandardF7Field
+abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7FieldRenderer) extends StandardOneInputElemF7Field
   with F7FieldWithOptions[T]
   with F7FieldWithOptionIds[T]
   with F7Field
@@ -49,8 +48,6 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 
-  def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
-
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) renderer.renderDisabled(this)
     else {
@@ -84,7 +81,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
               onblur={onchangeJs}
               onchange={onchangeJs}
             >{optionsRendered}</select>
-          ).withAttrs(finalAdditionalAttrs: _*),
+          ),
           label = _label(),
           invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
           validFeedback = if (errorsToShow.isEmpty) validFeedback() else None,

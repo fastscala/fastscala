@@ -4,7 +4,7 @@ import com.fastscala.templates.form7.RenderHint
 
 import scala.xml.{Elem, NodeSeq}
 
-trait SelectF7FieldRenderer extends StandardF7FieldRenderer {
+trait SelectF7FieldRenderer extends StandardOneInputElemF7FieldRenderer {
 
   def renderOption(
                     selected: Boolean,

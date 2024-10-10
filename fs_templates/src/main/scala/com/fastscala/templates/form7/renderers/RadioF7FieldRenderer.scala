@@ -1,0 +1,26 @@
+package com.fastscala.templates.form7.renderers
+
+import com.fastscala.js.Js
+import com.fastscala.templates.form7.fields.radio.F7RadioFieldBase
+
+import scala.xml.{Elem, NodeSeq}
+
+trait RadioF7FieldRenderer extends StandardF7FieldRenderer {
+
+  def render(
+              field: F7RadioFieldBase[_],
+            )(
+              inputElemsAndLabels: Seq[(Elem, Option[Elem])],
+              invalidFeedback: Option[Elem],
+              validFeedback: Option[Elem],
+              help: Option[Elem],
+            ): Elem
+
+  def showOrUpdateValidation(
+                              field: F7RadioFieldBase[_]
+                            )(ns: NodeSeq): Js
+
+  def hideValidation(
+                      field: F7RadioFieldBase[_]
+                    )(): Js
+}

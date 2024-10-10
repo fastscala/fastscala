@@ -1,4 +1,4 @@
-package com.fastscala.templates.form7.fields.select
+package com.fastscala.templates.form7.fields.radio
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -6,17 +6,16 @@ import com.fastscala.templates.form7._
 import com.fastscala.templates.form7.fields.text.F7FieldWithAdditionalAttrs
 import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7.renderers._
+import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRenderer) extends StandardOneInputElemF7Field
-  with F7FieldWithOptions[T]
-  with F7FieldWithOptionIds[T]
-  with F7Field
+abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer) extends StandardF7Field
   with StringSerializableF7Field
   with FocusableF7Field
+  with F7FieldWithOptions[T]
+  with F7FieldWithOptionIds[T]
   with F7FieldWithDisabled
   with F7FieldWithRequired
   with F7FieldWithReadOnly
@@ -30,6 +29,8 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
   with F7FieldWithDependencies
   with F7FieldWithValue[T]
   with F7FieldWithOptionsNsLabel[T] {
+
+  val radioNameId = IdGen.id
 
   override def loadFromString(str: String): Seq[(F7Field, NodeSeq)] = {
     val all = options()
@@ -60,33 +61,21 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
         showingValidation = errorsToShow.nonEmpty
 
         val renderedOptions = options()
-        val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
-        val option2Id: Map[T, String] = ids2Option.map(_.swap)
-        val optionsRendered = renderedOptions.map(opt => {
-          renderer.renderOption(currentValue == opt, option2Id(opt), _option2NodeSeq(opt))
+        val radioToggles: Seq[(Elem, Some[Elem])] = renderedOptions.map(opt => {
+          val onchange = fsc.callback(() => {
+            if (currentValue != opt) {
+              setFilled()
+              currentValue = opt
+              form.onEvent(ChangedField(this))
+            } else {
+              Js.void
+            }
+          }).cmd
+          (processInputElem(<input checked={if (currentValue == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>), Some(<label>{_option2NodeSeq(opt)}</label>))
         })
 
-        val onchangeJs = fsc.callback(Js.elementValueById(elemId), id => {
-          ids2Option.get(id) match {
-            case Some(value) if currentValue != value =>
-              setFilled()
-              currentValue = value
-              form.onEvent(ChangedField(this))
-            case Some(value) if currentValue == value => Js.void
-            case None =>
-              // Log error
-              Js.void
-          }
-        }).cmd
-
         renderer.render(this)(
-          inputElem = processInputElem(
-            <select
-              onblur={onchangeJs}
-              onchange={onchangeJs}
-            >{optionsRendered}</select>
-          ),
-          label = _label(),
+          inputElemsAndLabels = radioToggles,
           invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
           validFeedback = if (errorsToShow.isEmpty) validFeedback() else None,
           help = help()
@@ -94,4 +83,8 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
       }
     }
   }
+
+  override def showOrUpdateValidation(ns: NodeSeq): Js = renderer.showOrUpdateValidation(this)(ns)
+
+  override def hideValidation(): Js = renderer.hideValidation(this)
 }

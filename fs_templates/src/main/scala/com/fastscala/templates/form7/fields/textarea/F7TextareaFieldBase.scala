@@ -10,7 +10,7 @@ import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRenderer) extends StandardF7Field
+abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRenderer) extends StandardOneInputElemF7Field
   with F7Field
   with StringSerializableF7Field
   with FocusableF7Field
@@ -52,8 +52,6 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 
-  def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
-
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) renderer.renderDisabled(this)
     else
@@ -79,7 +77,7 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
                       }
                       onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13 && event.ctrlKey) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.submitFormClientSide())}}"}
           >{this.toString(currentValue)}</textarea>
-          ).withAttrs(finalAdditionalAttrs: _*),
+          ),
           label = _label(),
           invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
           validFeedback = if (errorsToShow.isEmpty) validFeedback() else None,

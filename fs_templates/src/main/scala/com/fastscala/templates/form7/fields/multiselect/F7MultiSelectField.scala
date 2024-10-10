@@ -1,5 +1,4 @@
-package com.fastscala.templates.form7.fields.select
-
+package com.fastscala.templates.form7.fields.multiselect
 
 import com.fastscala.templates.form7.renderers._
 

@@ -2,7 +2,7 @@ package com.fastscala.demo.docs.about
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
-import com.fastscala.demo.docs.forms.DefaultBSForm7Renderer
+import com.fastscala.demo.docs.forms.DefaultBSForm7Renderers
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
@@ -140,7 +140,7 @@ class AboutPage extends MultipleCodeExamples2Page {
       </p>
     }
     renderSnippet("Easily create advanced forms") {
-      import DefaultBSForm7Renderer._
+      import DefaultBSForm7Renderers._
       val nameField = new F7StringField().label("Name").required(true)
       val emailField = new F7StringField().label("Email").inputType("email").required(true)
 
@@ -158,7 +158,7 @@ class AboutPage extends MultipleCodeExamples2Page {
       }.render()
     }
     renderSnippet("Support advanced interactions with a few lines of code") {
-      import DefaultBSForm7Renderer._
+      import DefaultBSForm7Renderers._
       case class Definition(definition: Option[String], example: Option[String], synonyms: List[String], antonyms: List[String]) {
         def render(): NodeSeq = definition.map(definition => <li><i>{definition}</i>{example.map(": " + _).getOrElse("")}</li>).getOrElse(NodeSeq.Empty)
       }

@@ -11,7 +11,7 @@ import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends StandardF7Field
+class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends StandardOneInputElemF7Field
   with F7Field
   with StringSerializableF7Field
   with FocusableF7Field
@@ -45,8 +45,6 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
 
   def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
 
-  def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
-
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled()) renderer.renderDisabled(this)
     else {
@@ -75,7 +73,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
                    onchange={onchangeJs}
                    checked={if (currentValue) "true" else null}
             ></input>
-          ).withAttrs(finalAdditionalAttrs: _*),
+          ),
           label = _label(),
           invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
           validFeedback = if (errorsToShow.isEmpty) validFeedback() else None,

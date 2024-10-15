@@ -33,9 +33,9 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
 
-      "io.circe" %% "circe-core" % "0.14.9",
-      "io.circe" %% "circe-generic" % "0.14.9",
-      "io.circe" %% "circe-parser" % "0.14.9",
+      "io.circe" %% "circe-core" % "0.14.10",
+      "io.circe" %% "circe-generic" % "0.14.10",
+      "io.circe" %% "circe-parser" % "0.14.10",
     ),
   )
 

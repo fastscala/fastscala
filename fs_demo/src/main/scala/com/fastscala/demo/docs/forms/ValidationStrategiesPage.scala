@@ -12,7 +12,7 @@ class ValidationStrategiesPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 7 Validation Strategies"
 
-  import DefaultBSForm7Renderers._
+  import DefaultFSDemoBSForm7Renderers._
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {

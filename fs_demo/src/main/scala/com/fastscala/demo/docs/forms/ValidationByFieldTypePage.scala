@@ -3,6 +3,7 @@ package com.fastscala.demo.docs.forms
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
+import com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.toast.BSToast2
 import com.fastscala.templates.bootstrap5.utils.BSBtn
@@ -21,7 +22,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 7 Input Types"
 
-  import DefaultBSForm7Renderers._
+  import DefaultFSDemoBSForm7Renderers._
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
@@ -122,6 +123,30 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
     }
     renderSnippet("Checkbox") {
 
+      val inputField = new F7CheckboxField().label("I agree to the Terms of Service")
+        .addValidation(_.currentValue == true, _ => div.apply("Error: you must accept the Terms of Service."))
+
+      div.border.p_2.rounded.apply {
+        new DefaultForm7() {
+          validateBeforeUserInput()
+
+          override def postSubmitForm()(implicit fsc: FSContext): Js = BSModal5.verySimple("Your input", "Done")(
+            _ => implicit fsc => div.apply(s"Your selection: " + inputField.currentValue)
+          )
+
+          override lazy val rootField: F7Field = F7VerticalField()(
+            inputField
+            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+          )
+        }.render()
+      }
+    }
+    renderSnippet("Checkbox as switch") {
+
+      val renderers = new FSDemoBSForm7Renderers()(checkboxStyle = CheckboxStyle.Switch)
+      import renderers._
+
+      // Pass the renderer which renders as switches:
       val inputField = new F7CheckboxField().label("I agree to the Terms of Service")
         .addValidation(_.currentValue == true, _ => div.apply("Error: you must accept the Terms of Service."))
 

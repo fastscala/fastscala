@@ -3,7 +3,7 @@ package com.fastscala.demo.docs
 import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
 import com.fastscala.demo.docs.fastscala._
-import com.fastscala.demo.docs.forms.{FormInputTypesPage, FormValidationPage, ValidationByFieldTypePage, ValidationStrategiesPage}
+import com.fastscala.demo.docs.forms.{CheckboxInputFieldsPage, FormInputTypesPage, FormValidationPage, RadioInputFieldsPage, SelectInputFieldsPage, TextInputFieldsPage, ValidationByFieldTypePage, ValidationStrategiesPage}
 import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
 import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer._
@@ -40,8 +40,11 @@ object FSDemoMainMenu extends BSMenu(
     , new RoutingMenuItem("demo", "bootstrap", "modal")("Modal", () => new BootstrapModalPage())
   ),
   MenuSection("Forms Lib")(
-    SimpleMenuItem("Simple", "/demo/simple_form")
-    , new RoutingMenuItem("demo", "forms", "input_types")("Input Types", () => new FormInputTypesPage())
+    SimpleMenuItem("Creating a form", "/demo/simple_form")
+    , new RoutingMenuItem("demo", "forms", "text_input")("Text Input Fields", () => new TextInputFieldsPage())
+    , new RoutingMenuItem("demo", "forms", "select_input")("Select Input Fields", () => new SelectInputFieldsPage())
+    , new RoutingMenuItem("demo", "forms", "checkbox_input")("Checkbox Input Fields", () => new CheckboxInputFieldsPage())
+    , new RoutingMenuItem("demo", "forms", "radio_input")("Radio Input Fields", () => new RadioInputFieldsPage())
     , new RoutingMenuItem("demo", "forms", "validation")("Validation", () => new FormValidationPage())
     , new RoutingMenuItem("demo", "forms", "validation-strategies")("Validation Strategies", () => new ValidationStrategiesPage())
     , new RoutingMenuItem("demo", "forms", "validation-by-field-type")("Validation by Field Type", () => new ValidationByFieldTypePage())

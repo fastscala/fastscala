@@ -1,22 +1,26 @@
 package com.fastscala.templates.bootstrap5.form7
 
 import com.fastscala.js.Js
+import com.fastscala.templates.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.templates.form7.fields.radio.F7RadioFieldBase
 import com.fastscala.templates.form7.renderers.RadioF7FieldRenderer
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.JS.RichJs
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-trait BSRadioF7FieldRendererImpl extends RadioF7FieldRenderer {
+abstract class BSRadioF7FieldRendererImpl()(
+  implicit
+  checkboxAlignment: CheckboxAlignment.Value,
+  checkboxStyle: CheckboxStyle.Value,
+  checkboxSide: CheckboxSide.Value,
+) extends RadioF7FieldRenderer {
 
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   override def render(field: F7RadioFieldBase[_])(inputElemsAndLabels: Seq[(Elem, Option[Elem])], invalidFeedback: Option[Elem], validFeedback: Option[Elem], help: Option[Elem]): Elem = {
-    val aroundId = field.aroundId
     div.mb_3.withId(field.aroundId).apply {
       val invalidFeedbackId = invalidFeedback.flatMap(_.getId).getOrElse(field.invalidFeedbackId)
       val validFeedbackId = validFeedback.flatMap(_.getId).getOrElse(field.validFeedbackId)
@@ -24,27 +28,40 @@ trait BSRadioF7FieldRendererImpl extends RadioF7FieldRenderer {
 
       inputElemsAndLabels.map({
         case (inputElem, label) =>
-          form_check.pipe(elem => {
-            if (invalidFeedback.isDefined) elem.is_invalid
-            else if (validFeedback.isDefined) elem.is_valid
-            else elem
-          }).apply {
-            val inputId = inputElem.getId.getOrElse(IdGen.id("input"))
-            val labelId = label.flatMap(_.getId).getOrElse(IdGen.id("label"))
-            inputElem.withName(field.radioNameId).withIdIfNotSet(inputId).form_check_input.pipe(elem => {
+          form_check
+            .pipe(elem => checkboxAlignment match {
+              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxAlignment.Vertical => elem
+              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxAlignment.Horizontal => elem.form_check_inline
+            })
+            .pipe(elem => checkboxStyle match {
+              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle.Checkbox => elem
+              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle.Switch => elem.form_switch
+            })
+            .pipe(elem => checkboxSide match {
+              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxSide.Normal => elem
+              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxSide.Opposite => elem.form_check_reverse
+            })
+            .pipe(elem => {
               if (invalidFeedback.isDefined) elem.is_invalid
               else if (validFeedback.isDefined) elem.is_valid
               else elem
-            }.withAttrs(
-              (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
-                help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
-              } else {
-                invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
-              }) ++
-                label.map(help => "aria-labelledby" -> labelId): _*
-            ) ++
-              label.map(_.form_check_label.withIdIfNotSet(labelId).withFor(inputId)).getOrElse(Empty): NodeSeq)
-          }
+            }).apply {
+              val inputId = inputElem.getId.getOrElse(IdGen.id("input"))
+              val labelId = label.flatMap(_.getId).getOrElse(IdGen.id("label"))
+              inputElem.withName(field.radioNameId).withIdIfNotSet(inputId).form_check_input.pipe(elem => {
+                if (invalidFeedback.isDefined) elem.is_invalid
+                else if (validFeedback.isDefined) elem.is_valid
+                else elem
+              }.withAttrs(
+                (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
+                  help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
+                } else {
+                  invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
+                }) ++
+                  label.map(help => "aria-labelledby" -> labelId): _*
+              ) ++
+                label.map(_.form_check_label.withIdIfNotSet(labelId).withFor(inputId)).getOrElse(Empty): NodeSeq)
+            }
       }).mkNS ++
         invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withIdIfNotSet(invalidFeedbackId) ++
         validFeedback.getOrElse(div.visually_hidden).valid_feedback.withIdIfNotSet(validFeedbackId) ++

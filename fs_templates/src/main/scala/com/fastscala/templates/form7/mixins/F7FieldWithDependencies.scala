@@ -9,7 +9,7 @@ trait F7FieldWithDependencies extends Mutable {
 
   def deps = _deps()
 
-  def deps(v: F7Field*): this.type = deps(v.toSet)
+  def dependsOn(v: F7Field*): this.type = deps(v.toSet)
 
   def deps(v: Set[F7Field]): this.type = mutate {
     _deps = () => v

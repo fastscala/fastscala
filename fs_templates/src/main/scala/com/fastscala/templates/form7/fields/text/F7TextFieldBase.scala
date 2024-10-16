@@ -24,6 +24,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
   with F7FieldWithValidFeedback
   with F7FieldWithHelp
   with F7FieldWithMaxlength
+  with F7FieldWithOnChangedField
   with F7FieldWithInputType
   with F7FieldWithAdditionalAttrs
   with F7FieldWithDependencies

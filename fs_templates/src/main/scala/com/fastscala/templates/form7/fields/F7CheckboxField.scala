@@ -7,7 +7,6 @@ import com.fastscala.templates.form7.fields.text.F7FieldWithAdditionalAttrs
 import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7.renderers._
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 

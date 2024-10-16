@@ -2,11 +2,11 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.{ChangedField, F7Event, Form7, RenderHint}
+import com.fastscala.templates.form7._
 import com.fastscala.templates.utils.Mutable
 
 
-trait F7FieldWithOnChangedField extends StandardF7Field with Mutable {
+trait F7FieldWithOnChangedField extends F7Field with Mutable {
 
   var _onChangedField = collection.mutable.ListBuffer[F7OnChangedFieldHandler]()
 

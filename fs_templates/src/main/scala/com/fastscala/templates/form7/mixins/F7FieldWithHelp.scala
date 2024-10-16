@@ -1,11 +1,11 @@
 package com.fastscala.templates.form7.mixins
 
-import com.fastscala.templates.form7.fields.text.F7FieldInputFieldMixin
+import com.fastscala.templates.utils.Mutable
 
 import scala.xml.Elem
 
 
-trait F7FieldWithHelp extends F7FieldInputFieldMixin {
+trait F7FieldWithHelp extends Mutable {
   var _help: () => Option[Elem] = () => None
 
   def help() = _help()

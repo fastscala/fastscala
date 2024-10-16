@@ -3,8 +3,8 @@ package com.fastscala.templates.form7.fields.layout
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7._
+import com.fastscala.templates.form7.mixins._
 import com.fastscala.xml.scala_xml.JS
 
 import scala.xml.{Elem, NodeSeq}

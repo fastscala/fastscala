@@ -1,9 +1,9 @@
 package com.fastscala.templates.form7.mixins
 
-import com.fastscala.templates.form7.fields.F7DefaultField
+import com.fastscala.templates.utils.Mutable
 
 
-trait F7FieldWithSuffix extends F7DefaultField {
+trait F7FieldWithSuffix extends Mutable {
 
   var _suffix: () => String = () => ""
 

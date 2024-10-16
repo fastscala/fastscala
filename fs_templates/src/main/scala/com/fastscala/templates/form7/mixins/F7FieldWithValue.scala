@@ -1,11 +1,11 @@
 package com.fastscala.templates.form7.mixins
 
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.F7Field
+import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.Lazy
 
 
-trait F7FieldWithValue[T] extends F7Field {
+trait F7FieldWithValue[T] extends Mutable {
 
   def defaultValue: T
 

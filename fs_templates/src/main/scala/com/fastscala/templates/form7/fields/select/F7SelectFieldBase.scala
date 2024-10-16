@@ -20,6 +20,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
   with F7FieldWithRequired
   with F7FieldWithReadOnly
   with F7FieldWithEnabled
+  with F7FieldWithOnChangedField
   with F7FieldWithTabIndex
   with F7FieldWithValidFeedback
   with F7FieldWithHelp

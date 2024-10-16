@@ -1,12 +1,11 @@
 package com.fastscala.templates.form7.mixins
 
 import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.utils.Mutable
 
 import scala.xml.NodeSeq
 
 
-trait F7FieldWithValidations extends Mutable {
+trait F7FieldWithValidations extends F7Field {
   var _validations = collection.mutable.ListBuffer[() => Option[NodeSeq]]()
 
   def addValidation(validate: () => Option[NodeSeq]): this.type = mutate {

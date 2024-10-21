@@ -7,7 +7,7 @@ import com.fastscala.templates.bootstrap5.form7.renderermodifiers.{CheckboxAlign
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.fields._
-import com.fastscala.templates.form7.fields.layout.F7VerticalField
+import com.fastscala.templates.form7.fields.layout.{F7ContainerField, F7VerticalField}
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
 
 class CheckboxInputFieldsPage extends MultipleCodeExamples2Page() {
@@ -26,6 +26,8 @@ class CheckboxInputFieldsPage extends MultipleCodeExamples2Page() {
       val termsAndConditionsField = new F7CheckboxField().label("Accept Terms and Conditions")
       val privacyPolicyField = new F7CheckboxField().label("Accept Privacy Policy").setInternalValue(true)
 
+      val hasACar = new F7CheckboxOptField().label("Has car").setInternalValue(None)
+
       val subscribe2NewsletterField = new F7CheckboxField()(checkboxInline).label("Subscribe to Newsletter")
       val subscribe2DiscountsField = new F7CheckboxField()(checkboxInline).label("Subscribe to Discounts").setInternalValue(true)
 
@@ -39,6 +41,12 @@ class CheckboxInputFieldsPage extends MultipleCodeExamples2Page() {
             new F7HtmlField(fs_5.mb_3.border_bottom.apply("Checkboxes")),
             termsAndConditionsField,
             privacyPolicyField,
+            //
+            new F7HtmlField(fs_5.mb_3.border_bottom.apply("Tri-state checkboxes (supports indeterminate)")),
+            new F7ContainerField("row")(
+              "col" -> hasACar,
+              "col" -> new F7HtmlField(span.apply("Checkbox state: " + hasACar.currentValue.map("set to " + _).getOrElse("not set"))).dependsOn(hasACar),
+            ),
             //
             new F7HtmlField(fs_5.mb_3.border_bottom.apply("Checkboxes inline")),
             subscribe2NewsletterField,
@@ -58,6 +66,7 @@ class CheckboxInputFieldsPage extends MultipleCodeExamples2Page() {
                 <ul>
                   <li><b>Accept Terms and Conditions:</b> {termsAndConditionsField.getInternalValue()}</li>
                   <li><b>Accept Privacy Policy:</b> {privacyPolicyField.getInternalValue()}</li>
+                  <li><b>Has car:</b> {hasACar.getInternalValue()}</li>
                   <li><b>Subscribe to Newsletter:</b> {subscribe2NewsletterField.getInternalValue()}</li>
                   <li><b>Subscribe to Discounts:</b> {subscribe2DiscountsField.getInternalValue()}</li>
                   <li><b>Email:</b> {marketingEmailField.getInternalValue()}</li>

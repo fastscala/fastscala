@@ -17,7 +17,6 @@ abstract class StandardF7Field() extends F7Field with F7FieldWithValidations {
   def visible: () => Boolean = () => enabled()
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
     case ChangedField(f) if f == this => updateValidation()
     case _ => Js.void
   })

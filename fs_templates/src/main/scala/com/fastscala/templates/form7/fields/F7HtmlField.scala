@@ -1,8 +1,9 @@
 package com.fastscala.templates.form7.fields
 
 import com.fastscala.core.FSContext
+import com.fastscala.js.Js
 import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.{F7Field, Form7, RenderHint}
+import com.fastscala.templates.form7._
 
 import scala.xml.{Elem, NodeSeq}
 

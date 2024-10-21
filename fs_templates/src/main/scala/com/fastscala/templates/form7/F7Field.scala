@@ -17,6 +17,11 @@ trait F7Field
     with F7FieldWithEnabled
     with ElemWithRandomId {
 
+  def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
+    case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
+    case _ => Js.void
+  }
+
   val aroundId: String = randomElemId
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem
@@ -37,8 +42,6 @@ trait F7Field
 
   def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field]
 
-  def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
-
   def deps: Set[F7Field]
 
   def enabled(): Boolean
@@ -48,7 +51,7 @@ trait F7Field
   def readOnly(): Boolean
 
   def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
-    JS.replace(aroundId, render())
+    JS.replace(aroundId, render()) & postRenderSetupJs()
   }
 
   def withFieldRenderHints[T](f: Seq[RenderHint] => T)(implicit renderHints: Seq[RenderHint]): T = f {

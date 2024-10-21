@@ -111,6 +111,8 @@ trait JsUtils {
 
   def checkboxIsCheckedById(id: String) = Js(s"""document.getElementById("${escapeStr(id)}").checked""")
 
+  def setCheckboxAsIndeterminate(id: String) = Js(s"""document.getElementById("${escapeStr(id)}").indeterminate = true""")
+
   def selectedValues(elem: Js) = Js(s"""Array.from(${elem.cmd}.querySelectorAll("option:checked"),e=>e.value)""")
 
   def withVarStmt(name: String, value: Js)(code: Js => Js) = Js(s"""(function ($name) {${code(Js(name)).cmd}})(${value.cmd});""")

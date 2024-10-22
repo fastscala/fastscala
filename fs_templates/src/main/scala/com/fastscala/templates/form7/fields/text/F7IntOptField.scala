@@ -17,6 +17,7 @@ class F7IntOptField()(implicit renderer: TextF7FieldRenderer)
     with F7FieldWithMin
     with F7FieldWithStep
     with F7FieldWithMax {
+  override def _inputTypeDefault: String = "number"
 
   override def defaultValue: Option[Int] = None
 
@@ -39,5 +40,5 @@ class F7IntOptField()(implicit renderer: TextF7FieldRenderer)
   }
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }

@@ -10,8 +10,6 @@ trait F7SimpleField extends F7Field
 
   override def disabled(): Boolean = false
 
-  override def readOnly(): Boolean = false
-
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
 
   override def deps: Set[F7Field] = Set()

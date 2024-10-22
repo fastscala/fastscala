@@ -6,7 +6,7 @@ import com.fastscala.templates.utils.Mutable
 trait F7FieldWithOptions[T] extends Mutable {
   var _options: () => Seq[T] = () => Nil
 
-  def options() = _options()
+  def options: Seq[T] = _options()
 
   def options(v: Seq[T]): this.type = mutate {
     _options = () => v

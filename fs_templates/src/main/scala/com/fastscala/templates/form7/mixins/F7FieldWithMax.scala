@@ -10,7 +10,7 @@ import scala.xml.Elem
 trait F7FieldWithMax extends F7FieldInputFieldMixin {
   var _max: () => Option[String] = () => None
 
-  def max() = _max()
+  def max: Option[String] = _max()
 
   def max(v: Option[String]): this.type = mutate {
     _max = () => v

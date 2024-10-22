@@ -1,17 +1,19 @@
 package com.fastscala.templates.form7.fields
 
 import com.fastscala.core.FSContext
-import com.fastscala.js.Js
-import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7._
+import com.fastscala.templates.form7.mixins._
 
 import scala.xml.{Elem, NodeSeq}
+
+object F7HtmlField {
+  def label(str: String) = new F7HtmlField(<label>{str}</label>)
+}
 
 class F7HtmlField(
                    gen: => NodeSeq
                  ) extends F7Field with F7FieldWithValidations
   with F7FieldWithDisabled
-  with F7FieldWithReadOnly
   with F7FieldWithDependencies
   with F7FieldWithEnabled {
 

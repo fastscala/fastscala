@@ -10,7 +10,7 @@ import scala.xml.Elem
 trait F7FieldWithNumRows extends F7FieldInputFieldMixin {
   var _rows: () => Option[Int] = () => None
 
-  def rows() = _rows()
+  def rows: Option[Int] = _rows()
 
   def rows(v: Option[Int]): this.type = mutate {
     _rows = () => v

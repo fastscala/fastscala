@@ -3,7 +3,7 @@ package com.fastscala.demo.docs
 import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
 import com.fastscala.demo.docs.fastscala._
-import com.fastscala.demo.docs.forms.{CheckboxInputFieldsPage, FormInputTypesPage, FormValidationPage, RadioInputFieldsPage, SelectInputFieldsPage, TextInputFieldsPage, ValidationByFieldTypePage, ValidationStrategiesPage}
+import com.fastscala.demo.docs.forms._
 import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
 import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer._
@@ -48,6 +48,9 @@ object FSDemoMainMenu extends BSMenu(
     , new RoutingMenuItem("demo", "forms", "validation")("Validation", () => new FormValidationPage())
     , new RoutingMenuItem("demo", "forms", "validation-strategies")("Validation Strategies", () => new ValidationStrategiesPage())
     , new RoutingMenuItem("demo", "forms", "validation-by-field-type")("Validation by Field Type", () => new ValidationByFieldTypePage())
+    , new RoutingMenuItem("demo", "forms", "input-groups")("Input Groups", () => new FormInputGroupsPage())
+    , new RoutingMenuItem("demo", "forms", "server-side-update")("Server-Side Update", () => new UpdatesFromServerSidePage())
+    , new RoutingMenuItem("demo", "forms", "field-state")("Field state", () => new FieldStatesPage())
   ),
   MenuSection("Table Lib")(
     SimpleMenuItem("Simple", "/demo/simple_tables")

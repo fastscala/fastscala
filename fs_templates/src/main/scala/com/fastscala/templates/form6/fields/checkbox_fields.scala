@@ -54,7 +54,7 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
           processInputElem(<input type="checkbox"
                       id={elemId}
                       onchange={
-                      fsc.callback(Js.checkboxIsCheckedById(elemId), str => {
+                      fsc.callback(Js.isCheckedById(elemId), str => {
                         str.toBooleanOption.foreach(currentValue = _)
                         form.onEvent(ChangedField(this)) &
                           Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)

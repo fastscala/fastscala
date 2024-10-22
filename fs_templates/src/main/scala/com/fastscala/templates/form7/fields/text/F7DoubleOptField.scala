@@ -39,5 +39,5 @@ class F7DoubleOptField()(implicit renderer: TextF7FieldRenderer)
   }
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }

@@ -8,7 +8,7 @@ import scala.xml.Elem
 trait F7FieldWithHelp extends Mutable {
   var _help: () => Option[Elem] = () => None
 
-  def help() = _help()
+  def help: Option[Elem] = _help()
 
   def help(v: Option[Elem]): this.type = mutate {
     _help = () => v

@@ -8,7 +8,7 @@ import scala.xml.Elem
 trait F7FieldWithValidFeedback extends F7FieldInputFieldMixin {
   var _validFeedback: () => Option[Elem] = () => None
 
-  def validFeedback() = _validFeedback()
+  def validFeedback: Option[Elem] = _validFeedback()
 
   def validFeedback(v: Option[Elem]): this.type = mutate {
     _validFeedback = () => v

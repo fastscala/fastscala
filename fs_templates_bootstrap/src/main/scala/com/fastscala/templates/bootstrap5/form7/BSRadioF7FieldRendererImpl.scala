@@ -20,49 +20,57 @@ abstract class BSRadioF7FieldRendererImpl()(
 
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
-  override def render(field: F7RadioFieldBase[_])(inputElemsAndLabels: Seq[(Elem, Option[Elem])], invalidFeedback: Option[Elem], validFeedback: Option[Elem], help: Option[Elem]): Elem = {
+  override def render(field: F7RadioFieldBase[_])(
+    inputElemsAndLabels: Seq[(Elem, Option[Elem])],
+    label: Option[Elem],
+    invalidFeedback: Option[Elem],
+    validFeedback: Option[Elem],
+    help: Option[Elem]
+  ): Elem = {
     div.mb_3.withId(field.aroundId).apply {
+      val labelId = label.flatMap(_.getId).getOrElse(field.labelId)
       val invalidFeedbackId = invalidFeedback.flatMap(_.getId).getOrElse(field.invalidFeedbackId)
       val validFeedbackId = validFeedback.flatMap(_.getId).getOrElse(field.validFeedbackId)
       val helpId = help.flatMap(_.getId).getOrElse(field.helpId)
 
-      inputElemsAndLabels.map({
-        case (inputElem, label) =>
-          form_check
-            .pipe(elem => checkboxAlignment match {
-              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxAlignment.Vertical => elem
-              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxAlignment.Horizontal => elem.form_check_inline
-            })
-            .pipe(elem => checkboxStyle match {
-              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle.Checkbox => elem
-              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle.Switch => elem.form_switch
-            })
-            .pipe(elem => checkboxSide match {
-              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxSide.Normal => elem
-              case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxSide.Opposite => elem.form_check_reverse
-            })
-            .pipe(elem => {
-              if (invalidFeedback.isDefined) elem.is_invalid
-              else if (validFeedback.isDefined) elem.is_valid
-              else elem
-            }).apply {
-              val inputId = inputElem.getId.getOrElse(IdGen.id("input"))
-              val labelId = label.flatMap(_.getId).getOrElse(IdGen.id("label"))
-              inputElem.withName(field.radioNameId).withIdIfNotSet(inputId).form_check_input.pipe(elem => {
+      label.map(_.withIdIfNotSet(labelId).form_label).getOrElse(Empty) ++
+        inputElemsAndLabels.map({
+          case (inputElem, label) =>
+            form_check
+              .pipe(elem => checkboxAlignment match {
+                case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxAlignment.Vertical => elem
+                case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxAlignment.Horizontal => elem.form_check_inline
+              })
+              .pipe(elem => checkboxStyle match {
+                case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle.Checkbox => elem
+                case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle.Switch => elem.form_switch
+              })
+              .pipe(elem => checkboxSide match {
+                case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxSide.Normal => elem
+                case com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxSide.Opposite => elem.form_check_reverse
+              })
+              .pipe(elem => {
                 if (invalidFeedback.isDefined) elem.is_invalid
                 else if (validFeedback.isDefined) elem.is_valid
                 else elem
-              }.withAttrs(
-                (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
-                  help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
-                } else {
-                  invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
-                }) ++
-                  label.map(help => "aria-labelledby" -> labelId): _*
-              ) ++
-                label.map(_.form_check_label.withIdIfNotSet(labelId).withFor(inputId)).getOrElse(Empty): NodeSeq)
-            }
-      }).mkNS ++
+              }).apply {
+                val inputId = inputElem.getId.getOrElse(IdGen.id("input"))
+                val labelId = label.flatMap(_.getId).getOrElse(IdGen.id("label"))
+                inputElem.withName(field.radioNameId).withIdIfNotSet(inputId).form_check_input.pipe(elem => {
+                  if (invalidFeedback.isDefined) elem.is_invalid
+                  else if (validFeedback.isDefined) elem.is_valid
+                  else elem
+                }.withAttrs(
+                  (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
+                    help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
+                  } else {
+                    invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
+                  }) ++
+                    label.map(help => "aria-labelledby" -> labelId): _*
+                ) ++
+                  label.map(_.form_check_label.withIdIfNotSet(labelId).withFor(inputId)).getOrElse(Empty): NodeSeq)
+              }
+        }).mkNS ++
         invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withIdIfNotSet(invalidFeedbackId) ++
         validFeedback.getOrElse(div.visually_hidden).valid_feedback.withIdIfNotSet(validFeedbackId) ++
         help.getOrElse(div.visually_hidden).form_text.withIdIfNotSet(helpId)

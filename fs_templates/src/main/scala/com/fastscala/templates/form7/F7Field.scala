@@ -18,9 +18,12 @@ trait F7Field
     with ElemWithRandomId {
 
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
-    case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
+    case ChangedField(field) if deps.contains(field) => updateFieldStatus() & form.onEvent(ChangedField(this))
+    case ChangedField(f) if f == this => updateFieldStatus()
     case _ => Js.void
   }
+
+  def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
 
   val aroundId: String = randomElemId
 
@@ -48,15 +51,33 @@ trait F7Field
 
   def disabled(): Boolean
 
-  def readOnly(): Boolean
-
   def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
     JS.replace(aroundId, render()) & postRenderSetupJs()
   }
 
   def withFieldRenderHints[T](f: Seq[RenderHint] => T)(implicit renderHints: Seq[RenderHint]): T = f {
     List(DisableFieldsHint).filter(_ => disabled()) ++
-      List(ReadOnlyFieldsHint).filter(_ => readOnly()) ++
       renderHints
+  }
+
+  def shouldShowValidation_?(implicit form: Form7): Boolean = {
+    import F7FormValidationStrategy._
+    import Form7State._
+    def aux(validationStrategy: F7FormValidationStrategy.Value): Boolean = {
+      validationStrategy match {
+        case ValidateBeforeUserInput => true
+        case ValidateEachFieldAfterUserInput => state match {
+          case F7FieldState.Filled => true
+          case F7FieldState.AwaitingInput => aux(ValidateOnAttemptSubmitOnly)
+        }
+        case ValidateOnAttemptSubmitOnly => form.state match {
+          case Filling => false
+          case ValidationFailed => true
+          case Saved => false
+        }
+      }
+    }
+
+    aux(form.validationStrategy)
   }
 }

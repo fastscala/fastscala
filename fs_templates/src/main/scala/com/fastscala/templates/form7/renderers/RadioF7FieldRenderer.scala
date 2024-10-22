@@ -11,6 +11,7 @@ trait RadioF7FieldRenderer extends StandardF7FieldRenderer {
               field: F7RadioFieldBase[_],
             )(
               inputElemsAndLabels: Seq[(Elem, Option[Elem])],
+              label: Option[Elem],
               invalidFeedback: Option[Elem],
               validFeedback: Option[Elem],
               help: Option[Elem],

@@ -15,6 +15,6 @@ class F7StringOptTextareaField()(implicit renderer: TextareaF7FieldRenderer) ext
   def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 

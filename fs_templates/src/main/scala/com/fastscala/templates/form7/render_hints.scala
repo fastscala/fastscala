@@ -8,8 +8,6 @@ object ShowValidationsHint extends RenderHint
 
 object DisableFieldsHint extends RenderHint
 
-object ReadOnlyFieldsHint extends RenderHint
-
 object SaveOnEnterHint extends RenderHint
 
 trait Form7WithSaveOnEnterHint extends Form7 {

@@ -10,7 +10,7 @@ import scala.xml.Elem
 trait F7FieldWithTabIndex extends F7FieldInputFieldMixin {
   var _tabIndex: () => Option[Int] = () => None
 
-  def tabIndex() = _tabIndex()
+  def tabIndex: Option[Int] = _tabIndex()
 
   def tabIndex(v: Option[Int]): this.type = mutate {
     _tabIndex = () => v

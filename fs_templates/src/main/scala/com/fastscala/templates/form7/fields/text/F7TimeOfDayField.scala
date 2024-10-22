@@ -24,7 +24,7 @@ class F7TimeOfDayField()(implicit renderer: TextF7FieldRenderer)
   override def defaultValue: Option[Int] = None
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 
 
   def toString(value: Option[Int]): String = value.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")

@@ -9,7 +9,7 @@ import scala.xml.Elem
 trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin {
   var _additionalAttrs: () => Seq[(String, String)] = () => Nil
 
-  def additionalAttrs() = _additionalAttrs()
+  def additionalAttrs: Seq[(String, String)] = _additionalAttrs()
 
   def additionalAttrs(v: Seq[(String, String)]): this.type = mutate {
     _additionalAttrs = () => v

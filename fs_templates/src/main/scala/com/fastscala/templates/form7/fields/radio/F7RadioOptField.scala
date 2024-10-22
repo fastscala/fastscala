@@ -12,5 +12,5 @@ class F7RadioOptField[T]()(implicit renderer: RadioF7FieldRenderer) extends F7Ra
   def optionsNonEmpty(v: Seq[T]): F7RadioOptField.this.type = options(None +: v.map(Some(_)))
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }

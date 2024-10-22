@@ -10,7 +10,7 @@ import scala.xml.Elem
 trait F7FieldWithPlaceholder extends F7FieldInputFieldMixin {
   var _placeholder: () => Option[String] = () => None
 
-  def placeholder() = _placeholder()
+  def placeholder: Option[String] = _placeholder()
 
   def placeholder(v: Option[String]): this.type = mutate {
     _placeholder = () => v

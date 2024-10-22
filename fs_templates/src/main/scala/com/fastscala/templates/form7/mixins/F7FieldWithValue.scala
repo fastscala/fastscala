@@ -12,8 +12,16 @@ trait F7FieldWithValue[T] extends Mutable {
   private lazy val currentValueHolder: Lazy[T] = Lazy(_getter())
   private lazy val internalValue: Lazy[T] = Lazy(defaultValue)
 
+  /**
+   * This is the value that is currently visible on the client side.
+   */
+  protected var currentRenderedValue: Option[T] = None
+
   def currentValue = currentValueHolder()
 
+  /**
+   * Changing this value will update on the client side.
+   */
   def currentValue_=(v: T) = currentValueHolder() = v
 
   var _getter: () => T = () => internalValue()

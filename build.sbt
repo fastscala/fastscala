@@ -6,7 +6,7 @@ import scala.concurrent.duration.*
 resolvers += Resolver.mavenLocal
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / scalaVersion := "2.13.14"
+ThisBuild / scalaVersion := "2.13.15"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 

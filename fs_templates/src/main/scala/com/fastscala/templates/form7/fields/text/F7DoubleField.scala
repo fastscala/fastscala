@@ -14,6 +14,8 @@ class F7DoubleField()(implicit renderer: TextF7FieldRenderer)
     with F7FieldWithStep
     with F7FieldWithMax {
 
+  override def _inputTypeDefault: String = "number"
+
   override def defaultValue: Double = 0
 
   def toString(value: Double): String = (prefix + " " + value.formatted("%.2f") + " " + suffix).trim

@@ -60,7 +60,6 @@ abstract class BSForm7Renderers()(
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
         btn
           .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
-          .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true")
       )
     }
   }

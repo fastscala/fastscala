@@ -7,49 +7,26 @@ import com.fastscala.templates.form7.renderers.StandardF7FieldRenderer
 
 import scala.xml.NodeSeq
 
-
-abstract class StandardF7Field() extends F7Field with F7FieldWithValidations {
+abstract class StandardF7Field() extends F7Field
+  with F7FieldWithValidations {
 
   def renderer: StandardF7FieldRenderer
 
-  var showingValidation = false
-
   def visible: () => Boolean = () => enabled()
 
-  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case ChangedField(f) if f == this => updateValidation()
-    case _ => Js.void
-  })
+  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.updateFieldStatus() &
+    updateValidation()
 
   override def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = {
     implicit val renderHints: Seq[RenderHint] = form.formRenderHits()
     updateValidation()
   }
 
-  def shouldShowValidation_?(implicit form: Form7): Boolean = {
-    import F7FormValidationStrategy._
-    import Form7State._
-    def aux(validationStrategy: F7FormValidationStrategy.Value): Boolean = {
-      validationStrategy match {
-        case ValidateBeforeUserInput => true
-        case ValidateEachFieldAfterUserInput => state match {
-          case F7FieldState.Filled => true
-          case F7FieldState.AwaitingInput => aux(ValidateOnAttemptSubmitOnly)
-        }
-        case ValidateOnAttemptSubmitOnly => form.state match {
-          case Filling => false
-          case ValidationFailed => true
-          case Saved => false
-        }
-      }
-    }
-
-    aux(form.validationStrategy)
-  }
-
   def showOrUpdateValidation(ns: NodeSeq): Js
 
   def hideValidation(): Js
+
+  var showingValidation = false
 
   def updateValidation()(implicit form7: Form7): Js = {
     val shouldShowValidation = shouldShowValidation_?

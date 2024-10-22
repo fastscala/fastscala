@@ -8,7 +8,7 @@ import scala.xml.Elem
 trait F7FieldWithLabel extends Mutable {
   var _label: () => Option[Elem] = () => None
 
-  def label() = _label()
+  def label: Option[Elem] = _label()
 
   def label(v: Option[Elem]): this.type = mutate {
     _label = () => v

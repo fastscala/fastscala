@@ -13,6 +13,7 @@ class F7IntField()(implicit renderer: TextF7FieldRenderer)
     with F7FieldWithMin
     with F7FieldWithStep
     with F7FieldWithMax {
+  override def _inputTypeDefault: String = "number"
 
   override def defaultValue: Int = 0
 

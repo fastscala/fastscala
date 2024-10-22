@@ -7,7 +7,7 @@ trait F7FieldWithPrefix extends Mutable {
 
   var _prefix: () => String = () => ""
 
-  def prefix() = _prefix()
+  def prefix: String = _prefix()
 
   def prefix(v: String): this.type = mutate {
     _prefix = () => v

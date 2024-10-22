@@ -10,7 +10,7 @@ import scala.xml.Elem
 trait F7FieldWithRequired extends F7FieldInputFieldMixin {
   var _required: () => Boolean = () => false
 
-  def required() = _required()
+  def required: Boolean = _required()
 
   def isRequired: this.type = required(true)
 

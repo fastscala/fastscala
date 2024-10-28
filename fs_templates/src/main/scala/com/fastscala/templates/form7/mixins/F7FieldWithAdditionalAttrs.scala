@@ -1,4 +1,4 @@
-package com.fastscala.templates.form7.fields.text
+package com.fastscala.templates.form7.mixins
 
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 

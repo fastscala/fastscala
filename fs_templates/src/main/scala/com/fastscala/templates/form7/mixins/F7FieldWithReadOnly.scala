@@ -2,7 +2,6 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.fields.text.F7FieldInputFieldMixin
 import com.fastscala.templates.form7.{Form7, RenderHint}
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
 

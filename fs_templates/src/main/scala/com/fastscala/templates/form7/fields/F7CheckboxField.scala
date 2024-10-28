@@ -3,7 +3,6 @@ package com.fastscala.templates.form7.fields
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.fields.text.F7FieldWithAdditionalAttrs
 import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7.renderers._
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport

@@ -1,7 +1,5 @@
 package com.fastscala.templates.form7.mixins
 
-import com.fastscala.templates.form7.fields.text.F7FieldInputFieldMixin
-
 import scala.xml.Elem
 
 

@@ -1,6 +1,5 @@
 package com.fastscala.templates.form7.mixins
 
-import com.fastscala.templates.form7.fields.text.F7FieldInputFieldMixin
 
 
 trait F7FieldWithSyncToServerOnChange extends F7FieldInputFieldMixin {

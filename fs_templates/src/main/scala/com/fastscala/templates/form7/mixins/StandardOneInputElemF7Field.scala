@@ -6,7 +6,7 @@ import com.fastscala.templates.form7.renderers.StandardOneInputElemF7FieldRender
 import scala.xml.NodeSeq
 
 
-abstract class StandardOneInputElemF7Field[T] extends StandardF7Field with F7FieldWithValue[T] {
+trait StandardOneInputElemF7Field[T] extends StandardF7Field with F7FieldWithValue[T] {
 
   def renderer: StandardOneInputElemF7FieldRenderer
 

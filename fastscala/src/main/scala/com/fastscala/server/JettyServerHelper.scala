@@ -4,6 +4,8 @@ import com.fastscala.core.FSSystem
 import com.fastscala.utils.{FSOptimizedResourceHandler, Jetty12StatisticsCollector}
 import com.fastscala.websockets.FSWebsocketJettyContextHandler
 import com.typesafe.config.ConfigFactory
+import io.prometheus.metrics.exporter.httpserver.HTTPServer
+import io.prometheus.metrics.instrumentation.jvm.JvmMetrics
 import org.eclipse.jetty.http.CompressedContentFormat
 import org.eclipse.jetty.server._
 import org.eclipse.jetty.server.handler.gzip.GzipHandler
@@ -24,9 +26,15 @@ abstract class JettyServerHelper() {
 
   def NThreads = 200
 
-  def Port: Int = config.getInt("com.fastscala.demo.server.port")
+  def Port: Int = config.getInt("com.fastscala.server.helper.port")
 
-  def isLocal: Boolean = config.getBoolean("com.fastscala.demo.server.local")
+  def isLocal: Boolean = config.getBoolean("com.fastscala.server.helper.is-local")
+
+  def setupPrometheusJvmMetrics: Boolean = config.getBoolean("com.fastscala.server.helper.setup-prometheus-jvm-metrics")
+
+  def prometheusHttpServerEnabled: Boolean = config.getBoolean("com.fastscala.server.helper.prometheus-http-server.enabled")
+
+  def prometheusHttpServerPort: Int = config.getInt("com.fastscala.server.helper.prometheus-http-server.port")
 
   val threadPool = new QueuedThreadPool(NThreads)
   threadPool.setName("http_server")
@@ -99,6 +107,16 @@ abstract class JettyServerHelper() {
     val statHandler = new StatisticsHandler(gzipHandler)
     // register prometheus metrics
     new Jetty12StatisticsCollector(statHandler).register()
+
+    if (setupPrometheusJvmMetrics) {
+      JvmMetrics.builder().register()
+    }
+
+    if (prometheusHttpServerEnabled) {
+      HTTPServer.builder()
+        .port(prometheusHttpServerPort)
+        .buildAndStart()
+    }
 
     server.setHandler(statHandler)
 

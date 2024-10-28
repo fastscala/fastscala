@@ -118,7 +118,7 @@ class FSContext(
   def createNewChildContextAndGCExistingOne(key: AnyRef, debugLabel: Option[String] = None): FSContext = {
     page.key2FSContext.get(key).foreach(existing => {
       children -= existing
-      existing.gc()
+      existing.delete()
     })
     val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
     page.key2FSContext(key) = newContext
@@ -127,16 +127,19 @@ class FSContext(
     page.key2FSContext(key)
   }
 
-  def gc(): Unit = {
-    logger.debug(s"GC context $fullPath")
+  def delete(): Unit = {
+    logger.debug(s"Delete context $fullPath")
     parentFSContext.foreach(_.children -= this)
-    page.functions --= functionsGenerated
+    page.callbacks --= functionsGenerated
     session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
-    page.functionsFileUpload --= functionsFileUploadGenerated
+    session.fsSystem.stats.currentCallbacks.dec(functionsGenerated.size)
+    page.fileUploadCallbacks --= functionsFileUploadGenerated
     session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = functionsFileUploadGenerated.size)
-    page.functionsFileDownload --= functionsFileDownloadGenerated
+    session.fsSystem.stats.currentFileUploadCallbacks.dec(functionsFileUploadGenerated.size)
+    page.fileDownloadCallbacks --= functionsFileDownloadGenerated
     session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadGenerated.size)
-    children.foreach(_.gc())
+    session.fsSystem.stats.currentFileDownloadCallbacks.dec(functionsFileDownloadGenerated.size)
+    children.foreach(_.delete())
   }
 
   def callback(func: () => Js): Js = callback(Js.void, _ => func())
@@ -151,9 +154,10 @@ class FSContext(
     session.fsSystem.checkSpace()
     val funcId = session.nextID()
     functionsGenerated += funcId
-    // FSStats.event(StatEvent.CREATE_CALLBACK, "callback_type" -> "str")
-    page.functions += funcId -> new FSFunc(funcId, str => func(str) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void))
+    page.callbacks += funcId -> new FSFunc(funcId, str => func(str) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void))
     session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
+    session.fsSystem.stats.callbacksTotal.inc()
+    session.fsSystem.stats.currentCallbacks.inc()
 
     Js.fromString(
       session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
@@ -172,13 +176,15 @@ class FSContext(
     val funcId = session.nextID()
     functionsGenerated += funcId
     // FSStats.event(StatEvent.CREATE_CALLBACK, "callback_type" -> "json")
-    page.functions += funcId -> new FSFunc(funcId, str => {
+    page.callbacks += funcId -> new FSFunc(funcId, str => {
       io.circe.parser.parse(str) match {
         case Left(value) => throw new Exception(s"Failed to parse JSON: ${value.getMessage()}")
         case Right(json) => func(json) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void)
       }
     })
     session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
+    session.fsSystem.stats.callbacksTotal.inc()
+    session.fsSystem.stats.currentCallbacks.inc()
 
     Js.fromString(
       session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
@@ -197,13 +203,15 @@ class FSContext(
     val funcId = session.nextID()
     functionsGenerated += funcId
     // FSStats.event(StatEvent.CREATE_CALLBACK, "callback_type" -> "json_decoded")
-    page.functions += funcId -> new FSFunc(funcId, str => {
+    page.callbacks += funcId -> new FSFunc(funcId, str => {
       io.circe.parser.decode(str) match {
         case Left(value) => throw new Exception(s"Failed to parse JSON \"$str\": ${value.getMessage()}")
         case Right(decoded) => func(decoded) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void)
       }
     })
     session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
+    session.fsSystem.stats.callbacksTotal.inc()
+    session.fsSystem.stats.currentCallbacks.inc()
 
     Js.fromString(
       session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
@@ -218,6 +226,8 @@ class FSContext(
     session.fsSystem.checkSpace()
     val funcId = session.nextID()
     session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
+    session.fsSystem.stats.anonPagesTotal.inc()
+    session.fsSystem.stats.currentAnonPages.inc()
     session.anonymousPages += funcId -> new FSAnonymousPage(funcId, session, render)
 
     s"/${session.fsSystem.FSPrefix}/anon/$funcId/$name"
@@ -233,8 +243,10 @@ class FSContext(
     session.fsSystem.checkSpace()
     val funcId = session.nextID()
     functionsFileUploadGenerated += funcId
-    page.functionsFileDownload += funcId -> new FSFileDownload(funcId, contentType, download)
+    page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, download)
     session.fsSystem.stats.event(StatEvent.CREATE_FILE_DOWNLOAD, additionalFields = Seq("file_name" -> fileName, "content_type" -> contentType))
+    session.fsSystem.stats.fileDownloadCallabacksTotal.inc()
+    session.fsSystem.stats.currentFileDownloadCallbacks.inc()
     s"/${session.fsSystem.FSPrefix}/file-download/${page.id}/$funcId/${URLEncoder.encode(fileName, "UTF-8")}"
   }
 
@@ -242,8 +254,10 @@ class FSContext(
     session.fsSystem.checkSpace()
     val funcId = session.nextID()
     functionsFileDownloadGenerated += funcId
-    page.functionsFileUpload += (funcId -> new FSFileUpload(funcId, func))
+    page.fileUploadCallbacks += (funcId -> new FSFileUpload(funcId, func))
     session.fsSystem.stats.event(StatEvent.CREATE_FILE_UPLOAD)
+    session.fsSystem.stats.fileUploadCallbacksTotal.inc()
+    session.fsSystem.stats.currentFileUploadCallbacks.inc()
     s"/${session.fsSystem.FSPrefix}/file-upload/${page.id}/$funcId"
   }
 
@@ -333,46 +347,60 @@ class FSPage(
   }
 
   def allKeepAlivesIterable: Iterable[Long] =
-    functions.values.map(_.keepAliveAt) ++
-      functionsFileUpload.values.map(_.keepAliveAt) ++
-      functionsFileDownload.values.map(_.keepAliveAt) ++
+    callbacks.values.map(_.keepAliveAt) ++
+      fileUploadCallbacks.values.map(_.keepAliveAt) ++
+      fileDownloadCallbacks.values.map(_.keepAliveAt) ++
       Iterable(keepAliveAt)
 
   val key2FSContext = collection.mutable.Map[AnyRef, FSContext]()
 
-  val functions = collection.mutable.Map[String, FSFunc]()
-  val functionsFileUpload = collection.mutable.Map[String, FSFileUpload]()
-  val functionsFileDownload = collection.mutable.Map[String, FSFileDownload]()
+  val callbacks = collection.mutable.Map[String, FSFunc]()
+  val fileUploadCallbacks = collection.mutable.Map[String, FSFileUpload]()
+  val fileDownloadCallbacks = collection.mutable.Map[String, FSFileDownload]()
 
   val rootFSContext = new FSContext(session, this, onPageUnload = onPageUnload, debugLbl = Some("page_root_context"))
 
-  def gc(keepAliveOlderThan: Long): Unit = {
-    val currentFunctions = functions.toVector
-    val functionsToRemove = currentFunctions.filter(_._2.keepAliveAt < keepAliveOlderThan)
-    functions --= functionsToRemove.map(_._1)
-    functionsToRemove.foreach({
+  def deleteOlderThan(ts: Long): Unit = {
+    val currentCallbacks = callbacks.toVector
+    val callbacksToRemove = currentCallbacks.filter(_._2.keepAliveAt < ts)
+    callbacks --= callbacksToRemove.map(_._1)
+    callbacksToRemove.foreach({
       case (_, f) => f.fsc.functionsGenerated -= f.id
     })
-    session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsToRemove.size)
+    session.fsSystem.stats.currentCallbacks.dec(callbacksToRemove.size)
+
+    //    session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsToRemove.size)
     // logger.info(s"Removed ${functionsToRemove.size} functions")
 
-    val currentFunctionsFileUpload = functionsFileUpload.toVector
-    val functionsFileUploadToRemove = currentFunctionsFileUpload.filter(_._2.keepAliveAt < keepAliveOlderThan)
-    functionsFileUpload --= functionsFileUploadToRemove.map(_._1)
-    functionsFileUploadToRemove.foreach({
+    val currentFileUploadCallbacks = fileUploadCallbacks.toVector
+    val fileUploadCallbacksToRemove = currentFileUploadCallbacks.filter(_._2.keepAliveAt < ts)
+    fileUploadCallbacks --= fileUploadCallbacksToRemove.map(_._1)
+    fileUploadCallbacksToRemove.foreach({
       case (_, f) => f.fsc.functionsFileUploadGenerated -= f.id
     })
-    session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = functionsFileUploadToRemove.size)
+    session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacksToRemove.size)
+
+    //    session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = fileUploadCallbacksToRemove.size)
     // logger.info(s"Removed ${functionsFileUploadToRemove.size} functions")
 
-    val currentFunctionsFileDownload = functionsFileDownload.toVector
-    val functionsFileDownloadToRemove = currentFunctionsFileDownload.filter(_._2.keepAliveAt < keepAliveOlderThan)
-    functionsFileDownload --= functionsFileDownloadToRemove.map(_._1)
-    functionsFileDownloadToRemove.foreach({
+    val currentFileDownloadCallbacks = fileDownloadCallbacks.toVector
+    val fileDownloadCallbacksToRemove = currentFileDownloadCallbacks.filter(_._2.keepAliveAt < ts)
+    fileDownloadCallbacks --= fileDownloadCallbacksToRemove.map(_._1)
+    fileDownloadCallbacksToRemove.foreach({
       case (_, f) => f.fsc.functionsFileDownloadGenerated -= f.id
     })
-    session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadToRemove.size)
+    session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacksToRemove.size)
+
+    //    session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = fileDownloadCallbacksToRemove.size)
     // logger.info(s"Removed ${functionsFileDownloadToRemove.size} functions")
+  }
+
+  def delete(): Unit = {
+    session.pages -= this.id
+    session.fsSystem.stats.currentPages.dec()
+    session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacks.size)
+    session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacks.size)
+    session.fsSystem.stats.currentCallbacks.dec(callbacks.size)
   }
 }
 
@@ -496,6 +524,8 @@ class FSSession(
     val page = new FSPage(nextID(), this, copy, onPageUnload = onPageUnload, debugLbl = debugLbl)
     if (logger.isTraceEnabled) logger.trace(s"Created page ${page.id}")
     fsSystem.stats.event(StatEvent.CREATE_PAGE)
+    session.fsSystem.stats.pagesTotal.inc()
+    session.fsSystem.stats.currentPages.inc()
     this.synchronized {
       pages += (page.id -> page)
     }
@@ -507,20 +537,29 @@ class FSSession(
       throw ex
   }
 
-  def gc(keepAliveOlderThan: Long): Unit = {
+  def deleteOlderThan(ts: Long): Unit = {
     val currentPages = pages.toVector
-    val pagesToRemove = currentPages.filter(_._2.keepAliveAt < keepAliveOlderThan)
+    val pagesToRemove = currentPages.filter(_._2.keepAliveAt < ts)
     pages --= pagesToRemove.map(_._1)
-    fsSystem.stats.event(StatEvent.GC_PAGE, n = pagesToRemove.size)
+    fsSystem.stats.currentPages.dec(pagesToRemove.size)
+
+    //    fsSystem.stats.event(StatEvent.GC_PAGE, n = pagesToRemove.size)
     // logger.info(s"Removed ${pagesToRemove.size} pages")
 
     val currentAnonymousPages = anonymousPages.toVector
-    val anonymousPagesToRemove = currentAnonymousPages.filter(_._2.keepAliveAt < keepAliveOlderThan)
+    val anonymousPagesToRemove = currentAnonymousPages.filter(_._2.keepAliveAt < ts)
     anonymousPages --= anonymousPagesToRemove.map(_._1)
-    fsSystem.stats.event(StatEvent.GC_ANON_PAGE, n = anonymousPagesToRemove.size)
+    fsSystem.stats.currentAnonPages.dec(anonymousPagesToRemove.size)
+    //    fsSystem.stats.event(StatEvent.GC_ANON_PAGE, n = anonymousPagesToRemove.size)
     // logger.info(s"Removed ${pagesToRemove.size} anonymous pages")
 
-    pages.values.foreach(_.gc(keepAliveOlderThan))
+    pages.values.foreach(_.deleteOlderThan(ts))
+  }
+
+  def delete(): Unit = {
+    fsSystem.sessions -= this.id
+    fsSystem.stats.currentSessions.dec()
+    pages.foreach(_._2.delete())
   }
 }
 
@@ -559,6 +598,8 @@ class FSSystem(
         implicit val __fsPageOpt: Option[FSPage] = None
         implicit val __fsSessionOpt: Option[FSSession] = Some(session)
         stats.event(StatEvent.CREATE_SESSION)
+        session.fsSystem.stats.sessionsTotal.inc()
+        session.fsSystem.stats.currentSessions.inc()
         this.synchronized(sessions.put(session.id, session))
         FSSession.logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
         Option((List(HttpCookie.build(FSSessionIdCookieName, session.id).path("/").build()), inSession(session)))
@@ -568,6 +609,7 @@ class FSSystem(
 
   def handleCallbackException(ex: Throwable): Js = {
     ex.printStackTrace()
+    stats.callbackErrorsTotal.inc()
     if (__fsSystem.debug) {
       Js.alert(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
     } else {
@@ -577,6 +619,7 @@ class FSSystem(
 
   def handleFileUploadCallbackException(ex: Throwable): Js = {
     ex.printStackTrace()
+    stats.fileUploadCallbackErrorsTotal.inc()
     if (__fsSystem.debug) {
       Js.alert(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
     } else {
@@ -586,7 +629,7 @@ class FSSystem(
 
   def handleFileDownloadCallbackException(ex: Throwable): Response = {
     ex.printStackTrace()
-
+    stats.fileDownloadCallbackErrorsTotal.inc()
     if (__fsSystem.debug) {
       ServerError.InternalServerError(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
     } else {
@@ -613,19 +656,24 @@ class FSSystem(
           implicit val __fsSessionOpt: Option[FSSession] = Option(session)
           session.pages.get(pageId).map(implicit page => {
             implicit val __fsPageOpt: Option[FSPage] = Option(page)
-            page.functions.get(funcId).map(implicit fsFunc => {
+            page.callbacks.get(funcId).map(implicit fsFunc => {
               implicit val __fsFuncOpt = Option(fsFunc)
               implicit val __fsContextOpt: Option[FSContext] = __fsFuncOpt.map(_.fsc)
+
               fsFunc.keepAlive()
               val start = System.currentTimeMillis()
+              stats.callbackInvocationsTotal.inc()
+              stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
+
               Content.Source.asStringAsync(req, Request.getCharset(req)).whenComplete((arg, failure) => {
                 val rslt: Js = Option(failure) match {
                   case Some(failure) =>
                     handleCallbackException(failure)
                   case None =>
+                    val start = System.currentTimeMillis()
                     try {
+                      stats.callbacksInProcessing.inc()
                       if (logger.isTraceEnabled) logger.trace(s"Running callback on thread ${Thread.currentThread()}...")
-                      val start = System.currentTimeMillis()
                       val rslt = fsFunc.func(arg)
                       if (logger.isTraceEnabled) logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
                       rslt
@@ -633,22 +681,27 @@ class FSSystem(
                       case trowable =>
                         if (logger.isTraceEnabled) logger.trace(s"Finished with EXCEPTION in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}): $trowable")
                         handleCallbackException(trowable)
+                    } finally {
+                      stats.callbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
+                      stats.callbacksInProcessing.dec()
                     }
                 }
                 if (logger.isTraceEnabled) logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
-                stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
                 Ok.js(rslt).respond(response, callback)
               })
               VoidResponse
             }).getOrElse({
+              stats.callbackNotFoundTotal.inc()
               stats.event(StatEvent.NOT_FOUND_CALLBACK)
               onFuncNotFoundForAjaxReq(funcId)(page, req)
             })
           }).getOrElse({
+            stats.pageNotFoundTotal.inc()
             stats.event(StatEvent.NOT_FOUND_PAGE)
             onPageNotFoundForAjaxReq(pageId, funcId)(session, req)
           })
         }).getOrElse({
+          stats.sessionNotFoundTotal.inc()
           stats.event(StatEvent.NOT_FOUND_SESSION)
           onSessionNotFoundForAjaxReq(sessionIdOpt)
         })
@@ -664,10 +717,12 @@ class FSSystem(
           session.pages.get(pageId) match {
             case Some(page) =>
               implicit val __fsPageOpt: Option[FSPage] = Option(page)
-              page.functionsFileUpload.get(funcId) match {
+              page.fileUploadCallbacks.get(funcId) match {
                 case Some(fSFileUpload) =>
 
                   fSFileUpload.keepAlive()
+                  val start = System.currentTimeMillis()
+                  stats.fileUploadCallbackInvocationsTotal.inc()
 
                   val contentType = req.getHeaders.get(HttpHeader.CONTENT_TYPE)
                   if (MimeTypes.Type.MULTIPART_FORM_DATA == MimeTypes.getBaseType(contentType)) {
@@ -684,6 +739,7 @@ class FSSystem(
                         case Some(failure) =>
                           handleFileUploadCallbackException(failure)
                         case None =>
+                          stats.fileUploadCallbacksInProcessing.inc()
                           fSFileUpload.func(parts.asScala.map(part => try {
                             new FSUploadedFile(
                               name = part.getName,
@@ -691,7 +747,13 @@ class FSSystem(
                               contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
                               content = Content.Source.asByteBuffer(part.getContentSource).array
                             )
+                          } catch {
+                            case ex: Throwable =>
+                              handleFileUploadCallbackException(ex)
+                              throw ex
                           } finally {
+                            stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
+                            stats.fileUploadCallbacksInProcessing.dec()
                             try {
                               part.close()
                             } finally {
@@ -702,18 +764,22 @@ class FSSystem(
                       Ok.js(rslt).respond(response, callback)
                     })
                     VoidResponse
-                  } else
+                  } else {
                     Ok.js(Js.alert("Not multipart form data"))
+                  }
 
                 case None =>
+                  stats.fileUploadCallbackNotFoundTotal.inc()
                   stats.event(StatEvent.NOT_FOUND_FILE_UPLOAD)
                   onFuncNotFoundForAjaxReq(funcId)(page, req)
               }
             case None =>
+              stats.pageNotFoundTotal.inc()
               stats.event(StatEvent.NOT_FOUND_PAGE)
               onPageNotFoundForAjaxReq(pageId, funcId)(session, req)
           }
         }).getOrElse({
+          stats.sessionNotFoundTotal.inc()
           stats.event(StatEvent.NOT_FOUND_SESSION)
           onSessionNotFoundForAjaxReq(sessionIdOpt)
         })
@@ -723,24 +789,35 @@ class FSSystem(
         sessionOpt.map(implicit session => {
           session.pages.get(pageId) match {
             case Some(page) =>
-              page.functionsFileDownload.get(funcId) match {
+              page.fileDownloadCallbacks.get(funcId) match {
                 case Some(fSFileDownload) =>
+
                   fSFileDownload.keepAlive()
+                  val start = System.currentTimeMillis()
+                  stats.fileDownloadCallbackInvocationsTotal.inc()
+
                   try {
+                    stats.fileDownloadCallbacksInProcessing.inc()
                     val bytes = fSFileDownload.func()
                     Ok.binaryWithContentType(bytes, fSFileDownload.contentType)
                   } catch {
                     case ex: Exception => handleFileDownloadCallbackException(ex)
+                  } finally {
+                    stats.fileDownloadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
+                    stats.fileDownloadCallbacksInProcessing.dec()
                   }
                 case None =>
+                  stats.fileDownloadCallbackNotFoundTotal.inc()
                   stats.event(StatEvent.NOT_FOUND_FILE_DOWNLOAD)
                   onFuncNotFoundForStdReq(pageId, funcId)(session, req)
               }
             case None =>
+              stats.pageNotFoundTotal.inc()
               stats.event(StatEvent.NOT_FOUND_PAGE)
               onPageNotFoundForStdReq(pageId)(session, req)
           }
         }).getOrElse({
+          stats.sessionNotFoundTotal.inc()
           stats.event(StatEvent.NOT_FOUND_SESSION)
           onSessionNotFoundForStdReq(sessionIdOpt)
         })
@@ -755,10 +832,12 @@ class FSSystem(
             }, debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}"))
             Ok.html(nodeSeq)
           }).getOrElse({
+            stats.anonPageNotFoundTotal.inc()
             stats.event(StatEvent.NOT_FOUND_ANON_PAGE)
             onAnonymousPageNotFoundForStdReq(anonymousPageId)
           })
         }).getOrElse({
+          stats.sessionNotFoundTotal.inc()
           stats.event(StatEvent.NOT_FOUND_SESSION)
           onSessionNotFoundForStdReq(sessionIdOpt)
         })
@@ -837,7 +916,7 @@ class FSSystem(
         Runtime.getRuntime.freeMemory() < 50 * 1024 * 1024
     ) {
       if (logger.isTraceEnabled) logger.trace("Less than 50MB available")
-      if (logger.isTraceEnabled) logger.trace(s"#Sessions: ${sessions.size} #Pages: ${sessions.map(_._2.pages.size).sum} #Funcs: ${sessions.map(_._2.pages.map(_._2.functions.size).sum).sum}")
+      if (logger.isTraceEnabled) logger.trace(s"#Sessions: ${sessions.size} #Pages: ${sessions.map(_._2.pages.size).sum} #Funcs: ${sessions.map(_._2.pages.map(_._2.callbacks.size).sum).sum}")
       val allKeepAlives = allKeepAlivesIterable.toVector.sorted
       if (logger.isTraceEnabled) logger.trace(s"Found ${allKeepAlives.size} keep alives")
       val deleteOlderThan: Long = allKeepAlives.drop(allKeepAlives.size / 2).headOption.getOrElse(0L)
@@ -850,12 +929,13 @@ class FSSystem(
     }
   }
 
-  def gc(keepAliveOlderThan: Long): Unit = {
-    val current = sessions.toVector
-    val toRemove = current.filter(_._2.keepAliveAt < keepAliveOlderThan)
-    sessions --= toRemove.map(_._1)
-    stats.event(StatEvent.GC_SESSION, n = toRemove.size)
-    if (logger.isTraceEnabled) logger.trace(s"Removed ${toRemove.size} sessions: ${toRemove.map(_._1).mkString(", ")}")
-    sessions.values.foreach(_.gc(keepAliveOlderThan))
+  val gcLock = new Object
+
+  def gc(keepAliveOlderThan: Long): Unit = gcLock.synchronized {
+    val currentSessions = sessions.toVector
+    val sessionsToRemove = currentSessions.filter(_._2.keepAliveAt < keepAliveOlderThan)
+    sessionsToRemove.foreach(_._2.delete())
+    if (logger.isTraceEnabled) logger.trace(s"Removed ${sessionsToRemove.size} sessions: ${sessionsToRemove.map(_._1).mkString(", ")}")
+    sessions.values.foreach(_.deleteOlderThan(keepAliveOlderThan))
   }
 }

@@ -8,7 +8,7 @@ object DebugInfo {
     <span style="color: white" class="d-none d-md-block">
       #Sessions: {fsc.session.fsSystem.sessions.size},
       #Pages in session: {fsc.session.nPages()},
-      #Funcs in page: {fsc.page.functions.size},
+      #Funcs in page: {fsc.page.callbacks.size},
       Used Mem: {(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024 / 1024}MB
     </span>
   }

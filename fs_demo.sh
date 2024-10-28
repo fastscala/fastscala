@@ -11,4 +11,4 @@ RPM_PATH=fs_demo/target/rpm/RPMS/noarch
 SBT_PROJ_PATH="$(pwd)/"
 PACKAGE_CMD="fs_demo/rpm:packageBin ; exit ;"
 
-DEFAULT_CONFIG_FILE_CONTENTS="JAVA_OPTS=\"-Dcom.fastscala.demo.server.local=false\""
+DEFAULT_CONFIG_FILE_CONTENTS="JAVA_OPTS=\"-Dcom.fastscala.server.helper.is-local=false\""

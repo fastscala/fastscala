@@ -88,7 +88,7 @@ abstract class BSToast2Base extends ClassEnrichable with Mutable {
 
   def transformToastHeader(elem: Elem): Elem = toastHeaderTransforms(elem.withId(toastHeaderId).toast_header)
 
-  def transformToastBody(elem: Elem): Elem = toastBodyTransforms(elem.withId(toastBodyId).toast_header)
+  def transformToastBody(elem: Elem): Elem = toastBodyTransforms(elem.withId(toastBodyId).toast_body)
 
   def append2DOM()(implicit fsc: FSContext): Js = JS.append2Body(renderToast())
 

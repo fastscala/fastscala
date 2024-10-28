@@ -7,7 +7,7 @@ import com.fastscala.templates.form7.renderers.StandardF7FieldRenderer
 
 import scala.xml.NodeSeq
 
-abstract class StandardF7Field() extends F7Field
+trait StandardF7Field extends F7Field
   with F7FieldWithValidations {
 
   def renderer: StandardF7FieldRenderer

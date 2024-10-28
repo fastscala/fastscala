@@ -3,7 +3,6 @@ package com.fastscala.templates.form7.fields.multiselect
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.fields.text.F7FieldWithAdditionalAttrs
 import com.fastscala.templates.form7.mixins._
 import com.fastscala.templates.form7.renderers._
 
@@ -79,7 +78,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
         val option2Id: Map[T, String] = ids2Option.map(_.swap)
         currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
         val optionsRendered = renderedOptions.map(opt => {
-          renderer.renderOption(currentRenderedValue.get == opt, option2Id(opt), _option2NodeSeq(opt))
+          renderer.renderOption(currentRenderedValue.get.contains(opt), option2Id(opt), _option2NodeSeq(opt))
         })
 
         val onchangeJs = fsc.callback(Js.selectedValues(Js.elementById(elemId)), ids => {

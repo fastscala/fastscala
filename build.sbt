@@ -26,8 +26,8 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "org.slf4j" % "slf4j-api" % "2.0.16",
       "com.github.loki4j" % "loki-logback-appender" % "1.5.2",
       "io.prometheus" % "prometheus-metrics-core" % "1.3.1",
-      "io.prometheus" % "prometheus-metrics-instrumentation-jvm" % "1.3.1"
-      "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.3.1"
+      "io.prometheus" % "prometheus-metrics-instrumentation-jvm" % "1.3.1",
+      "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.3.1",
       "com.typesafe" % "config" % "1.4.3",
 
       "org.apache.commons" % "commons-text" % "1.12.0",

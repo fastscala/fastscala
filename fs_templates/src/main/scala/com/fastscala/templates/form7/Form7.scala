@@ -38,6 +38,8 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
 
   def formRenderHits(): Seq[RenderHint] = Nil
 
+  def changedField(field: F7Field)(implicit fsc: FSContext): Js = onEvent(ChangedField(field))(this, fsc)
+
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
     event match {

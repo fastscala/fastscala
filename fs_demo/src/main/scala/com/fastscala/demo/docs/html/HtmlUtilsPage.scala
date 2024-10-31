@@ -14,7 +14,7 @@ class HtmlUtilsPage extends MultipleCodeExamples2Page() {
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq =
     <p>
-      Remember you need the import: {span.apply("import com.fastscala.templates.bootstrap5.classes.BSHelpers._").text_bg_primary.d_inline}
+      Remember you need the import: {span.apply("import com.fastscala.templates.bootstrap5.helpers.BSHelpers.").text_bg_primary.d_inline}
     </p>
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {

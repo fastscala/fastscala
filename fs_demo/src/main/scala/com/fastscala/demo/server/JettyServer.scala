@@ -21,4 +21,9 @@ object JettyServer extends JettyServerHelper() {
       println(s"Available at: http://localhost:$Port")
     }
   }
+
+  override def postStop(): Unit = {
+    super.postStop()
+    cats.effect.unsafe.implicits.global.shutdown()
+  }
 }

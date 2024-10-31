@@ -1,11 +1,12 @@
 package com.fastscala.websockets
 
 import com.fastscala.core.FSSystem
-import org.eclipse.jetty.websocket.api.{Session, Callback}
+import com.fastscala.utils.Missing
 import org.eclipse.jetty.websocket.api.annotations._
+import org.eclipse.jetty.websocket.api.{Callback, Session}
+import org.slf4j.LoggerFactory
 
 import scala.util.Try
-import org.slf4j.LoggerFactory
 
 object FSJettyWebsocketEndpoint {
   val logger = LoggerFactory.getLogger(getClass.getName)
@@ -35,10 +36,10 @@ class FSJettyWebsocketEndpoint(implicit fss: FSSystem) {
             }
           }
         }).getOrElse({
-          sendText(fss.onPageNotFoundForWebsocketReq(sessionId, pageId).cmd)
+          sendText(fss.onWebsocketNotFound(Missing.Page, sessionId = sessionId, pageId = pageId, session = Some(fsSession), page = None).cmd)
         })
       }).getOrElse({
-        sendText(fss.onSessionNotFoundForWebsocketReq(sessionId).cmd)
+        sendText(fss.onWebsocketNotFound(Missing.Session, sessionId = sessionId, pageId = pageId, session = None, page = None).cmd)
       })
     }
   }

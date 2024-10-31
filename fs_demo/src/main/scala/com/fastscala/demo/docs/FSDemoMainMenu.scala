@@ -23,6 +23,7 @@ object FSDemoMainMenu extends BSMenu(
     , new RoutingMenuItem("demo", "fastscala", "anon_page")("Anonymous Page", () => new AnonymousPage())
     , new RoutingMenuItem("demo", "fastscala", "file_download")("File Download", () => new FileDownloadPage())
     , new RoutingMenuItem("demo", "fastscala", "server_side_push")("Server Side Push", () => new ServerSidePushPage())
+    , new RoutingMenuItem("demo", "fastscala", "internal_metrics")("Internal Metrics", () => new InternalMetricsPage())
   ),
   MenuSection("HTML utils")(
     new RoutingMenuItem("demo", "html", "tags")("tags", () => new HtmlTagsPage())

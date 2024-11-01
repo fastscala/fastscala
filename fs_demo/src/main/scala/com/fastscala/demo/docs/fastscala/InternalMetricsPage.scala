@@ -25,7 +25,7 @@ class InternalMetricsPage extends SingleCodeExamplePage() {
           <li><b>Free Memory:</b> {readableSize(Runtime.getRuntime.freeMemory())}</li>
           <li><b>Total #Sessions:</b> {fsc.session.fsSystem.sessions.size}</li>
           <li><b>Total #Pages:</b> {fsc.session.fsSystem.sessions.map(_._2.pages.size).sum}</li>
-          <li class="ms-2"><b>Total #Alive Pages:</b> {fsc.session.fsSystem.sessions.map(_._2.pages.count(!_._2.isDefunct_?)).sum}</li>
+          <li class="ms-2"><b>Total #Defunct Pages:</b> {fsc.session.fsSystem.sessions.map(_._2.pages.count(_._2.isDefunct_?)).sum}</li>
           <li><b>Total #Anonymous Pages:</b> {fsc.session.fsSystem.sessions.map(_._2.anonymousPages.size).sum}</li>
           <li><b>Total #Callback Functions:</b> {fsc.session.fsSystem.sessions.flatMap(_._2.pages.map(_._2.callbacks.size)).sum}</li>
           <li><b>Total #File Download Callback Functions:</b> {fsc.session.fsSystem.sessions.flatMap(_._2.pages.map(_._2.fileDownloadCallbacks.size)).sum}</li>
@@ -34,7 +34,7 @@ class InternalMetricsPage extends SingleCodeExamplePage() {
           <h6>This session:</h6>
           <ul>
             <li><b>#Pages:</b> {fsc.session.pages.size}</li>
-            <li class="ms-2"><b>#Alive Pages:</b> {fsc.session.pages.count(!_._2.isDefunct_?)}</li>
+            <li class="ms-2"><b>#Defunct Pages:</b> {fsc.session.pages.count(_._2.isDefunct_?)}</li>
             <li><b>#Anonymous Pages:</b> {fsc.session.anonymousPages.size}</li>
             <li><b>#Callback Functions:</b> {fsc.session.pages.map(_._2.callbacks.size).sum}</li>
             <li><b>#File Download Callback Functions:</b> {fsc.session.pages.map(_._2.fileDownloadCallbacks.size).sum}</li>

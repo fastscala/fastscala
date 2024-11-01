@@ -21,6 +21,8 @@ trait FSXmlSupport[Env <: FSXmlEnv] {
 
   def buildElem(label: String, attrs: (String, String)*)(children: Env#NodeSeq*): Env#Elem
 
+  def label(elem: Env#Elem): String
+
   def contents(elem: Env#Elem): Env#NodeSeq
 
   def attribute(elem: Env#Elem, attrName: String): Option[String]

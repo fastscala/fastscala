@@ -81,6 +81,8 @@ class FSContext(
 
   import FSContext.logger
 
+  def depth: Int = parentFSContext.map(_.depth + 1).getOrElse(0)
+
   implicit def fsc: FSContext = this
 
   private implicit def __fsContextOpt: Option[FSContext] = Some(this)
@@ -375,14 +377,19 @@ class FSPage(
          |  pageId: ${Js.asJsStr(id).cmd},
          |  callback: function(arg, pageId, funcId, ignoreErrors, async, expectReturn) {
          |    const xhr = new XMLHttpRequest();
-         |    xhr.onload = function() { eval(this.responseText); };
-         |
          |    xhr.open("POST", "/${session.fsSystem.FSPrefix}/cb/"+pageId+"/"+funcId+"?time=" + new Date().getTime() + (ignoreErrors ? "&ignore_errors=true" : ""), async);
          |    xhr.setRequestHeader("Content-type", "text/plain;charset=utf-8");
          |    if (expectReturn) {
          |      xhr.onload = function() { try {eval(this.responseText);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
          |    }
          |    xhr.send(arg);
+         |  },
+         |  keepAlive: function(pageId) {
+         |    const xhr = new XMLHttpRequest();
+         |    xhr.open("POST", "/${session.fsSystem.FSPrefix}/ka/"+pageId+"?time=" + new Date().getTime(), true);
+         |    xhr.setRequestHeader("Content-type", "text/plain;charset=utf-8");
+         |    xhr.onload = function() { try {eval(this.responseText);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
+         |    xhr.send('');
          |  },
          |  initWebSocket: function() {
          |    if(!window._fs.ws) {
@@ -405,13 +412,7 @@ class FSPage(
 
   def isDefunct_? = periodicKeepAliveEnabled && (System.currentTimeMillis() - autoKeepAliveAt) > periodicKeepAliveDefunctAfter
 
-  def setupKeepAlive(): Js = Js {
-    val callback = rootFSContext.callback(() => {
-      autoKeepAliveAt = System.currentTimeMillis()
-      Js.void
-    }).cmd
-    s"""function sendKeepAlive() {$callback;setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""".stripMargin
-  }
+  def setupKeepAlive(): Js = Js(s"""function sendKeepAlive() {window._fs.keepAlive(${Js.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
 
   def initWebSocket() = Js("window._fs.initWebSocket();")
 }
@@ -669,7 +670,13 @@ class FSSystem(
 
     Some(req).collect {
       // Keep alive:
-      //          case Post(FSPrefix, "ka", pageId) =>
+      case Post(FSPrefix, "ka", pageId) =>
+        sessionOpt.map(implicit session => {
+          session.pages.get(pageId).map(implicit page => {
+            page.autoKeepAliveAt = System.currentTimeMillis()
+            Ok.js(Js.void)
+          }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, session = Some(session), page = None)))
+        }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, session = sessionOpt, page = None)))
 
       // Callback invocation:
       case Post(FSPrefix, "cb", pageId, funcId) =>
@@ -803,6 +810,17 @@ class FSSystem(
           }).getOrElse(onAnonymousPageNotFound(Missing.AnonPage, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = Some(session), page = None))
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }
+  }
+
+  def onKeepAliveNotFound(
+                           missing: Missing.Value,
+                           sessionId: Option[String],
+                           pageId: String,
+                           session: Option[FSSession],
+                           page: Option[FSPage],
+                         )(implicit req: Request): Js = {
+    missing.updateStats()
+    Js.void
   }
 
   def onCallbackNotFound(

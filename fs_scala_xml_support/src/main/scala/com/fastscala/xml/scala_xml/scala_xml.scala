@@ -57,6 +57,8 @@ object FSScalaXmlSupport {
       new ScalaXmlElemUtils.RichElem(new Elem(prefix = null, label = label, attributes1 = Null, scope = TopScope, minimizeEmpty = false, child = children.mkNS: _*)).withAttrs(attrs: _*)
     }
 
+    override def label(elem: Elem): String = elem.label
+
     override def render(elem: NodeSeq): String = elem.toString()
 
     override def transformAttribute(elem: Elem, attrName: String, transform: Option[String] => String): Elem = attributeTransform(elem, attrName, transform)

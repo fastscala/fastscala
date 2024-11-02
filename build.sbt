@@ -29,6 +29,7 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "io.prometheus" % "prometheus-metrics-instrumentation-jvm" % "1.3.1",
       "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.3.1",
       "com.typesafe" % "config" % "1.4.3",
+      "it.unimi.dsi" % "dsiutils" % "2.7.3",
 
       "org.apache.commons" % "commons-text" % "1.12.0",
 

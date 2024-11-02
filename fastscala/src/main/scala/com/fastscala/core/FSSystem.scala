@@ -884,6 +884,10 @@ class FSSystem(
     else Js.confirm(s"Page has expired, please reload", Js.reload())
   }
 
+  def transformCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
+
+  def transformFileUploadCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
+
   def allKeepAlivesIterable: Iterable[Long] = sessions.values.flatMap(_.allKeepAlivesIterable)
 
   def gc(): Unit = synchronized {

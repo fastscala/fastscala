@@ -24,6 +24,7 @@ object FSDemoMainMenu extends BSMenu(
     , new RoutingMenuItem("demo", "fastscala", "file_download")("File Download", () => new FileDownloadPage())
     , new RoutingMenuItem("demo", "fastscala", "server_side_push")("Server Side Push", () => new ServerSidePushPage())
     , new RoutingMenuItem("demo", "fastscala", "internal_metrics")("Internal Metrics", () => new InternalMetricsPage())
+    , new RoutingMenuItem("demo", "fastscala", "discard_fs_context")("FSContext discard", () => new FSContextDiscardPage())
     , new SimpleMenuItem("Grafana", "https://grafana.fastscala.com/public-dashboards/e01e760c4321418e9b4903e7e6bfcfb0?orgId=1&refresh=5s")
   ),
   MenuSection("HTML utils")(

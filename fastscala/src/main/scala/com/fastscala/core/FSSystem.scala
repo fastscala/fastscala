@@ -1,6 +1,7 @@
 package com.fastscala.core
 
 import com.fastscala.js.Js
+import com.fastscala.js.rerenderers.RerendererDebugStatus
 import com.fastscala.server._
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
@@ -294,6 +295,8 @@ class FSPage(
               , val debugLbl: Option[String] = None
             ) extends FSHasSession {
 
+  var rerendererDebugStatus: RerendererDebugStatus.Value = RerendererDebugStatus.Disabled
+
   def periodicKeepAliveEnabled: Boolean = session.fsSystem.config.getBoolean("com.fastscala.core.periodic-page-keep-alive.enabled")
 
   def periodicKeepAlivePeriod: Long = session.fsSystem.config.getLong("com.fastscala.core.periodic-page-keep-alive.period-millis")
@@ -411,6 +414,8 @@ class FSPage(
   }
 
   def isDefunct_? = periodicKeepAliveEnabled && (System.currentTimeMillis() - autoKeepAliveAt) > periodicKeepAliveDefunctAfter
+
+  def isAlive_? = !isDefunct_?
 
   def setupKeepAlive(): Js = {
 
@@ -562,21 +567,23 @@ class FSSession(
       throw ex
   }
 
-  def deleteOlderThan(ts: Long): Unit = {
+  def deletePages(toDelete: Set[FSPage]): Unit = {
+    val currentPages = pages.values.toSet
+    val pagesToRemove = currentPages.intersect(toDelete)
+    pagesToRemove.foreach(_.delete())
+    fsSystem.stats.currentPages.dec(pagesToRemove.size)
+  }
+
+  def deletePagesOlderThan(ts: Long): Unit = {
     val currentPages = pages.toVector
     val pagesToRemove = currentPages.filter(_._2.keepAliveAt < ts)
     pagesToRemove.foreach(_._2.delete())
     fsSystem.stats.currentPages.dec(pagesToRemove.size)
 
-    //    fsSystem.stats.event(StatEvent.GC_PAGE, n = pagesToRemove.size)
-    // logger.info(s"Removed ${pagesToRemove.size} pages")
-
     val currentAnonymousPages = anonymousPages.toVector
     val anonymousPagesToRemove = currentAnonymousPages.filter(_._2.keepAliveAt < ts)
     anonymousPages --= anonymousPagesToRemove.map(_._1)
     fsSystem.stats.currentAnonPages.dec(anonymousPagesToRemove.size)
-    //    fsSystem.stats.event(StatEvent.GC_ANON_PAGE, n = anonymousPagesToRemove.size)
-    // logger.info(s"Removed ${pagesToRemove.size} anonymous pages")
 
     pages.values.foreach(_.deleteOlderThan(ts))
   }
@@ -701,7 +708,7 @@ class FSSystem(
                     try {
                       stats.callbacksInProcessing.inc()
                       if (logger.isTraceEnabled) logger.trace(s"Running callback on thread ${Thread.currentThread()}...")
-                      val rslt = fsFunc.func(arg)
+                      val rslt = transformCallbackResponse(fsFunc.func(arg), fsFunc, page)
                       if (logger.isTraceEnabled) logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
                       rslt
                     } catch {
@@ -816,6 +823,12 @@ class FSSystem(
     }
   }
 
+  def transformCallbackResponse(
+                                 resp: Js,
+                                 fsFunc: FSFunc,
+                                 page: FSPage,
+                               ): Js = resp
+
   def onKeepAliveNotFound(
                            missing: Missing.Value,
                            sessionId: Option[String],
@@ -892,8 +905,6 @@ class FSSystem(
 
   def transformFileUploadCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
 
-  def allKeepAlivesIterable: Iterable[Long] = sessions.values.flatMap(_.allKeepAlivesIterable)
-
   def gc(): Unit = synchronized {
     val minFreeSpacePercent = config.getDouble("com.fastscala.core.gc.run-when-less-than-mem-free-percent")
     if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
@@ -906,25 +917,26 @@ class FSSystem(
     }
   }
 
-  def freeUpSpace(): Unit = {
+  def freeUpSpace(): Unit = synchronized {
     stats.gcRunsTotal.inc()
     val start = System.currentTimeMillis()
-    if (logger.isTraceEnabled) logger.trace(s"#Sessions: ${sessions.size} #Pages: ${sessions.map(_._2.pages.size).sum} #Funcs: ${sessions.map(_._2.pages.map(_._2.callbacks.size).sum).sum}")
-    val allKeepAlives = allKeepAlivesIterable.toVector.sorted
-    if (logger.isTraceEnabled) logger.trace(s"Found ${allKeepAlives.size} keep alives")
-    val deleteOlderThanTs: Long = allKeepAlives.drop(allKeepAlives.size / 2).headOption.getOrElse(0L)
-    if (logger.isTraceEnabled) logger.trace(s"Removing everything with keepalive older than ${System.currentTimeMillis() - deleteOlderThanTs}ms")
-    deleteOlderThan(deleteOlderThanTs)
+
+    val percentOfPagesToDelete: Double = config.getDouble("com.fastscala.core.gc.percent-of-pages-to-delete")
+
+    val pagesSortedByInterest = sessions.flatMap(_._2.pages.values).toSeq.sortBy(p => (p.isAlive_?, p.keepAliveAt))
+    val pagesToDelete: Set[FSPage] = pagesSortedByInterest.take(math.max(1, (percentOfPagesToDelete / 100.0) * pagesSortedByInterest.size).toInt).toSet
+
+    // Delete sessions with no more pages:
+    val sessionsToDelete = sessions.values.filter(_.pages.values.forall(p => pagesToDelete.contains(p))).toSet
+    sessionsToDelete.foreach(_.delete())
+
+    // Delete pages:
+    pagesToDelete.groupBy(_.session).foreach({
+      case (session, toDelete) if sessionsToDelete.contains(session) => session.deletePages(toDelete)
+      case _ =>
+    })
+    sessions.values.toSeq.flatMap(_.pages.values)
+
     stats.gcTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
-  }
-
-  val gcLock = new Object
-
-  def deleteOlderThan(keepAliveOlderThan: Long): Unit = gcLock.synchronized {
-    val currentSessions = sessions.toVector
-    val sessionsToRemove = currentSessions.filter(_._2.keepAliveAt < keepAliveOlderThan)
-    sessionsToRemove.foreach(_._2.delete())
-    if (logger.isTraceEnabled) logger.trace(s"Removed ${sessionsToRemove.size} sessions: ${sessionsToRemove.map(_._1).mkString(", ")}")
-    sessions.values.foreach(_.deleteOlderThan(keepAliveOlderThan))
   }
 }

@@ -150,13 +150,13 @@ object BSToast2 {
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
   def Simple(header: Elem)(contents: Elem): BSToast2Base = new BSToast2Base {
-    override def toastHeader(): Elem = header
+    override def toastHeader(): Elem = <div>{header.me_auto}</div>
 
     override def toastContents(): Elem = contents
   }
 
   def VerySimple(header: Elem)(contents: Elem): BSToast2Base = new BSToast2Base {
-    override def toastHeader(): Elem = header
+    override def toastHeader(): Elem = <div>{header.me_auto}</div>
 
     override def toastContents(): Elem = contents
   }.onToastContainer(_.position_fixed.top_0.end_0).addCloseBtn()

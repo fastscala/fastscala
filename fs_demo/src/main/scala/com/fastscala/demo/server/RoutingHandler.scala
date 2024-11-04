@@ -7,18 +7,18 @@ import com.fastscala.demo.docs.bootstrap.BootstrapModalPage
 import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
 import com.fastscala.demo.docs.forms.BasicFormExamplePage
 import com.fastscala.demo.docs.tables._
+import com.fastscala.js.Js
 import com.fastscala.server.{Ok, Redirect, Response, RoutingHandlerHelper}
-import com.fastscala.xml.scala_xml.FSScalaXmlEnv
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
+import com.fastscala.xml.scala_xml.JS.RichJs
+import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, JS}
+import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.util.Callback
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
-import java.util.Collections
-
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
-import org.eclipse.jetty.util.Callback
-
+import java.util.{Collections, Date}
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
@@ -39,7 +39,70 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
   }
 
   override def handlerInSession(response: JettyServerResponse, callback: Callback)(implicit req: Request, session: FSSession): Option[Response] = {
-    onlyHandleHtmlRequests {
+    if (req.getHttpURI.getPath == "/basic1") {
+      Some(Ok.html(
+        """<!DOCTYPE html>
+          |<html>
+          |<body>
+          |<h1>Basic example 1</h1>
+          |</body>
+          |</html>
+          |""".stripMargin
+      ))
+    } else if (req.getHttpURI.getPath == "/basic2") {
+      Some(session.createPage(implicit fsc => {
+        val callback = fsc.callback(() => {
+          println("clicked!")
+          Js.void
+        })
+        Ok.html(
+          "<!DOCTYPE html>" ++
+            <html>
+              <body>
+              <h1>Basic example 2</h1>
+              <button onclick={callback.cmd}>Click me!</button>
+              </body>
+             </html>.toString()
+        )
+      }))
+    } else if (req.getHttpURI.getPath == "/basic3") {
+      Some(session.createPage(implicit fsc => {
+        val callback = fsc.callback(() => {
+          println("clicked!")
+          Js.void
+        })
+        Ok.html(
+          "<!DOCTYPE html>" ++
+            <html>
+              <head>{fsc.fsPageScript().inScriptTag}</head>
+              <body>
+                <h1>Basic example 3</h1>
+                <button onclick={callback.cmd}>Click me!</button>
+                <p>On click, calling: <pre>{callback.cmd}</pre></p>
+              </body>
+             </html>.toString()
+        )
+      }))
+    } else if (req.getHttpURI.getPath == "/basic4") {
+      Some(session.createPage(implicit fsc => {
+        val callback = fsc.callback(Js("document.getElementById('myInput').value"), str => {
+          println(s"input has value: '$str'")
+          Js.alert(s"The server has received your input at ${new Date().toGMTString}")
+        })
+        Ok.html(
+          "<!DOCTYPE html>" ++
+            <html>
+              <head>{fsc.fsPageScript().inScriptTag}</head>
+              <body>
+                <h1>Basic example 4</h1>
+                <input type="text" id="myInput"></input>
+                <button onclick={callback.cmd}>Click me!</button>
+                <p>On click, calling: <pre>{callback.cmd}</pre></p>
+              </body>
+             </html>.toString()
+        )
+      }))
+    } else onlyHandleHtmlRequests {
       if (CurrentUser().isEmpty) {
         val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
         cookies.find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(

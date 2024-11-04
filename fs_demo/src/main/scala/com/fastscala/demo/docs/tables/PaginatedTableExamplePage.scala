@@ -22,8 +22,6 @@ class PaginatedTableExamplePage extends SingleCodeExamplePage() {
 
       override type R = Country
 
-
-
       override def defaultPageSize = 10
 
       val ColName = ColStr("Name", _.name.common)
@@ -37,7 +35,6 @@ class PaginatedTableExamplePage extends SingleCodeExamplePage() {
         , ColRegion
         , ColArea
       )
-
 
       override def rowsSorter: PartialFunction[Table5StandardColumn[Country], Seq[Country] => Seq[Country]] = {
         case ColName => _.sortBy(_.name.common)

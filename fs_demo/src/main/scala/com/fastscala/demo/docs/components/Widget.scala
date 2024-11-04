@@ -2,6 +2,7 @@ package com.fastscala.demo.docs.components
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.js.rerenderers.RerendererDebugStatus
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
@@ -11,7 +12,9 @@ import scala.xml.{Elem, NodeSeq}
 
 abstract class Widget extends Mutable {
 
-  lazy val widgetId = IdGen.id("widget-")
+  implicit val debug = RerendererDebugStatus.Enabled
+
+  lazy val widgetId = IdGen.id("widget")
   lazy val widgetHeaderId = IdGen.id("widget-header")
   lazy val widgetContentsId = IdGen.id("widget-contents")
 
@@ -31,6 +34,7 @@ abstract class Widget extends Mutable {
     onCardHeaderTransforms = onCardHeaderTransforms.pipe(onCardHeaderTransforms => elem => f(onCardHeaderTransforms(elem)))
   }
 
+  lazy val widgetRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetCard(), Some(widgetId))
   lazy val widgetHeaderRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetHeader(), Some(widgetHeaderId))
   lazy val widgetContentsRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetBody(), Some(widgetContentsId))
 
@@ -42,7 +46,7 @@ abstract class Widget extends Mutable {
 
   def widgetContents()(implicit fsc: FSContext): NodeSeq
 
-  def rerenderWidget()(implicit fsc: FSContext): Js = JS.replace(widgetId, renderWidget())
+  def rerenderWidget()(implicit fsc: FSContext): Js = widgetRenderer.rerender()
 
   def rerenderWidgetHeader()(implicit fsc: FSContext): Js = widgetHeaderRenderer.rerender()
 
@@ -68,11 +72,13 @@ abstract class Widget extends Mutable {
     } pipe transformWidgetCardBody
   }
 
-  def renderWidget()(implicit fsc: FSContext): Elem = {
+  def renderWidgetCard()(implicit fsc: FSContext): Elem = {
     import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     card.withId(widgetId).apply {
       widgetHeaderRenderer.render() ++
         widgetContentsRenderer.render()
     } pipe transformWidgetCard
   }
+
+  def renderWidget()(implicit fsc: FSContext): Elem = widgetRenderer.render()
 }

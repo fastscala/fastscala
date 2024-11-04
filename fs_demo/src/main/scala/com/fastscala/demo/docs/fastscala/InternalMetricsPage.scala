@@ -66,10 +66,14 @@ class InternalMetricsPage extends SingleCodeExamplePage() {
     border.p_2.rounded.apply {
       rerenderable.render() ++
         d_flex.justify_content_center.apply {
-          BSBtn().BtnPrimary.lbl("Free Space").ajax(_ => {
+          BSBtn().BtnPrimary.lbl("System GC").ajax(_ => {
             fsc.page.session.fsSystem.freeUpSpace()
             JS.void
-          }).btn
+          }).btn.me_2 ++
+            BSBtn().BtnPrimary.lbl("Free Space").ajax(_ => {
+              fsc.page.session.fsSystem.freeUpSpace()
+              JS.void
+            }).btn
         }
     }
     // === code snippet ===

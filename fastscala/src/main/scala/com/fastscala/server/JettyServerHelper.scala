@@ -20,7 +20,9 @@ abstract class JettyServerHelper() {
 
   def appName: String
 
-  implicit val fss: FSSystem = new FSSystem(appName = appName)
+  def buildFSSystem(): FSSystem = new FSSystem(appName = appName)
+
+  implicit lazy val fss: FSSystem = buildFSSystem()
 
   def buildMainHandler(): Handler
 

@@ -80,7 +80,7 @@ class FieldStatesPage extends MultipleCodeExamples2Page() {
               )
 
               override def postSubmitForm()(implicit fsc: FSContext): Js =
-                BSToast2.VerySimple(label.apply("Submitted"))(span.apply("You submitted the form")).installAndShow()
+                BSToast2.VerySimple(label.apply("Submitted"))(div.my_1.apply("You submitted the form")).installAndShow()
             }.render()
         }.mb_3
       }
@@ -129,7 +129,7 @@ class FieldStatesPage extends MultipleCodeExamples2Page() {
               )
 
               override def postSubmitForm()(implicit fsc: FSContext): Js =
-                BSToast2.VerySimple(label.apply("Submitted"))(span.apply("You submitted the form")).installAndShow()
+                BSToast2.VerySimple(label.apply("Submitted"))(div.my_1.apply("You submitted the form")).installAndShow()
             }.render()
         }.mb_3
       }

@@ -23,6 +23,8 @@ trait FSXmlSupport[Env <: FSXmlEnv] {
 
   def label(elem: Env#Elem): String
 
+  def getId(elem: Env#Elem): Option[String]
+
   def contents(elem: Env#Elem): Env#NodeSeq
 
   def attribute(elem: Env#Elem, attrName: String): Option[String]

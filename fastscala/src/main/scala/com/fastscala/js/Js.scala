@@ -1,7 +1,7 @@
 package com.fastscala.js
 
 import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
-import com.fastscala.js.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
+import com.fastscala.js.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererDebugStatus, RerendererP}
 import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.http.{HttpHeader, MimeTypes}
@@ -15,11 +15,7 @@ trait Js {
 
   def cmd: String
 
-  def cmdEscaped: String = {
-    println("IN: " + cmd)
-    println("OUT: " + "\"" + StringEscapeUtils.escapeEcmaScript(cmd.replaceAll("\n", "")) + "\"")
-    "'" + StringEscapeUtils.escapeEcmaScript(cmd.replaceAll("\n", "")) + "'"
-  }
+  def cmdEscaped: String = "'" + StringEscapeUtils.escapeEcmaScript(cmd.replaceAll("\n", "")) + "'"
 
   def &(js: Js) = RawJs(cmd + ";" + js.cmd)
 
@@ -191,6 +187,8 @@ trait JsUtils {
     Js(s"""document.cookie='$name=${escapeStr(cookie)};${expires.map(new Date(_)).map(_.toGMTString).map("; expires=" + _).getOrElse("")}${path.map("; path=" + _).getOrElse("")}'""")
 
   def deleteCookie(name: String, path: String): Js = setCookie(name, "", expires = Some(0), path = Some(path))
+
+  def catchAndLogErrors(js: Js): Js = Js(s"""try {${js.cmd}} catch (error) { console.error(error); }""")
 }
 
 object Js extends JsUtils {

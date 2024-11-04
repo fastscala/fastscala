@@ -1,7 +1,6 @@
 package com.fastscala.xml.scala_xml
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
-import com.fastscala.utils.{Renderable, RenderableWithFSContext}
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import scala.xml._
@@ -42,6 +41,8 @@ object FSScalaXmlSupport {
     override def concat(ns1: NodeSeq, ns2: NodeSeq): NodeSeq = ns1 ++ ns2
 
     override def buildText(text: String): NodeSeq = scala.xml.Text(text)
+
+    override def getId(elem: Elem): Option[String] = ScalaXmlElemUtils.RichElem(elem).getId
 
     override def buildElemFrom[E <: FSXmlEnv : FSXmlSupport](other: E#Elem): Elem = other match {
       case elem: scala.xml.Elem => elem

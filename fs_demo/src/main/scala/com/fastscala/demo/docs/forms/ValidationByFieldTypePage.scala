@@ -37,7 +37,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
         )
 
         override def postSubmitForm()(implicit fsc: FSContext): Js =
-          BSToast2.VerySimple(div.apply(strong.apply("Submitted!").me_auto))(div.apply("Submission was successful")).installAndShow()
+          BSToast2.VerySimple(div.apply(strong.apply("Submitted!").me_auto))(div.my_2.apply("Submission was successful")).installAndShow()
       }.render().pipe(renderedForm => {
         div.border.p_2.rounded.apply(renderedForm)
       })
@@ -53,7 +53,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
         )
 
         override def postSubmitForm()(implicit fsc: FSContext): Js =
-          BSToast2.VerySimple(div.apply(strong.apply("Submitted!").me_auto))(div.apply("Submission was successful")).installAndShow()
+          BSToast2.VerySimple(div.apply(strong.apply("Submitted!").me_auto))(div.my_2.apply("Submission was successful")).installAndShow()
       }.render().pipe(renderedForm => {
         div.border.p_2.rounded.apply(renderedForm)
       })
@@ -83,7 +83,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
           validateBeforeUserInput()
 
           override def postSubmitForm()(implicit fsc: FSContext): Js =
-            BSToast2.VerySimple(div.apply(strong.apply("Submitted!").me_auto))(div.apply("Submission was successful")).installAndShow()
+            BSToast2.VerySimple(div.apply(strong.apply("Submitted!").me_auto))(div.my_2.apply("Submission was successful")).installAndShow()
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField

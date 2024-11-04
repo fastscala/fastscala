@@ -11,7 +11,7 @@ class ContentRerendererP[E <: FSXmlEnv : FSXmlSupport, P](
                                                            id: Option[String] = None,
                                                            debugLabel: Option[String] = None,
                                                            gcOldFSContext: Boolean = true
-                                                         )(implicit debugStatus: RerendererDebugStatus.Value) {
+                                                         ) {
 
   implicit val Js: JsXmlUtils[E] = JsUtils.generic
   import com.fastscala.core.FSXmlUtils._
@@ -23,7 +23,7 @@ class ContentRerendererP[E <: FSXmlEnv : FSXmlSupport, P](
 
   def render(param: P)(implicit fsc: FSContext) = {
     rootRenderContext = Some(fsc)
-    debugStatus.render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
+    fsc.page.rerendererDebugStatus.render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
       elem.withContents(renderFunc.apply(this)({
         if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
         else fsc
@@ -31,5 +31,7 @@ class ContentRerendererP[E <: FSXmlEnv : FSXmlSupport, P](
     }))
   }
 
-  def rerender(param: P) = debugStatus.rerender(aroundId, Js.replace(aroundId, elem2NodeSeq(render(param)(rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?"))))))
+  def rerender(param: P) = rootRenderContext.map(implicit fsc => {
+    fsc.page.rerendererDebugStatus.rerender(aroundId, Js.replace(aroundId, elem2NodeSeq(render(param))))
+  }).getOrElse(throw new Exception("Missing context - did you call render() first?"))
 }

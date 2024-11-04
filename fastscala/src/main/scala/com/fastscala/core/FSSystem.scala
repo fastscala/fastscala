@@ -894,15 +894,15 @@ class FSSystem(
 
   def allKeepAlivesIterable: Iterable[Long] = sessions.values.flatMap(_.allKeepAlivesIterable)
 
-  def gc(): Unit = {
+  def gc(): Unit = synchronized {
     val minFreeSpacePercent = config.getDouble("com.fastscala.core.gc.run-when-less-than-mem-free-percent")
-    if (
-      (Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent
-    ) synchronized {
-      if (logger.isTraceEnabled) logger.trace(s"Less than ${minFreeSpacePercent.formatted("%.2f%%")} space available, freeing up space...")
-      freeUpSpace()
+    if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
       System.gc()
-      gc()
+      if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
+        if (logger.isTraceEnabled) logger.trace(s"Less than ${minFreeSpacePercent.formatted("%.2f%%")} space available, freeing up space...")
+        freeUpSpace()
+        gc()
+      }
     }
   }
 
@@ -915,7 +915,6 @@ class FSSystem(
     val deleteOlderThanTs: Long = allKeepAlives.drop(allKeepAlives.size / 2).headOption.getOrElse(0L)
     if (logger.isTraceEnabled) logger.trace(s"Removing everything with keepalive older than ${System.currentTimeMillis() - deleteOlderThanTs}ms")
     deleteOlderThan(deleteOlderThanTs)
-    stats.gcTimeTotal.inc(100000)
     stats.gcTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
   }
 

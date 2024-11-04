@@ -2,7 +2,7 @@ package com.fastscala.templates.bootstrap5.toast
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.helpers.ClassEnrichable
+import com.fastscala.templates.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
@@ -11,7 +11,7 @@ import com.fastscala.xml.scala_xml.JS.RichJs
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-abstract class BSToast2Base extends ClassEnrichable with Mutable {
+abstract class BSToast2Base extends ClassEnrichableMutable with Mutable {
 
   import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
 
@@ -26,7 +26,7 @@ abstract class BSToast2Base extends ClassEnrichable with Mutable {
 
   var toastClasses = ""
 
-  override def setClass(clas: String): this.type = {
+  override def addClass(clas: String): this.type = {
     toastClasses += s" $clas"
     this
   }

@@ -3,7 +3,7 @@ package com.fastscala.templates.bootstrap5.tables
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers.RichElemBasicOps
-import com.fastscala.templates.bootstrap5.helpers.ClassEnrichable
+import com.fastscala.templates.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
@@ -13,7 +13,7 @@ import java.util.UUID
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable with Mutable {
+abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMutable with Mutable {
 
   type R
   type C
@@ -31,7 +31,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichable wi
   var onTableBodyTRTransforms: Elem => Elem = identity[Elem]
   var onTableBodyTRTDTransforms: Elem => Elem = identity[Elem]
 
-  override def setClass(clas: String): this.type = mutate {
+  override def addClass(clas: String): this.type = mutate {
     additionalTableClasses +=additionalTableClasses.pipe(additionalTableClasses =>  s" $clas")
   }
 

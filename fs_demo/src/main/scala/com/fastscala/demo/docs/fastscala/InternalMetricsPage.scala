@@ -3,6 +3,7 @@ package com.fastscala.demo.docs.fastscala
 import cats.effect.IO
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.SingleCodeExamplePage
+import com.fastscala.templates.bootstrap5.progress.BSProgress
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.xml.scala_xml.JS
 
@@ -19,10 +20,20 @@ class InternalMetricsPage extends SingleCodeExamplePage() {
     // === code snippet ===
     import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     val rerenderable = JS.rerenderable(rerenderer => implicit fsc => {
+      val totalMem = Runtime.getRuntime.totalMemory()
+      val freeMem = Runtime.getRuntime.freeMemory()
+      val usedMem = totalMem - freeMem
       div.apply {
+        <div>
+          {
+          BSProgress().striped.animated.bgWarning.renderXofY(usedMem, totalMem, readableSize(usedMem)).mt_1.mb_2
+          }
+        </div>
         <ul>
-          <li><b>Total Memory:</b> {readableSize(Runtime.getRuntime.totalMemory())}</li>
-          <li><b>Free Memory:</b> {readableSize(Runtime.getRuntime.freeMemory())}</li>
+          <li><b>Total Memory:</b> {readableSize(totalMem)}</li>
+          <li><b>Free Memory:</b> {readableSize(freeMem)}</li>
+          <li><b>#GC runs:</b> {fsc.session.fsSystem.stats.gcRunsTotal.get().toLong}</li>
+          <li><b>Total GC time:</b> {fsc.session.fsSystem.stats.gcTimeTotal.get().formatted("%.3f")}s</li>
           <li><b>Total #Sessions:</b> {fsc.session.fsSystem.sessions.size}</li>
           <li><b>Total #Pages:</b> {fsc.session.fsSystem.sessions.map(_._2.pages.size).sum}</li>
           <li class="ms-2"><b>Total #Defunct Pages:</b> {fsc.session.fsSystem.sessions.map(_._2.pages.count(_._2.isDefunct_?)).sum}</li>

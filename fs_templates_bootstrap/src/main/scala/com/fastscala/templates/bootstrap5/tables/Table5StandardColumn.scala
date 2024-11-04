@@ -2,7 +2,7 @@ package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers.{RichElemBasicOps, s}
-import com.fastscala.templates.bootstrap5.helpers.ClassEnrichable
+import com.fastscala.templates.bootstrap5.helpers.ClassEnrichableMutable
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -39,11 +39,11 @@ trait Table5StandardColumns extends Table5ColsRenderable with Table5ColsLabeled 
   override def colLabel(col: C): String = col.label
 }
 
-trait Table5StandardColumn[R] extends ClassEnrichable {
+trait Table5StandardColumn[R] extends ClassEnrichableMutable {
 
   var additionalClasses = ""
 
-  override def setClass(clas: String): this.type = {
+  override def addClass(clas: String): this.type = {
     additionalClasses += s" $clas"
     this
   }

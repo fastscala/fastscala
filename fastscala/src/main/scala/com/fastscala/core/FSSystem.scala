@@ -245,7 +245,7 @@ class FSContext(
   def fileDownload(fileName: String, contentType: String, download: () => Array[Byte]): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
-    functionsFileUploadGenerated += funcId
+    functionsFileDownloadGenerated += funcId
     page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, download)
     session.fsSystem.stats.event(StatEvent.CREATE_FILE_DOWNLOAD, additionalFields = Seq("file_name" -> fileName, "content_type" -> contentType))
     session.fsSystem.stats.fileDownloadCallabacksTotal.inc()
@@ -256,7 +256,7 @@ class FSContext(
   def fileUploadActionUrl(func: Seq[FSUploadedFile] => Js): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
-    functionsFileDownloadGenerated += funcId
+    functionsFileUploadGenerated += funcId
     page.fileUploadCallbacks += (funcId -> new FSFileUpload(funcId, func))
     session.fsSystem.stats.event(StatEvent.CREATE_FILE_UPLOAD)
     session.fsSystem.stats.fileUploadCallbacksTotal.inc()
@@ -412,7 +412,10 @@ class FSPage(
 
   def isDefunct_? = periodicKeepAliveEnabled && (System.currentTimeMillis() - autoKeepAliveAt) > periodicKeepAliveDefunctAfter
 
-  def setupKeepAlive(): Js = Js(s"""function sendKeepAlive() {window._fs.keepAlive(${Js.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
+  def setupKeepAlive(): Js = {
+
+    Js(s"""function sendKeepAlive() {window._fs.keepAlive(${Js.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
+  }
 
   def initWebSocket() = Js("window._fs.initWebSocket();")
 }
@@ -673,6 +676,7 @@ class FSSystem(
       case Post(FSPrefix, "ka", pageId) =>
         sessionOpt.map(implicit session => {
           session.pages.get(pageId).map(implicit page => {
+            stats.keepAliveInvocationsTotal.inc()
             page.autoKeepAliveAt = System.currentTimeMillis()
             Ok.js(Js.void)
           }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, session = Some(session), page = None)))
@@ -890,27 +894,29 @@ class FSSystem(
 
   def allKeepAlivesIterable: Iterable[Long] = sessions.values.flatMap(_.allKeepAlivesIterable)
 
-  def gc(): Unit = synchronized {
+  def gc(): Unit = {
+    val minFreeSpacePercent = config.getDouble("com.fastscala.core.gc.run-when-less-than-mem-free-percent")
     if (
-      Runtime.getRuntime.totalMemory() > 1000 * 1024 * 1024 &&
-        Runtime.getRuntime.freeMemory() < 50 * 1024 * 1024
-    ) {
-      if (logger.isTraceEnabled) logger.trace("Less than 50MB available, freeing up space...")
+      (Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent
+    ) synchronized {
+      if (logger.isTraceEnabled) logger.trace(s"Less than ${minFreeSpacePercent.formatted("%.2f%%")} space available, freeing up space...")
       freeUpSpace()
+      System.gc()
       gc()
     }
   }
 
   def freeUpSpace(): Unit = {
+    stats.gcRunsTotal.inc()
+    val start = System.currentTimeMillis()
     if (logger.isTraceEnabled) logger.trace(s"#Sessions: ${sessions.size} #Pages: ${sessions.map(_._2.pages.size).sum} #Funcs: ${sessions.map(_._2.pages.map(_._2.callbacks.size).sum).sum}")
     val allKeepAlives = allKeepAlivesIterable.toVector.sorted
     if (logger.isTraceEnabled) logger.trace(s"Found ${allKeepAlives.size} keep alives")
     val deleteOlderThanTs: Long = allKeepAlives.drop(allKeepAlives.size / 2).headOption.getOrElse(0L)
     if (logger.isTraceEnabled) logger.trace(s"Removing everything with keepalive older than ${System.currentTimeMillis() - deleteOlderThanTs}ms")
     deleteOlderThan(deleteOlderThanTs)
-    val start = System.currentTimeMillis()
-    System.gc()
-    if (logger.isTraceEnabled) logger.trace(s"Run GC in ${System.currentTimeMillis() - start}ms")
+    stats.gcTimeTotal.inc(100000)
+    stats.gcTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
   }
 
   val gcLock = new Object

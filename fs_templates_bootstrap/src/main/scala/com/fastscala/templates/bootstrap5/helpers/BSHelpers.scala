@@ -21,11 +21,19 @@ object BSHelpers extends BSClassesHelper[Elem] with BasicElemsHelper {
     override protected def withClass(clas: String): String = classes.trim + " " + clas.trim
   }
 
-  implicit class RichClassEnrichable[T <: ClassEnrichable](val enrichable: T) extends BSClassesHelper[T] {
-    override protected def withClass(clas: String): T = enrichable.setClass(clas)
+  implicit class RichClassEnrichableMutable[T <: ClassEnrichableMutable](val enrichable: T) extends BSClassesHelper[T] {
+    override protected def withClass(clas: String): T = enrichable.addClass(clas)
   }
 
-  implicit class RichAttributeEnrichable[T <: AttrEnrichable](val enrichable: T) extends BSDataHelper[T] {
+  implicit class RichAttributeEnrichableMutable[T <: AttrEnrichableMutable](val enrichable: T) extends BSDataHelper[T] {
     override protected def setAttribute(name: String, value: String): T = enrichable.setAttribute(name, value)
+  }
+
+  implicit class RichClassEnrichable[R](val enrichable: ClassEnrichableImmutable[R]) extends BSClassesHelper[R] {
+    override protected def withClass(clas: String): R = enrichable.addClass(clas)
+  }
+
+  implicit class RichAttributeEnrichable[R](val enrichable: AttrEnrichableImmutable[R]) extends BSDataHelper[R] {
+    override protected def setAttribute(name: String, value: String): R = enrichable.setAttribute(name, value)
   }
 }

@@ -22,17 +22,17 @@ class FSStats(
 
   val callbackInvocationsTotal = Counter.builder().name("fs_callback_invocations_total").help("total number of callbacks invocations since application was started").register()
   val callbackErrorsTotal = Counter.builder().name("fs_callback_errors_total").help("total number of callbacks invocations resulting in an internal error since application was started").register()
-  val callbackTimeTotal = Counter.builder().name("fs_callback_time_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total time processing callback invocations since application was started").register()
+  val callbackTimeTotal = Counter.builder().name("fs_callback_time_seconds_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total time processing callback invocations since application was started").register()
   val callbacksInProcessing = Gauge.builder().name("fs_callback_being_processed").help("total number of callbacks being processed").register()
 
   val fileDownloadCallbackInvocationsTotal = Counter.builder().name("fs_file_download_callback_invocations_total").help("total number of file download callback invocations since application was started").register()
   val fileDownloadCallbackErrorsTotal = Counter.builder().name("fs_file_download_callback_errors_total").help("total number of file download callback invocations resulting in an internal error since application was started").register()
-  val fileDownloadCallbackTimeTotal = Counter.builder().name("fs_file_download_callback_time_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total time processing file download callback invocations since application was started").register()
+  val fileDownloadCallbackTimeTotal = Counter.builder().name("fs_file_download_callback_time_seconds_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total time processing file download callback invocations since application was started").register()
   val fileDownloadCallbacksInProcessing = Gauge.builder().name("fs_file_download_callback_being_processed").help("total number of file download callbacks being processed").register()
 
   val fileUploadCallbackInvocationsTotal = Counter.builder().name("fs_file_upload_callback_invocations_total").help("total number of file upload callback invocations since application was started").register()
   val fileUploadCallbackErrorsTotal = Counter.builder().name("fs_file_upload_callback_errors_total").help("total number of file upload callback invocations resulting in an internal error since application was started").register()
-  val fileUploadCallbackTimeTotal = Counter.builder().name("fs_file_upload_callback_time_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total time processing file upload callback invocations since application was started").register()
+  val fileUploadCallbackTimeTotal = Counter.builder().name("fs_file_upload_callback_time_seconds_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total time processing file upload callback invocations since application was started").register()
   val fileUploadCallbacksInProcessing = Gauge.builder().name("fs_file_upload_callback_being_processed").help("total number of file upload callbacks being processed").register()
 
   val currentSessions = Gauge.builder().name("fs_current_num_sessions").help("current number of sessions").register()
@@ -48,6 +48,10 @@ class FSStats(
   val fileDownloadCallbackNotFoundTotal = Counter.builder().name("fs_file_download_callback_not_found_total").help("total number of file download handlers not found since application was started").register()
   val fileUploadCallbackNotFoundTotal = Counter.builder().name("fs_file_upload_callback_not_found_total").help("total number of file upload handlers not found since application was started").register()
   val callbackNotFoundTotal = Counter.builder().name("fs_callback_not_found_total").help("total number of callbacks not found since application was started").register()
+
+  val keepAliveInvocationsTotal = Counter.builder().name("fs_keepalive_invocations_total").help("total number of keep alive invocations since application was started").register()
+  val gcRunsTotal = Counter.builder().name("fs_gc_runs_total").help("total number of gc runs since application was started").register()
+  val gcTimeTotal = Counter.builder().name("fs_gc_time_seconds_total").unit(io.prometheus.metrics.model.snapshots.Unit.SECONDS).help("total number of gc time since application was started").register()
 
   def eventLevel(event: StatEvent): Level = event match {
     case CREATE_CALLBACK | USE_CALLBACK | GC_CALLBACK => Level.TRACE

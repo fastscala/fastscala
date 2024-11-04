@@ -2,7 +2,7 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.helpers.{AttrEnrichable, ClassEnrichable}
+import com.fastscala.templates.bootstrap5.helpers.{AttrEnrichableImmutable, ClassEnrichableImmutable}
 import com.fastscala.templates.bootstrap5.utils.IcnFA.RichIcn
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
@@ -17,7 +17,7 @@ object BSBtn {
 }
 
 case class BSBtn(
-                  var cls: String,
+                  cls: String,
                   content: NodeSeq,
                   onclickOpt: Option[FSContext => Js] = None,
                   hrefOpt: Option[String] = None,
@@ -25,18 +25,12 @@ case class BSBtn(
                   styleOpt: Option[String] = None,
                   idOpt: Option[String] = None,
                   titleOpt: Option[String] = None,
-                  var additionalAttrs: Seq[(String, String)] = Nil
-                ) extends ClassEnrichable with AttrEnrichable {
+                  additionalAttrs: Seq[(String, String)] = Nil
+                ) extends ClassEnrichableImmutable[BSBtn] with AttrEnrichableImmutable[BSBtn] {
 
-  override def setAttribute(name: String, value: String): BSBtn.this.type = {
-    additionalAttrs = additionalAttrs :+ (name -> value)
-    this
-  }
+  override def setAttribute(name: String, value: String): BSBtn = withAdditionalAttrs(name -> value)
 
-  override def setClass(clas: String): BSBtn.this.type = {
-    cls += s" $clas"
-    this
-  }
+  override def addClass(s: String): BSBtn = copy(cls = cls + " " + s)
 
   override def toString: String = cls
 
@@ -57,8 +51,6 @@ case class BSBtn(
   def disabled: BSBtn = addClass("disabled")
 
   def withContent(content: NodeSeq): BSBtn = copy(content = content)
-
-  def addClass(s: String): BSBtn = copy(cls = cls + " " + s)
 
   def withClass(s: String): BSBtn = copy(cls = s)
 

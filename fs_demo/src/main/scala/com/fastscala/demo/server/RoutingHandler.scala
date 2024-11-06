@@ -99,7 +99,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
              </html>.toString()
         )
       }))
-    } else ignoreNonHtmlRequests {
+    } else onlyHandleHtmlRequests {
       if (CurrentUser().isEmpty) {
         val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
         cookies.find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(

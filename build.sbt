@@ -100,7 +100,7 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     publishArtifact := true,
 
     libraryDependencies ++= Seq(
-      ("org.typelevel" % "cats-effect" % "3.5.5"),
+      "org.typelevel" %% "cats-effect" % "3.5.5",
       "at.favre.lib" % "bcrypt" % "0.10.2",
       "com.lihaoyi" %% "scalatags" % "0.13.1",
     ),

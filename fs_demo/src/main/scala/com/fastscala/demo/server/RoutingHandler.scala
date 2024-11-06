@@ -124,9 +124,10 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
           case Get("demo", "chartjs", "simple") => servePage(new SimpleChartjsPage())
         }
-      }).orElse(
-        Some(Redirect.temporaryRedirect("/demo/"))
-      )
+      })
+//        .orElse(
+//        Some(Redirect.temporaryRedirect("/demo/"))
+//      )
     }
   }
 }

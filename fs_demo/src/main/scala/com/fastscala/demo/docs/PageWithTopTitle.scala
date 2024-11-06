@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 
 import scala.xml.NodeSeq
 
-trait PageWithTopTitle extends LoggedInPage {
+trait PageWithTopTitle extends BasePage {
 
   def pageTitle: String
 

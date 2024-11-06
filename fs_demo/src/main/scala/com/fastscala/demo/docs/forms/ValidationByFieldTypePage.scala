@@ -33,7 +33,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
         override lazy val rootField: F7Field = F7VerticalField()(
           new F7StringField().label("Name").addValidation(_.currentValue.length > 5, _ => div.apply("Error: minimum of 5 chars"))
             .help("Input at least 5 characters")
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
         )
 
         override def postSubmitForm()(implicit fsc: FSContext): Js =
@@ -49,7 +49,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
         override lazy val rootField: F7Field = F7VerticalField()(
           new F7StringTextareaField().label("Your message").addValidation(_.currentValue.split(" ").length > 5, _ => div.apply("Error: minimum of 5 words"))
             .help("Input at least 5 words")
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
         )
 
         override def postSubmitForm()(implicit fsc: FSContext): Js =
@@ -87,7 +87,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -116,7 +116,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -136,7 +136,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -160,7 +160,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }
@@ -183,7 +183,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }

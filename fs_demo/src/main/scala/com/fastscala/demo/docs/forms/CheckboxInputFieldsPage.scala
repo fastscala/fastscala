@@ -56,7 +56,7 @@ class CheckboxInputFieldsPage extends MultipleCodeExamples2Page() {
             marketingEmailField,
             marketingSMSField,
             marketingPhoneField,
-            new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
+            new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
           )
 
           override def postSubmitForm()(implicit fsc: FSContext): Js = BSModal5.verySimple("Submitted!", "Ok") {

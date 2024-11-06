@@ -6,6 +6,7 @@ import com.fastscala.demo.docs.fastscala._
 import com.fastscala.demo.docs.forms._
 import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
+import com.fastscala.demo.docs.loggedout.LoginPage
 import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer._
 import com.fastscala.demo.docs.navigation.{BSMenu, MenuSection, RoutingMenuItem, SimpleMenuItem}
 import com.fastscala.demo.docs.tables.ModifyingTableExamplePage
@@ -26,6 +27,7 @@ object FSDemoMainMenu extends BSMenu(
     , new RoutingMenuItem("demo", "fastscala", "internal_metrics")("Internal Metrics", () => new InternalMetricsPage())
     , new RoutingMenuItem("demo", "fastscala", "discard_fs_context")("FSContext discard", () => new FSContextDiscardPage())
     , new SimpleMenuItem("Grafana", "https://grafana.fastscala.com/public-dashboards/e01e760c4321418e9b4903e7e6bfcfb0?orgId=1&refresh=5s")
+    , new RoutingMenuItem("demo", "empty-page")("Empty page", () => new EmptyPage())
   ),
   MenuSection("HTML utils")(
     new RoutingMenuItem("demo", "html", "tags")("tags", () => new HtmlTagsPage())
@@ -62,6 +64,9 @@ object FSDemoMainMenu extends BSMenu(
     , SimpleMenuItem("Selectable Rows", "/demo/selectable_rows_tables")
     , SimpleMenuItem("Selectable Columns", "/demo/tables_sel_cols")
     , new RoutingMenuItem("demo", "tables", "modifying")("Modifying tables", () => new ModifyingTableExamplePage())
+  ),
+  MenuSection("Logged in")(
+    new RoutingMenuItem("demo", "login")("Login example", () => new LoginPage()),
   ),
   //  MenuSection("chart.js integration")(
   //    SimpleMenuItem("Simple", "/demo/chartjs/simple")

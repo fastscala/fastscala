@@ -2,24 +2,34 @@ package com.fastscala.demo.docs.tables
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.SingleCodeExamplePage
+import com.fastscala.demo.docs.components.Widget
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.tables._
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 
 import java.util.Date
-import scala.xml.NodeSeq
+import scala.xml.{Elem, NodeSeq}
 
 
 class SelectableColsTableExamplePage extends SingleCodeExamplePage() {
 
   override def pageTitle: String = "Selectable cols table example"
 
-  override def pageTitleToolbar()(implicit fsc: FSContext): NodeSeq = table.renderSelectColsButton()
-
   // === code snippet ===
+
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+
   override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
-    table.render()
+    new Widget {
+      override def widgetTitle: String = "Selectable cols"
+
+      override def transformWidgetCardBody(elem: Elem): Elem = super.transformWidgetCardBody(elem).p_0
+
+      override def widgetTopRight()(implicit fsc: FSContext): NodeSeq = table.colSelectionDropdownBtn(_.BtnPrimary.lbl("Columns...").sm.dataBsAutoCloseAsOutside)
+
+      override def widgetContents()(implicit fsc: FSContext): NodeSeq = table.render()
+    }.renderWidget()
   }
 
   lazy val table = new Table5Base
@@ -31,7 +41,7 @@ class SelectableColsTableExamplePage extends SingleCodeExamplePage() {
     with Table5SelectableCols {
     override type R = Country
 
-
+    override def defaultPageSize: Int = 10
 
     override def aroundClasses()(implicit fsc: FSContext): String = super.aroundClasses() + " mb-5"
 
@@ -87,20 +97,28 @@ class SelectableColsTableExamplePage extends SingleCodeExamplePage() {
       , ColCCN3
       , ColCCA3
       , ColCIOC
+      , ColStatus
+      , ColUNMember
+      , ColCapital
+      , ColAltSpellings
+      , ColRegion
+      , ColSubregion
+      , ColLatLng
+      , ColLandlocked
+      , ColBorders
+      , ColArea
+      , ColCallingCodes
+      , ColFlag
       , ColActions
-      //        , ColStatus
-      //        , ColUNMember
-      //        , ColCapital
-      //        , ColAltSpellings
-      //        , ColRegion
-      //        , ColSubregion
-      //        , ColLatLng
-      //        , ColLandlocked
-      //        , ColBorders
-      //        , ColArea
-      //        , ColCallingCodes
-      //        , ColFlag
     )
+
+    override def columnStartsVisible(c: Table5StandardColumn[Country]): Boolean = Set(
+      ColName
+      , ColUNMember
+      , ColCapital
+      , ColArea
+      , ColActions
+    ).contains(c)
 
     override def seqRowsSource: Seq[Country] = CountriesData.data
   }

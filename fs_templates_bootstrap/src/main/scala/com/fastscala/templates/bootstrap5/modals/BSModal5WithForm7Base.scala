@@ -19,9 +19,9 @@ abstract class BSModal5WithForm7Base(
 
   def cancelBtnEnabled: Boolean = false
 
-  def saveBtn(implicit fsc: FSContext) = BSBtn().BtnPrimary.lbl(saveBtnLbl).onclick(form.submitFormClientSide())
+  def saveBtn(implicit fsc: FSContext) = BSBtn().BtnPrimary.lbl(saveBtnLbl).ajax(implicit fsc => form.submitFormServerSide())
 
-  def cancelBtn(implicit fsc: FSContext) = BSBtn().BtnSecondary.lbl(cancelBtnLbl).onclick(hideAndRemove())
+  def cancelBtn(implicit fsc: FSContext) = BSBtn().BtnSecondary.lbl(cancelBtnLbl).onclick(hideAndRemoveAndDeleteContext())
 
   override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = form.render()
 

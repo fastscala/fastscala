@@ -1,12 +1,12 @@
 package com.fastscala.demo.docs.about
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.LoggedInPage
+import com.fastscala.demo.docs.BasePage
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 
 import scala.xml.NodeSeq
 
-class GettingStartedPage extends LoggedInPage() {
+class GettingStartedPage extends BasePage() {
 
   override def pageTitle: String = "FastScala Web Framework Author | Getting Started"
 

@@ -24,7 +24,7 @@ class ValidationStrategiesPage extends MultipleCodeExamples2Page() {
             .addValidation(_.currentValue.length >= 5, _ => <span>Error: input less than 5 characters</span>)
             .help("Min. 5 chars")
           , new F7IntOptField().label("Integer field")
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )
       }.render()
     }
@@ -36,7 +36,7 @@ class ValidationStrategiesPage extends MultipleCodeExamples2Page() {
             .addValidation(_.currentValue.length >= 5, _ => <span>Error: input less than 5 characters</span>)
             .help("Min. 5 chars")
           , new F7IntOptField().label("Integer field")
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )
       }.render()
     }
@@ -48,7 +48,7 @@ class ValidationStrategiesPage extends MultipleCodeExamples2Page() {
             .addValidation(_.currentValue.length >= 5, _ => <span>Error: input less than 5 characters</span>)
             .help("Min. 5 chars")
           , new F7IntOptField().label("Integer field")
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )
       }.render()
     }

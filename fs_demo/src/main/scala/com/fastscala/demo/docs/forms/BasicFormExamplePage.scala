@@ -96,7 +96,7 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
           , F7LocalDateOptField(editing.birthDay, editing.birthDay = _).label("BirthDay")
           , _provField
           , new F7SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set(_provField))
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
         )
 
         override def formRenderer: F7FormRenderer = formRenderer

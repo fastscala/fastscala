@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 import scala.xml.NodeSeq
 
-abstract class MultipleCodeExamples2Page() extends LoggedInPage() {
+abstract class MultipleCodeExamples2Page() extends BasePage() {
 
   def file = getClass.getName.split("\\.").mkString("/", "/", ".scala")
 

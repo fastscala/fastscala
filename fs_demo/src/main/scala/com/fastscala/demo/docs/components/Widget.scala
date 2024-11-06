@@ -34,9 +34,9 @@ abstract class Widget extends Mutable {
     onCardHeaderTransforms = onCardHeaderTransforms.pipe(onCardHeaderTransforms => elem => f(onCardHeaderTransforms(elem)))
   }
 
-  lazy val widgetRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetCard(), Some(widgetId))
-  lazy val widgetHeaderRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetHeader(), Some(widgetHeaderId))
-  lazy val widgetContentsRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetBody(), Some(widgetContentsId))
+  lazy val widgetRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetCard(), Some(widgetId), debugLabel = Some("widget"))
+  lazy val widgetHeaderRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetHeader(), Some(widgetHeaderId), debugLabel = Some("widget-header"))
+  lazy val widgetContentsRenderer = JS.rerenderable(rerenderer => implicit fsc => renderWidgetBody(), Some(widgetContentsId), debugLabel = Some("widget-contents"))
 
   def widgetTitle: String
 

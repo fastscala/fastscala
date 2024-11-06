@@ -3,12 +3,11 @@ package com.fastscala.server
 import com.fastscala.core.{FSSession, FSSystem, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.Js
 import com.fastscala.utils.RenderableWithFSContext
-import org.eclipse.jetty.http.{HttpHeader, HttpCookie, MimeTypes}
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse, Handler}
+import org.eclipse.jetty.http.{HttpCookie, HttpHeader, MimeTypes}
+import org.eclipse.jetty.server.{Handler, Request, Response => JettyServerResponse}
 import org.eclipse.jetty.util.{BufferUtil, Callback}
 
-import java.nio.file.{Path, Files}
-import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.{Files, Path}
 
 case class HttpStatus(name: String, code: Int)
 
@@ -481,6 +480,10 @@ object RoutingHandlerHelper {
 
   def onlyHandleHtmlRequests(handle: => Option[Response])(implicit req: Request): Option[Response] =
     if (Option(req.getHeaders.get(HttpHeader.ACCEPT)).getOrElse("").contains("text/html")) handle else None
+
+  def ignoreNonHtmlRequests(handle: => Option[Response])(implicit req: Request): Option[Response] = {
+    if (Option(req.getHeaders.get(HttpHeader.ACCEPT)).exists(accept => !accept.contains("text/html") && !accept.contains("text/*") && !accept.contains("*/*"))) None else handle
+  }
 }
 
 abstract class RoutingHandlerNoSessionHelper extends Handler.Abstract {
@@ -514,7 +517,7 @@ abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandl
       case Some(resp) =>
         resp.respond(response, callback)
       case None =>
-        fss.inSession{
+        fss.inSession {
           implicit session => handlerInSession(response, callback)(request, session)
         }(request).flatMap({
           case (cookies, resp) =>

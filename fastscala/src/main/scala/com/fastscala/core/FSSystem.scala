@@ -78,6 +78,7 @@ class FSContext(
                  , val parentFSContext: Option[FSContext] = None
                  , val onPageUnload: () => Js = () => Js.void
                  , val debugLbl: Option[String] = None
+                 , var deleted: Boolean = false
                ) extends FSHasSession {
 
   import FSContext.logger
@@ -120,15 +121,34 @@ class FSContext(
   }
 
   def createNewChildContextAndGCExistingOne(key: AnyRef, debugLabel: Option[String] = None): FSContext = {
+    if (deleted) throw new Exception("Trying to create child of deleted context")
     page.key2FSContext.get(key).foreach(existing => {
       children -= existing
       existing.delete()
     })
     val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
     page.key2FSContext(key) = newContext
-    logger.debug(s"Creating context ${newContext.fullPath}")
+    logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
     children += page.key2FSContext(key)
     page.key2FSContext(key)
+  }
+
+  def getOrCreateContext(key: AnyRef, debugLabel: Option[String] = None): FSContext = {
+    if (deleted) throw new Exception("Trying to get child of deleted context")
+    page.key2FSContext.getOrElseUpdate(key, {
+      val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
+      children += page.key2FSContext(key)
+      logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
+      newContext
+    })
+  }
+
+  def deleteContext(key: AnyRef): Unit = {
+    page.key2FSContext.get(key).foreach(existing => {
+      logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
+      children -= existing
+      existing.delete()
+    })
   }
 
   def delete(): Unit = {
@@ -144,6 +164,7 @@ class FSContext(
     session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadGenerated.size)
     session.fsSystem.stats.currentFileDownloadCallbacks.dec(functionsFileDownloadGenerated.size)
     children.foreach(_.delete())
+    deleted = true
   }
 
   def callback(func: () => Js): Js = callback(Js.void, _ => func())
@@ -155,6 +176,7 @@ class FSContext(
                 expectReturn: Boolean = true,
                 ignoreErrors: Boolean = false
               ): Js = {
+    logger.trace(s"CREATING CALLBACK IN CONTEXT ${fullPath}")
     session.fsSystem.gc()
     val funcId = session.nextID()
     functionsGenerated += funcId
@@ -276,6 +298,10 @@ class FSUploadedFile(
                       val contentType: String,
                       val content: Array[Byte]
                     )
+
+object FSUploadedFile {
+  def unapply(file: FSUploadedFile): Option[(String, String, String, Array[Byte])] = Some((file.name, file.submittedFileName, file.contentType, file.content))
+}
 
 object FSPage {
   val logger = LoggerFactory.getLogger(getClass.getName)
@@ -417,10 +443,7 @@ class FSPage(
 
   def isAlive_? = !isDefunct_?
 
-  def setupKeepAlive(): Js = {
-
-    Js(s"""function sendKeepAlive() {window._fs.keepAlive(${Js.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
-  }
+  def setupKeepAlive(): Js = Js(s"""function sendKeepAlive() {window._fs.keepAlive(${Js.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
 
   def initWebSocket() = Js("window._fs.initWebSocket();")
 }
@@ -545,7 +568,7 @@ class FSSession(
   def clear[T](key: Any): Unit = data.remove(key)
 
   def createPage[T](
-                     code: FSContext => T,
+                     generatePage: FSContext => T,
                      debugLbl: Option[String] = None,
                      onPageUnload: () => Js = () => Js.void
                    )(implicit req: Request): T = try {
@@ -560,7 +583,7 @@ class FSSession(
       pages += (page.id -> page)
     }
     // FSSession.logger.trace(s"Created page: page_id=${page.id}, evt_type=create_page")
-    code(page.rootFSContext)
+    generatePage(page.rootFSContext)
   } catch {
     case ex: Exception =>
       ex.printStackTrace()
@@ -618,22 +641,27 @@ class FSSystem(
 
   val FSPrefix = "fs"
 
+  def createSession(): FSSession = {
+    gc()
+    val id = IdGen.secureId()
+    val session = new FSSession(id, this)
+    implicit val __fsContextOpt: Option[FSContext] = None
+    implicit val __fsPageOpt: Option[FSPage] = None
+    implicit val __fsSessionOpt: Option[FSSession] = Some(session)
+    stats.event(StatEvent.CREATE_SESSION)
+    session.fsSystem.stats.sessionsTotal.inc()
+    session.fsSystem.stats.currentSessions.inc()
+    this.synchronized(sessions.put(session.id, session))
+    FSSession.logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
+    session
+  }
+
   def inSession[T](inSession: FSSession => T)(implicit req: Request): Option[(List[HttpCookie], T)] = {
     val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
     cookies.filter(_.getName == FSSessionIdCookieName).map(_.getValue).flatMap(sessions.get(_)).headOption match {
       case Some(session) => Option((Nil, inSession(session)))
       case None if !req.getHttpURI.getPath.startsWith("/" + FSPrefix + "/ws") =>
-        gc()
-        val id = IdGen.secureId()
-        val session = new FSSession(id, this)
-        implicit val __fsContextOpt: Option[FSContext] = None
-        implicit val __fsPageOpt: Option[FSPage] = None
-        implicit val __fsSessionOpt: Option[FSSession] = Some(session)
-        stats.event(StatEvent.CREATE_SESSION)
-        session.fsSystem.stats.sessionsTotal.inc()
-        session.fsSystem.stats.currentSessions.inc()
-        this.synchronized(sessions.put(session.id, session))
-        FSSession.logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
+        val session = createSession()
         Option((List(HttpCookie.build(FSSessionIdCookieName, session.id).path("/").build()), inSession(session)))
       case None => None
     }
@@ -643,7 +671,7 @@ class FSSystem(
     ex.printStackTrace()
     stats.callbackErrorsTotal.inc()
     if (__fsSystem.debug) {
-      Js.alert(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
+      Js.alert(s"Internal error: $ex (showing because in debug mode)")
     } else {
       Js.alert(s"Internal error")
     }
@@ -653,7 +681,7 @@ class FSSystem(
     ex.printStackTrace()
     stats.fileUploadCallbackErrorsTotal.inc()
     if (__fsSystem.debug) {
-      Js.alert(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
+      Js.alert(s"Internal error: $ex (showing because in debug mode)")
     } else {
       Js.alert(s"Internal error")
     }
@@ -663,7 +691,7 @@ class FSSystem(
     ex.printStackTrace()
     stats.fileDownloadCallbackErrorsTotal.inc()
     if (__fsSystem.debug) {
-      ServerError.InternalServerError(s"Internal error: ${ex.getMessage} (showing because in debug mode)")
+      ServerError.InternalServerError(s"Internal error: $ex (showing because in debug mode)")
     } else {
       ServerError.InternalServerError
     }
@@ -927,7 +955,7 @@ class FSSystem(
     val pagesToDelete: Set[FSPage] = pagesSortedByInterest.take(math.max(1, (percentOfPagesToDelete / 100.0) * pagesSortedByInterest.size).toInt).toSet
 
     // Delete sessions with no more pages:
-    val sessionsToDelete = sessions.values.filter(_.pages.values.forall(p => pagesToDelete.contains(p))).toSet
+    val sessionsToDelete = sessions.values.filter(s => s.pages.isEmpty || s.pages.values.forall(p => pagesToDelete.contains(p))).toSet
     sessionsToDelete.foreach(_.delete())
 
     // Delete pages:

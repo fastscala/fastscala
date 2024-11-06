@@ -28,7 +28,8 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
         onclick={
           fsc.callback(Js("navigator.userAgent"), userAgent => {
             Js.alert(s"User's browser is: $userAgent")
-          }).cmd}
+          }).cmd
+        }
       >Send browser details to server side</button>
     }
     renderSnippet("Callback with JSON arg with languages data") {

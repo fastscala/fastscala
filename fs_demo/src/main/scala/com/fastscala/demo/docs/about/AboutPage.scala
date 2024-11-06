@@ -6,7 +6,7 @@ import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.fields.F7SaveButtonField
+import com.fastscala.templates.form7.fields.F7SubmitButtonField
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.text.F7StringField
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
@@ -153,7 +153,7 @@ class AboutPage extends MultipleCodeExamples2Page {
         override lazy val rootField: F7Field = F7VerticalField()(
           nameField
           , emailField
-          , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
         )
       }.render()
     }
@@ -208,7 +208,7 @@ class AboutPage extends MultipleCodeExamples2Page {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             queryField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
     }

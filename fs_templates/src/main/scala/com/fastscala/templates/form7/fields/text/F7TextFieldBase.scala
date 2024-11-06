@@ -103,4 +103,9 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
       }
     }
   }
+
+  def inputTypeEmail = super.inputType("email")
+  def inputTypePassword = super.inputType("password")
+  def inputTypeTel = super.inputType("tel")
+  def inputTypeUrl = super.inputType("url")
 }

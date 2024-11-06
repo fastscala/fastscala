@@ -9,6 +9,7 @@ import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
 import com.fastscala.xml.scala_xml.JS.ScalaXmlRerenderer
 
+import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
 object BSModal5Size extends Enumeration {
@@ -46,11 +47,11 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def transformModalFooterElem(elem: Elem): Elem = elem.modal_footer
 
-  lazy val modalRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModal())
+  lazy val modalRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModal(), debugLabel = Some("modal"))
 
-  lazy val modalContentsRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModalContent())
+  lazy val modalContentsRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModalContent(), debugLabel = Some("modal-contents"))
 
-  lazy val modalContentsFooterRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModalFooterContent())
+  lazy val modalContentsFooterRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModalFooterContent(), debugLabel = Some("modal-contents-footer"))
 
   def append2DOM()(implicit fsc: FSContext): Js = JS.append2Body(renderModal())
 
@@ -79,11 +80,16 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def dispose(): Js = Js(s"""$$('#$modalId').modal('dispose')""")
 
-  def remove(): Js = JS.removeId(modalId)
+  def deleteContext()(implicit fsc: FSContext): Unit = fsc.page.rootFSContext.deleteContext(this)
+
+  def removeAndDeleteContext()(implicit fsc: FSContext): Js = JS.removeId(modalId) & fsc.page.rootFSContext.getOrCreateContext(this).callback(() => {
+    deleteContext()
+    Js.void
+  })
 
   def handleUpdate(): Js = Js(s"""$$('#$modalId').modal('handleUpdate')""")
 
-  def hideAndRemove(): Js = hide() & onHidden(remove())
+  def hideAndRemoveAndDeleteContext()(implicit fsc: FSContext): Js = hide() & onHidden(removeAndDeleteContext())
 
   def hide(): Js = Js(s"""$$('#$modalId').modal('hide')""")
 
@@ -99,7 +105,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def onHidden(js: Js): Js = Js(s"""$$('#$modalId').on('hidden.bs.modal', function (e) {${js.cmd}});""")
 
-  def removeOnHidden(): Js = onHidden(remove())
+  def removeOnHidden()(implicit fsc: FSContext): Js = onHidden(removeAndDeleteContext())
 
   def modalHeaderTitle: String
 
@@ -147,15 +153,17 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
   }
 
   def renderModal()(implicit fsc: FSContext): Elem = {
-    transformModalElem {
-      div.withAttr("tabindex" -> "-1") {
-        transformModalDialogElem {
-          div.withClass(modalClasses).apply {
-            modalContentsRenderer.render()
+    fsc.page.rootFSContext.createNewChildContextAndGCExistingOne(this, Some("modal")).pipe(implicit fsc => {
+      transformModalElem {
+        div.withAttr("tabindex" -> "-1") {
+          transformModalDialogElem {
+            div.withClass(modalClasses).apply {
+              modalContentsRenderer.render()
+            }
           }
         }
       }
-    }
+    })
   }
 }
 
@@ -173,7 +181,7 @@ object BSModal5 {
 
       override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = contents(this)(fsc)
 
-      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(BSBtn().BtnPrimary.lbl(closeBtnText).onclick(hideAndRemove()).btn)
+      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(BSBtn().BtnPrimary.lbl(closeBtnText).onclick(hideAndRemoveAndDeleteContext()).btn)
     }
     modal.installAndShow() & modal.onHidden(onHidden)
   }
@@ -181,7 +189,7 @@ object BSModal5 {
   def okCancel(
                 title: String,
                 onOk: BSModal5Base => FSContext => Js,
-                onCancel: BSModal5Base => FSContext => Js = modal => _ => modal.hideAndRemove(),
+                onCancel: BSModal5Base => FSContext => Js = modal => implicit fsc => modal.hideAndRemoveAndDeleteContext(),
                 okBtnText: String = "OK",
                 cancelBtnText: String = "Cancel",
                 onHidden: Js = JS.void

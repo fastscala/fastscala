@@ -44,7 +44,7 @@ class RadioInputFieldsPage extends MultipleCodeExamples2Page() {
             //
             new F7HtmlField(fs_5.mb_3.border_bottom.apply("Radio buttons inline")),
             marketingChannelsTypeField,
-            new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
+            new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
           )
 
           override def postSubmitForm()(implicit fsc: FSContext): Js = BSModal5.verySimple("Submitted!", "Ok") {

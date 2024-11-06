@@ -45,7 +45,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
 
           override lazy val rootField: F7Field = F7VerticalField()(
             inputField
-            , new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block)
           )
         }.render()
       }

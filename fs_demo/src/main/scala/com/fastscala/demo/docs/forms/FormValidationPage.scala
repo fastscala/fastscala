@@ -31,7 +31,7 @@ class FormValidationPage extends MultipleCodeExamples2Page() {
           new F7LocalDateOptField().label("Date")
             .addValidation(_.currentValue.exists(_.isAfter(LocalDate.now())), _ => <span>Must be a date in the future.</span>),
 
-          new F7SaveButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
+          new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Submit").btn.d_block.w_100)
         )
       }.render()
     }

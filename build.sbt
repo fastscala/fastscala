@@ -29,12 +29,12 @@ lazy val fastscala = (project in file(FSRoot + "fastscala"))
       "io.prometheus" % "prometheus-metrics-instrumentation-jvm" % "1.3.1",
       "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.3.1",
       "com.typesafe" % "config" % "1.4.3",
-      "it.unimi.dsi" % "dsiutils" % "2.7.3",
 
       "org.apache.commons" % "commons-text" % "1.12.0",
 
       "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
+      "it.unimi.dsi" % "dsiutils" % "2.7.3",
 
       "io.circe" %% "circe-core" % "0.14.10",
       "io.circe" %% "circe-generic" % "0.14.10",
@@ -66,7 +66,6 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
     Test / parallelExecution := false
   )
   .dependsOn(fastscala)
-  .dependsOn(fs_scala_xml)
 
 lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
   .settings(
@@ -77,13 +76,11 @@ lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
     ),
   )
   .dependsOn(fastscala)
-  .dependsOn(fs_db)
+  .dependsOn(fs_scala_xml)
 
 lazy val fs_templates_bootstrap = (project in file(FSRoot + "fs_templates_bootstrap"))
   .settings(name := "fs_templates_bootstrap")
   .dependsOn(fs_templates)
-  .dependsOn(fastscala)
-  .dependsOn(fs_db)
 
 lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
   .settings(name := "fs_chartjs")
@@ -103,7 +100,7 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     publishArtifact := true,
 
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-effect" % "3.5.4",
+      ("org.typelevel" % "cats-effect" % "3.5.5"),
       "at.favre.lib" % "bcrypt" % "0.10.2",
       "com.lihaoyi" %% "scalatags" % "0.13.1",
     ),
@@ -116,6 +113,7 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     Linux / daemonUser := "fs_demo",
     Linux / daemonGroup := "fs_demo",
 
+    javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
     Compile / run / fork := true,
     Compile / run / connectInput := true,
     javaOptions += "-Xmx2G",
@@ -123,3 +121,37 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
   )
   .dependsOn(fs_templates_bootstrap)
   .dependsOn(fs_chartjs)
+
+lazy val fs_taskmanager = (project in file(FSRoot + "fs_taskmanager"))
+  .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
+  .settings(
+    name := "fs_taskmanager",
+
+    Compile / packageBin / mainClass := Some("com.fastscala.taskmanager.server.JettyServer"),
+    Compile / mainClass := Some("com.fastscala.taskmanager.server.JettyServer"),
+
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "main" / "scala",
+
+    publishArtifact := true,
+
+    libraryDependencies ++= Seq(
+      ("org.typelevel" % "cats-effect" % "3.5.5") cross CrossVersion.for3Use2_13,
+      "at.favre.lib" % "bcrypt" % "0.10.2",
+      "com.lihaoyi" %% "scalatags" % "0.13.1",
+    ),
+
+    bashScriptEnvConfigLocation := Some("/etc/default/" + (Linux / packageName).value),
+    rpmRelease := "1.0.0",
+    rpmVendor := "kezlisolutions",
+    rpmLicense := Some("none"),
+
+    Linux / daemonUser := "fs_taskmanager",
+    Linux / daemonGroup := "fs_taskmanager",
+
+    javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+    Compile / run / fork := true,
+    Compile / run / connectInput := true,
+    javaOptions += "-Xmx2G",
+    javaOptions += "-Xms400M",
+  )
+  .dependsOn(fs_demo)

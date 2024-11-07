@@ -357,34 +357,31 @@ class FSPage(
   val rootFSContext = new FSContext(session, this, onPageUnload = onPageUnload, debugLbl = Some("page_root_context"))
 
   def deleteOlderThan(ts: Long): Unit = {
-    val currentCallbacks = callbacks.toVector
-    val callbacksToRemove = currentCallbacks.filter(_._2.keepAliveAt < ts)
-    callbacks --= callbacksToRemove.map(_._1)
-    callbacksToRemove.foreach({
-      case (_, f) => f.fsc.functionsGenerated -= f.id
-    })
+    val callbacksToRemove = callbacks.filter(_._2.keepAliveAt < ts)
+    callbacksToRemove.foreach{ case (id, f) =>
+      callbacks -= id
+      f.fsc.functionsGenerated -= id
+    }
     session.fsSystem.stats.currentCallbacks.dec(callbacksToRemove.size)
 
     //    session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsToRemove.size)
     // logger.info(s"Removed ${functionsToRemove.size} functions")
 
-    val currentFileUploadCallbacks = fileUploadCallbacks.toVector
-    val fileUploadCallbacksToRemove = currentFileUploadCallbacks.filter(_._2.keepAliveAt < ts)
-    fileUploadCallbacks --= fileUploadCallbacksToRemove.map(_._1)
-    fileUploadCallbacksToRemove.foreach({
-      case (_, f) => f.fsc.functionsFileUploadGenerated -= f.id
-    })
+    val fileUploadCallbacksToRemove = fileUploadCallbacks.filter(_._2.keepAliveAt < ts)
+    fileUploadCallbacksToRemove.foreach{ case (id, f) =>
+      fileUploadCallbacks -= id
+      f.fsc.functionsFileUploadGenerated -= id
+    }
     session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacksToRemove.size)
 
     //    session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = fileUploadCallbacksToRemove.size)
     // logger.info(s"Removed ${functionsFileUploadToRemove.size} functions")
 
-    val currentFileDownloadCallbacks = fileDownloadCallbacks.toVector
-    val fileDownloadCallbacksToRemove = currentFileDownloadCallbacks.filter(_._2.keepAliveAt < ts)
-    fileDownloadCallbacks --= fileDownloadCallbacksToRemove.map(_._1)
-    fileDownloadCallbacksToRemove.foreach({
-      case (_, f) => f.fsc.functionsFileDownloadGenerated -= f.id
-    })
+    val fileDownloadCallbacksToRemove = fileDownloadCallbacks.filter(_._2.keepAliveAt < ts)
+    fileDownloadCallbacksToRemove.foreach{ case (id, f) =>
+      fileDownloadCallbacks -= id
+      f.fsc.functionsFileDownloadGenerated -= id
+    }
     session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacksToRemove.size)
 
     //    session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = fileDownloadCallbacksToRemove.size)
@@ -392,11 +389,23 @@ class FSPage(
   }
 
   def delete(): Unit = {
-    session.pages -= this.id
-    session.fsSystem.stats.currentPages.dec()
-    session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacks.size)
-    session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacks.size)
+    callbacks.filterInPlace{ (_, f) =>
+      f.fsc.functionsGenerated -= id
+      false
+    }
     session.fsSystem.stats.currentCallbacks.dec(callbacks.size)
+
+    fileUploadCallbacks.filterInPlace{ (_, f) =>
+      f.fsc.functionsFileUploadGenerated -= id
+      false
+    }
+    session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacks.size)
+
+    fileDownloadCallbacks.filterInPlace{ (_, f) =>
+      f.fsc.functionsFileDownloadGenerated -= id
+      false
+    }
+    session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacks.size)
   }
 
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = {
@@ -593,19 +602,23 @@ class FSSession(
   def deletePages(toDelete: Set[FSPage]): Unit = {
     val currentPages = pages.values.toSet
     val pagesToRemove = currentPages.intersect(toDelete)
-    pagesToRemove.foreach(_.delete())
+    pagesToRemove.foreach{ page =>
+      pages -= page.id
+      page.delete()
+    }
     fsSystem.stats.currentPages.dec(pagesToRemove.size)
   }
 
   def deletePagesOlderThan(ts: Long): Unit = {
-    val currentPages = pages.toVector
-    val pagesToRemove = currentPages.filter(_._2.keepAliveAt < ts)
-    pagesToRemove.foreach(_._2.delete())
+    val pagesToRemove = pages.filter(_._2.keepAliveAt < ts)
+    pagesToRemove.foreach{ case (id, page) =>
+      pages -= id
+      page.delete()
+    }
     fsSystem.stats.currentPages.dec(pagesToRemove.size)
 
-    val currentAnonymousPages = anonymousPages.toVector
-    val anonymousPagesToRemove = currentAnonymousPages.filter(_._2.keepAliveAt < ts)
-    anonymousPages --= anonymousPagesToRemove.map(_._1)
+    val anonymousPagesToRemove = anonymousPages.filter(_._2.keepAliveAt < ts)
+    anonymousPagesToRemove.foreach(anonymousPages -= _._1)
     fsSystem.stats.currentAnonPages.dec(anonymousPagesToRemove.size)
 
     pages.values.foreach(_.deleteOlderThan(ts))
@@ -614,7 +627,15 @@ class FSSession(
   def delete(): Unit = {
     fsSystem.sessions -= this.id
     fsSystem.stats.currentSessions.dec()
-    pages.foreach(_._2.delete())
+
+    pages.filterInPlace{ (_, page) =>
+      page.delete()
+      false
+    }
+    fsSystem.stats.currentPages.dec(pages.size)
+
+    anonymousPages.clear()
+    fsSystem.stats.currentAnonPages.dec(anonymousPages.size)
   }
 }
 

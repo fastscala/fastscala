@@ -1,12 +1,10 @@
 package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.templates.bootstrap5.utils.FileUpload
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
 import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, JS}
-
-import scala.xml.NodeSeq
 
 class AnonymousPage() extends MultipleCodeExamples2Page() {
 

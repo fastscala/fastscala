@@ -2,13 +2,11 @@ package com.fastscala.demo.docs.fastscala
 
 import cats.effect.IO
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
-import com.fastscala.js.Js
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.JS
 
 import scala.concurrent.duration.DurationInt
-import scala.xml.NodeSeq
 
 class ServerSidePushPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "Server-Side push using Websockets"

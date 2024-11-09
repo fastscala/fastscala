@@ -2,13 +2,12 @@ package com.fastscala.demo.docs.fastscala
 
 import cats.effect.IO
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.templates.bootstrap5.progress.BSProgress
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.xml.scala_xml.JS
 
 import java.text.DecimalFormat
-import scala.xml.NodeSeq
 
 class InternalMetricsPage extends MultipleCodeExamples2Page() {
 

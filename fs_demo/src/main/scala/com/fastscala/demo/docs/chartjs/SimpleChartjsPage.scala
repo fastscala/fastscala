@@ -2,7 +2,7 @@ package com.fastscala.demo.docs.chartjs
 
 import com.fastscala.chartjs._
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.xml.scala_xml.JS
 
 import scala.xml.NodeSeq

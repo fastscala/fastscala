@@ -3,13 +3,16 @@ package com.fastscala.demo.docs
 import com.fastscala.core.FSContext
 import com.fastscala.demo.server.JettyServer
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
-import org.eclipse.jetty.util.{IO, VirtualThreads}
+import org.eclipse.jetty.util.IO
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
+import scala.util.matching.Regex
 import scala.xml.NodeSeq
 
 abstract class MultipleCodeExamples2Page() extends BasePage() {
+
+  val CommentSeparator = "=== code snippet ==="
 
   def file = getClass.getName.split("\\.").mkString("/", "/", ".scala")
 
@@ -28,12 +31,31 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
 
   def renderContentsWithSnippets()(implicit fsc: FSContext): Unit
 
+  def codeSnippetsMarkedWithComments(file: String): NodeSeq = {
+    val allCode = IO.toString(Path.of(getClass.getResource(file).toURI()), StandardCharsets.UTF_8)
+    val allSections: Array[String] = allCode.split("\n.*" + Regex.quote(CommentSeparator) + ".*\n")
+    val relevantSections: List[String] = allSections.zipWithIndex.toList.collect({
+      case (code, idx) if (idx + 1) % 2 == 0 => code.replaceAll("(^|\n).*" + Regex.quote(CommentSeparator) + ".*\n", "")
+    })
+    val code = relevantSections.mkString("\n\n// [...]\n\n")
+    if (code != "") {
+      val leftPadding: Int = code.split("\n").iterator.map(_.takeWhile(_ == ' ').size).filter(_ > 0).minOption.getOrElse(0)
+      val withoutPadding = code.split("\n").map(_.drop(leftPadding)).mkString("\n")
+
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      div.apply {
+        <pre><code style="background-color: #eee;" class="language-scala">{withoutPadding}</code></pre>.mb_2.border.border_secondary_subtle
+      }
+    } else NodeSeq.Empty
+  }
+
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
     import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     div.withStyle("background('#f8fafd'); border-style: solid; border-color: #b3c7de;").border_1.shadow_sm.py_2.px_3.apply {
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3 mb-3">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center my-3">
         <h1 class="h3" style="color: #1b4d88;">{pageTitle}</h1>
       </div> ++
+        codeSnippetsMarkedWithComments(file) ++
         renderStandardPageContents()
     }
   }

@@ -1,12 +1,11 @@
 package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.{FSContext, FSSessionVarOpt, FSUploadedFile}
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.templates.bootstrap5.utils.FileUpload
 import com.fastscala.xml.scala_xml.JS
 
 import java.util.Base64
-import scala.xml.NodeSeq
 
 // === code snippet ===
 object UploadedImage extends FSSessionVarOpt[FSUploadedFile]()

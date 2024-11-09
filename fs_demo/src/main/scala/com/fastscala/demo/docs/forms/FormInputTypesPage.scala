@@ -3,20 +3,11 @@ package com.fastscala.demo.docs.forms
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.templates.bootstrap5.modals.BSModal5
-import com.fastscala.templates.bootstrap5.toast.BSToast2
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.fields._
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
-import com.fastscala.templates.form7.fields.multiselect.F7MultiSelectField
-import com.fastscala.templates.form7.fields.radio.F7RadioField
-import com.fastscala.templates.form7.fields.select.{F7SelectField, F7SelectOptField}
-import com.fastscala.templates.form7.fields.text._
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
-
-import java.awt.Color
-import java.time.format.DateTimeFormatter
 
 class FormInputTypesPage extends MultipleCodeExamples2Page() {
 

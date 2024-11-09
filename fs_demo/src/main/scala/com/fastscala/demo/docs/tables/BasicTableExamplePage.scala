@@ -1,14 +1,13 @@
 package com.fastscala.demo.docs.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.tables._
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 
 import java.util.Date
-import scala.xml.NodeSeq
 
 
 class BasicTableExamplePage() extends MultipleCodeExamples2Page() {

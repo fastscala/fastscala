@@ -1,12 +1,9 @@
 package com.fastscala.demo.docs.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
+import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.templates.bootstrap5.tables._
-
-import scala.xml.NodeSeq
-
 
 class SortableTableExamplePage extends MultipleCodeExamples2Page() {
 
@@ -20,7 +17,6 @@ class SortableTableExamplePage extends MultipleCodeExamples2Page() {
         with Table5SeqSortableDataSource
         with Table5Sortable {
         override type R = Country
-
 
         val ColName = ColStr("Name", _.name.common)
         val ColCapital = ColStr("Capital", _.capital.mkString(", "))

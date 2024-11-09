@@ -10,7 +10,6 @@ import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.text._
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
 
-import java.time.temporal.{IsoFields, TemporalAdjuster}
 import java.time.{LocalDate, LocalDateTime}
 
 class TextInputFieldsPage extends MultipleCodeExamples2Page() {

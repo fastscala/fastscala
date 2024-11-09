@@ -3,7 +3,7 @@ package com.fastscala.demo.docs.navigation
 import com.fastscala.core.{FSContext, FSSession}
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.ScalaXmlRenderableWithFSContext
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.server.Request
 
 import scala.xml.NodeSeq
 

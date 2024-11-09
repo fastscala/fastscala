@@ -1,42 +1,42 @@
 package com.fastscala.demo.docs.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.SingleCodeExamplePage
+import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.templates.bootstrap5.tables._
 
 import scala.xml.NodeSeq
 
 
-class SimpleTableExamplePage extends SingleCodeExamplePage() {
+class SimpleTableExamplePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Table example"
 
-  // === code snippet ===
-  override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
-    new Table5Base
-      with Table5BaseBootrapSupport
-      with Table5StandardColumns {
-      override type R = Country
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
+    renderSnippet("Source") {
+      new Table5Base
+        with Table5BaseBootrapSupport
+        with Table5StandardColumns {
+        override type R = Country
 
-      override def tableStriped: Boolean = true
+        override def tableStriped: Boolean = true
 
 
-      val ColName = ColStr("Name", _.name.common)
-      val ColCapital = ColStr("Capital", _.capital.mkString(", "))
-      val ColRegion = ColStr("Region", _.region)
-      val ColArea = ColStr("Area", _.area.toString)
+        val ColName = ColStr("Name", _.name.common)
+        val ColCapital = ColStr("Capital", _.capital.mkString(", "))
+        val ColRegion = ColStr("Region", _.region)
+        val ColArea = ColStr("Area", _.area.toString)
 
-      override def columns(): List[C] = List(
-        ColName
-        , ColCapital
-        , ColRegion
-        , ColArea
-      )
+        override def columns(): List[C] = List(
+          ColName
+          , ColCapital
+          , ColRegion
+          , ColArea
+        )
 
-      override def rows(hints: Seq[RowsHint]): Seq[Country] = CountriesData.data
-    }.render()
+        override def rows(hints: Seq[RowsHint]): Seq[Country] = CountriesData.data
+      }.render()
+    }
+    closeSnippet()
   }
-
-  // === code snippet ===
 }

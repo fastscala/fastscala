@@ -1,7 +1,7 @@
 package com.fastscala.demo.docs.forms
 
 import com.fastscala.core.FSContext
-import com.fastscala.demo.docs.SingleCodeExamplePage
+import com.fastscala.demo.docs.{MultipleCodeExamples2Page, SingleCodeExamplePage}
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
 import com.fastscala.templates.bootstrap5.form7.BSForm7Renderers
@@ -41,36 +41,36 @@ object CitiesData {
 }
 
 
-class BasicFormExamplePage extends SingleCodeExamplePage() {
+class BasicFormExamplePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Simple Form Example"
 
-  override def renderExampleContents()(implicit fsc: FSContext): NodeSeq = {
-    // === code snippet ===
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
-    var editing = new User1(
-      firstName = "",
-      lastName = "",
-      email = "",
-      phoneNumber = "",
-      securityLevel = 0,
-      countryOfResidence = CountriesData.data(0),
-      birthDay = Some("2022-08-04"),
-      province = CitiesData.data.head._1,
-      city = CitiesData.data.head._2.head
-    )
-    val BSFormRenderer = new BSForm7Renderers {
-      override def defaultRequiredFieldLabel: String = "Required Field"
-    }
-    import BSFormRenderer._
-    div.border.p_2.rounded.apply {
-      new Form7 {
-        override def postSubmitForm()(implicit fsc: FSContext): Js = {
-          BSModal5.verySimple(
-            "Created User",
-            "Done"
-          )(modal => implicit fsc => {
-            <span><b>First Name:</b> {editing.firstName}</span><br/> ++
+  override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
+    renderSnippet("Source") {
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      var editing = new User1(
+        firstName = "",
+        lastName = "",
+        email = "",
+        phoneNumber = "",
+        securityLevel = 0,
+        countryOfResidence = CountriesData.data(0),
+        birthDay = Some("2022-08-04"),
+        province = CitiesData.data.head._1,
+        city = CitiesData.data.head._2.head
+      )
+      val BSFormRenderer = new BSForm7Renderers {
+        override def defaultRequiredFieldLabel: String = "Required Field"
+      }
+      import BSFormRenderer._
+      div.border.p_2.rounded.apply {
+        new Form7 {
+          override def postSubmitForm()(implicit fsc: FSContext): Js = {
+            BSModal5.verySimple(
+              "Created User",
+              "Done"
+            )(modal => implicit fsc => {
+              <span><b>First Name:</b> {editing.firstName}</span><br/> ++
               <span><b>Last Name:</b> {editing.lastName}</span><br/> ++
               <span><b>Email:</b> {editing.email}</span><br/> ++
               <span><b>Phone:</b> {editing.phoneNumber}</span><br/> ++
@@ -79,29 +79,30 @@ class BasicFormExamplePage extends SingleCodeExamplePage() {
               <span><b>Date of Birth:</b> {editing.birthDay.getOrElse("N/A")}</span><br/> ++
               <span><b>Province:</b> {s"${editing.province.name}(${editing.province.no})"}</span><br/>++
               <span><b>City:</b> {s"${editing.city.name}(${editing.city.no})"}</span>
-          })
-        }
+            })
+          }
 
-        lazy val _provField: F7SelectField[Province] = new F7SelectField[Province](CitiesData.data.keys.toList.sortBy(_.no)).label("Province").rw(editing.province, editing.province = _).option2String(_.name)
+          lazy val _provField: F7SelectField[Province] = new F7SelectField[Province](CitiesData.data.keys.toList.sortBy(_.no)).label("Province").rw(editing.province, editing.province = _).option2String(_.name)
 
-        override lazy val rootField: F7Field = F7VerticalField()(
-          F7ContainerField("row")(
-            "col" -> new F7StringField().label("First Name").rw(editing.firstName, editing.firstName = _)
-            , "col" -> new F7StringField().label("Last Name").rw(editing.lastName, editing.lastName = _)
+          override lazy val rootField: F7Field = F7VerticalField()(
+            F7ContainerField("row")(
+              "col" -> new F7StringField().label("First Name").rw(editing.firstName, editing.firstName = _)
+              , "col" -> new F7StringField().label("Last Name").rw(editing.lastName, editing.lastName = _)
+            )
+            , new F7StringField().label("Email").rw(editing.email, editing.email = _).inputType("email")
+            , new F7StringField().label("Phone Number").rw(editing.phoneNumber, editing.phoneNumber = _).inputType("tel")
+            , new F7SelectField[Country](CountriesData.data.toList).label("Country of Residence").rw(editing.countryOfResidence, editing.countryOfResidence = _).option2String(_.name.common)
+            , new F7IntOptField().label("Security Level").rw(Some(editing.securityLevel), oi => editing.securityLevel = oi.getOrElse(0))
+            , F7LocalDateOptField(editing.birthDay, editing.birthDay = _).label("BirthDay")
+            , _provField
+            , new F7SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set(_provField))
+            , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
           )
-          , new F7StringField().label("Email").rw(editing.email, editing.email = _).inputType("email")
-          , new F7StringField().label("Phone Number").rw(editing.phoneNumber, editing.phoneNumber = _).inputType("tel")
-          , new F7SelectField[Country](CountriesData.data.toList).label("Country of Residence").rw(editing.countryOfResidence, editing.countryOfResidence = _).option2String(_.name.common)
-          , new F7IntOptField().label("Security Level").rw(Some(editing.securityLevel), oi => editing.securityLevel = oi.getOrElse(0))
-          , F7LocalDateOptField(editing.birthDay, editing.birthDay = _).label("BirthDay")
-          , _provField
-          , new F7SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set(_provField))
-          , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
-        )
 
-        override def formRenderer: F7FormRenderer = formRenderer
-      }.render()
+          override def formRenderer: F7FormRenderer = formRenderer
+        }.render()
+      }
     }
-    // === code snippet ===
+    closeSnippet()
   }
 }

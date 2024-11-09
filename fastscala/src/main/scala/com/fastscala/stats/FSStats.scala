@@ -2,8 +2,8 @@ package com.fastscala.stats
 
 import com.fastscala.core.{FSContext, FSPage, FSSession, FSSystem}
 import com.github.loki4j.slf4j.marker.LabelMarker
-import io.circe.syntax.EncoderOps
 import io.prometheus.metrics.core.metrics.{Counter, Gauge}
+import org.apache.commons.text.StringEscapeUtils
 import org.slf4j.event.Level
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -78,6 +78,8 @@ class FSStats(
         , fsPageOpt.toList.flatMap(_.debugLbl.map("page_lbl" -> _))
         , fsContextOpt.toList.map("context_lbl" -> _.fullPath)
         , additionalFields
-      ).flatten.toMap.asJson.noSpaces)
+      ).flatten.map({
+        case (key, value) => s""""$key": ${StringEscapeUtils.escapeJson(value)}"""
+      }).mkString("{", ",", "}"))
   }
 }

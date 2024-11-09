@@ -6,7 +6,6 @@ import com.fastscala.server._
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-import io.circe.{Decoder, Json}
 import it.unimi.dsi.util.XoRoShiRo128PlusRandom
 import org.eclipse.jetty.http._
 import org.eclipse.jetty.io.Content
@@ -188,60 +187,6 @@ class FSContext(
     Js.fromString(
       session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
         s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${Js.asJsStr(page.id).cmd},${Js.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn);"
-    )
-  }
-
-  def callbackJSON(
-                    arg: Js,
-                    func: Json => Js,
-                    async: Boolean = true,
-                    expectReturn: Boolean = true,
-                    ignoreErrors: Boolean = false
-                  ): Js = {
-    session.fsSystem.gc()
-    val funcId = session.nextID()
-    functionsGenerated += funcId
-    // FSStats.event(StatEvent.CREATE_CALLBACK, "callback_type" -> "json")
-    page.callbacks += funcId -> new FSFunc(funcId, str => {
-      io.circe.parser.parse(str) match {
-        case Left(value) => throw new Exception(s"Failed to parse JSON: ${value.getMessage()}")
-        case Right(json) => func(json) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void)
-      }
-    })
-    session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
-    session.fsSystem.stats.callbacksTotal.inc()
-    session.fsSystem.stats.currentCallbacks.inc()
-
-    Js.fromString(
-      session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
-        s"window._fs.callback(${if (arg.cmd.trim == "") "''" else s"JSON.stringify(${arg.cmd})"},${Js.asJsStr(page.id).cmd},${Js.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn);"
-    )
-  }
-
-  def callbackJSONDecoded[A: Decoder](
-                                       arg: Js,
-                                       func: A => Js,
-                                       async: Boolean = true,
-                                       expectReturn: Boolean = true,
-                                       ignoreErrors: Boolean = false
-                                     ): Js = {
-    session.fsSystem.gc()
-    val funcId = session.nextID()
-    functionsGenerated += funcId
-    // FSStats.event(StatEvent.CREATE_CALLBACK, "callback_type" -> "json_decoded")
-    page.callbacks += funcId -> new FSFunc(funcId, str => {
-      io.circe.parser.decode(str) match {
-        case Left(value) => throw new Exception(s"Failed to parse JSON \"$str\": ${value.getMessage()}")
-        case Right(decoded) => func(decoded) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void)
-      }
-    })
-    session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
-    session.fsSystem.stats.callbacksTotal.inc()
-    session.fsSystem.stats.currentCallbacks.inc()
-
-    Js.fromString(
-      session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
-        s"window._fs.callback(${if (arg.cmd.trim == "") "''" else s"JSON.stringify(${arg.cmd})"},${Js.asJsStr(page.id).cmd},${Js.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn);"
     )
   }
 

@@ -1,6 +1,7 @@
 package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
+import com.fastscala.demo.server.JettyServer
 import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import org.eclipse.jetty.util.{IO, VirtualThreads}
 
@@ -67,13 +68,14 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
   var sections: List[NodeSeq] = Nil
 
   val lines = IO.toString(Path.of(getClass.getResource(file).toURI()), StandardCharsets.UTF_8).split("\\n")
-  val stackTracePos = if (VirtualThreads.areSupported) 2 else 3
+  val stackTracePos = if (JettyServer.useVirtualThreads) 2 else 3
 
   def renderSnippet(
                      title: String,
                      thisSectionStartsAt: Int = Thread.currentThread.getStackTrace.apply(stackTracePos).getLineNumber
                    )(contents: => NodeSeq): NodeSeq = {
     collectSection(thisSectionStartsAt)
+    // println(s"lastSection = ${Some((thisSectionStartsAt, title, contents))}")
     lastSection = Some((thisSectionStartsAt, title, contents))
     lastSection.get._3
   }
@@ -91,7 +93,7 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
     lastSection.foreach({
       case (lastSectionStartedAt, title, contents) =>
         val code = lines.drop(lastSectionStartedAt).take(thisSectionStartsAt - lastSectionStartedAt - 2)
-        //        println(s"$lastSectionStartedAt:$thisSectionStartsAt: \n${code.mkString("\n")}")
+        // println(s"$lastSectionStartedAt:$thisSectionStartsAt: \n${code.mkString("\n")}")
         val leftPadding: Int = code.iterator.map(_.takeWhile(_ == ' ').size).filter(_ > 0).minOption.getOrElse(0)
         val withoutPadding = code.map(_.drop(leftPadding)).mkString("\n")
         val rendered = div.apply {

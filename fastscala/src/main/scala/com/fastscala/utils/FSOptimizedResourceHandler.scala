@@ -2,6 +2,10 @@ package com.fastscala.utils
 
 import com.fastscala.core.FSXmlUtils.elem2NodeSeq
 import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import com.fastscala.routing.RoutingHandlerNoSessionHelper
+import com.fastscala.routing.method.GET
+import com.fastscala.routing.req.{Get, Req}
+import com.fastscala.routing.resp.{ClientError, Ok, Response}
 import com.fastscala.server._
 
 import java.awt.geom.AffineTransform
@@ -12,12 +16,10 @@ import java.nio.charset.StandardCharsets
 import java.util.Collections
 import javax.imageio.stream.MemoryCacheImageOutputStream
 import javax.imageio.{IIOImage, ImageIO, ImageWriteParam}
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.Using
 import scala.jdk.CollectionConverters.ListHasAsScala
-
 import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
 import org.eclipse.jetty.util.{Callback, IO}
 
@@ -36,8 +38,6 @@ class FSOptimizedResourceHandler(
                                   defaultMaxHeight: Int = 900,
                                   defaultCompression: Int = 7
                                 ) extends RoutingHandlerNoSessionHelper {
-
-  import RoutingHandlerHelper._
 
   private def openResource(name: String): Option[InputStream] =
     resourceRoots.iterator.map(root => Option(getClass.getResourceAsStream(root + name)))

@@ -8,7 +8,9 @@ import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
 import com.fastscala.demo.docs.forms.BasicFormExamplePage
 import com.fastscala.demo.docs.tables._
 import com.fastscala.js.Js
-import com.fastscala.server.{Ok, Redirect, Response, RoutingHandlerHelper}
+import com.fastscala.routing.req.Get
+import com.fastscala.routing.resp.{Ok, Response}
+import com.fastscala.routing.{FilterUtils, RoutingHandlerHelper}
 import com.fastscala.xml.scala_xml.FSScalaXmlEnv
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
 import com.fastscala.xml.scala_xml.JS.RichJs
@@ -25,7 +27,6 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
-  import com.fastscala.server.RoutingHandlerHelper._
 
   override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = Some(req).collect {
     case Get("loaderio-4370139ed4f90c60359531343155344a") =>
@@ -99,7 +100,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
              </html>.toString()
         )
       }))
-    } else onlyHandleHtmlRequests {
+    } else FilterUtils.onlyHandleHtmlRequests {
       if (CurrentUser().isEmpty) {
         val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
         cookies.find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(
@@ -125,9 +126,9 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
           case Get("demo", "chartjs", "simple") => servePage(new SimpleChartjsPage())
         }
       })
-//        .orElse(
-//        Some(Redirect.temporaryRedirect("/demo/"))
-//      )
+      //        .orElse(
+      //        Some(Redirect.temporaryRedirect("/demo/"))
+      //      )
     }
   }
 }

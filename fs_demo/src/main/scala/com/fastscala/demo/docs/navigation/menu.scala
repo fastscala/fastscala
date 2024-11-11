@@ -1,6 +1,7 @@
 package com.fastscala.demo.docs.navigation
 
 import com.fastscala.core.{FSContext, FSSession}
+import com.fastscala.routing.req.Get
 import com.fastscala.utils.IdGen
 import com.fastscala.xml.scala_xml.ScalaXmlRenderableWithFSContext
 import org.eclipse.jetty.server.Request
@@ -58,8 +59,6 @@ class RoutingMenuItem(matching: String*)(val name: String, page: () => ScalaXmlR
   def href: String = matching.mkString("/", "/", "")
 
   def render()(implicit fsc: FSContext): NodeSeq = renderer.render(this)
-
-  import com.fastscala.server.RoutingHandlerHelper._
 
   def serve()(implicit req: Request, session: FSSession): Option[ScalaXmlRenderableWithFSContext] = Some(req).collect {
     case Get(path@_*) if path == matching => page()

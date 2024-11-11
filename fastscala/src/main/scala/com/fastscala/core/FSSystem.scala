@@ -2,7 +2,9 @@ package com.fastscala.core
 
 import com.fastscala.js.Js
 import com.fastscala.js.rerenderers.RerendererDebugStatus
-import com.fastscala.server._
+import com.fastscala.routing.RoutingHandlerNoSessionHelper
+import com.fastscala.routing.req.{Get, Post}
+import com.fastscala.routing.resp.{Ok, Redirect, Response, ServerError, VoidResponse}
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
@@ -303,7 +305,7 @@ class FSPage(
 
   def deleteOlderThan(ts: Long): Unit = {
     val callbacksToRemove = callbacks.filter(_._2.keepAliveAt < ts)
-    callbacksToRemove.foreach{ case (id, f) =>
+    callbacksToRemove.foreach { case (id, f) =>
       callbacks -= id
       f.fsc.functionsGenerated -= id
     }
@@ -313,7 +315,7 @@ class FSPage(
     // logger.info(s"Removed ${functionsToRemove.size} functions")
 
     val fileUploadCallbacksToRemove = fileUploadCallbacks.filter(_._2.keepAliveAt < ts)
-    fileUploadCallbacksToRemove.foreach{ case (id, f) =>
+    fileUploadCallbacksToRemove.foreach { case (id, f) =>
       fileUploadCallbacks -= id
       f.fsc.functionsFileUploadGenerated -= id
     }
@@ -323,7 +325,7 @@ class FSPage(
     // logger.info(s"Removed ${functionsFileUploadToRemove.size} functions")
 
     val fileDownloadCallbacksToRemove = fileDownloadCallbacks.filter(_._2.keepAliveAt < ts)
-    fileDownloadCallbacksToRemove.foreach{ case (id, f) =>
+    fileDownloadCallbacksToRemove.foreach { case (id, f) =>
       fileDownloadCallbacks -= id
       f.fsc.functionsFileDownloadGenerated -= id
     }
@@ -334,19 +336,19 @@ class FSPage(
   }
 
   def delete(): Unit = {
-    callbacks.filterInPlace{ (_, f) =>
+    callbacks.filterInPlace { (_, f) =>
       f.fsc.functionsGenerated -= id
       false
     }
     session.fsSystem.stats.currentCallbacks.dec(callbacks.size)
 
-    fileUploadCallbacks.filterInPlace{ (_, f) =>
+    fileUploadCallbacks.filterInPlace { (_, f) =>
       f.fsc.functionsFileUploadGenerated -= id
       false
     }
     session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacks.size)
 
-    fileDownloadCallbacks.filterInPlace{ (_, f) =>
+    fileDownloadCallbacks.filterInPlace { (_, f) =>
       f.fsc.functionsFileDownloadGenerated -= id
       false
     }
@@ -547,7 +549,7 @@ class FSSession(
   def deletePages(toDelete: Set[FSPage]): Unit = {
     val currentPages = pages.values.toSet
     val pagesToRemove = currentPages.intersect(toDelete)
-    pagesToRemove.foreach{ page =>
+    pagesToRemove.foreach { page =>
       pages -= page.id
       page.delete()
     }
@@ -556,7 +558,7 @@ class FSSession(
 
   def deletePagesOlderThan(ts: Long): Unit = {
     val pagesToRemove = pages.filter(_._2.keepAliveAt < ts)
-    pagesToRemove.foreach{ case (id, page) =>
+    pagesToRemove.foreach { case (id, page) =>
       pages -= id
       page.delete()
     }
@@ -573,7 +575,7 @@ class FSSession(
     fsSystem.sessions -= this.id
     fsSystem.stats.currentSessions.dec()
 
-    pages.filterInPlace{ (_, page) =>
+    pages.filterInPlace { (_, page) =>
       page.delete()
       false
     }
@@ -665,7 +667,6 @@ class FSSystem(
 
   override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = {
     val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
-    import RoutingHandlerHelper._
 
     val sessionIdOpt = cookies.find(_.getName == FSSessionIdCookieName).map(_.getValue).orElse(
       Option(Request.getParameters(req).getValue(FSSessionIdCookieName)).filter(_ != "")

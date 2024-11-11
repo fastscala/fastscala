@@ -2,8 +2,9 @@ package com.fastscala.taskmanager.server
 
 import com.fastscala.core.{FSSession, FSSystem}
 import com.fastscala.demo.db.{CurrentUser, FakeDB}
-import com.fastscala.demo.docs._
-import com.fastscala.server.{Ok, Redirect, Response, RoutingHandlerHelper}
+import com.fastscala.routing.req.Get
+import com.fastscala.routing.resp.{Ok, Redirect, Response}
+import com.fastscala.routing.{FilterUtils, RoutingHandlerHelper}
 import com.fastscala.taskmanager.app.{FSTaskmanagerMainMenu, TasksPage}
 import com.fastscala.xml.scala_xml.FSScalaXmlEnv
 import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
@@ -20,8 +21,6 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
-  import com.fastscala.server.RoutingHandlerHelper._
-
   override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = Some(req).collect {
     case Get(".well-known", "acme-challenge", code) =>
       val file = "/opt/certs/.well-known/acme-challenge/" + code
@@ -32,7 +31,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
   }
 
   override def handlerInSession(response: JettyServerResponse, callback: Callback)(implicit req: Request, session: FSSession): Option[Response] = {
-    onlyHandleHtmlRequests {
+    FilterUtils.onlyHandleHtmlRequests {
       if (CurrentUser().isEmpty) {
         val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
         cookies.find(_.getName == "user_token").map(_.getValue).filter(_.trim != "").orElse(

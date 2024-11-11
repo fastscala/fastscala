@@ -27,5 +27,7 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
         cache: 'sbt'
+    - name: Compile demo
+      run: sbt fs_demo/compile
     - name: Run tests
       run: sbt test

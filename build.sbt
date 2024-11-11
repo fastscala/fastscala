@@ -72,6 +72,8 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
     Test / parallelExecution := false
   )
   .dependsOn(fastscala)
+  .dependsOn(fs_scala_xml)
+  .dependsOn(fs_circe)
 
 lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
   .settings(

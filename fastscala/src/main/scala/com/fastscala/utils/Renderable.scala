@@ -1,19 +1,19 @@
 package com.fastscala.utils
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSContext, FSXmlEnv, FSXmlSupport}
 
 trait Renderable[E <: FSXmlEnv] {
 
-  def render(): E#NodeSeq
+  def render(): FSXmlNodeSeq[E]
 }
 
 trait RenderableWithFSContext[E <: FSXmlEnv] {
 
-  def render()(implicit fsc: FSContext): E#NodeSeq
+  def render()(implicit fsc: FSContext): FSXmlNodeSeq[E]
 }
 
 object RenderableWithFSContext {
-  implicit def toRenderable[E <: FSXmlEnv : FSXmlSupport](renderableWithFuncGen: RenderableWithFSContext[E])(implicit fsc: FSContext): Renderable[E] = new Renderable[E] {
-    override def render(): E#NodeSeq = renderableWithFuncGen.render()
+  implicit def toRenderable[E <: FSXmlEnv](using env: FSXmlSupport[E])(renderableWithFuncGen: RenderableWithFSContext[E])(implicit fsc: FSContext): Renderable[E] = new Renderable[E] {
+    override def render(): FSXmlNodeSeq[E] = renderableWithFuncGen.render()
   }
 }

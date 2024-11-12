@@ -1,22 +1,23 @@
 package com.fastscala.js.rerenderers
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSContext, FSXmlEnv, FSXmlSupport}
 import com.fastscala.js.{Js, JsUtils, JsXmlUtils}
 import com.fastscala.utils.IdGen
 
 import scala.util.chaining.scalaUtilChainingOps
 
-class ContentRerendererP[E <: FSXmlEnv : FSXmlSupport, P](
-                                                           renderFunc: ContentRerendererP[E, P] => FSContext => P => E#NodeSeq,
-                                                           id: Option[String] = None,
-                                                           debugLabel: Option[String] = None,
-                                                           gcOldFSContext: Boolean = true
-                                                         ) {
+class ContentRerendererP[E <: FSXmlEnv, P](using val env: FSXmlSupport[E])(
+  renderFunc: ContentRerendererP[E, P] => FSContext => P => FSXmlNodeSeq[E],
+  id: Option[String] = None,
+  debugLabel: Option[String] = None,
+  gcOldFSContext: Boolean = true
+) {
 
   implicit val Js: JsXmlUtils[E] = JsUtils.generic
-  import com.fastscala.core.FSXmlUtils._
 
-  val outterElem: E#Elem = implicitly[FSXmlSupport[E]].buildElem("div")()
+  import com.fastscala.core.FSXmlUtils.*
+
+  val outterElem: FSXmlElem[E] = env.buildElem("div")()
 
   val aroundId = id.getOrElse("around" + IdGen.id)
   var rootRenderContext: Option[FSContext] = None

@@ -1,31 +1,32 @@
 package com.fastscala.js.rerenderers
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.js.rerenderers.RerendererDebugStatus.RichValue
 import com.fastscala.js.{Js, JsUtils, JsXmlUtils}
 import com.fastscala.utils.IdGen
 
 import scala.util.chaining.scalaUtilChainingOps
 
-class ContentRerenderer[E <: FSXmlEnv : FSXmlSupport](
-                                                       renderFunc: ContentRerenderer[E] => FSContext => E#NodeSeq,
-                                                       id: Option[String] = None,
-                                                       debugLabel: Option[String] = None,
-                                                       gcOldFSContext: Boolean = true
-                                                     ) {
+class ContentRerenderer[E <: FSXmlEnv](using val env: FSXmlSupport[E])(
+  renderFunc: ContentRerenderer[E] => FSContext => FSXmlNodeSeq[E],
+  id: Option[String] = None,
+  debugLabel: Option[String] = None,
+  gcOldFSContext: Boolean = true
+) {
 
   implicit val Js: JsXmlUtils[E] = JsUtils.generic
 
-  import com.fastscala.core.FSXmlUtils._
+  import com.fastscala.core.FSXmlUtils.*
 
-  val outterElem: E#Elem = implicitly[FSXmlSupport[E]].buildElem("div")()
+  val outterElem: FSXmlElem[E] = env.buildElem("div")()
 
   val aroundId = id.getOrElse("around" + IdGen.id)
   var rootRenderContext: Option[FSContext] = None
 
-  def render()(implicit fsc: FSContext): E#Elem = {
+  def render()(implicit fsc: FSContext): FSXmlElem[E] = {
     rootRenderContext = Some(fsc)
-    fsc.page.rerendererDebugStatus.render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
-      elem.withContents(renderFunc(this)({
+    new RichValue[E](fsc.page.rerendererDebugStatus).render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
+      new RichFSXmlElem(elem).withContents(renderFunc(this)({
         if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
         else fsc
       }))

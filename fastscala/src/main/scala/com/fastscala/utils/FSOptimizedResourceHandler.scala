@@ -1,12 +1,14 @@
 package com.fastscala.utils
 
 import com.fastscala.core.FSXmlUtils.elem2NodeSeq
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSXmlEnv, FSXmlSupport}
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.method.GET
 import com.fastscala.routing.req.{Get, Req}
 import com.fastscala.routing.resp.{ClientError, Ok, Response}
-import com.fastscala.server._
+import com.fastscala.server.*
+import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
+import org.eclipse.jetty.util.{Callback, IO}
 
 import java.awt.geom.AffineTransform
 import java.awt.image.{AffineTransformOp, BufferedImage}
@@ -18,17 +20,15 @@ import javax.imageio.stream.MemoryCacheImageOutputStream
 import javax.imageio.{IIOImage, ImageIO, ImageWriteParam}
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.util.Using
 import scala.jdk.CollectionConverters.ListHasAsScala
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
-import org.eclipse.jetty.util.{Callback, IO}
+import scala.util.Using
 
 object FSOptimizedResourceHandler {
 
   def cssLoaderUrl(files: String*): String = "/static/optimized/css_loader.css?" + files.map("f=" + URLEncoder.encode(_, "UTF-8")).mkString("&")
 
-  def cssLoaderElem[E <: FSXmlEnv : FSXmlSupport](files: String*): E#Elem =
-    implicitly[FSXmlSupport[E]].buildElem("link", "rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files: _*))(implicitly[FSXmlSupport[E]].Empty)
+  def cssLoaderElem[E <: FSXmlEnv](using env: FSXmlSupport[E])(files: String*): FSXmlElem[E] =
+    env.buildElem("link", "rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files: _*))(env.Empty)
 }
 
 class FSOptimizedResourceHandler(
@@ -173,11 +173,11 @@ class FSOptimizedResourceHandler(
 
   var version = System.currentTimeMillis()
 
-  def optimizedCss[E <: FSXmlEnv : FSXmlSupport](cssFiles: String*): E#NodeSeq =
-    elem2NodeSeq(implicitly[FSXmlSupport[E]].buildElem("link",
+  def optimizedCss[E <: FSXmlEnv](using env: FSXmlSupport[E])(cssFiles: String*): FSXmlNodeSeq[E] =
+    elem2NodeSeq(env.buildElem("link",
       "rel" -> "stylesheet",
       "type" -> "text/css",
       "media" -> "all",
       "href" -> (s"/static/css_loader.css?version=$version&" + cssFiles.map("f=" + _).mkString("&"))
-    )(implicitly[FSXmlSupport[E]].Empty))
+    )(env.Empty))
 }

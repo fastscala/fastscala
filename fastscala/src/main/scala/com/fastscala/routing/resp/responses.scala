@@ -1,9 +1,9 @@
 package com.fastscala.routing.resp
 
-import com.fastscala.core.{FSXmlEnv, FSXmlSupport}
+import com.fastscala.core.{FSXmlEnv, FSXmlSupport, FSXmlNodeSeq}
 import com.fastscala.js.Js
 import org.eclipse.jetty.http.{HttpCookie, HttpHeader, MimeTypes}
-import org.eclipse.jetty.server.{Response => JettyServerResponse}
+import org.eclipse.jetty.server.Response as JettyServerResponse
 import org.eclipse.jetty.util.{BufferUtil, Callback}
 
 import java.nio.file.{Files, Path}
@@ -100,9 +100,9 @@ trait RedirectResponse extends TextResponse {
 }
 
 object Ok {
-  def html[E <: FSXmlEnv : FSXmlSupport](ns: E#NodeSeq) = new OkHtml(implicitly[FSXmlSupport[E]].render(ns))
+  def html[E <: FSXmlEnv](using env: FSXmlSupport[E])(ns: FSXmlNodeSeq[E]) = new OkHtml(env.render(ns))
 
-  def html(ns: String) = new OkHtml(ns)
+  def htmlFromString(ns: String) = new OkHtml(ns)
 
   def plain(text: String) = new OkTextBased(text, "text/plain;charset=utf-8")
 

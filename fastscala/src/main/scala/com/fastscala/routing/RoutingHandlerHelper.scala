@@ -3,7 +3,7 @@ package com.fastscala.routing
 import com.fastscala.core.{FSSession, FSSystem, FSXmlEnv, FSXmlSupport}
 import com.fastscala.routing.resp.{Ok, Response}
 import com.fastscala.utils.RenderableWithFSContext
-import org.eclipse.jetty.server.{Handler, Request, Response => JettyServerResponse}
+import org.eclipse.jetty.server.{Handler, Request, Response as JettyServerResponse}
 import org.eclipse.jetty.util.Callback
 
 abstract class RoutingHandlerNoSessionHelper extends Handler.Abstract {
@@ -19,7 +19,7 @@ abstract class RoutingHandlerNoSessionHelper extends Handler.Abstract {
 
 abstract class RoutingHandlerHelper(implicit fss: FSSystem) extends RoutingHandlerNoSessionHelper {
 
-  def servePage[E <: FSXmlEnv : FSXmlSupport](renderable: RenderableWithFSContext[E], debugLbl: Option[String] = None)(implicit req: Request, session: FSSession): Response = {
+  def servePage[E <: FSXmlEnv](using env: FSXmlSupport[E])(renderable: RenderableWithFSContext[E], debugLbl: Option[String] = None)(implicit req: Request, session: FSSession): Response = {
     session.createPage(implicit fsc => Ok.html(renderable.render())
       .addHeaders(
         "Cache-Control" -> "no-cache, max-age=0, no-store"

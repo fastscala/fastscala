@@ -4,14 +4,14 @@ import com.fastscala.js.Js
 import com.fastscala.js.rerenderers.RerendererDebugStatus
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.req.{Get, Post}
-import com.fastscala.routing.resp.{Ok, Redirect, Response, ServerError, VoidResponse}
+import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
 import it.unimi.dsi.util.XoRoShiRo128PlusRandom
-import org.eclipse.jetty.http._
+import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
 import org.eclipse.jetty.util.Callback
 import org.eclipse.jetty.websocket.api.Callback.Completable
 import org.eclipse.jetty.websocket.api.Session
@@ -192,10 +192,10 @@ class FSContext(
     )
   }
 
-  def anonymousPageURL[E <: FSXmlEnv : FSXmlSupport](
-                                                      render: FSContext => E#NodeSeq
-                                                      , name: String
-                                                    ): String = {
+  def anonymousPageURL[E <: FSXmlEnv](using env: FSXmlSupport[E])(
+    render: FSContext => FSXmlNodeSeq[E]
+    , name: String
+  ): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
     session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
@@ -206,7 +206,7 @@ class FSContext(
     s"/${session.fsSystem.FSPrefix}/anon/$funcId/$name"
   }
 
-  def createAndRedirectToAnonymousPageJS[E <: FSXmlEnv : FSXmlSupport](render: FSContext => E#NodeSeq, name: String)(implicit fsc: FSContext) =
+  def createAndRedirectToAnonymousPageJS[E <: FSXmlEnv](using env: FSXmlSupport[E])(render: FSContext => FSXmlNodeSeq[E], name: String) =
     fsc.callback(() => Js.redirectTo(anonymousPageURL(render, name)))
 
   def fileDownloadAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
@@ -432,16 +432,16 @@ abstract class FSSessionVarOpt[T]() {
   def clear()(implicit hasSession: FSHasSession): Unit = hasSession.session.clear(this)
 }
 
-class FSAnonymousPage[E <: FSXmlEnv : FSXmlSupport](
-                                                     val id: String
-                                                     , val session: FSSession
-                                                     , val render: FSContext => E#NodeSeq
-                                                     , val createdAt: Long = System.currentTimeMillis()
-                                                     , var keepAliveAt: Long = System.currentTimeMillis()
-                                                     , var debugLbl: Option[String] = None
-                                                   ) extends FSHasSession {
+class FSAnonymousPage[E <: FSXmlEnv](using val env: FSXmlSupport[E])(
+  val id: String
+  , val session: FSSession
+  , val render: FSContext => FSXmlNodeSeq[E]
+  , val createdAt: Long = System.currentTimeMillis()
+  , var keepAliveAt: Long = System.currentTimeMillis()
+  , var debugLbl: Option[String] = None
+) extends FSHasSession {
 
-  def renderAsString()(implicit fsc: FSContext): String = implicitly[FSXmlSupport[E]].render(render(fsc))
+  def renderAsString()(implicit fsc: FSContext): String = env.render(render(fsc))
 
   def keepAlive(): Unit = {
     keepAliveAt = System.currentTimeMillis()
@@ -511,7 +511,7 @@ class FSSession(
   //  }
 
   val pages = collection.mutable.Map[String, FSPage]()
-  val anonymousPages = collection.mutable.Map[String, FSAnonymousPage[_]]()
+  val anonymousPages = collection.mutable.Map[String, FSAnonymousPage[?]]()
 
   def nPages(): Int = pages.size
 
@@ -812,7 +812,7 @@ class FSSystem(
             val nodeSeq = session.createPage(implicit fsc => anonymousPage.renderAsString(), onPageUnload = () => {
               anonymousPage.onPageUnload()
             }, debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}"))
-            Ok.html(nodeSeq)
+            Ok.htmlFromString(nodeSeq)
           }).getOrElse(onAnonymousPageNotFound(Missing.AnonPage, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = Some(session), page = None))
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }

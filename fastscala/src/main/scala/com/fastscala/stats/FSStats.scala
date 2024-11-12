@@ -1,6 +1,6 @@
 package com.fastscala.stats
 
-import com.fastscala.core.{FSContext, FSPage, FSSession, FSSystem}
+import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSContext, FSPage, FSSession, FSSystem}
 import com.github.loki4j.slf4j.marker.LabelMarker
 import io.prometheus.metrics.core.metrics.{Counter, Gauge}
 import org.apache.commons.text.StringEscapeUtils

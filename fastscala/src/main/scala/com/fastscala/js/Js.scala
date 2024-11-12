@@ -1,7 +1,7 @@
 package com.fastscala.js
 
-import com.fastscala.core.{FSContext, FSXmlEnv, FSXmlSupport}
-import com.fastscala.js.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererDebugStatus, RerendererP}
+import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSContext, FSXmlEnv, FSXmlSupport}
+import com.fastscala.js.rerenderers.*
 import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.http.{HttpHeader, MimeTypes}
@@ -73,7 +73,7 @@ object JsOps {
 
 trait JsUtils {
 
-  import JsOps._
+  import JsOps.*
 
   def evalIf(cond: Boolean)(js: => Js): Js = if (cond) js else this.void
 
@@ -198,13 +198,13 @@ object Js extends JsUtils {
 
 object JsUtils {
 
-  def generic[E <: FSXmlEnv : FSXmlSupport] = new JsXmlUtils[E]()
+  def generic[E <: FSXmlEnv](using env: FSXmlSupport[E]) = new JsXmlUtils[E]
 }
 
-class JsXmlUtils[E <: FSXmlEnv](implicit fsXmlSupport: FSXmlSupport[E]) extends JsUtils {
+class JsXmlUtils[E <: FSXmlEnv](using val env: FSXmlSupport[E]) extends JsUtils {
 
   def rerenderable(
-                    render: Rerenderer[E] => FSContext => E#Elem,
+                    render: Rerenderer[E] => FSContext => FSXmlElem[E],
                     idOpt: Option[String] = None,
                     debugLabel: Option[String] = None,
                     gcOldFSContext: Boolean = true
@@ -212,14 +212,14 @@ class JsXmlUtils[E <: FSXmlEnv](implicit fsXmlSupport: FSXmlSupport[E]) extends 
     new Rerenderer[E](render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def rerenderableP[P](
-                        render: RerendererP[E, P] => FSContext => P => E#Elem,
+                        render: RerendererP[E, P] => FSContext => P => FSXmlElem[E],
                         idOpt: Option[String] = None,
                         debugLabel: Option[String] = None,
                         gcOldFSContext: Boolean = true
                       ): RerendererP[E, P] = new RerendererP[E, P](render, idOpt = idOpt, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def rerenderableContents(
-                            render: ContentRerenderer[E] => FSContext => E#NodeSeq,
+                            render: ContentRerenderer[E] => FSContext => FSXmlNodeSeq[E],
                             id: Option[String] = None,
                             debugLabel: Option[String] = None,
                             gcOldFSContext: Boolean = true
@@ -227,42 +227,42 @@ class JsXmlUtils[E <: FSXmlEnv](implicit fsXmlSupport: FSXmlSupport[E]) extends 
     new ContentRerenderer[E](render, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
   def rerenderableContentsP[P](
-                                render: ContentRerendererP[E, P] => FSContext => P => E#NodeSeq,
+                                render: ContentRerendererP[E, P] => FSContext => P => FSXmlNodeSeq[E],
                                 id: Option[String] = None,
                                 debugLabel: Option[String] = None,
                                 gcOldFSContext: Boolean = true
                               ): ContentRerendererP[E, P] =
     new ContentRerendererP[E, P](render, id = id, debugLabel = debugLabel, gcOldFSContext = gcOldFSContext)
 
-  def append2Body(ns: E#NodeSeq): Js = {
+  def append2Body(ns: FSXmlNodeSeq[E]): Js = {
     val elemId = IdGen.id("template")
     Js(s"document.body.appendChild(${htmlToElement(ns, elemId).cmd})") &
       removeId(elemId)
   }
 
-  def append2(id: String, ns: E#NodeSeq): Js = {
+  def append2(id: String, ns: FSXmlNodeSeq[E]): Js = {
     val elemId = IdGen.id("template")
     Js(s"""document.getElementById("${escapeStr(id)}").appendChild(${htmlToElement(ns, elemId).cmd})""") &
       removeId(elemId)
   }
 
-  def prepend2(id: String, ns: E#NodeSeq): Js = {
+  def prepend2(id: String, ns: FSXmlNodeSeq[E]): Js = {
     val elemId = IdGen.id("template")
     Js(s"""document.getElementById("${escapeStr(id)}").insertBefore(${htmlToElement(ns, elemId).cmd}, document.getElementById("${escapeStr(id)}").firstChild)""") &
       removeId(elemId)
   }
 
-  def replace(id: String, by: E#NodeSeq): Js = Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
+  def replace(id: String, by: FSXmlNodeSeq[E]): Js = Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
 
-  def setContents(id: String, ns: E#NodeSeq): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
+  def setContents(id: String, ns: FSXmlNodeSeq[E]): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
 
-  def htmlToElement(html: E#NodeSeq, templateId: String = IdGen.id): Js = Js {
+  def htmlToElement(html: FSXmlNodeSeq[E], templateId: String = IdGen.id): Js = Js {
     s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${StringEscapeUtils.escapeEcmaScript(html.toString())}"))).content"""
   }
 
-  def forceHttps: E#Elem = {
-    implicitly[FSXmlSupport[E]].buildElem("script", "type" -> "text/javascript")(
-      implicitly[FSXmlSupport[E]].buildUnparsed(
+  def forceHttps: FSXmlElem[E] = {
+    env.buildElem("script", "type" -> "text/javascript")(
+      env.buildUnparsed(
         """//<![CDATA[
           |if (location.protocol !== 'https:' && location.hostname !== 'localhost') { location.protocol = 'https:'; }
           |//]]>""".stripMargin
@@ -270,9 +270,9 @@ class JsXmlUtils[E <: FSXmlEnv](implicit fsXmlSupport: FSXmlSupport[E]) extends 
     )
   }
 
-  def inScriptTag(js: Js): E#Elem = {
-    implicitly[FSXmlSupport[E]].buildElem("script", "type" -> "text/javascript")(
-      implicitly[FSXmlSupport[E]].buildUnparsed(
+  def inScriptTag(js: Js): FSXmlElem[E] = {
+    env.buildElem("script", "type" -> "text/javascript")(
+      env.buildUnparsed(
         """
 // <![CDATA[
 """ + js +
@@ -283,12 +283,12 @@ class JsXmlUtils[E <: FSXmlEnv](implicit fsXmlSupport: FSXmlSupport[E]) extends 
     )
   }
 
-  def showIf(b: Boolean)(ns: => E#NodeSeq): E#NodeSeq = if (b) ns else fsXmlSupport.Empty
+  def showIf(b: Boolean)(ns: => FSXmlNodeSeq[E]): FSXmlNodeSeq[E] = if (b) ns else env.Empty
 }
 
-class RichJsXmlUtils[E <: FSXmlEnv](js: Js, utils: JsXmlUtils[E])(implicit fsXmlSupport: FSXmlSupport[E]) {
+class RichJsXmlUtils[E <: FSXmlEnv](js: Js, utils: JsXmlUtils[E])(using val env: FSXmlSupport[E]) {
 
-  def inScriptTag: E#Elem = utils.inScriptTag(js)
+  def inScriptTag: FSXmlElem[E] = utils.inScriptTag(js)
 
   def printBeforeExec: Js = {
     println("> " + js.cmd)

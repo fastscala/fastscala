@@ -5,37 +5,50 @@ trait FSXmlEnv {
   type Elem
 }
 
-trait FSXmlSupport[Env <: FSXmlEnv] {
+object FSXmlEnv {
+  type AuxNodeSeq[T] = FSXmlEnv {type NodeSeq = T}
+  type AuxElem[T] = FSXmlEnv {type Elem = T}
+}
 
-  def render(elem: Env#NodeSeq): String
+type FSXmlNodeSeq[E <: FSXmlEnv] = E match {
+  case FSXmlEnv.AuxNodeSeq[t] => t
+}
 
-  def buildElemFrom[E <: FSXmlEnv : FSXmlSupport](other: E#Elem): Env#Elem
+type FSXmlElem[E <: FSXmlEnv] = E match {
+  case FSXmlEnv.AuxElem[t] => t
+}
 
-  def buildNodeSeqFrom[E <: FSXmlEnv : FSXmlSupport](other: E#NodeSeq): Env#NodeSeq
+trait FSXmlSupport[E <: FSXmlEnv] {
 
-  def Empty: Env#NodeSeq
+  def render(elem: FSXmlNodeSeq[E]): String
 
-  def buildUnparsed(unparsed: String): Env#NodeSeq
+  def buildElemFrom[E2 <: FSXmlEnv](other: FSXmlElem[E2])(using env: FSXmlSupport[E2]): FSXmlElem[E]
 
-  def buildText(text: String): Env#NodeSeq
+  def buildNodeSeqFrom[E2 <: FSXmlEnv](other: FSXmlNodeSeq[E2])(using env: FSXmlSupport[E2]): FSXmlNodeSeq[E]
 
-  def buildElem(label: String, attrs: (String, String)*)(children: Env#NodeSeq*): Env#Elem
+  def Empty: FSXmlNodeSeq[E]
 
-  def label(elem: Env#Elem): String
+  def buildUnparsed(unparsed: String): FSXmlNodeSeq[E]
 
-  def getId(elem: Env#Elem): Option[String]
+  def buildText(text: String): FSXmlNodeSeq[E]
 
-  def contents(elem: Env#Elem): Env#NodeSeq
+  def buildElem(label: String, attrs: (String, String)*)(children: FSXmlNodeSeq[E]*): FSXmlElem[E]
 
-  def attribute(elem: Env#Elem, attrName: String): Option[String]
+  def label(elem: FSXmlElem[E]): String
 
-  def attributes(elem: Env#Elem): List[(String, String)]
+  def getId(elem: FSXmlElem[E]): Option[String]
 
-  def transformAttribute(elem: Env#Elem, attrName: String, transform: Option[String] => String): Env#Elem
+  def contents(elem: FSXmlElem[E]): FSXmlNodeSeq[E]
 
-  def transformContents[E <: FSXmlEnv : FSXmlSupport](elem: Env#Elem, transform: Env#NodeSeq => E#NodeSeq): Env#Elem
+  def attribute(elem: FSXmlElem[E], attrName: String): Option[String]
 
-  def concat(ns1: Env#NodeSeq, ns2: Env#NodeSeq): Env#NodeSeq
+  def attributes(elem: FSXmlElem[E]): List[(String, String)]
 
-  def elem2NodeSeq(elem: Env#Elem): Env#NodeSeq
+  def transformAttribute(elem: FSXmlElem[E], attrName: String, transform: Option[String] => String): FSXmlElem[E]
+
+  def transformContents[E2 <: FSXmlEnv](elem: FSXmlElem[E], transform: FSXmlNodeSeq[E] => FSXmlNodeSeq[E2])(using env: FSXmlSupport[E2]): FSXmlElem[E]
+
+  def concat(ns1: FSXmlNodeSeq[E], ns2: FSXmlNodeSeq[E]): FSXmlNodeSeq[E]
+
+  def elem2NodeSeq(elem: FSXmlElem[E]): FSXmlNodeSeq[E]
 }

@@ -794,7 +794,7 @@ object AIcn {
   val dropbox: Icn = "icon-dropbox"
   val droplet: Icn = "icon-droplet"
   val evernote: Icn = "icon-evernote"
-  val export: Icn = "icon-export"
+  val `export`: Icn = "icon-export"
   val eye: Icn = "icon-eye"
   val facebook: Icn = "icon-facebook"
   val facebook_squared: Icn = "icon-facebook-squared"

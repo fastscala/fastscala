@@ -4,7 +4,6 @@ trait BSDataHelper[T] {
 
   protected def setAttribute(name: String, value: String): T
 
-
   def dataBsAutoCloseAsFalse = setAttribute("data-bs-auto-close", "false")
 
   def dataBsAutoCloseAsInside = setAttribute("data-bs-auto-close", "inside")

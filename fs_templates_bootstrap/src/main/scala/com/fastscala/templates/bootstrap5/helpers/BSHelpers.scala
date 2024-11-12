@@ -6,13 +6,11 @@ import scala.xml.Elem
 
 object BSHelpers extends BSClassesHelper[Elem] with BasicElemsHelper {
 
-  implicit class RichElemBasicOps(val elem: Elem) extends ScalaXmlElemUtils
-
   override protected def withClass(clas: String): Elem =
     FSScalaXmlSupport.fsXmlSupport.buildElem("div")().addClass(clas)
 
-  implicit class RichElemBootstrapClasses(val elem: Elem) extends BSClassesHelper[Elem] with BSDataHelper[Elem] {
-    override protected def withClass(clas: String): Elem = elem.addClass(clas)
+  implicit class RichElemBootstrapClasses(val elem: Elem) extends BSClassesHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtils {
+    override def withClass(clas: String): Elem = elem.addClass(clas)
 
     override protected def setAttribute(name: String, value: String): Elem = elem.withAttr((name, value))
   }

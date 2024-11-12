@@ -1,7 +1,7 @@
 package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
-import com.fastscala.templates.bootstrap5.helpers.BSHelpers.{RichElemBasicOps, s}
+import com.fastscala.templates.bootstrap5.helpers.BSHelpers.RichElemBootstrapClasses
 import com.fastscala.templates.bootstrap5.helpers.ClassEnrichableMutable
 
 import scala.xml.{Elem, NodeSeq}

@@ -56,7 +56,7 @@ abstract class BSForm7Renderers()(
 
   implicit val buttonFieldRenderer: ButtonF7FieldRenderer = new ButtonF7FieldRenderer {
     override def render(field: F7SubmitButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
         btn
           .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")

@@ -20,7 +20,7 @@ class F7HtmlSurroundField[T <: F7Field](
     with F7FieldWithEnabled {
 
   override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    if (!enabled) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{surround(field.render())}</div>
 
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] =

@@ -49,13 +49,13 @@ abstract class StandardF6Field() extends F6Field with ElemWithRandomId {
     case _ => Js.void
   })
 
-  def disabled(): Boolean
+  def disabled: Boolean
 
-  def readOnly(): Boolean
+  def readOnly: Boolean
 
   def withFieldRenderHints[T](f: Seq[RenderHint] => T)(implicit renderHints: Seq[RenderHint]): T = f {
-    List(DisableFieldsHint).filter(_ => disabled()) ++
-      List(ReadOnlyFieldsHint).filter(_ => readOnly()) ++
+    List(DisableFieldsHint).filter(_ => disabled) ++
+      List(ReadOnlyFieldsHint).filter(_ => readOnly) ++
       renderHints
   }
 }

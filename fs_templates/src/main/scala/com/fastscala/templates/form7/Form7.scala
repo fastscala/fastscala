@@ -72,7 +72,7 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   /**
    * Used to run JS to initialize the form after it is rendered or re-rendered.
    */
-  def postRenderSetupJs()(implicit fsc: FSContext): Js = rootField.fieldAndChildreenMatchingPredicate(_.enabled()).map(_.postRenderSetupJs()).reduceOption(_ & _).getOrElse(Js.void)
+  def postRenderSetupJs()(implicit fsc: FSContext): Js = rootField.fieldAndChildreenMatchingPredicate(_.enabled).map(_.postRenderSetupJs()).reduceOption(_ & _).getOrElse(Js.void)
 
   def reRender()(implicit fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
@@ -92,7 +92,7 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
   def submitFormServerSide()(implicit fsc: FSContext): Js = {
     if (fsc != fsc.page.rootFSContext) submitFormServerSide()(fsc.page.rootFSContext)
     else {
-      val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled())
+      val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled)
       preValidateForm() &
         enabledFields.map(_.preValidation()).reduceOption(_ & _).getOrElse(Js.void) &
         enabledFields.collect(_.validate()).flatten.pipe(errors => {

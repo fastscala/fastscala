@@ -60,7 +60,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
       }).getOrElse(Js.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) renderer.renderDisabled(this)
+    if (!enabled) renderer.renderDisabled(this)
     else {
       withFieldRenderHints { implicit hints =>
 

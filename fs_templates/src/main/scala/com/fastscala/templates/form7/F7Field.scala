@@ -47,16 +47,16 @@ trait F7Field
 
   def deps: Set[F7Field]
 
-  def enabled(): Boolean
+  def enabled: Boolean
 
-  def disabled(): Boolean
+  def disabled: Boolean
 
   def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
     JS.replace(aroundId, render()) & postRenderSetupJs()
   }
 
   def withFieldRenderHints[T](f: Seq[RenderHint] => T)(implicit renderHints: Seq[RenderHint]): T = f {
-    List(DisableFieldsHint).filter(_ => disabled()) ++
+    List(DisableFieldsHint).filter(_ => disabled) ++
       renderHints
   }
 

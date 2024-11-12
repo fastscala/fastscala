@@ -12,7 +12,7 @@ trait StandardF7Field extends F7Field
 
   def renderer: StandardF7FieldRenderer
 
-  def visible: () => Boolean = () => enabled()
+  def visible: () => Boolean = () => enabled
 
   override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.updateFieldStatus() &
     updateValidation()

@@ -18,7 +18,7 @@ class F7HtmlField(
   with F7FieldWithEnabled {
 
   override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    if (!enabled) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{gen}</div>
 
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil

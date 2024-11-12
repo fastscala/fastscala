@@ -12,5 +12,5 @@ trait StandardOneInputElemF7Field[T] extends StandardF7Field with F7FieldWithVal
 
   def showOrUpdateValidation(ns: NodeSeq): Js = renderer.showOrUpdateValidation(this)(ns)
 
-  def hideValidation(): Js = renderer.hideValidation(this)
+  def hideValidation(): Js = renderer.hideValidation(this)()
 }

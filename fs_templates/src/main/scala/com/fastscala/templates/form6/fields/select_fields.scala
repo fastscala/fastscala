@@ -10,7 +10,7 @@ import scala.xml.{Elem, NodeSeq}
 trait F6FieldWithOptions[T] extends F6DefaultField {
   var _options: () => Seq[T] = () => Nil
 
-  def options() = _options()
+  def options = _options()
 
   def options(v: Seq[T]): this.type = mutate {
     _options = () => v
@@ -72,7 +72,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
   with F6FieldWithOptionsNsLabel[T] {
 
   override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = {
-    val all = options()
+    val all = options
     all.find({
       case opt => _option2Id(opt, all) == str
     }) match {
@@ -85,7 +85,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
     }
   }
 
-  override def saveToString(): Option[String] = Some(_option2Id(currentValue, options())).filter(_ != "")
+  override def saveToString(): Option[String] = Some(_option2Id(currentValue, options)).filter(_ != "")
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case Save => _setter(currentValue)
@@ -97,7 +97,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
   def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    val renderedOptions = options()
+    val renderedOptions = options
     val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
     val option2Id: Map[T, String] = ids2Option.map(_.swap)
     val optionsRendered = renderedOptions.map(opt => {
@@ -140,7 +140,7 @@ class F6SelectOptField[T]()(implicit renderer: SelectF6FieldRenderer) extends F6
   def optionsNonEmpty(v: Seq[T]): F6SelectOptField.this.type = options(None +: v.map(Some(_)))
 
   override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
 class F6SelectField[T](opts: () => Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] with F6FieldWithValidations {
@@ -171,7 +171,7 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
   with F6FieldWithOptionsNsLabel[T] {
 
   override def loadFromString(str: String): Seq[(ValidatableF6Field, NodeSeq)] = {
-    val all = options()
+    val all = options
     val id2Option: Map[String, T] = all.map(opt => _option2Id(opt, all) -> opt).toMap
     val selected: Seq[T] = str.split(";").toList.flatMap(id => {
       id2Option.get(id)
@@ -181,7 +181,7 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
     Nil
   }
 
-  override def saveToString(): Option[String] = Some(currentValue.map(opt => _option2Id(opt, options())).mkString(";"))
+  override def saveToString(): Option[String] = Some(currentValue.map(opt => _option2Id(opt, options)).mkString(";"))
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case Save => _setter(currentValue)
@@ -193,7 +193,7 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
   override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    val renderedOptions = options()
+    val renderedOptions = options
     val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
     val option2Id: Map[T, String] = ids2Option.map(_.swap)
     val optionsRendered = renderedOptions.map(opt => {

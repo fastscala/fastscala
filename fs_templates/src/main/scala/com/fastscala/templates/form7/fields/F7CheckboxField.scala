@@ -46,7 +46,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
     Js.setChecked(elemId, currentValue)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) renderer.renderDisabled(this)
+    if (!enabled) renderer.renderDisabled(this)
     else {
       withFieldRenderHints { implicit hints =>
 

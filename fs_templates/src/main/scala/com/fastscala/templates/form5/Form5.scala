@@ -18,7 +18,7 @@ abstract class DefaultForm5()(implicit val formRenderer: FormRenderer) extends F
 
 trait Form5 extends ElemWithRandomId {
 
-  implicit def form = this
+  implicit def form: Form5 = this
 
   val rootField: FormField
 

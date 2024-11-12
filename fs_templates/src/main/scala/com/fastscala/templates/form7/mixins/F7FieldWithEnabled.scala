@@ -7,7 +7,7 @@ trait F7FieldWithEnabled extends Mutable {
 
   var _enabled: () => Boolean = () => true
 
-  def enabled(): Boolean = _enabled()
+  def enabled: Boolean = _enabled()
 
   def isEnabled: this.type = enabled(true)
 

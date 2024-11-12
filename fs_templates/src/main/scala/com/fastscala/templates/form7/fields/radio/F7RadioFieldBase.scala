@@ -90,7 +90,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
       }).getOrElse(Js.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) renderer.renderDisabled(this)
+    if (!enabled) renderer.renderDisabled(this)
     else {
       withFieldRenderHints { implicit hints =>
 
@@ -131,5 +131,5 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
 
   override def showOrUpdateValidation(ns: NodeSeq): Js = renderer.showOrUpdateValidation(this)(ns)
 
-  override def hideValidation(): Js = renderer.hideValidation(this)
+  override def hideValidation(): Js = renderer.hideValidation(this)()
 }

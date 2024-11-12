@@ -1295,15 +1295,16 @@ class F5MultiSelectField[T](
 object EnumField {
 
   def NonNullable[T <: Enumeration](
-                                     enum: T
-                                     , get: () => T#Value
-                                     , set: T#Value => Js
-                                     , toString: T#Value => String = (v: T#Value) => v.toString
-                                     , label: Option[NodeSeq] = None
-                                     , name: Option[String] = None
-                                     , enabled: () => Boolean = () => true
-                                     , deps: Set[FormField] = Set()
-                                   )(implicit renderer: SelectFieldRenderer) = new F5SelectField[T#Value](
+                                     `enum`: T,
+                                   )(
+                                     get: () => `enum`.Value,
+                                     set: `enum`.Value => Js,
+                                     toString: `enum`.Value => String = (v: `enum`.Value) => v.toString,
+                                     label: Option[NodeSeq] = None,
+                                     name: Option[String] = None,
+                                     enabled: () => Boolean = () => true,
+                                     deps: Set[FormField] = Set(),
+                                   )(implicit renderer: SelectFieldRenderer) = new F5SelectField[`enum`.Value](
     all = () => `enum`.values.toList.sortBy(_.id),
     get = get,
     set = set,
@@ -1315,16 +1316,17 @@ object EnumField {
   )
 
   def Multi[T <: Enumeration](
-                               enum: T
-                               , get: () => Set[T#Value]
-                               , set: Set[T#Value] => Js
-                               , toString: T#Value => String = (v: T#Value) => v.toString
-                               , label: Option[NodeSeq] = None
-                               , name: Option[String] = None
-                               , enabled: () => Boolean = () => true
-                               , deps: Set[FormField] = Set()
-                               , size: Option[Int] = None
-                             )(implicit renderer: MultiSelectFieldRenderer) = new F5MultiSelectField[T#Value](
+                               `enum`: T,
+                             )(
+                               get: () => Set[`enum`.Value],
+                               set: Set[`enum`.Value] => Js,
+                               toString: `enum`.Value => String = (v: `enum`.Value) => v.toString,
+                               label: Option[NodeSeq] = None,
+                               name: Option[String] = None,
+                               enabled: () => Boolean = () => true,
+                               deps: Set[FormField] = Set(),
+                               size: Option[Int] = None,
+                             )(implicit renderer: MultiSelectFieldRenderer) = new F5MultiSelectField[`enum`.Value](
     all = () => `enum`.values.toList.sortBy(_.id),
     get = get,
     set = set,
@@ -1337,16 +1339,17 @@ object EnumField {
   )
 
   def Nullable[T <: Enumeration](
-                                  enum: T
-                                  , get: () => Option[T#Value]
-                                  , set: Option[T#Value] => Js
-                                  , toString: Option[T#Value] => String = (v: Option[T#Value]) => v.map(_.toString).getOrElse("--")
-                                  , label: Option[NodeSeq] = None
-                                  , name: Option[String] = None
-                                  , required: () => Boolean = () => false
-                                  , enabled: () => Boolean = () => true
-                                  , deps: Set[FormField] = Set()
-                                )(implicit renderer: SelectFieldRenderer) = new F5SelectField[Option[T#Value]](
+                                  `enum`: T,
+                                )(
+                                  get: () => Option[`enum`.Value],
+                                  set: Option[`enum`.Value] => Js,
+                                  toString: Option[`enum`.Value] => String = (v: Option[`enum`.Value]) => v.map(_.toString).getOrElse("--"),
+                                  label: Option[NodeSeq] = None,
+                                  name: Option[String] = None,
+                                  required: () => Boolean = () => false,
+                                  enabled: () => Boolean = () => true,
+                                  deps: Set[FormField] = Set(),
+                                )(implicit renderer: SelectFieldRenderer) = new F5SelectField[Option[`enum`.Value]](
     all = () => None :: `enum`.values.toList.sortBy(_.id).map(Some(_)),
     get = get,
     set = set,
@@ -1608,22 +1611,22 @@ class F5CodeField(
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
 
-class F5SaveButtonField[B <% Elem](
-                                    btn: FSContext => B
-                                    , val disabled: () => Boolean = () => false
-                                    , val enabled: () => Boolean = () => true
-                                    , val deps: Set[FormField] = Set()
-                                    , val toInitialState: B => B = identity[B] _
-                                    , val toChangedState: B => B = identity[B] _
-                                    , val toErrorState: B => B = identity[B] _
-                                  )(implicit renderer: ButtonFieldRenderer) extends StandardFormField {
+class F5SaveButtonField[B](
+                            btn: FSContext => B
+                            , val disabled: () => Boolean = () => false
+                            , val enabled: () => Boolean = () => true
+                            , val deps: Set[FormField] = Set()
+                            , val toInitialState: B => B = identity[B] _
+                            , val toChangedState: B => B = identity[B] _
+                            , val toErrorState: B => B = identity[B] _
+                          )(implicit renderer: ButtonFieldRenderer, evidence: B => Elem) extends StandardFormField {
 
   def readOnly: () => Boolean = () => false
 
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = JS.rerenderableP[(B => B, Form5)](_ => implicit fsc => {
-    case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {

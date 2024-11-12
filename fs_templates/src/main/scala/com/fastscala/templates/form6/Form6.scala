@@ -19,7 +19,7 @@ abstract class DefaultForm6()(implicit val formRenderer: F6FormRenderer) extends
 
 trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRandomId {
 
-  implicit def form = this
+  implicit def form: Form6 = this
 
   val rootField: F6Field
 
@@ -50,7 +50,7 @@ trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
     rootField.reRender() & afterRendering()
   }
 
-  def render()(implicit fsc: FSContext): Elem = {
+  def render()(implicit fsc: FSContext): FSScalaXmlEnv.Elem = {
     implicit val renderHints = formRenderHits()
     val rendered = rootField.render()
     if (afterRendering() != Js.void) {

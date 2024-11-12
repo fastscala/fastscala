@@ -21,10 +21,10 @@ abstract class F7ContainerFieldBase
 
   def children: Seq[(String, F7Field)]
 
-  var currentlyEnabled = enabled()
+  var currentlyEnabled = enabled
 
   override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    currentlyEnabled = enabled()
+    currentlyEnabled = enabled
     if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
@@ -37,7 +37,7 @@ abstract class F7ContainerFieldBase
   }
 
   override def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
-    if (enabled() != currentlyEnabled) {
+    if (enabled != currentlyEnabled) {
       JS.replace(aroundId, render())
     } else {
       children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(Js.void)

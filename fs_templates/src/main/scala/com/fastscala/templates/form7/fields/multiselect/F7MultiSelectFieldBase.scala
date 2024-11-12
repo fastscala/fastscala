@@ -64,7 +64,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
       }).getOrElse(Js.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) renderer.renderDisabled(this)
+    if (!enabled) renderer.renderDisabled(this)
     else {
       withFieldRenderHints { implicit hints =>
 

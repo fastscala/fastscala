@@ -94,7 +94,7 @@ package com.fastscala.templates.form7.fields
 //    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 //
 //  override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-//    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+//    if (!enabled) <div style="display:none;" id={aroundId}></div>
 //    else {
 //      withFieldRenderHints { implicit hints =>
 //
@@ -193,7 +193,7 @@ package com.fastscala.templates.form7.fields
 //  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 //
 //  def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-//    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+//    if (!enabled) <div style="display:none;" id={aroundId}></div>
 //    else {
 //      withFieldRenderHints { implicit hints =>
 //        val targetId = IdGen.id("targetFrame")

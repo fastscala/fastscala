@@ -12,7 +12,7 @@ trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase wit
 
   override def key: java.lang.Long = id
 
-  def isPersisted_?() = id != null
+  def isPersisted_? = id != null
 
   def reloadOpt(): Option[R] = table.getForIdOpt(id)
 

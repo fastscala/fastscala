@@ -46,7 +46,7 @@ class F7CheckboxOptField()(implicit val renderer: CheckboxF7FieldRenderer) exten
     Js.setCheckboxTo(elemId, currentValue)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) renderer.renderDisabled(this)
+    if (!enabled) renderer.renderDisabled(this)
     else {
       withFieldRenderHints { implicit hints =>
 

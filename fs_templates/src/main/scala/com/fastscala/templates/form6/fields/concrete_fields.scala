@@ -203,12 +203,12 @@ trait ButtonF6FieldRenderer {
   def render(field: F6SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
-class F6SaveButtonField[B <% Elem](
-                                                     btn: FSContext => B
-                                                     , val toInitialState: B => B = identity[B] _
-                                                     , val toChangedState: B => B = identity[B] _
-                                                     , val toErrorState: B => B = identity[B] _
-                                                   )(implicit renderer: ButtonF6FieldRenderer)
+class F6SaveButtonField[B](
+                            btn: FSContext => B
+                            , val toInitialState: B => B = identity[B] _
+                            , val toChangedState: B => B = identity[B] _
+                            , val toErrorState: B => B = identity[B] _
+                          )(implicit renderer: ButtonF6FieldRenderer, evidence: B => Elem)
   extends StandardF6Field
     with F6FieldWithReadOnly
     with F6FieldWithDependencies
@@ -218,7 +218,7 @@ class F6SaveButtonField[B <% Elem](
   override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = JS.rerenderableP[(B => B, Form6)](_ => implicit fsc => {
-    case (transformer, form) => (transformer(btn(fsc)): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {

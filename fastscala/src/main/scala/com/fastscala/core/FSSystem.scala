@@ -927,10 +927,9 @@ class FSSystem(
 
     // Delete pages:
     pagesToDelete.groupBy(_.session).foreach({
-      case (session, toDelete) if sessionsToDelete.contains(session) => session.deletePages(toDelete)
+      case (session, toDelete) if !sessionsToDelete.contains(session) => session.deletePages(toDelete)
       case _ =>
     })
-    sessions.values.toSeq.flatMap(_.pages.values)
 
     stats.gcTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
   }

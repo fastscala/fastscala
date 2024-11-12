@@ -1,8 +1,6 @@
 package com.fastscala.chartjs
 
-import io.circe.generic.semiauto
-import io.circe.{Encoder, Json}
-import io.circe.syntax.EncoderOps
+import io.circe.Json
 
 case class ChartData(
                       datasets: Option[List[ChartDataset]] = None
@@ -90,8 +88,9 @@ case class BarChartDataset(
                           ) extends ChartDataset {
 
   def encode(): Json = {
+    import io.circe._, io.circe.generic.semiauto._, io.circe.syntax._
     implicit val ChartDatasetDataEncoder: Encoder[ChartDatasetData] = Encoder.instance[ChartDatasetData](_.encode())
-    implicit val BarChartDatasetEncoder: Encoder[BarChartDataset] = semiauto.deriveEncoder[BarChartDataset]
+    implicit val BarChartDatasetEncoder: Encoder[BarChartDataset] = deriveEncoder[BarChartDataset]
     this.asJson
   }
 }
@@ -102,5 +101,8 @@ trait ChartDatasetData {
 }
 
 case class SimpleNumbersChartDatasetData(data: List[Double]) extends ChartDatasetData {
-  override def encode(): Json = data.asJson
+  override def encode(): Json = {
+    import io.circe.generic.auto._, io.circe.syntax._
+    data.asJson
+  }
 }

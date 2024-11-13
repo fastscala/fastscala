@@ -6,11 +6,11 @@ import com.fastscala.utils.IdGen
 import scala.xml.NodeSeq
 
 object DefaultBSMenuRenderer {
-  implicit val bsMenuRenderer = new DefaultBSMenuRenderer {}
-  implicit val menuSectionRenderer = new DefaultMenuSectionRenderer {}
-  implicit val simpleMenuItemRenderer = new DefaultSimpleMenuItemRenderer {}
-  implicit val routingMenuItemRenderer = new DefaultRoutingMenuItemRenderer {}
-  implicit val headerMenuItemRenderer = new DefaultHeaderMenuItemRenderer {}
+  implicit val bsMenuRenderer: DefaultBSMenuRenderer = new DefaultBSMenuRenderer {}
+  implicit val menuSectionRenderer: DefaultMenuSectionRenderer = new DefaultMenuSectionRenderer {}
+  implicit val simpleMenuItemRenderer: DefaultSimpleMenuItemRenderer = new DefaultSimpleMenuItemRenderer {}
+  implicit val routingMenuItemRenderer: DefaultRoutingMenuItemRenderer = new DefaultRoutingMenuItemRenderer {}
+  implicit val headerMenuItemRenderer: DefaultHeaderMenuItemRenderer = new DefaultHeaderMenuItemRenderer {}
 }
 
 trait DefaultBSMenuRenderer extends BSMenuRenderer {

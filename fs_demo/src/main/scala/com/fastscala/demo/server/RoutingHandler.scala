@@ -41,7 +41,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
   override def handlerInSession(response: JettyServerResponse, callback: Callback)(implicit req: Request, session: FSSession): Option[Response] = {
     if (req.getHttpURI.getPath == "/basic1") {
-      Some(Ok.html(
+      Some(Ok.htmlFromString(
         """<html>
           |<body>
           |<h1>Basic example 1</h1>
@@ -55,7 +55,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
           println("clicked!")
           Js.void
         })
-        Ok.html(
+        Ok.htmlFromString(
           <html>
             <body>
               <h1>Basic example 2</h1>
@@ -71,7 +71,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
           println("clicked!")
           Js.void
         })
-        Ok.html(
+        Ok.htmlFromString(
           <html>
             <head>{fsc.fsPageScript().inScriptTag}</head>
             <body>
@@ -88,7 +88,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
           println(s"input has value: '$str'")
           Js.alert(s"The server has received your input ('$str') at ${new Date().toGMTString}")
         })
-        Ok.html(
+        Ok.htmlFromString(
           <html>
               <head>{fsc.fsPageScript().inScriptTag}</head>
               <body>

@@ -12,7 +12,7 @@ import scala.xml.{Elem, NodeSeq}
 
 abstract class Widget extends Mutable {
 
-  implicit val debug = RerendererDebugStatus.Enabled
+  implicit val debug: RerendererDebugStatus.Value = RerendererDebugStatus.Enabled
 
   lazy val widgetId = IdGen.id("widget")
   lazy val widgetHeaderId = IdGen.id("widget-header")
@@ -61,7 +61,7 @@ abstract class Widget extends Mutable {
   def renderWidgetHeader()(implicit fsc: FSContext): Elem = {
     import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
     card_header.d_flex.justify_content_between.align_items_center.apply {
-      widgetTitleNs ++ <div>{widgetTopRight}</div>
+      widgetTitleNs ++ <div>{widgetTopRight()}</div>
     } pipe transformWidgetCardHeader
   }
 

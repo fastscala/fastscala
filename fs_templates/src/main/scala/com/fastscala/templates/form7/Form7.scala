@@ -32,7 +32,10 @@ trait Form7 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
 
   var state = Form7State.Filling
 
-  val rootField: F7Field
+  /**
+   * NOTE: Implementation should usually be a val or lazy val! don't re-instantiate the fields every time this method is called!
+   * */
+  def rootField: F7Field
 
   def initForm()(implicit fsc: FSContext): Unit = ()
 

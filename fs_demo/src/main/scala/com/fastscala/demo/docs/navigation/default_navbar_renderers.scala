@@ -6,11 +6,11 @@ import com.fastscala.utils.IdGen
 import scala.xml.{Elem, NodeSeq}
 
 object DefaultBSNavBarRenderer {
-  implicit val bsNavRenderer = new DefaultBSNavBarRenderer {}
-  implicit val bsNavBarSectionRenderer = new DefaultBSNavBarSectionRenderer {}
-  implicit val simpleBSNavBarItemRenderer = new DefaultSimpleBSNavBarItemRenderer {}
-  implicit val routingBSNavBarItemRenderer = new DefaultRoutingBSNavBarItemRenderer {}
-  implicit val headerBSNavBarItemRenderer = new DefaultHeaderBSNavBarItemRenderer {}
+  implicit val bsNavRenderer: DefaultBSNavBarRenderer = new DefaultBSNavBarRenderer {}
+  implicit val bsNavBarSectionRenderer: DefaultBSNavBarSectionRenderer = new DefaultBSNavBarSectionRenderer {}
+  implicit val simpleBSNavBarItemRenderer: DefaultSimpleBSNavBarItemRenderer = new DefaultSimpleBSNavBarItemRenderer {}
+  implicit val routingBSNavBarItemRenderer: DefaultRoutingBSNavBarItemRenderer = new DefaultRoutingBSNavBarItemRenderer {}
+  implicit val headerBSNavBarItemRenderer: DefaultHeaderBSNavBarItemRenderer = new DefaultHeaderBSNavBarItemRenderer {}
 }
 
 trait DefaultBSNavBarRenderer extends BSNavBarRenderer {

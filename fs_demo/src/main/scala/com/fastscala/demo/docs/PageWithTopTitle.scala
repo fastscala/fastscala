@@ -18,7 +18,7 @@ trait PageWithTopTitle extends BasePage {
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3 mb-3">
         <h1 class="h3" style="color: #1b4d88;">{pageTitle}</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-          {pageTitleToolbar}
+          {pageTitleToolbar()}
         </div>
       </div> ++
         renderStandardPageContents()

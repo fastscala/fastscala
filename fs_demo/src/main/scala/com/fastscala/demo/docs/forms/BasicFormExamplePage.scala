@@ -93,7 +93,7 @@ class BasicFormExamplePage extends MultipleCodeExamples2Page() {
             , new F7IntOptField().label("Security Level").rw(Some(editing.securityLevel), oi => editing.securityLevel = oi.getOrElse(0))
             , F7LocalDateOptField(editing.birthDay, editing.birthDay = _).label("BirthDay")
             , _provField
-            , new F7SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set(_provField))
+            , new F7SelectField[City](() => CitiesData.data(_provField.currentValue)).label("City").rw(editing.city, editing.city = _).option2String(_.name).deps(() => Set[F7Field](_provField))
             , new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl("Create User").btn.d_block)
           )
 

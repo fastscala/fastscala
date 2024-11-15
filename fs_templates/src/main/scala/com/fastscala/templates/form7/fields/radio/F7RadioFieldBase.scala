@@ -54,6 +54,12 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
 
   var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
 
+  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
+    case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
+    case ChangedField(f) if f == this => updateFieldStatus()
+    case _ => Js.void
+  }
+
   override def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = _disabled().pipe(shouldBeDisabled => {
     if (shouldBeDisabled != currentlyDisabled) {
       currentlyDisabled = shouldBeDisabled
@@ -97,11 +103,13 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
         val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
         showingValidation = errorsToShow.nonEmpty
 
-        currentRenderedValue = Some(currentValue)
-
         val renderedOptions: Seq[T] = options
         val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
         val option2Id: Map[T, String] = ids2Option.map(_.swap)
+
+        if (!renderedOptions.contains(currentValue)) currentValue = defaultValue
+
+        currentRenderedValue = Some(currentValue)
         currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
 
         val radioToggles: Seq[(Elem, Some[Elem])] = renderedOptions.map(opt => {
@@ -115,7 +123,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
               Js.void
             }
           }).cmd
-          (processInputElem(<input id={option2Id(opt)} checked={if (currentRenderedValue.get == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>), Some(<label>{_option2NodeSeq(opt)}</label>))
+          (processInputElem(<input id={option2Id(opt)} checked={if (currentValue == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>), Some(<label>{_option2NodeSeq(opt)}</label>))
         })
 
         renderer.render(this)(

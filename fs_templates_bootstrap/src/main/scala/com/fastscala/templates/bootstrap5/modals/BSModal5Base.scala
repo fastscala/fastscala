@@ -53,7 +53,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   lazy val modalContentsFooterRenderer: ScalaXmlRerenderer = JS.rerenderable(_ => implicit fsc => renderModalFooterContent(), debugLabel = Some("modal-contents-footer"))
 
-  def append2DOM()(implicit fsc: FSContext): Js = JS.append2Body(renderModal())
+  def append2DOM()(implicit fsc: FSContext): Js = JS.append2Body(modalRenderer.render())
 
   def installAndShow(
                       backdrop: Boolean = true

@@ -54,6 +54,8 @@ class UsersPage extends BasePage() {
         }
 
         override def seqRowsSource: Seq[R] = DB().users.toSeq
+
+        override def actionsBtnToIncludeInTopDropdown: BSBtn = super.actionsBtnToIncludeInTopDropdown.sm.mx_2
       }
 
       override def widgetTopRight()(implicit fsc: FSContext): NodeSeq = super.widgetTopRight() ++
@@ -75,7 +77,7 @@ class UsersPage extends BasePage() {
                 hideAndRemoveAndDeleteContext()
             }
           }.installAndShow()
-        }).btn
+        }).btn ++ table.actionsDropdownBtnRenderer.render()
 
       override def widgetContents()(implicit fsc: FSContext): NodeSeq = table.render()
 

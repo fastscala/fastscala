@@ -39,8 +39,6 @@ class TasksPage extends BasePage() {
 
         override def defaultPageSize = 10
 
-        import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers._
-
         val ColStatus = ColNs("Status", implicit fsc => r => BSBtn().sm.icn(_.biCheck).toggle(r.completed, v => {
           r.completed = v
           if (r.completed) {
@@ -49,16 +47,21 @@ class TasksPage extends BasePage() {
         }, _.BtnSuccess.withStyle("border-radius: 15px;"), _.BtnOutlineSecondary.withStyle("border-radius: 15px;")))
         val ColAssignedTo = ColNsFullTd("Assigned to", implicit fsc => {
           case (tableBodyRerenderer, trRerenderer, tdRerenderer, row, rowIdx, colIdx, rows) =>
+            val cmd = fsc.callback{() =>
+              import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers._
+              new BSModal5WithForm7Base(s"Assign task ${row.name} to...") {
+                  override val rootField: F7Field = new F7SelectOptField[User]().optionsNonEmpty(DB().users.toSeq).option2String(_.map(_.fullName).getOrElse("Unassigned")).rw(row.assignedTo, row.assignedTo = _)
+
+                  override def postSubmitForm()(implicit fsc: FSContext): Js = super.postSubmitForm() & {
+                    hideAndRemoveAndDeleteContext() & tdRerenderer.rerenderer.rerender()
+                  }
+              }.installAndShow()
+            }.cmd
+
             td.apply((row.assignedTo match {
               case Some(assignedTo) => badge.text_bg_primary.apply(assignedTo.firstName)
               case None => badge.text_bg_secondary.apply("unassigned")
-            }).withAttrs("onclick" -> fsc.callback(() => new BSModal5WithForm7Base(s"Assign task ${row.name} to...") {
-              override val rootField: F7Field = new F7SelectOptField[User]().optionsNonEmpty(DB().users.toSeq).option2String(_.map(_.fullName).getOrElse("Unassigned")).rw(row.assignedTo, row.assignedTo = _)
-
-              override def postSubmitForm()(implicit fsc: FSContext): Js = super.postSubmitForm() & {
-                hideAndRemoveAndDeleteContext() & tdRerenderer.rerenderer.rerender()
-              }
-            }.installAndShow()).cmd)).text_center
+            }).withAttrs("onclick" -> cmd))
         })
         val ColName = ColStr("Name", _.name)
 

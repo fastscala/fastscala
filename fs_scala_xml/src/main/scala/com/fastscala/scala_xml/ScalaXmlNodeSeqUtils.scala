@@ -4,7 +4,7 @@ import scala.xml.{Elem, NodeSeq, Unparsed}
 
 object ScalaXmlNodeSeqUtils {
 
-  implicit class MkNSFromNodeSeq(elems: Iterable[NodeSeq]) {
+  implicit class MkNSFromNodeSeq(val elems: Iterable[NodeSeq]) extends AnyVal {
     def mkNS: NodeSeq = {
       val sb = new StringBuilder()
       elems.foreach(sb append _)
@@ -17,7 +17,7 @@ object ScalaXmlNodeSeqUtils {
     }
   }
 
-  implicit class MkNSFromElems(elems: Iterable[Elem]) {
+  implicit class MkNSFromElems(val elems: Iterable[Elem]) extends AnyVal {
     def mkNS: NodeSeq = {
       val sb = new StringBuilder()
       elems.foreach(sb append _)
@@ -30,7 +30,7 @@ object ScalaXmlNodeSeqUtils {
     }
   }
 
-  implicit class ShowNS(ns: NodeSeq) {
+  implicit class ShowNS(val ns: NodeSeq) extends AnyVal {
     def showIf(b: Boolean): NodeSeq = if (b) ns else NodeSeq.Empty
   }
 }

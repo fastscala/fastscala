@@ -8,7 +8,7 @@ import ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import java.util.regex.Pattern
 import scala.xml.*
 
-trait ScalaXmlElemUtils {
+trait ScalaXmlElemUtils extends Any {
   def elem: Elem
 
   def attributeTransform(attrName: String, transform: Option[String] => String): Elem = {
@@ -115,7 +115,7 @@ trait ScalaXmlElemUtils {
 
 object ScalaXmlElemUtils {
 
-  implicit class RichElem(val elem: Elem) extends ScalaXmlElemUtils
+  implicit class RichElem(val elem: Elem) extends AnyVal with ScalaXmlElemUtils
 
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
 }

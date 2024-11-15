@@ -6,7 +6,7 @@ import scala.xml.Elem
 object IcnFA {
   type FaIcn = String
 
-  implicit class RichIcn(i: FaIcn) {
+  implicit class RichIcn(val i: FaIcn) extends AnyVal {
     def icn: Elem = <i class={i}></i>
   }
 

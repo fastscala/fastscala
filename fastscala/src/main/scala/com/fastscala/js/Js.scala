@@ -47,7 +47,7 @@ case class RawJs(js: String) extends Js {
 
 object JsOps {
 
-  implicit class RichJs(js: Js) {
+  implicit class RichJs(val js: Js) extends AnyVal {
 
     def `_==`(other: Js): Js = JS(s"${js.cmd} == ${other.cmd}")
 

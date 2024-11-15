@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.helpers
 
-trait BSDataHelper[T] {
+trait BSDataHelper[T] extends Any {
 
   protected def setAttribute(name: String, value: String): T
 

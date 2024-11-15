@@ -1,6 +1,6 @@
 package com.fastscala.templates.bootstrap5.helpers
 
-trait BSClassesHelper[T] {
+trait BSClassesHelper[T] extends Any {
 
   protected def withClass(clas: String): T
 

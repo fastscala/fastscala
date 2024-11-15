@@ -11,7 +11,7 @@ import scala.xml.Elem
 
 object BSBtnToogle {
 
-  implicit class RichBSBtnToogler(btn: BSBtn) {
+  implicit class RichBSBtnToogler(val btn: BSBtn) extends AnyVal {
 
     def toggler(
                  get: () => Boolean,

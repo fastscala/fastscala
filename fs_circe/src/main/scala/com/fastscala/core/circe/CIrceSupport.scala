@@ -6,7 +6,7 @@ import io.circe.{Decoder, Json}
 
 object CIrceSupport {
 
-  implicit class FSContextWithCirceSupport(fsc: FSContext) {
+  implicit class FSContextWithCirceSupport(val fsc: FSContext) extends AnyVal {
 
     private def session = fsc.session
 

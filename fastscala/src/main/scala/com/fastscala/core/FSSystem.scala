@@ -137,7 +137,7 @@ class FSContext(
     if (deleted) throw new Exception("Trying to get child of deleted context")
     page.key2FSContext.getOrElseUpdate(key, {
       val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
-      children += page.key2FSContext(key)
+      children += newContext
       logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
       newContext
     })

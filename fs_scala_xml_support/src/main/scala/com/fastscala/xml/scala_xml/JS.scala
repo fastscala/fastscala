@@ -10,5 +10,12 @@ object JS extends JsXmlUtils[FSScalaXmlEnv.type]()(FSScalaXmlSupport.fsXmlSuppor
   type ScalaXmlContentRerendererP[T] = ContentRerendererP[FSScalaXmlEnv.type, T]
   type ScalaXmlRerendererP[T] = RerendererP[FSScalaXmlEnv.type, T]
 
-  implicit class RichJs(js: Js) extends RichJsXmlUtils(js, JS)(FSScalaXmlSupport.fsXmlSupport)
+  implicit class RichJs(val js: Js) extends AnyVal {
+    def inScriptTag: scala.xml.Elem = JS.inScriptTag(js)
+
+    def printBeforeExec: Js = {
+      println("> " + js.cmd)
+      JS.consoleLog(js.cmd) & js
+    }
+  }
 }

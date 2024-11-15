@@ -10,10 +10,10 @@ object RerendererDebugStatus extends Enumeration {
 
   def Unsupported = Set("table", "thead", "tbody", "tfooter", "tr")
 
-  implicit class RichValue[E <: FSXmlEnv : FSXmlSupport](v: Value) {
+  implicit class RichValue(val v: Value) extends AnyVal {
     private def style(bgColor: String = "rgb(147 211 255 / 6%)") = s"width: 100%; height: 100%; position: absolute; top: 0; left: 0; text-align: right; color: #4b4b4b; background-color: $bgColor; font-weight: bold; padding: 2px 4px; border: 2px solid #6290bd;pointer-events: none; z-index: 10;"
 
-    def render(rendered: E#Elem): E#Elem = {
+    def render[E <: FSXmlEnv : FSXmlSupport](rendered: E#Elem): E#Elem = {
       if (v == RerendererDebugStatus.Enabled && !Unsupported.contains(implicitly[FSXmlSupport[E]].label(rendered))) {
         implicitly[FSXmlSupport[E]].transformContents(implicitly[FSXmlSupport[E]].transformAttribute(rendered, "style", _.getOrElse("") + ";position:relative;"), existing =>
           implicitly[FSXmlSupport[E]].concat(existing,

@@ -7,7 +7,7 @@ import scala.xml.Elem
 object BsIcn {
   type BsIcn = String
 
-  implicit class RichIcn(i: BsIcn) {
+  implicit class RichIcn(val i: BsIcn) extends AnyVal {
     def icn: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("i", "class" -> s"bi $i")()
   }
 

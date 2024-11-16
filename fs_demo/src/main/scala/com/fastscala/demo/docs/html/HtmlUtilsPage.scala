@@ -3,6 +3,8 @@ package com.fastscala.demo.docs.html
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -10,7 +12,7 @@ class HtmlUtilsPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "HTML Basics"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq =
     <p>
@@ -25,7 +27,7 @@ class HtmlUtilsPage extends MultipleCodeExamples2Page() {
       span.apply("Lorem ipsum dolor sit amet, consectetur adipiscing elit.").withStyle("color: green;")
     }
     renderSnippet("Adding an onclick handler") {
-      span.apply("Lorem ipsum dolor sit amet, consectetur adipiscing elit.").addOnClick(Js.alert("Clicked"))
+      span.apply("Lorem ipsum dolor sit amet, consectetur adipiscing elit.").addOnClick(JS.alert("Clicked"))
     }
     renderSnippet("Adding a class conditionally") {
       val value = math.random() - 0.5

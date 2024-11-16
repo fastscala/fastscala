@@ -1,13 +1,13 @@
 package com.fastscala.templates.bootstrap5.helpers
 
-import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, ScalaXmlElemUtils}
+import com.fastscala.scala_xml.ScalaXmlElemUtils
+import ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
 object BSHelpers extends BSClassesHelper[Elem] with BasicElemsHelper {
 
-  override protected def withClass(clas: String): Elem =
-    FSScalaXmlSupport.fsXmlSupport.buildElem("div")().addClass(clas)
+  override protected def withClass(clas: String): Elem = <div></div>.addClass(clas)
 
   implicit class RichElemBootstrapClasses(val elem: Elem) extends BSClassesHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtils {
     override def withClass(clas: String): Elem = elem.addClass(clas)

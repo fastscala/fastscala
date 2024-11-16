@@ -2,7 +2,7 @@ package com.fastscala.websockets
 
 import com.fastscala.core.FSSystem
 import com.fastscala.utils.Missing
-import org.eclipse.jetty.websocket.api.annotations._
+import org.eclipse.jetty.websocket.api.annotations.*
 import org.eclipse.jetty.websocket.api.{Callback, Session}
 import org.slf4j.LoggerFactory
 

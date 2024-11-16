@@ -1,6 +1,6 @@
 package com.fastscala.templates.form7.mixins
 
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem

@@ -1,6 +1,6 @@
 package com.fastscala.templates.form7.fields.layout
 
-import com.fastscala.templates.form7._
+import com.fastscala.templates.form7.*
 
 class F7ContainerField(val aroundClass: String)(val children: (String, F7Field)*) extends F7ContainerFieldBase
 

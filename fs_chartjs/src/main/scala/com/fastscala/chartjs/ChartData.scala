@@ -88,7 +88,9 @@ case class BarChartDataset(
                           ) extends ChartDataset {
 
   def encode(): Json = {
-    import io.circe._, io.circe.generic.semiauto._, io.circe.syntax._
+    import io.circe.*
+    import io.circe.generic.semiauto.*
+    import io.circe.syntax.*
     implicit val ChartDatasetDataEncoder: Encoder[ChartDatasetData] = Encoder.instance[ChartDatasetData](_.encode())
     implicit val BarChartDatasetEncoder: Encoder[BarChartDataset] = deriveEncoder[BarChartDataset]
     this.asJson
@@ -102,7 +104,8 @@ trait ChartDatasetData {
 
 case class SimpleNumbersChartDatasetData(data: List[Double]) extends ChartDatasetData {
   override def encode(): Json = {
-    import io.circe.generic.auto._, io.circe.syntax._
+    import io.circe.generic.auto.*
+    import io.circe.syntax.*
     data.asJson
   }
 }

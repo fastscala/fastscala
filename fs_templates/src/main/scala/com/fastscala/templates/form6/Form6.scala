@@ -2,11 +2,11 @@ package com.fastscala.templates.form6
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form6.fields._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.utils.RenderableWithFSContext
+import com.fastscala.templates.form6.fields.*
 import com.fastscala.templates.utils.ElemWithRandomId
-import com.fastscala.utils.RenderableWithFSContext
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.xml.scala_xml.{FSScalaXmlEnv, JS}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -17,7 +17,7 @@ trait F6FormRenderer {
 
 abstract class DefaultForm6()(implicit val formRenderer: F6FormRenderer) extends Form6
 
-trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRandomId {
+trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
 
   implicit def form: Form6 = this
 
@@ -41,28 +41,28 @@ trait Form6 extends RenderableWithFSContext[FSScalaXmlEnv.type] with ElemWithRan
     rootField.fieldsMatching({ case _: FocusableF6Field => true })
       .collectFirst({ case fff: FocusableF6Field => fff })
       .map(_.focusJs)
-      .getOrElse(Js.void)
+      .getOrElse(JS.void)
 
-  def afterRendering()(implicit fsc: FSContext): Js = Js.void
+  def afterRendering()(implicit fsc: FSContext): Js = JS.void
 
   def reRender()(implicit fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
     rootField.reRender() & afterRendering()
   }
 
-  def render()(implicit fsc: FSContext): FSScalaXmlEnv.Elem = {
+  def render()(implicit fsc: FSContext): Elem = {
     implicit val renderHints = formRenderHits()
     val rendered = rootField.render()
-    if (afterRendering() != Js.void) {
+    if (afterRendering() != JS.void) {
       rendered.withAppendedToContents(JS.inScriptTag(afterRendering().onDOMContentLoaded))
     } else {
       rendered
     }
   }
 
-  def preSave()(implicit fsc: FSContext): Js = Js.void
+  def preSave()(implicit fsc: FSContext): Js = JS.void
 
-  def postSave()(implicit fsc: FSContext): Js = Js.void
+  def postSave()(implicit fsc: FSContext): Js = JS.void
 
   def onSaveServerSide()(implicit fsc: FSContext): Js = {
     if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)

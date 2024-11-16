@@ -2,8 +2,10 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.{JS, ScalaXmlElemUtils}
+import ScalaXmlElemUtils.RichElem
 
 import java.io.ByteArrayInputStream
 import java.util.Base64
@@ -13,7 +15,7 @@ import scala.xml.{Elem, NodeSeq}
 
 object FileUpload {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   def apply(
              processUpload: Seq[FSUploadedFile] => Js,
@@ -24,7 +26,7 @@ object FileUpload {
              clipboardUpload: Boolean = false,
              acceptTypes: Option[String] = None
            )(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.core.circe.CIrceSupport._
+    import com.fastscala.core.circe.CIrceSupport.*
 
     val actionUrl = fsc.fileUploadActionUrl({
       case uploadedFile => processUpload(uploadedFile)
@@ -33,7 +35,7 @@ object FileUpload {
     val inputId = IdGen.id("input")
     val buttonId = IdGen.id("btn")
     (ScalaXmlElemUtils.showIf(clipboardUpload) {
-      val callback = fsc.callbackJSON(Js("[fileName, fileType, base64String]"), json => {
+      val callback = fsc.callbackJSON(JS("[fileName, fileType, base64String]"), json => {
         json.arrayOrObject(
           JS.void,
           {
@@ -50,7 +52,7 @@ object FileUpload {
           obj => JS.void
         )
       })
-      JS.inScriptTag(Js(
+      JS.inScriptTag(JS(
         s"""document.addEventListener('paste', function (evt) {
            |    const items = evt.clipboardData.items;
            |    if (items.length === 0) { return; }

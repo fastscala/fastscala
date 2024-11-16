@@ -2,12 +2,12 @@ package com.fastscala.demo.docs
 
 import com.fastscala.demo.docs.about.{AboutPage, AuthorPage, GettingStartedPage}
 import com.fastscala.demo.docs.bootstrap.{BootstrapButtonsPage, BootstrapImagesPage, BootstrapModalPage, BootstrapTypographyPage}
-import com.fastscala.demo.docs.fastscala._
-import com.fastscala.demo.docs.forms._
+import com.fastscala.demo.docs.fastscala.*
+import com.fastscala.demo.docs.forms.*
 import com.fastscala.demo.docs.html.{HtmlTagsPage, HtmlUtilsPage, ScalaTagsPage}
 import com.fastscala.demo.docs.js.JsUtilsPage
 import com.fastscala.demo.docs.loggedout.LoginPage
-import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer._
+import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer.*
 import com.fastscala.demo.docs.navigation.{BSMenu, MenuSection, RoutingMenuItem, SimpleMenuItem}
 import com.fastscala.demo.docs.tables.ModifyingTableExamplePage
 

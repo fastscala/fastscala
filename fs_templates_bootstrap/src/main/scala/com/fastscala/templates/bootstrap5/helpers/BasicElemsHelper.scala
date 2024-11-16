@@ -1,80 +1,79 @@
 package com.fastscala.templates.bootstrap5.helpers
 
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
 import scala.xml.{Elem, NodeSeq}
 
 trait BasicElemsHelper {
 
-  def Empty: NodeSeq = FSScalaXmlSupport.fsXmlSupport.Empty
+  def Empty: NodeSeq = NodeSeq.Empty
 
-  def del: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("del")()
+  def del: Elem = <del></del>
 
-  def s: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("s")()
+  def s: Elem = <s></s>
 
-  def ins: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("ins")()
+  def ins: Elem = <ins></ins>
 
-  def u: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("u")()
+  def u: Elem = <u></u>
 
-  def a: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("a")()
+  def a: Elem = <a></a>
 
-  def small: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("small")()
+  def small: Elem = <small></small>
 
-  def strong: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("strong")()
+  def strong: Elem = <strong></strong>
 
-  def em: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("em")()
+  def em: Elem = <em></em>
 
-  def mark: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("mark")()
+  def mark: Elem = <mark></mark>
 
-  def pre: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("pre")()
+  def pre: Elem = <pre></pre>
 
-  def td: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("td")()
+  def td: Elem = <td></td>
 
-  def tr: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("tr")()
+  def tr: Elem = <tr></tr>
 
-  def tbody: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("tbody")()
+  def tbody: Elem = <tbody></tbody>
 
-  def thead: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("thead")()
+  def thead: Elem = <thead></thead>
 
-  def img: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("img")()
+  def img: Elem = <img></img>
 
-  def div: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("div")()
+  def div: Elem = <div></div>
 
-  def ul: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("ul")()
+  def ul: Elem = <ul></ul>
 
-  def li: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("li")()
+  def li: Elem = <li></li>
 
-  def style: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("style")()
+  def style: Elem = <style></style>
 
-  def input: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("input")()
+  def input: Elem = <input></input>
 
-  def button: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("button")()
+  def button: Elem = <button></button>
 
-  def span: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("span")()
+  def span: Elem = <span></span>
 
-  def label: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("label")()
+  def label: Elem = <label></label>
 
-  def b: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("b")()
+  def b: Elem = <b></b>
 
-  def p: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("p")()
+  def p: Elem = <p></p>
 
-  def abbr: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("abbr")()
+  def abbr: Elem = <abbr></abbr>
 
-  def h1: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h1")()
+  def h1: Elem = <h1></h1>
 
-  def h2: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h2")()
+  def h2: Elem = <h2></h2>
 
-  def h3: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h3")()
+  def h3: Elem = <h3></h3>
 
-  def h4: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h4")()
+  def h4: Elem = <h4></h4>
 
-  def h5: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h5")()
+  def h5: Elem = <h5></h5>
 
-  def h6: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("h6")()
+  def h6: Elem = <h6></h6>
 
-  def hr: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("hr")()
+  def hr: Elem = <hr></hr>
 
-  def br: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("br")()
+  def br: Elem = <br></br>
 }
 
   

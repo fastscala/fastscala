@@ -2,10 +2,11 @@ package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.rerenderers.{Rerenderer, RerendererP}
 import com.fastscala.templates.bootstrap5.components.BSBtnDropdown
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.JS.ScalaXmlRerenderer
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 trait Table5SelectableRowsWithActions extends Table5SelectableRows with Table5StdColsHelper {
 
@@ -18,7 +19,7 @@ trait Table5SelectableRowsWithActions extends Table5SelectableRows with Table5St
   override def onSelectedRowsChange()(implicit fsc: FSContext): Js = super.onSelectedRowsChange() &
     actionsDropdownBtnRenderer.rerender()
 
-  lazy val actionsDropdownBtnRenderer: ScalaXmlRerenderer = JS.rerenderable(rerenderer => implicit fsc => {
+  lazy val actionsDropdownBtnRenderer: Rerenderer = JS.rerenderable(rerenderer => implicit fsc => {
     BSBtnDropdown(actionsBtnToIncludeInTopDropdown)(
       actionsForRows(selectedVisibleRows): _*
     )

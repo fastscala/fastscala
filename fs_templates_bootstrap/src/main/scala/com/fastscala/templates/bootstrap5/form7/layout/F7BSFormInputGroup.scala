@@ -2,11 +2,12 @@ package com.fastscala.templates.bootstrap5.form7.layout
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.form7.mixins.F7FieldWithInputGroupSize
-import com.fastscala.templates.form7._
+import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.fields.F7HtmlField
 import com.fastscala.templates.form7.fields.layout.F7ContainerFieldBase
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, Node, NodeSeq}
 
@@ -14,7 +15,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*)
   extends F7ContainerFieldBase
     with F7FieldWithInputGroupSize {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def aroundClass: String = ""
 
@@ -84,7 +85,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*)
       groupChildren.toList.flatMap(_.fieldAndChildreenMatchingPredicate(predicate))
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.onEvent(event) & groupChildren.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+    super.onEvent(event) & groupChildren.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 
   var showingValidation = false
 
@@ -107,7 +108,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*)
     } else if (showingValidation) {
       showingValidation = false
       hideValidation()
-    } else Js.void
+    } else JS.void
   }
 
   def showValidation(): Js =

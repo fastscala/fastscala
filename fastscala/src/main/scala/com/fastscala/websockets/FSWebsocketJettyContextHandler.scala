@@ -1,7 +1,6 @@
 package com.fastscala.websockets
 
 import com.fastscala.core.FSSystem
-
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.server.handler.ContextHandler
 import org.eclipse.jetty.websocket.api.util.WebSocketConstants

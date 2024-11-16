@@ -1,12 +1,13 @@
 package com.fastscala.templates.bootstrap5.form7
 
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.templates.form7.fields.radio.F7RadioFieldBase
 import com.fastscala.templates.form7.renderers.RadioF7FieldRenderer
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -18,7 +19,7 @@ abstract class BSRadioF7FieldRendererImpl()(
   checkboxSide: CheckboxSide.Value,
 ) extends RadioF7FieldRenderer {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def render(field: F7RadioFieldBase[_])(
     inputElemsAndLabels: Seq[(Elem, Option[Elem])],

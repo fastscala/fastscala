@@ -2,9 +2,9 @@ package com.fastscala.templates.form6.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -62,7 +62,7 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
         _setter(currentValue)
         Nil
       case Left(error) =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Could not parse value '$str': $error")))
+        List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
     }
   }
 
@@ -70,10 +70,10 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case Save => _setter(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
@@ -87,13 +87,13 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
                       type="text"
                       id={elemId}
                       onblur={
-                      fsc.callback(Js.elementValueById(elemId), str => {
+                      fsc.callback(JS.elementValueById(elemId), str => {
                         fromString(str).foreach(currentValue = _)
                         form.onEvent(ChangedField(this)) &
-                          Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
+                          JS.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
                       }).cmd
                       }
-                      onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13 && event.ctrlKey) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.onSaveClientSide())}}"}
+                      onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13 && event.ctrlKey) {${JS.evalIf(hints.contains(SaveOnEnterHint))(JS.blur(elemId) & form.onSaveClientSide())}}"}
           >{this.toString(currentValue)}</textarea>).withAttrs(finalAdditionalAttrs: _*),
           errors().headOption.map(_._2)
         )
@@ -113,7 +113,7 @@ class F6StringTextareaField()(implicit renderer: TextareaF6FieldRenderer) extend
   def fromString(str: String): Either[String, String] = Right(str)
 
   override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
-    (if (required && currentValue == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
 class F6StringOptTextareaField()(implicit renderer: TextareaF6FieldRenderer) extends F6TextareaField[Option[String]] {
@@ -125,6 +125,6 @@ class F6StringOptTextareaField()(implicit renderer: TextareaF6FieldRenderer) ext
   def fromString(str: String): Either[String, Option[String]] = Right(Some(str).filter(_ != ""))
 
   override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
-    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 

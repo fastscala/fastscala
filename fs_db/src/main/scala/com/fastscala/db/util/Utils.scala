@@ -20,7 +20,7 @@
 
 package com.fastscala.db.util
 
-import scala.xml._
+import scala.xml.*
 
 
 object Utils {

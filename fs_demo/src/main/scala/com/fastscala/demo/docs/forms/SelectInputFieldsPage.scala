@@ -3,13 +3,15 @@ package com.fastscala.demo.docs.forms
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.fields._
+import com.fastscala.templates.form7.fields.*
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.multiselect.F7MultiSelectField
 import com.fastscala.templates.form7.fields.select.{F7SelectField, F7SelectOptField}
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.awt.Color
 
@@ -17,8 +19,8 @@ class SelectInputFieldsPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 7 Select Input Fields"
 
-  import DefaultFSDemoBSForm7Renderers._
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import DefaultFSDemoBSForm7Renderers.*
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Select input-based fields") {

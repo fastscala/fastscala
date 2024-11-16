@@ -1,8 +1,10 @@
 package com.fastscala.templates.form7.mixins
 
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.Lazy
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 trait F7FieldWithValue[T] extends Mutable {
@@ -32,7 +34,7 @@ trait F7FieldWithValue[T] extends Mutable {
 
   def getInternalValue(): T = internalValue()
 
-  var _setter: T => Js = v => Js.void(() => {
+  var _setter: T => Js = v => JS.void(() => {
     internalValue() = v
   })
 
@@ -56,7 +58,7 @@ trait F7FieldWithValue[T] extends Mutable {
     _getter = () => get
     _setter = v => {
       set(v)
-      Js.void
+      JS.void
     }
   }
 }

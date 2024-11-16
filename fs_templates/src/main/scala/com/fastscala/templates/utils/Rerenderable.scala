@@ -1,7 +1,8 @@
 package com.fastscala.templates.utils
 
 import com.fastscala.js.Js
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 

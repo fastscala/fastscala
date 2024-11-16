@@ -2,13 +2,14 @@ package com.fastscala.templates.bootstrap5.form7
 
 import com.fastscala.templates.form7.mixins.StandardF7Field
 import com.fastscala.templates.form7.renderers.StandardOneInputElemF7FieldRenderer
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
 trait BSStandardF7FieldRendererImpl extends StandardOneInputElemF7FieldRenderer {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def render(
                        field: StandardF7Field,

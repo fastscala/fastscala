@@ -1,13 +1,13 @@
 package com.fastscala.server
 
 import com.fastscala.core.FSSystem
-import com.fastscala.utils.{FSOptimizedResourceHandler, Jetty12StatisticsCollector}
+import com.fastscala.utils.Jetty12StatisticsCollector
 import com.fastscala.websockets.FSWebsocketJettyContextHandler
 import com.typesafe.config.ConfigFactory
 import io.prometheus.metrics.exporter.httpserver.HTTPServer
 import io.prometheus.metrics.instrumentation.jvm.JvmMetrics
 import org.eclipse.jetty.http.CompressedContentFormat
-import org.eclipse.jetty.server._
+import org.eclipse.jetty.server.*
 import org.eclipse.jetty.server.handler.gzip.GzipHandler
 import org.eclipse.jetty.server.handler.{ContextHandler, ResourceHandler, StatisticsHandler}
 import org.eclipse.jetty.util.VirtualThreads
@@ -72,8 +72,6 @@ abstract class JettyServerHelper() {
     connector.setAcceptQueueSize(128)
     server.addConnector(connector)
 
-    val jettyStaticFilesHandler = new FSOptimizedResourceHandler(resourceRoots)
-
     val resourceHandler = new ResourceHandler()
     resourceHandler.setPrecompressedFormats(CompressedContentFormat.GZIP, CompressedContentFormat.BR, new CompressedContentFormat("bzip", ".bz"))
     resourceHandler.setEtags(true)
@@ -97,11 +95,10 @@ abstract class JettyServerHelper() {
     gzipHandler.setHandler(new Handler.Sequence(
       (prependToHandlerList :::
         List(
-          new ContextHandler(jettyStaticFilesHandler, "/static/optimized")
-          , fss
-          , mainHandler
-          , wsHandler
-          , resourceHandler
+          fss,
+          mainHandler,
+          wsHandler,
+          resourceHandler,
         ) :::
         appendToHandlerList): _*
     ))

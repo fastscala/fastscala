@@ -1,7 +1,7 @@
 package com.fastscala.templates.form7.fields
 
 import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.form7.mixins._
+import com.fastscala.templates.form7.mixins.*
 import com.fastscala.templates.utils.Mutable
 
 trait F7SimpleField extends F7Field

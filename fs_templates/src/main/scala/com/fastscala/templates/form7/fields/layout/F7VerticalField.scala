@@ -1,6 +1,6 @@
 package com.fastscala.templates.form7.fields.layout
 
-import com.fastscala.templates.form7._
+import com.fastscala.templates.form7.*
 
 class F7VerticalField()(childrenFields: F7Field*) extends F7ContainerFieldBase {
   override def aroundClass: String = ""

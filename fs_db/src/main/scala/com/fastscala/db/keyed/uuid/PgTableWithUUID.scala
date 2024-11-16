@@ -1,7 +1,7 @@
 package com.fastscala.db
 
 import com.fastscala.db.keyed.uuid.{PgRowWithUUID, TableWithUUIDBase}
-import scalikejdbc._
+import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID

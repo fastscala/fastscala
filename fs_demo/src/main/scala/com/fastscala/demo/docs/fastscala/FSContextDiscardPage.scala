@@ -4,22 +4,22 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.components.Widget
 import com.fastscala.demo.docs.data.{CountriesData, Country}
-import com.fastscala.js.rerenderers.RerendererDebugStatus
-import com.fastscala.templates.bootstrap5.tables._
+import com.fastscala.scala_xml.rerenderers.{RerendererDebugStatus, RerendererDebugStatusState}
+import com.fastscala.templates.bootstrap5.tables.*
 
 import scala.xml.{Elem, NodeSeq}
 
 class FSContextDiscardPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "FSContext discard"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 
     renderSnippet("Old FSContext is discarded on rerender, so the number of callbacks doesn't grow indefinitely") {
 
       // Debug rerenderable:
-      fsc.page.rerendererDebugStatus = RerendererDebugStatus.Enabled
+      RerendererDebugStatusState() = RerendererDebugStatus.Enabled
 
       val table = new Table5Base
         with Table5BaseBootrapSupport

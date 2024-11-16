@@ -1,6 +1,5 @@
 package com.fastscala.templates.bootstrap5.utils
 
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
 import scala.xml.Elem
 
@@ -8,7 +7,7 @@ object BsIcn {
   type BsIcn = String
 
   implicit class RichIcn(i: BsIcn) {
-    def icn: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("i", "class" -> s"bi $i")()
+    def icn: Elem = <i class={"bi " + i}></i>
   }
 
   val bi123: BsIcn = "bi-123"

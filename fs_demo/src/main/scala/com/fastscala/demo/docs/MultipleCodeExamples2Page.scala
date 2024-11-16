@@ -2,7 +2,7 @@ package com.fastscala.demo.docs
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.server.JettyServer
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import org.eclipse.jetty.util.IO
 
 import java.nio.charset.StandardCharsets
@@ -42,7 +42,7 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
       val leftPadding: Int = code.split("\n").iterator.map(_.takeWhile(_ == ' ').size).filter(_ > 0).minOption.getOrElse(0)
       val withoutPadding = code.split("\n").map(_.drop(leftPadding)).mkString("\n")
 
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
       div.apply {
         <pre><code style="background-color: #eee;" class="language-scala">{withoutPadding}</code></pre>.mb_2.border.border_secondary_subtle
       }
@@ -50,7 +50,7 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
   }
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     div.withStyle("background('#f8fafd'); border-style: solid; border-color: #b3c7de;").border_1.shadow_sm.py_2.px_3.apply {
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center my-3">
         <h1 class="h3" style="color: #1b4d88;">{pageTitle}</h1>
@@ -67,7 +67,7 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
   }
 
   def renderCodeSnippet(title: String, rendered: NodeSeq, contents: NodeSeq): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     h4.pb_1.border_bottom.border_secondary_subtle.apply(title) ++
       div.row.apply {
         div.col_md_6.mb_2.apply {
@@ -111,7 +111,7 @@ abstract class MultipleCodeExamples2Page() extends BasePage() {
   }
 
   def collectSection(thisSectionStartsAt: Int): Unit = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     lastSection.foreach({
       case (lastSectionStartedAt, title, contents) =>
         val code = lines.drop(lastSectionStartedAt).take(thisSectionStartsAt - lastSectionStartedAt - 2)

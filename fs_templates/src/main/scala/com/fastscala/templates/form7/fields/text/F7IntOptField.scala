@@ -1,9 +1,8 @@
 package com.fastscala.templates.form7.fields.text
 
 import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
 
 import java.text.DecimalFormat
 import java.util.regex.Pattern
@@ -40,5 +39,5 @@ class F7IntOptField()(implicit renderer: TextF7FieldRenderer)
   }
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }

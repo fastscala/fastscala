@@ -3,16 +3,18 @@ package com.fastscala.taskmanager.app
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.components.Widget
 import com.fastscala.js.Js
-import com.fastscala.js.rerenderers.RerendererDebugStatus
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.rerenderers.RerendererDebugStatus
 import com.fastscala.taskmanager.db.{DB, Task, User}
 import com.fastscala.templates.bootstrap5.modals.BSModal5WithForm7Base
-import com.fastscala.templates.bootstrap5.tables._
+import com.fastscala.templates.bootstrap5.tables.*
 import com.fastscala.templates.bootstrap5.toast.BSToast2
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.F7Field
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.select.F7SelectOptField
 import com.fastscala.templates.form7.fields.text.F7StringField
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -20,7 +22,7 @@ class TasksPage extends BasePage() {
 
   override def pageTitle: String = "Tasks Page"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
 //    fsc.page.rerendererDebugStatus = RerendererDebugStatus.Enabled
@@ -39,13 +41,13 @@ class TasksPage extends BasePage() {
 
         override def defaultPageSize = 10
 
-        import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers._
+        import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers.*
 
         val ColStatus = ColNs("Status", implicit fsc => r => BSBtn().sm.icn(_.biCheck).toggle(r.completed, v => {
           r.completed = v
           if (r.completed) {
             BSToast2.VerySimple(<label>Task completed!</label>)(<label>Your task <b>{r.name}</b> has been marked as complete.</label>).onToastHeader(_.text_bg_success).onToast(_.mt_5).installAndShow()
-          } else Js.void
+          } else JS.void
         }, _.BtnSuccess.withStyle("border-radius: 15px;"), _.BtnOutlineSecondary.withStyle("border-radius: 15px;")))
         val ColAssignedTo = ColNsFullTd("Assigned to", implicit fsc => {
           case (tableBodyRerenderer, trRerenderer, tdRerenderer, row, rowIdx, colIdx, rows) =>
@@ -81,7 +83,7 @@ class TasksPage extends BasePage() {
 
       override def widgetTopRight()(implicit fsc: FSContext): NodeSeq = super.widgetTopRight() ++
         BSBtn().BtnSuccess.sm.lbl("Add Task").ajax(implicit fsc => {
-          import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers._
+          import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers.*
           new BSModal5WithForm7Base("New Task") {
             val task = new Task("", false)
             override val rootField: F7Field = F7VerticalField()(

@@ -1,8 +1,8 @@
 package com.fastscala.core.circe
 
-import io.circe.{Decoder, Json}
 import com.fastscala.core.{FSContext, FSFunc}
 import com.fastscala.js.Js
+import io.circe.{Decoder, Json}
 
 object CIrceSupport {
 

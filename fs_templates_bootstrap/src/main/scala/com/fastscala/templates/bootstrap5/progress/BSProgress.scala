@@ -1,6 +1,7 @@
 package com.fastscala.templates.bootstrap5.progress
 
 import com.fastscala.templates.bootstrap5.helpers.{AttrEnrichableImmutable, ClassEnrichableImmutable}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
@@ -14,7 +15,7 @@ case class BSProgress(
 
   override def addClass(clas: String): BSProgress = copy(progressClasses = progressClasses + " " + clas)
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   def striped: BSProgress = copy(progressBarClasses = progressBarClasses + progress_bar_striped.getClassAttr)
 

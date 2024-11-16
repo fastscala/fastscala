@@ -2,10 +2,11 @@ package com.fastscala.templates.form7.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -32,7 +33,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
       _setter(currentValue)
       Nil
     case None =>
-      List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Could not parse value '$str' as boolean")))
+      List((this, scala.xml.Text(s"Could not parse value '$str' as boolean")))
   }
 
 
@@ -40,10 +41,10 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.updateFieldStatus() &
-    Js.setChecked(elemId, currentValue)
+    JS.setChecked(elemId, currentValue)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)
@@ -53,7 +54,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
         val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
         showingValidation = errorsToShow.nonEmpty
 
-        val onchangeJs = fsc.callback(Js.isCheckedById(elemId), str => {
+        val onchangeJs = fsc.callback(JS.isCheckedById(elemId), str => {
           str.toBooleanOption match {
             case Some(value) =>
               currentRenderedValue = Some(value)
@@ -62,12 +63,12 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
                 currentValue = value
                 form.onEvent(ChangedField(this))
               } else {
-                Js.void
+                JS.void
               }
-            case Some(value) if currentValue == value => Js.void
+            case Some(value) if currentValue == value => JS.void
             case None =>
               // Log error
-              Js.void
+              JS.void
           }
         }).cmd
 

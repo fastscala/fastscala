@@ -2,15 +2,16 @@ package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.utils.{BSBtn, ImmediateInputFields}
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   lazy val allSelectedRowsEvenIfNotVisible = collection.mutable.Set[R]()
 

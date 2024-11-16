@@ -13,7 +13,7 @@ class BootstrapModalPage extends MultipleCodeExamples2Page() {
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
       div.d_grid.mx_auto.col_8.my_5.apply {
         BSBtn().BtnPrimary.lbl("Open Modal").ajax(implicit fsc => new BSModal5Base {
           override def modalHeaderTitle: String = "Simple Modal"

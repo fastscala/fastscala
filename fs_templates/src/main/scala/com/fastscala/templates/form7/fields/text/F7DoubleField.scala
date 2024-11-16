@@ -1,7 +1,7 @@
 package com.fastscala.templates.form7.fields.text
 
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
 
 import java.util.regex.Pattern
 

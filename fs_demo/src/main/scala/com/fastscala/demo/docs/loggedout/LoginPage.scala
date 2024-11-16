@@ -3,18 +3,20 @@ package com.fastscala.demo.docs.loggedout
 import com.fastscala.core.FSContext
 import com.fastscala.demo.db.{CurrentUser, FakeDB}
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.printBeforeExec
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.text.F7StringField
 import com.fastscala.templates.form7.fields.{F7HtmlField, F7SubmitButtonField}
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
-import com.fastscala.xml.scala_xml.JS.RichJs
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
 class LoginPage extends LoggedoutBasePage {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def pageTitle: String = "FastScala Demo Login"
 
@@ -22,7 +24,7 @@ class LoginPage extends LoggedoutBasePage {
     super.renderBody().d_flex.align_content_center.py_4.withStyle("background-image: url('/static/images/pexels-pixabay-315938.jpg'); background-size: cover;background-position: center;")
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers._
+    import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers.*
     val form = new DefaultForm7() {
       val usernameField = new F7StringField().placeholder("Username").name("username")
       val passwordField = new F7StringField().placeholder("Password").inputTypePassword.name("password")
@@ -40,8 +42,8 @@ class LoginPage extends LoggedoutBasePage {
             fsc.session.delete()
             val newSession = fsc.session.fsSystem.createSession()
             CurrentUser.update(user)(newSession)
-            Js.setCookie(fsc.session.fsSystem.FSSessionIdCookieName, newSession.id, path = Some("/")).printBeforeExec & Js.redirectTo("/")
-          case None => Js.alert("User or password invalid.")
+            JS.setCookie(fsc.session.fsSystem.FSSessionIdCookieName, newSession.id, path = Some("/")).printBeforeExec & JS.redirectTo("/")
+          case None => JS.alert("User or password invalid.")
         }
       }
     }

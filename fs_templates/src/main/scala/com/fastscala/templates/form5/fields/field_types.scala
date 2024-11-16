@@ -2,9 +2,10 @@ package com.fastscala.templates.form5.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form5.Form5
 import com.fastscala.templates.utils.ElemWithRandomId
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -22,7 +23,7 @@ trait FormField {
 
   def enabledFields: List[FormField] = fieldsMatching(_.enabled())
 
-  def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
+  def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = JS.void
 
   def deps: Set[FormField]
 
@@ -44,7 +45,7 @@ trait StandardFormField extends FormField with ElemWithRandomId {
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
-    case _ => Js.void
+    case _ => JS.void
   })
 
   def disabled: () => Boolean

@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.components.Widget
 import com.fastscala.demo.docs.data.{CountriesData, Country}
-import com.fastscala.templates.bootstrap5.tables._
+import com.fastscala.templates.bootstrap5.tables.*
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -13,7 +13,7 @@ class SelectableRowsTableExamplePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Selectable rows table example"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {

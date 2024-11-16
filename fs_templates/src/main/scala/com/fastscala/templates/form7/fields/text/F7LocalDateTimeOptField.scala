@@ -1,8 +1,7 @@
 package com.fastscala.templates.form7.fields.text
 
 import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.templates.form7.renderers.*
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -19,5 +18,5 @@ class F7LocalDateTimeOptField()(implicit renderer: TextF7FieldRenderer) extends 
   def fromString(str: String): Either[String, Option[java.time.LocalDateTime]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"))))
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }

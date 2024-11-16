@@ -2,10 +2,11 @@ package com.fastscala.demo.docs.components
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.js.rerenderers.RerendererDebugStatus
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.rerenderers.RerendererDebugStatus
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -59,21 +60,21 @@ abstract class Widget extends Mutable {
   def transformWidgetCard(elem: Elem): Elem = onCardTransforms(elem)
 
   def renderWidgetHeader()(implicit fsc: FSContext): Elem = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     card_header.d_flex.justify_content_between.align_items_center.apply {
       widgetTitleNs ++ <div>{widgetTopRight()}</div>
     } pipe transformWidgetCardHeader
   }
 
   def renderWidgetBody()(implicit fsc: FSContext): Elem = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     card_body.apply {
       widgetContents()
     } pipe transformWidgetCardBody
   }
 
   def renderWidgetCard()(implicit fsc: FSContext): Elem = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     card.withId(widgetId).apply {
       widgetHeaderRenderer.render() ++
         widgetContentsRenderer.render()

@@ -2,12 +2,12 @@ package com.fastscala.templates.bootstrap5.tables
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.helpers.BSHelpers.RichElemBootstrapClasses
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.{MkNSFromElems, MkNSFromNodeSeq}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.{MkNSFromElems, MkNSFromNodeSeq}
 
 import java.util.UUID
 import scala.util.chaining.scalaUtilChainingOps

@@ -1,12 +1,12 @@
 package com.fastscala.templates.bootstrap5.form5
 
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers
-import com.fastscala.templates.form5.fields._
+import com.fastscala.templates.form5.fields.*
 
 
 object BSHorizontalField {
 
-  import BSHelpers._
+  import BSHelpers.*
 
   def apply(
              enabled: () => Boolean = () => true

@@ -1,23 +1,24 @@
 package com.fastscala.taskmanager.app
 
 import com.fastscala.core.FSContext
+import com.fastscala.scala_xml.js.inScriptTag
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.taskmanager.db.DB
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers
 import com.fastscala.templates.bootstrap5.toast.BSToast2
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.xml.scala_xml.JS.RichJs
-import com.fastscala.xml.scala_xml.{JS, ScalaXmlRenderableWithFSContext}
 import com.typesafe.config.ConfigFactory
 
 import scala.io.Source
 import scala.util.Try
 import scala.xml.NodeSeq
 
-trait BasePage extends ScalaXmlRenderableWithFSContext {
+trait BasePage extends RenderableWithFSContext {
 
   val config = ConfigFactory.load()
 
-  import BSHelpers._
+  import BSHelpers.*
 
   def navBarTopRight()(implicit fsc: FSContext): NodeSeq =
     BSBtn().BtnSecondary.lbl("Save").ajax(implicit fsc => {
@@ -44,7 +45,7 @@ trait BasePage extends ScalaXmlRenderableWithFSContext {
   def openWSSessionAtStart: Boolean = false
 
   def render()(implicit fsc: FSContext): NodeSeq = {
-    import BSHelpers._
+    import BSHelpers.*
 
     <html>
       <head>

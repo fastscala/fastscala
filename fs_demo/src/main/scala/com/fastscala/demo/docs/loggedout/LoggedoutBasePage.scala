@@ -1,14 +1,15 @@
 package com.fastscala.demo.docs.loggedout
 
 import com.fastscala.core.FSContext
-import com.fastscala.xml.scala_xml.{JS, ScalaXmlRenderableWithFSContext}
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.typesafe.config.ConfigFactory
 
 import scala.io.Source
 import scala.util.Try
 import scala.xml.{Elem, NodeSeq}
 
-trait LoggedoutBasePage extends ScalaXmlRenderableWithFSContext {
+trait LoggedoutBasePage extends RenderableWithFSContext {
 
   val config = ConfigFactory.load()
 

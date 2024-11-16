@@ -1,9 +1,9 @@
 package com.fastscala.test
 
 import com.fastscala.core.FSSystem
-import org.eclipse.jetty.http.{HttpCookie, HttpFields, HttpURI, HttpVersion, MimeTypes}
+import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.{Connection, Content}
-import org.eclipse.jetty.server.{Components, ConnectionMetaData, Connector, Context, HttpConfiguration, HttpStream, Request, Session, TunnelSupport, Response => JettyServerResponse}
+import org.eclipse.jetty.server.{Components, ConnectionMetaData, Connector, Context, HttpConfiguration, HttpStream, Request, Session, TunnelSupport, Response as JettyServerResponse}
 import org.eclipse.jetty.util.Callback
 import org.eclipse.jetty.util.resource.Resource
 

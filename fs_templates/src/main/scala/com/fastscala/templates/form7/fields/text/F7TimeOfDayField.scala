@@ -1,9 +1,8 @@
 package com.fastscala.templates.form7.fields.text
 
 import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
@@ -24,7 +23,7 @@ class F7TimeOfDayField()(implicit renderer: TextF7FieldRenderer)
   override def defaultValue: Option[Int] = None
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
 
   def toString(value: Option[Int]): String = value.map(value => DateTimeFormat.forPattern("HH:mm").print(new DateTime().withTime(value / 60, value % 60, 0, 0))).map(_.trim).getOrElse("")

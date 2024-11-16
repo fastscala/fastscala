@@ -2,11 +2,12 @@ package com.fastscala.templates.form7.fields.radio
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -42,7 +43,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
         _setter(v)
         Nil
       case None =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Not found id: '$str'")))
+        List((this, scala.xml.Text(s"Not found id: '$str'")))
     }
   }
 
@@ -50,7 +51,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
 
@@ -58,12 +59,12 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
     if (shouldBeDisabled != currentlyDisabled) {
       currentlyDisabled = shouldBeDisabled
       if (currentlyReadOnly) {
-        Js.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
+        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
       } else {
-        Js.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
+        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
       }
     } else {
-      Js.void
+      JS.void
     }
   })
 
@@ -71,12 +72,12 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
     if (shouldBeReadOnly != currentlyReadOnly) {
       currentlyReadOnly = shouldBeReadOnly
       if (currentlyReadOnly) {
-        Js.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
+        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
       } else {
-        Js.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
+        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
       }
     } else {
-      Js.void
+      JS.void
     }
   })
 
@@ -85,9 +86,9 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
       currentRenderedOptions.flatMap({
         case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
           this.currentRenderedValue = Some(currentValue)
-          option2Id.get(currentValue).map(optionId => Js.setChecked(optionId, true))
-        case _ => Some(Js.void)
-      }).getOrElse(Js.void)
+          option2Id.get(currentValue).map(optionId => JS.setChecked(optionId, true))
+        case _ => Some(JS.void)
+      }).getOrElse(JS.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)
@@ -112,7 +113,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
               currentValue = opt
               form.onEvent(ChangedField(this))
             } else {
-              Js.void
+              JS.void
             }
           }).cmd
           (processInputElem(<input id={option2Id(opt)} checked={if (currentRenderedValue.get == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>), Some(<label>{_option2NodeSeq(opt)}</label>))

@@ -1,9 +1,9 @@
 package com.fastscala.templates.bootstrap5.modals
 
 import com.fastscala.core.FSContext
+import com.fastscala.scala_xml.ScalaXmlElemUtils
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.{F7FormRenderer, Form7}
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils
 
 import scala.xml.NodeSeq
 
@@ -11,7 +11,7 @@ abstract class BSModal5WithForm7Base(
                                       val modalHeaderTitle: String
                                     )(implicit val formRenderer: F7FormRenderer) extends BSModal5Base with Form7 {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   def saveBtnLbl = "Save"
 

@@ -1,7 +1,7 @@
 package com.fastscala.db
 
 import com.fastscala.db.keyed.uuid.{SQLiteRowWithUUID, TableWithUUIDBase}
-import scalikejdbc._
+import scalikejdbc.*
 
 import java.util.UUID
 

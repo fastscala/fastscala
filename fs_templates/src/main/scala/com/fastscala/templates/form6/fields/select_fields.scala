@@ -2,8 +2,9 @@ package com.fastscala.templates.form6.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -23,14 +24,14 @@ trait F6FieldWithOptions[T] extends F6DefaultField {
 
 trait F6FieldWithOptionsNsLabel[T] extends F6DefaultField {
 
-  var _option2NodeSeq: T => NodeSeq = opt => FSScalaXmlSupport.fsXmlSupport.buildText(opt.toString)
+  var _option2NodeSeq: T => NodeSeq = opt => scala.xml.Text(opt.toString)
 
   def option2NodeSeq(f: T => NodeSeq): this.type = mutate {
     _option2NodeSeq = f
   }
 
   def option2String(f: T => String): this.type = mutate {
-    _option2NodeSeq = opt => FSScalaXmlSupport.fsXmlSupport.buildText(f(opt))
+    _option2NodeSeq = opt => scala.xml.Text(f(opt))
   }
 }
 
@@ -81,7 +82,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
         _setter(v)
         Nil
       case None =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Not found id: '$str'")))
+        List((this, scala.xml.Text(s"Not found id: '$str'")))
     }
   }
 
@@ -89,10 +90,10 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case Save => _setter(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
@@ -109,13 +110,13 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { hints =>
-        val onchangeJs = fsc.callback(Js.elementValueById(elemId), {
+        val onchangeJs = fsc.callback(JS.elementValueById(elemId), {
           case id =>
             ids2Option.get(id).map(value => {
               currentValue = value
               form.onEvent(ChangedField(this)(hints))(form, fsc)
-            }).getOrElse(Js.void) &
-              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(form, fsc, hints) else Js.void)
+            }).getOrElse(JS.void) &
+              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(form, fsc, hints) else JS.void)
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),
@@ -140,7 +141,7 @@ class F6SelectOptField[T]()(implicit renderer: SelectF6FieldRenderer) extends F6
   def optionsNonEmpty(v: Seq[T]): F6SelectOptField.this.type = options(None +: v.map(Some(_)))
 
   override def errors(): Seq[(ValidatableF6Field, NodeSeq)] = super.errors() ++
-    (if (required && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }
 
 class F6SelectField[T](opts: () => Seq[T])(implicit renderer: SelectF6FieldRenderer) extends F6SelectFieldBase[T] with F6FieldWithValidations {
@@ -185,10 +186,10 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case Save => _setter(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
@@ -205,11 +206,11 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
     if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { hints =>
-        val onchangeJs = fsc.callback(Js.selectedValues(Js.elementById(elemId)), {
+        val onchangeJs = fsc.callback(JS.selectedValues(JS.elementById(elemId)), {
           case ids =>
             currentValue = ids.split(",").filter(_.trim != "").toSet[String].map(id => ids2Option(id))
             form.onEvent(ChangedField(this)(hints)) &
-              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(form, fsc, hints) & Js.focus(elemId) else Js.void)
+              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(form, fsc, hints) & JS.focus(elemId) else JS.void)
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),

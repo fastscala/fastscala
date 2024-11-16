@@ -2,8 +2,10 @@ package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.{FSContext, FSSessionVarOpt, FSUploadedFile}
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
+import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.utils.FileUpload
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.Base64
 
@@ -17,7 +19,7 @@ class FileUploadPage extends MultipleCodeExamples2Page() {
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
       JS.rerenderable(rerenderer => implicit fsc => {
         div.border.p_2.rounded.apply {
           UploadedImage() match {

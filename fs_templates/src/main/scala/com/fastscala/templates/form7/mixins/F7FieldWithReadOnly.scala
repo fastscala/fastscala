@@ -2,8 +2,9 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.{Form7, RenderHint}
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
@@ -37,12 +38,12 @@ trait F7FieldWithReadOnly extends F7FieldInputFieldMixin {
     if (shouldBeReadOnly != currentlyReadOnly) {
       currentlyReadOnly = shouldBeReadOnly
       if (currentlyReadOnly) {
-        Js.setAttr(elemId)("readonly", "true")
+        JS.setAttr(elemId)("readonly", "true")
       } else {
-        Js.removeAttr(elemId, "readonly")
+        JS.removeAttr(elemId, "readonly")
       }
     } else {
-      Js.void
+      JS.void
     }
   })
 

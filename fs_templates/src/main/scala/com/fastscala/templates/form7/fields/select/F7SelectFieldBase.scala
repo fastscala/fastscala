@@ -2,10 +2,11 @@ package com.fastscala.templates.form7.fields.select
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -39,7 +40,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
         _setter(v)
         Nil
       case None =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Not found id: '$str'")))
+        List((this, scala.xml.Text(s"Not found id: '$str'")))
     }
   }
 
@@ -47,7 +48,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
 
@@ -57,10 +58,10 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
         case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
           option2Id.get(currentValue).map(valueId => {
             this.currentRenderedValue = Some(currentValue)
-            Js.setElementValue(elemId, valueId)
+            JS.setElementValue(elemId, valueId)
           })
-        case _ => Some(Js.void)
-      }).getOrElse(Js.void)
+        case _ => Some(JS.void)
+      }).getOrElse(JS.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)
@@ -80,7 +81,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
           renderer.renderOption(currentRenderedValue.get == opt, option2Id(opt), _option2NodeSeq(opt))
         })
 
-        val onchangeJs = fsc.callback(Js.elementValueById(elemId), id => {
+        val onchangeJs = fsc.callback(JS.elementValueById(elemId), id => {
           ids2Option.get(id) match {
             case Some(value) =>
               currentRenderedValue = Some(value)
@@ -88,11 +89,11 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
                 setFilled()
                 currentValue = value
                 form.onEvent(ChangedField(this))
-              } else Js.void
-            case Some(value) if currentValue == value => Js.void
+              } else JS.void
+            case Some(value) if currentValue == value => JS.void
             case None =>
               // Log error
-              Js.void
+              JS.void
           }
         }).cmd
 

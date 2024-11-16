@@ -2,9 +2,9 @@ package com.fastscala.templates.form6.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -30,7 +30,7 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
       _setter(currentValue)
       Nil
     case None =>
-      List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Could not parse value '$str' as boolean")))
+      List((this, scala.xml.Text(s"Could not parse value '$str' as boolean")))
   }
 
 
@@ -38,10 +38,10 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case Save => _setter(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
@@ -54,10 +54,10 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
           processInputElem(<input type="checkbox"
                       id={elemId}
                       onchange={
-                      fsc.callback(Js.isCheckedById(elemId), str => {
+                      fsc.callback(JS.isCheckedById(elemId), str => {
                         str.toBooleanOption.foreach(currentValue = _)
                         form.onEvent(ChangedField(this)) &
-                          Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
+                          JS.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
                       }).cmd
                       }
                       checked={if (currentValue) "true" else null}

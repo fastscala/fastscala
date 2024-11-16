@@ -2,10 +2,10 @@ package com.fastscala.templates.form5
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form5.fields._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form5.fields.*
 import com.fastscala.templates.utils.ElemWithRandomId
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -37,9 +37,9 @@ trait Form5 extends ElemWithRandomId {
     rootField.fieldsMatching({ case _: FocusableFormField => true })
       .collectFirst({ case fff: FocusableFormField => fff })
       .map(_.focusJs)
-      .getOrElse(Js.void)
+      .getOrElse(JS.void)
 
-  def afterRendering()(implicit fsc: FSContext): Js = Js.void
+  def afterRendering()(implicit fsc: FSContext): Js = JS.void
 
   def reRender()(implicit fsc: FSContext): Js = {
     implicit val renderHints = formRenderHits()
@@ -49,16 +49,16 @@ trait Form5 extends ElemWithRandomId {
   def render()(implicit fsc: FSContext): Elem = {
     implicit val renderHints = formRenderHits()
     val rendered = rootField.render()
-    if (afterRendering() != Js.void) {
+    if (afterRendering() != JS.void) {
       rendered.withAppendedToContents(JS.inScriptTag(afterRendering().onDOMContentLoaded))
     } else {
       rendered
     }
   }
 
-  def beforeSave()(implicit fsc: FSContext): Js = Js.void
+  def beforeSave()(implicit fsc: FSContext): Js = JS.void
 
-  def afterSave()(implicit fsc: FSContext): Js = Js.void
+  def afterSave()(implicit fsc: FSContext): Js = JS.void
 
   def onSaveServerSide()(implicit fsc: FSContext): Js = {
     if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)

@@ -2,8 +2,10 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.renderers.StandardF7FieldRenderer
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -43,12 +45,12 @@ trait StandardF7Field extends F7Field
     } else if (showingValidation) {
       showingValidation = false
       hideValidation()
-    } else Js.void
+    } else JS.void
   }
 
   override def postSubmit()(implicit form: Form7, fsc: FSContext): Js = super.postSubmit() & {
     setFilled()
-    Js.void
+    JS.void
   }
 
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil

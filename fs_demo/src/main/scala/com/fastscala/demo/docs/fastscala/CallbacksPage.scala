@@ -4,6 +4,8 @@ import com.fastscala.core.FSContext
 import com.fastscala.core.circe.CIrceSupport.FSContextWithCirceSupport
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import io.circe.Decoder
 import io.circe.generic.semiauto
 
@@ -19,7 +21,7 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
         class="btn btn-primary d-block mx-auto"
         onclick={
           fsc.callback(() => {
-            Js.alert(s"Current date/time on server: ${new Date().toString}")
+            JS.alert(s"Current date/time on server: ${new Date().toString}")
           }).cmd}
       >Check time on server</button>
     }
@@ -27,8 +29,8 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
       <button
         class="btn btn-primary d-block mx-auto"
         onclick={
-          fsc.callback(Js("navigator.userAgent"), userAgent => {
-            Js.alert(s"User's browser is: $userAgent")
+          fsc.callback(JS("navigator.userAgent"), userAgent => {
+            JS.alert(s"User's browser is: $userAgent")
           }).cmd
         }
       >Send browser details to server side</button>
@@ -37,10 +39,10 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
       <button
         class="btn btn-primary d-block mx-auto"
         onclick={
-          fsc.callbackJSON(Js("navigator.languages"), json => {
+          fsc.callbackJSON(JS("navigator.languages"), json => {
             println(json.asString)
             val languages: Iterable[String] = json.asArray.map(_.flatMap(_.asString)).getOrElse(Seq())
-            Js.alert(s"Supported languages on user's browser are: ${languages.mkString(", ")}")
+            JS.alert(s"Supported languages on user's browser are: ${languages.mkString(", ")}")
           }).cmd}
       >Send browser details to server side as JSON object</button>
     }
@@ -58,8 +60,8 @@ class CallbacksPage extends MultipleCodeExamples2Page() {
       <button
         class="btn btn-primary d-block mx-auto"
         onclick={
-          fsc.callbackJSONDecoded[NavigatorData](Js("{language: navigator.language, languages: navigator.languages, platform: navigator.platform, product: navigator.product, productSub: navigator.productSub, userAgent: navigator.userAgent, vendor: navigator.vendor }"), navigatorData => {
-            Js.alert(s"NavigatorData: ${navigatorData.toString}")
+          fsc.callbackJSONDecoded[NavigatorData](JS("{language: navigator.language, languages: navigator.languages, platform: navigator.platform, product: navigator.product, productSub: navigator.productSub, userAgent: navigator.userAgent, vendor: navigator.vendor }"), navigatorData => {
+            JS.alert(s"NavigatorData: ${navigatorData.toString}")
           }).cmd}
       >Send browser details to server side as a case class</button>
     }

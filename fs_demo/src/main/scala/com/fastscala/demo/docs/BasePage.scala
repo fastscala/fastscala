@@ -3,10 +3,12 @@ package com.fastscala.demo.docs
 import com.fastscala.core.FSContext
 import com.fastscala.demo.db.CurrentUser
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.inScriptTag
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.xml.scala_xml.JS.RichJs
-import com.fastscala.xml.scala_xml.{JS, ScalaXmlRenderableWithFSContext}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.typesafe.config.ConfigFactory
 
 import java.time.LocalDate
@@ -14,9 +16,9 @@ import scala.io.Source
 import scala.util.Try
 import scala.xml.NodeSeq
 
-trait BasePage extends ScalaXmlRenderableWithFSContext {
+trait BasePage extends RenderableWithFSContext {
 
-  import BSHelpers._
+  import BSHelpers.*
 
   val config = ConfigFactory.load()
 
@@ -64,7 +66,7 @@ trait BasePage extends ScalaXmlRenderableWithFSContext {
   def renderPageContents()(implicit fsc: FSContext): NodeSeq
 
   def render()(implicit fsc: FSContext): NodeSeq = {
-    import BSHelpers._
+    import BSHelpers.*
 
     <html>
       <head>

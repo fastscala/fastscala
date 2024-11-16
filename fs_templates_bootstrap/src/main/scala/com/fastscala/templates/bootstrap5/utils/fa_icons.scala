@@ -1,6 +1,5 @@
 package com.fastscala.templates.bootstrap5.utils
 
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
 
 import scala.xml.Elem
 
@@ -8,7 +7,7 @@ object IcnFA {
   type FaIcn = String
 
   implicit class RichIcn(i: FaIcn) {
-    def icn: Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("i", "class" -> i)()
+    def icn: Elem = <i class={i}></i>
   }
 
   val adjust: FaIcn = " fa fa-adjust "

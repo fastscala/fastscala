@@ -2,9 +2,11 @@ package com.fastscala.templates.form7.fields.multiselect
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -43,7 +45,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
 
@@ -53,15 +55,15 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
         case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
           this.currentRenderedValue = Some(currentValue)
           val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
-          Some(Js {
+          Some(JS {
             s"""var element = document.getElementById('${elemId}');
                |var selected = [${selectedIndexes.mkString(",")}];
                |for (var i = 0; i < element.options.length; i++) {
                |    element.options[i].selected = selected.includes(i);
                |}""".stripMargin
           })
-        case _ => Some(Js.void)
-      }).getOrElse(Js.void)
+        case _ => Some(JS.void)
+      }).getOrElse(JS.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)
@@ -81,7 +83,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
           renderer.renderOption(currentRenderedValue.get.contains(opt), option2Id(opt), _option2NodeSeq(opt))
         })
 
-        val onchangeJs = fsc.callback(Js.selectedValues(Js.elementById(elemId)), ids => {
+        val onchangeJs = fsc.callback(JS.selectedValues(JS.elementById(elemId)), ids => {
           val value = ids.split(",").filter(_.trim != "").toSet[String].map(id => ids2Option(id))
           if (currentValue != value) {
             setFilled()
@@ -89,7 +91,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
             currentValue = value
             form.onEvent(ChangedField(this))
           } else {
-            Js.void
+            JS.void
           }
         }).cmd
 

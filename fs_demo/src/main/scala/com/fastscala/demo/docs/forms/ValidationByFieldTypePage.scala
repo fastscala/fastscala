@@ -3,17 +3,19 @@ package com.fastscala.demo.docs.forms
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.form7.renderermodifiers.CheckboxStyle
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.toast.BSToast2
 import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.fields._
+import com.fastscala.templates.form7.fields.*
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.multiselect.F7MultiSelectField
 import com.fastscala.templates.form7.fields.radio.F7RadioField
 import com.fastscala.templates.form7.fields.select.F7SelectField
-import com.fastscala.templates.form7.fields.text._
+import com.fastscala.templates.form7.fields.text.*
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.awt.Color
 import scala.util.chaining.scalaUtilChainingOps
@@ -22,8 +24,8 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Form 7 Input Types"
 
-  import DefaultFSDemoBSForm7Renderers._
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import DefaultFSDemoBSForm7Renderers.*
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("String input") {
@@ -144,7 +146,7 @@ class ValidationByFieldTypePage extends MultipleCodeExamples2Page() {
     renderSnippet("Checkbox as switch") {
 
       val renderers = new FSDemoBSForm7Renderers()(checkboxStyle = CheckboxStyle.Switch)
-      import renderers._
+      import renderers.*
 
       // Pass the renderer which renders as switches:
       val inputField = new F7CheckboxField().label("I agree to the Terms of Service")

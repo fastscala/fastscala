@@ -1,7 +1,7 @@
 package com.fastscala.utils
 
 import io.prometheus.metrics.model.registry.{MultiCollector, PrometheusRegistry}
-import io.prometheus.metrics.model.snapshots.{Unit => PUnit, _}
+import io.prometheus.metrics.model.snapshots.{Unit as PUnit, *}
 import org.eclipse.jetty.server.handler.StatisticsHandler
 
 class Jetty12StatisticsCollector(val statisticsHandler: StatisticsHandler) extends MultiCollector {

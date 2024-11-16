@@ -1,8 +1,7 @@
 package com.fastscala.templates.form7.fields.text
 
 import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.templates.form7.renderers.*
 
 import scala.xml.NodeSeq
 
@@ -15,5 +14,5 @@ class F7StringTextareaField()(implicit renderer: TextareaF7FieldRenderer) extend
   def fromString(str: String): Either[String, String] = Right(str)
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required && currentValue == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required && currentValue == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }

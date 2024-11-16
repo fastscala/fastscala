@@ -2,9 +2,10 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

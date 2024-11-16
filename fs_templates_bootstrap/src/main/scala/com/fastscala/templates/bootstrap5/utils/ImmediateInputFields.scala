@@ -3,8 +3,9 @@ package com.fastscala.templates.bootstrap5.utils
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.js.JsOps.RichJs
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
@@ -57,7 +58,7 @@ object ImmediateInputFields {
 
     val submit = JS.withVarStmt("value", JS.elementValueById(inputId))(value => {
       JS._if(
-        if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(Js(s"window.currentValue$inputId"), JS.asJsStr(initialValue))
+        if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(JS(s"window.currentValue$inputId"), JS.asJsStr(initialValue))
         else JS._true,
         _then =
           JS.consoleLog(value) &
@@ -75,7 +76,7 @@ object ImmediateInputFields {
     btn.map(btn => {
       <div class="input-group ">
         {inputNS}
-        {btn.addClass("input-group-text").onclick(Js(submit)).btn}
+        {btn.addClass("input-group-text").onclick(JS(submit)).btn}
       </div>
     }).getOrElse(inputNS)
   }
@@ -99,12 +100,12 @@ object ImmediateInputFields {
     val initialValue = get()
 
     val submit = JS.withVarStmt("value", JS.elementValueById(inputId))(value => {
-      Js(
+      JS(
         s"""try {
            |  window.clearTimeout(window.timeout$inputId);
            |} catch(err) { }
            |window.timeout$inputId = window.setTimeout(function () { """.stripMargin + JS._if(
-          if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(Js(s"window.currentValue$inputId"), JS.asJsStr(initialValue.toString))
+          if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(JS(s"window.currentValue$inputId"), JS.asJsStr(initialValue.toString))
           else JS._true,
           _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.toInt))
         ).cmd + s"}, $timeBeforeChangeMs);"

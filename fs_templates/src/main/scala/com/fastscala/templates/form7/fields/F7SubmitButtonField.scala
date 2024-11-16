@@ -2,11 +2,11 @@ package com.fastscala.templates.form7.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.mixins.*
 import com.fastscala.templates.form7.renderers.*
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
@@ -25,7 +25,7 @@ class F7SubmitButtonField[B](
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = JS.rerenderableP[(B => B, Form7)](_ => implicit fsc => {
-    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.submitFormClientSide()).cmd)
+    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((JS.focus(elemId) & form.submitFormClientSide()).cmd)
   })
 
   override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem =

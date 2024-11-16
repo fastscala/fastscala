@@ -1,6 +1,6 @@
 package com.fastscala.stats
 
-import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSContext, FSPage, FSSession, FSSystem}
+import com.fastscala.core.{FSContext, FSPage, FSSession, FSSystem}
 import com.github.loki4j.slf4j.marker.LabelMarker
 import io.prometheus.metrics.core.metrics.{Counter, Gauge}
 import org.apache.commons.text.StringEscapeUtils
@@ -11,7 +11,7 @@ class FSStats(
                logger: Logger = LoggerFactory.getLogger("com.fastscala.stats.FSStats")
              ) {
 
-  import StatEvent._
+  import StatEvent.*
 
   val sessionsTotal = Counter.builder().name("fs_session_total").help("total number of sessions created since application was started").register()
   val pagesTotal = Counter.builder().name("fs_page_total").help("total number of pages created since application was started").register()

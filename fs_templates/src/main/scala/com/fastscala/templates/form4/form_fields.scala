@@ -2,9 +2,10 @@ package com.fastscala.templates.form4
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.utils.{Button, ElemWithRandomId}
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import scala.xml.NodeSeq
 

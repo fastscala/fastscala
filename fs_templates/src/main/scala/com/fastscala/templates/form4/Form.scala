@@ -2,7 +2,9 @@ package com.fastscala.templates.form4
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.utils.ElemWithRandomId
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 

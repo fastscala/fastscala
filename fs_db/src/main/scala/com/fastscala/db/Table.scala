@@ -6,7 +6,7 @@ import java.lang.reflect.Field
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
-import scalikejdbc._
+import scalikejdbc.*
 
 trait Table[R] extends TableBase {
 

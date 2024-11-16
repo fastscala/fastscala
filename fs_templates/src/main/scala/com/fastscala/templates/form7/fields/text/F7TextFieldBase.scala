@@ -2,11 +2,11 @@ package com.fastscala.templates.form7.fields.text
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.templates.form7.renderers._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
-import com.fastscala.xml.scala_xml.JS.RichJs
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.templates.form7.renderers.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -42,7 +42,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
         _setter(currentValue)
         Nil
       case Left(error) =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Could not parse value '$str': $error")))
+        List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
     }
   }
 
@@ -50,14 +50,14 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
     super.updateFieldStatus() &
       currentRenderedValue.filter(_ != currentValue).map(currentRenderedValue => {
         this.currentRenderedValue = Some(currentValue)
-        Js.setElementValue(elemId, this.toString(currentValue))
-      }).getOrElse(Js.void)
+        JS.setElementValue(elemId, this.toString(currentValue))
+      }).getOrElse(JS.void)
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)
@@ -69,7 +69,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
 
         currentRenderedValue = Some(currentValue)
 
-        val onChange = fsc.callback(Js.elementValueById(elemId), str => {
+        val onChange = fsc.callback(JS.elementValueById(elemId), str => {
           fromString(str) match {
             case Right(value) =>
               setFilled()
@@ -78,10 +78,10 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
                 currentValue = value
                 form.onEvent(ChangedField(this))
               } else {
-                Js.void
+                JS.void
               }
             case Left(error) =>
-              Js.void
+              JS.void
           }
         }).cmd
 
@@ -91,7 +91,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
               type={inputType}
               onblur={onChange}
               onchange={if (syncToServerOnChange) onChange else null}
-              onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${Js.evalIf(hints.contains(SaveOnEnterHint))(Js.blur(elemId) & form.submitFormClientSide())}}"}
+              onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.evalIf(hints.contains(SaveOnEnterHint))(JS.blur(elemId) & form.submitFormClientSide())}}"}
               value={this.toString(currentRenderedValue.get)}
             />
           ),

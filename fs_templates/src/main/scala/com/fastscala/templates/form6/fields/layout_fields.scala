@@ -2,9 +2,10 @@ package com.fastscala.templates.form6.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
-import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, JS}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -20,14 +21,14 @@ class F6VerticalField()(children: F6Field*)
   override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     currentlyEnabled = enabled()
     if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
-    else FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId)(children.map(_.render()).mkNS)
+    else <div id={aroundId}>{children.map(_.render())}</div>
   }
 
   override def reRender()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = {
     if (enabled() != currentlyEnabled) {
       JS.replace(aroundId, render())
     } else {
-      children.map(_.reRender()).reduceOption[Js](_ & _).getOrElse(Js.void)
+      children.map(_.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
     }
   }
 
@@ -35,7 +36,7 @@ class F6VerticalField()(children: F6Field*)
     List(this).filter(_ => predicate.applyOrElse[F6Field, Boolean](this, _ => false)) :::
       children.toList.flatMap(_.fieldsMatching(predicate))
 
-  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+  override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 }
 
 object F6VerticalField {
@@ -72,7 +73,7 @@ abstract class F6ContainerFieldBase
     if (enabled() != currentlyEnabled) {
       JS.replace(aroundId, render())
     } else {
-      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(Js.void)
+      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
     }
   }
 
@@ -81,7 +82,7 @@ abstract class F6ContainerFieldBase
       children.toList.flatMap(_._2.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 }
 
 class F6ContainerField(val aroundClass: String)(val children: (String, F6Field)*) extends F6ContainerFieldBase

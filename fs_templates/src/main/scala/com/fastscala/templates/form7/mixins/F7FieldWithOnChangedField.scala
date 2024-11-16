@@ -2,8 +2,10 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
 import com.fastscala.templates.utils.Mutable
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 trait F7FieldWithOnChangedField extends F7Field with Mutable {
@@ -19,12 +21,12 @@ trait F7FieldWithOnChangedField extends F7Field with Mutable {
 
   def addOnThisFieldChanged(onChange: this.type => Js): this.type = mutate {
     _onChangedField += new F7OnChangedFieldHandler {
-      override def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = if (field == self) onChange(self) else Js.void
+      override def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = if (field == self) onChange(self) else JS.void
     }
   }
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
-    case ChangedField(field) => _onChangedField.map(_.onChanged(field)).reduceOption(_ & _).getOrElse(Js.void)
-    case _ => Js.void
+    case ChangedField(field) => _onChangedField.map(_.onChanged(field)).reduceOption(_ & _).getOrElse(JS.void)
+    case _ => JS.void
   })
 }

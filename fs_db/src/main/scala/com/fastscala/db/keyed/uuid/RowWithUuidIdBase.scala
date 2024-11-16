@@ -1,7 +1,7 @@
 package com.fastscala.db.keyed.uuid
 
 import com.fastscala.db.RowWithIdBase
-import scalikejdbc._
+import scalikejdbc.*
 
 import java.nio.ByteBuffer
 import java.util.UUID

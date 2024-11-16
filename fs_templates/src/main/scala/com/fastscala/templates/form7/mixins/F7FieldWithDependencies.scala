@@ -2,8 +2,10 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7.{ChangedField, F7Event, F7Field, Form7, RenderHint}
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
 import com.fastscala.templates.utils.Mutable
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 trait F7FieldWithDependencies extends Mutable {

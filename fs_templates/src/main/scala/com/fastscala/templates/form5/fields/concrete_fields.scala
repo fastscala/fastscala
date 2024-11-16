@@ -2,10 +2,10 @@ package com.fastscala.templates.form5.fields
 
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form5.Form5
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, JS}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, LocalDate}
 
@@ -25,8 +25,8 @@ class F5RawHtmlField(
                     ) extends StandardFormField {
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
-    else FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId)(gen)
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    else <div id={aroundId}>{gen}</div>
 
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 }
@@ -41,8 +41,8 @@ class F5SurroundWithHtmlField[T <: FormField](
                                                , val readOnly: () => Boolean = () => false
                                              ) extends StandardFormField {
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
-    else FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId)(wrap(field.render()))
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
+    else <div id={aroundId}>{wrap(field.render())}</div>
 
 
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] =
@@ -63,15 +63,15 @@ class F5VerticalField(
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     currentlyEnabled = enabled()
-    if (!currentlyEnabled) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
-    else FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId)(children.map(_.render()): _*)
+    if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
+    else <div id={aroundId}>{children.map(_.render())}</div>
   }
 
   override def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = {
     if (enabled() != currentlyEnabled) {
       JS.replace(aroundId, render())
     } else {
-      children.map(_.reRender()).reduceOption[Js](_ & _).getOrElse(Js.void)
+      children.map(_.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
     }
   }
 
@@ -79,7 +79,7 @@ class F5VerticalField(
     List(this).filter(_ => predicate.applyOrElse[FormField, Boolean](this, _ => false)) :::
       children.toList.flatMap(_.fieldsMatching(predicate))
 
-  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+  override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & children.map(_.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 }
 
 object F5VerticalField {
@@ -100,14 +100,12 @@ class F5HorizontalField(
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     currentlyEnabled = enabled()
-    if (!currentlyEnabled) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
-        FSScalaXmlSupport.fsXmlSupport.buildElem("div", "id" -> aroundId, "class" -> "row")(
-          (children.map({
-            case (clas, field) => FSScalaXmlSupport.fsXmlSupport.buildElem("div", "class" -> clas)(field.render())
-          }): Seq[Elem]): _*
-        )
+        <div id={aroundId} class="row">{children.map({
+          case (clas, field) => <div class={clas}>{field.render()}</div>
+        })}</div>
       }
     }
   }
@@ -116,7 +114,7 @@ class F5HorizontalField(
     if (enabled() != currentlyEnabled) {
       JS.replace(aroundId, render())
     } else {
-      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(Js.void)
+      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
     }
   }
 
@@ -125,7 +123,7 @@ class F5HorizontalField(
       children.toList.flatMap(_._2.fieldsMatching(predicate))
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 }
 
 object F5HorizontalField {
@@ -163,7 +161,7 @@ abstract class F5TextField[T](
         setOpt(currentValue)
         Nil
       case Left(error) =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Could not parse value '$str': $error")))
+        List((this, scala.xml.Text(s"Could not parse value '$str': $error")))
     }
   }
 
@@ -171,15 +169,15 @@ abstract class F5TextField[T](
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => setOpt(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
-  def focusJs: Js = Js.focus(elemId) & Js.select(elemId)
+  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   def finalAdditionalAttrs: Seq[(String, String)] = additionalAttrs
 
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
@@ -188,12 +186,12 @@ abstract class F5TextField[T](
                    name={name.getOrElse(null)}
                    class="form-control"
                    id={elemId}
-                   onblur={fsc.callback(Js.elementValueById(elemId), str => {
+                   onblur={fsc.callback(JS.elementValueById(elemId), str => {
                      fromString(str).foreach(currentValue = _)
                      form.onEvent(ChangedField(this)) &
-                       Js.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
+                       JS.evalIf(hints.contains(ShowValidationsHint))(reRender()) // TODO: is this wrong? (running on the client side, but should be server?)
                    }).cmd}
-                   onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${Js.blur(elemId) & Js.evalIf(hints.contains(SaveOnEnterHint))(form.onSaveClientSide())}}"}
+                   onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.blur(elemId) & JS.evalIf(hints.contains(SaveOnEnterHint))(form.onSaveClientSide())}}"}
                    placeholder={placeholder.getOrElse(null)}
                    value={this.toString(currentValue)}
                    tabindex={tabindex.map(_ + "").getOrElse(null)}
@@ -243,7 +241,7 @@ class F5StringField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.getOrElse("").trim == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.getOrElse("").trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
@@ -315,7 +313,7 @@ class F5StringOptField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
@@ -387,7 +385,7 @@ class F5JodaDateOptField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
@@ -495,7 +493,7 @@ class F5DateOptField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
@@ -567,7 +565,7 @@ class F5DateTimeOptField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   def withLabel(label: String) = copy(label = Some(<span>{label}</span>))
 
@@ -657,7 +655,7 @@ class F5DoubleOptField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ List(
     "min" -> min.map(_.toString).getOrElse(null),
@@ -665,7 +663,7 @@ class F5DoubleOptField(
     "max" -> max.map(_.toString).getOrElse(null)
   )
 
-  def withLabel(label: String): F5DoubleOptField = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String): F5DoubleOptField = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             get: () => Option[Double] = get
@@ -761,7 +759,7 @@ class F5IntOptField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ List(
     "min" -> min.map(_.toString).getOrElse(null),
@@ -769,7 +767,7 @@ class F5IntOptField(
     "max" -> max.map(_.toString).getOrElse(null)
   )
 
-  def withLabel(label: String) = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             get: () => Option[Int] = get
@@ -862,9 +860,9 @@ class F5TimeOfDayField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             get: () => Option[Int] = get
@@ -920,7 +918,7 @@ class F5DoubleField(
                      , additionalAttrs: Seq[(String, String)] = Nil
                    )(implicit renderer: TextFieldRenderer) extends F5TextField[Double](
   getOpt = () => Some(get())
-  , setOpt = doubleOpt => doubleOpt.map(double => set(double)).getOrElse(Js.void)
+  , setOpt = doubleOpt => doubleOpt.map(double => set(double)).getOrElse(JS.void)
   , toString = _.map(value => prefix + " " + value.formatted("%.2f") + " " + suffix).map(_.trim).getOrElse("")
   , fromString = str => {
     str
@@ -948,9 +946,9 @@ class F5DoubleField(
 ) {
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  def withLabel(label: String) = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
 
   override def finalAdditionalAttrs: Seq[(String, String)] = super.finalAdditionalAttrs ++ Seq(
     min.map(min => "min" -> min.toString)
@@ -1021,7 +1019,7 @@ class F5CheckboxField(
         set(currentValue)
         Nil
       case None =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Found not parse as a boolean: '$str'")))
+        List((this, scala.xml.Text(s"Found not parse as a boolean: '$str'")))
     }
   }
 
@@ -1029,15 +1027,15 @@ class F5CheckboxField(
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 
-  override def focusJs: Js = Js.focus(elemId)
+  override def focusJs: Js = JS.focus(elemId)
 
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)(
@@ -1047,9 +1045,9 @@ class F5CheckboxField(
             value=""
             id={elemId}
             name={name.getOrElse(null)}
-            onchange={fsc.callback(Js.checkboxIsChecked(elemId), value => {
+            onchange={fsc.callback(JS.checkboxIsChecked(elemId), value => {
               currentValue = value.toBoolean
-              form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
+              form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else JS.void)
             }).cmd}
             tabindex={tabindex.map(_ + "").getOrElse(null)}
             checked={if (currentValue) "checked" else null}></input>,
@@ -1113,13 +1111,13 @@ class F5SelectField[T](
         set(v)
         Nil
       case None =>
-        List((this, FSScalaXmlSupport.fsXmlSupport.buildText(s"Not found id: '$str'")))
+        List((this, scala.xml.Text(s"Not found id: '$str'")))
     }
   }
 
   override def saveToString(): Option[String] = Some(toId(currentlySelectedValue, all().indexOf(currentlySelectedValue))).filter(_ != "0")
 
-  def withLabel(label: String): F5SelectField[T] = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String): F5SelectField[T] = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             all: () => Seq[T] = all
@@ -1147,12 +1145,12 @@ class F5SelectField[T](
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentlySelectedValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 
-  override def focusJs: Js = Js.focus(elemId)
+  override def focusJs: Js = JS.focus(elemId)
 
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     val options = all()
@@ -1164,14 +1162,14 @@ class F5SelectField[T](
 
     val errorsAtRenderTime = errors()
 
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
-        val onchangeJs = fsc.callback(Js.elementValueById(elemId), {
+        val onchangeJs = fsc.callback(JS.elementValueById(elemId), {
           case id =>
             currentlySelectedValue = ids2Option(id)
             form.onEvent(ChangedField(this)) &
-              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender() else Js.void)
+              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender() else JS.void)
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),
@@ -1222,7 +1220,7 @@ class F5MultiSelectField[T](
     toId(v, all().indexOf(currentlySelectedValue))
   }).mkString(";"))
 
-  def withLabel(label: String): F5MultiSelectField[T] = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String): F5MultiSelectField[T] = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             all: () => Seq[T] = all
@@ -1252,7 +1250,7 @@ class F5MultiSelectField[T](
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentlySelectedValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
@@ -1265,13 +1263,13 @@ class F5MultiSelectField[T](
       <option selected={if (currentlySelectedValue.contains(opt)) "true" else null} value={option2Id(opt)}>{toString(opt)}</option>
     })
 
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
-        val onchangeJs = fsc.callback(Js.selectedValues(Js.elementById(elemId)), {
+        val onchangeJs = fsc.callback(JS.selectedValues(JS.elementById(elemId)), {
           case ids =>
             currentlySelectedValue = ids.split(",").toSet.map(id => ids2Option(id))
-            form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
+            form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else JS.void)
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),
@@ -1360,7 +1358,7 @@ object EnumField {
     deps = deps
   ) {
     override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-      (if (required() && currentlySelectedValue.isEmpty) Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+      (if (required() && currentlySelectedValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
   }
 }
 
@@ -1393,7 +1391,7 @@ class F5TextAreaField(
 
   override def saveToString(): Option[String] = Some(currentValue).filter(_ != "")
 
-  def withLabel(label: String) = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             get: () => String = get
@@ -1427,22 +1425,22 @@ class F5TextAreaField(
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.trim == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
-  override def focusJs: Js = Js.focus(elemId)
+  override def focusJs: Js = JS.focus(elemId)
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
-        val changedJs = fsc.callback(Js.elementValueById(elemId), value => {
+        val changedJs = fsc.callback(JS.elementValueById(elemId), value => {
           currentValue = value
-          form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
+          form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else JS.void)
         }).cmd
         renderer.render(this)(
           label,
@@ -1507,7 +1505,7 @@ class F5CodeField(
 
   override def reRender()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = {
     if (!hints.contains(OnSaveRerender)) super.reRender()
-    else Js.void
+    else JS.void
   }
 
   override def loadFromString(str: String): Seq[(ValidatableField, NodeSeq)] = {
@@ -1518,7 +1516,7 @@ class F5CodeField(
 
   override def saveToString(): Option[String] = Some(currentValue).filter(_ != "")
 
-  def withLabel(label: String) = copy(label = Some(FSScalaXmlSupport.fsXmlSupport.buildText(label)))
+  def withLabel(label: String) = copy(label = Some(scala.xml.Text(label)))
 
   def copy(
             get: () => String = get
@@ -1552,20 +1550,20 @@ class F5CodeField(
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
-    (if (required() && currentValue.trim == "") Seq((this, FSScalaXmlSupport.fsXmlSupport.buildText(renderer.defaultRequiredFieldLabel))) else Seq())
+    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
 
-        val onChangeCallbackJS = fsc.callback(Js(s"window.$editorId.session.getValue()"), value => {
+        val onChangeCallbackJS = fsc.callback(JS(s"window.$editorId.session.getValue()"), value => {
           currentValue = value
-          form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else Js.void)
+          form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else JS.void)
         })
 
         val onChangeJS =
@@ -1597,7 +1595,7 @@ class F5CodeField(
 
           {
             Unparsed(
-              s"""<script>window.$editorId = ace.edit(${Js.asJsStr(editorId).cmd});
+              s"""<script>window.$editorId = ace.edit(${JS.asJsStr(editorId).cmd});
                  |window.$editorId.setTheme("ace/theme/textmate");
                  |window.$editorId.session.setMode("ace/mode/html");
                  |window.$editorId.session.on('change', ${onChangeJS});</script>""".stripMargin
@@ -1626,26 +1624,26 @@ class F5SaveButtonField[B](
   override def fieldsMatching(predicate: PartialFunction[FormField, Boolean]): List[FormField] = if (predicate.applyOrElse[FormField, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = JS.rerenderableP[(B => B, Form5)](_ => implicit fsc => {
-    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((JS.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case AfterSave =>
       //btnRenderer.rerender((toInitialState, form)).printToConsoleBefore()
-      Js.void
-    case BeforeSave => Js.void
+      JS.void
+    case BeforeSave => JS.void
     case ErrorsOnSave =>
       //btnRenderer.rerender((toErrorState, form)).printToConsoleBefore()
-      Js.void
+      JS.void
     case ChangedField(_) =>
       //btnRenderer.rerender((toChangedState, form)).printToConsoleBefore()
-      Js.void
-    case PerformSave => Js.void
-    case _ => Js.void
+      JS.void
+    case PerformSave => JS.void
+    case _ => JS.void
   })
 
   override def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem =
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
         renderer.render(this)({
@@ -1679,17 +1677,17 @@ class F5FileUploadField(
 
   var currentValue: Option[(String, Array[Byte])] = get()
 
-  def renderPreview(file: Option[(String, Array[Byte])])(implicit fsc: FSContext): Elem = FSScalaXmlSupport.fsXmlSupport.buildElem("div")()
+  def renderPreview(file: Option[(String, Array[Byte])])(implicit fsc: FSContext): Elem = <div></div>
 
   override def onEvent(event: FormEvent)(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PerformSave => set(currentValue)
-    case _ => Js.void
+    case _ => JS.void
   })
 
   override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 
   def render()(implicit form: Form5, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
-    if (!enabled()) FSScalaXmlSupport.fsXmlSupport.buildElem("div", "style" -> "display:none;", "id" -> aroundId)()
+    if (!enabled()) <div style="display:none;" id={aroundId}></div>
     else {
       withFieldRenderHints { implicit hints =>
         val targetId = IdGen.id("targetFrame")
@@ -1703,8 +1701,8 @@ class F5FileUploadField(
             currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))
             previewRenderer.rerender() &
               form.onEvent(ChangedField(this)) &
-              (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &
-              Js.show(resetButtonId)
+              (if (hints.contains(ShowValidationsHint)) reRender() else JS.void) &
+              JS.show(resetButtonId)
         })
         <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" id={aroundId}>
           <iframe id={targetId} name={targetId} src="about:blank" onload="eval(this.contentWindow.document.body.innerText)" style="width:0;height:0;border:0px solid #fff;"><html><body></body></html></iframe>
@@ -1715,7 +1713,7 @@ class F5FileUploadField(
           previewRenderer.render()
           }
           {
-            <input name="file" type="file" id={inputId} onchange={Js.show(buttonId).cmd}/>.pipe(renderer.transforFileInputElem(this)(_)).pipe(transforFileInputElem)
+            <input name="file" type="file" id={inputId} onchange={JS.show(buttonId).cmd}/>.pipe(renderer.transforFileInputElem(this)(_)).pipe(transforFileInputElem)
           }
           {
           submitBtn.pipe(renderer.transforSubmitButtonElem(this)).pipe(transforSubmitButtonElem).withId(buttonId).withStyle("display:none").withTypeSubmit()
@@ -1725,8 +1723,8 @@ class F5FileUploadField(
             currentValue = None
             previewRenderer.rerender() &
               form.onEvent(ChangedField(this)) &
-              (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &
-              Js.hide(resetButtonId)
+              (if (hints.contains(ShowValidationsHint)) reRender() else JS.void) &
+              JS.hide(resetButtonId)
           }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(NodeSeq.Empty)
           }
         </form>.pipe(renderer.transformFormElem(this)(_)).pipe(transformFormElem)

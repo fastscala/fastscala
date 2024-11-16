@@ -1,7 +1,6 @@
 package com.fastscala.core
 
-import com.fastscala.js.Js
-import com.fastscala.js.rerenderers.RerendererDebugStatus
+import com.fastscala.js.{JS, Js}
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.req.{Get, Post}
 import com.fastscala.routing.resp.*
@@ -77,7 +76,7 @@ class FSContext(
                  val session: FSSession
                  , val page: FSPage
                  , val parentFSContext: Option[FSContext] = None
-                 , val onPageUnload: () => Js = () => Js.void
+                 , val onPageUnload: () => Js = () => JS.void
                  , val debugLbl: Option[String] = None
                  , var deleted: Boolean = false
                ) extends FSHasSession {
@@ -168,7 +167,7 @@ class FSContext(
     deleted = true
   }
 
-  def callback(func: () => Js): Js = callback(Js.void, _ => func())
+  def callback(func: () => Js): Js = callback(JS.void, _ => func())
 
   def callback(
                 arg: Js,
@@ -181,19 +180,19 @@ class FSContext(
     session.fsSystem.gc()
     val funcId = session.nextID()
     functionsGenerated += funcId
-    page.callbacks += funcId -> new FSFunc(funcId, str => func(str) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(Js.void))
+    page.callbacks += funcId -> new FSFunc(funcId, str => func(str) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(JS.void))
     session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
     session.fsSystem.stats.callbacksTotal.inc()
     session.fsSystem.stats.currentCallbacks.inc()
 
-    Js.fromString(
+    JS.fromString(
       session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
-        s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${Js.asJsStr(page.id).cmd},${Js.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn);"
+        s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${JS.asJsStr(page.id).cmd},${JS.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn);"
     )
   }
 
-  def anonymousPageURL[E <: FSXmlEnv](using env: FSXmlSupport[E])(
-    render: FSContext => FSXmlNodeSeq[E]
+  def anonymousPageURL(
+    render: FSContext => String
     , name: String
   ): String = {
     session.fsSystem.gc()
@@ -206,8 +205,8 @@ class FSContext(
     s"/${session.fsSystem.FSPrefix}/anon/$funcId/$name"
   }
 
-  def createAndRedirectToAnonymousPageJS[E <: FSXmlEnv](using env: FSXmlSupport[E])(render: FSContext => FSXmlNodeSeq[E], name: String) =
-    fsc.callback(() => Js.redirectTo(anonymousPageURL(render, name)))
+  def createAndRedirectToAnonymousPageJS(render: FSContext => String, name: String) =
+    fsc.callback(() => JS.redirectTo(anonymousPageURL(render, name)))
 
   def fileDownloadAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
     fileDownload(fileName, Files.probeContentType(Path.of(fileName)), download)
@@ -234,7 +233,7 @@ class FSContext(
     s"/${session.fsSystem.FSPrefix}/file-upload/${page.id}/$funcId"
   }
 
-  def exec(func: () => Js, async: Boolean = true): Js = callback(Js("''"), _ => func(), async)
+  def exec(func: () => Js, async: Boolean = true): Js = callback(JS("''"), _ => func(), async)
 
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = page.fsPageScript(openWSSessionAtStart)
 }
@@ -259,7 +258,7 @@ class FSPage(
               , val session: FSSession
               , val req: Request
               , val createdAt: Long = System.currentTimeMillis()
-              , val onPageUnload: () => Js = () => Js.void
+              , val onPageUnload: () => Js = () => JS.void
               , var keepAliveAt: Long = System.currentTimeMillis()
               , var autoKeepAliveAt: Long = System.currentTimeMillis()
               , var wsSession: Option[Session] = None
@@ -267,8 +266,6 @@ class FSPage(
               , var wsLock: AnyRef = new AnyRef
               , val debugLbl: Option[String] = None
             ) extends FSHasSession {
-
-  var rerendererDebugStatus: RerendererDebugStatus.Value = RerendererDebugStatus.Disabled
 
   def periodicKeepAliveEnabled: Boolean = session.fsSystem.config.getBoolean("com.fastscala.core.periodic-page-keep-alive.enabled")
 
@@ -356,10 +353,10 @@ class FSPage(
   }
 
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = {
-    Js {
+    JS {
       s"""window._fs = {
-         |  sessionId: ${Js.asJsStr(session.id).cmd},
-         |  pageId: ${Js.asJsStr(id).cmd},
+         |  sessionId: ${JS.asJsStr(session.id).cmd},
+         |  pageId: ${JS.asJsStr(id).cmd},
          |  callback: function(arg, pageId, funcId, ignoreErrors, async, expectReturn) {
          |    const xhr = new XMLHttpRequest();
          |    xhr.open("POST", "/${session.fsSystem.FSPrefix}/cb/"+pageId+"/"+funcId+"?time=" + new Date().getTime() + (ignoreErrors ? "&ignore_errors=true" : ""), async);
@@ -389,8 +386,8 @@ class FSPage(
          |    }
          |  },
          |};
-         |${if (openWSSessionAtStart) initWebSocket().cmd else Js.void.cmd}
-         |${if (periodicKeepAliveEnabled) setupKeepAlive().cmd else Js.void.cmd}
+         |${if (openWSSessionAtStart) initWebSocket().cmd else JS.void.cmd}
+         |${if (periodicKeepAliveEnabled) setupKeepAlive().cmd else JS.void.cmd}
          |""".stripMargin
     }
   }
@@ -399,9 +396,9 @@ class FSPage(
 
   def isAlive_? = !isDefunct_?
 
-  def setupKeepAlive(): Js = Js(s"""function sendKeepAlive() {window._fs.keepAlive(${Js.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
+  def setupKeepAlive(): Js = JS(s"""function sendKeepAlive() {window._fs.keepAlive(${JS.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
 
-  def initWebSocket() = Js("window._fs.initWebSocket();")
+  def initWebSocket() = JS("window._fs.initWebSocket();")
 }
 
 object FSSession {
@@ -432,16 +429,16 @@ abstract class FSSessionVarOpt[T]() {
   def clear()(implicit hasSession: FSHasSession): Unit = hasSession.session.clear(this)
 }
 
-class FSAnonymousPage[E <: FSXmlEnv](using val env: FSXmlSupport[E])(
+class FSAnonymousPage(
   val id: String
   , val session: FSSession
-  , val render: FSContext => FSXmlNodeSeq[E]
+  , val render: FSContext => String
   , val createdAt: Long = System.currentTimeMillis()
   , var keepAliveAt: Long = System.currentTimeMillis()
   , var debugLbl: Option[String] = None
 ) extends FSHasSession {
 
-  def renderAsString()(implicit fsc: FSContext): String = env.render(render(fsc))
+  def renderAsString()(implicit fsc: FSContext): String = render(fsc)
 
   def keepAlive(): Unit = {
     keepAliveAt = System.currentTimeMillis()
@@ -452,7 +449,7 @@ class FSAnonymousPage[E <: FSXmlEnv](using val env: FSXmlSupport[E])(
 
   def onPageUnload(): Js = {
     // session.anonymousPages.remove(id)
-    Js.void
+    JS.void
   }
 }
 
@@ -511,7 +508,7 @@ class FSSession(
   //  }
 
   val pages = collection.mutable.Map[String, FSPage]()
-  val anonymousPages = collection.mutable.Map[String, FSAnonymousPage[?]]()
+  val anonymousPages = collection.mutable.Map[String, FSAnonymousPage]()
 
   def nPages(): Int = pages.size
 
@@ -526,7 +523,7 @@ class FSSession(
   def createPage[T](
                      generatePage: FSContext => T,
                      debugLbl: Option[String] = None,
-                     onPageUnload: () => Js = () => Js.void
+                     onPageUnload: () => Js = () => JS.void
                    )(implicit req: Request): T = try {
     session.fsSystem.gc()
     val copy = new Request.Wrapper(req)
@@ -639,9 +636,9 @@ class FSSystem(
     ex.printStackTrace()
     stats.callbackErrorsTotal.inc()
     if (__fsSystem.debug) {
-      Js.alert(s"Internal error: $ex (showing because in debug mode)")
+      JS.alert(s"Internal error: $ex (showing because in debug mode)")
     } else {
-      Js.alert(s"Internal error")
+      JS.alert(s"Internal error")
     }
   }
 
@@ -649,9 +646,9 @@ class FSSystem(
     ex.printStackTrace()
     stats.fileUploadCallbackErrorsTotal.inc()
     if (__fsSystem.debug) {
-      Js.alert(s"Internal error: $ex (showing because in debug mode)")
+      JS.alert(s"Internal error: $ex (showing because in debug mode)")
     } else {
-      Js.alert(s"Internal error")
+      JS.alert(s"Internal error")
     }
   }
 
@@ -680,7 +677,7 @@ class FSSystem(
           session.pages.get(pageId).map(implicit page => {
             stats.keepAliveInvocationsTotal.inc()
             page.autoKeepAliveAt = System.currentTimeMillis()
-            Ok.js(Js.void)
+            Ok.js(JS.void)
           }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, session = Some(session), page = None)))
         }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, session = sessionOpt, page = None)))
 
@@ -773,7 +770,7 @@ class FSSystem(
                 })
                 VoidResponse
               } else {
-                Ok.js(Js.alert("Not multipart form data"))
+                Ok.js(JS.alert("Not multipart form data"))
               }
             }).getOrElse(Ok.js(onFileUploadNotFound(Missing.FileUploadFunction, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = Some(page))))
           }).getOrElse(Ok.js(onFileUploadNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None)))
@@ -812,7 +809,7 @@ class FSSystem(
             val nodeSeq = session.createPage(implicit fsc => anonymousPage.renderAsString(), onPageUnload = () => {
               anonymousPage.onPageUnload()
             }, debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}"))
-            Ok.htmlFromString(nodeSeq)
+            Ok.html(nodeSeq)
           }).getOrElse(onAnonymousPageNotFound(Missing.AnonPage, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = Some(session), page = None))
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }
@@ -832,7 +829,7 @@ class FSSystem(
                            page: Option[FSPage],
                          )(implicit req: Request): Js = {
     missing.updateStats()
-    Js.void
+    JS.void
   }
 
   def onCallbackNotFound(
@@ -844,8 +841,8 @@ class FSSystem(
                           page: Option[FSPage],
                         )(implicit req: Request): Js = {
     missing.updateStats()
-    if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) Js.void
-    else Js.confirm(s"Page has expired, please reload", Js.reload())
+    if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) JS.void
+    else JS.confirm(s"Page has expired, please reload", JS.reload())
   }
 
   def onFileUploadNotFound(
@@ -857,8 +854,8 @@ class FSSystem(
                             page: Option[FSPage],
                           )(implicit req: Request): Js = {
     missing.updateStats()
-    if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) Js.void
-    else Js.confirm(s"Page has expired, please reload", Js.reload())
+    if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) JS.void
+    else JS.confirm(s"Page has expired, please reload", JS.reload())
   }
 
   def onFileDownloadNotFound(
@@ -892,8 +889,8 @@ class FSSystem(
                            page: Option[FSPage],
                          )(implicit wsSession: Session): Js = {
     missing.updateStats()
-    if (wsSession.getUpgradeRequest.getParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) Js.void
-    else Js.confirm(s"Page has expired, please reload", Js.reload())
+    if (wsSession.getUpgradeRequest.getParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) JS.void
+    else JS.confirm(s"Page has expired, please reload", JS.reload())
   }
 
   def transformCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js

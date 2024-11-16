@@ -1,7 +1,7 @@
 package com.fastscala.db.keyed
 
 import com.fastscala.db.{Row, RowWithId, RowWithIdBase}
-import scalikejdbc._
+import scalikejdbc.*
 
 trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>

@@ -1,6 +1,6 @@
 package com.fastscala.db.caching
 
-import com.fastscala.db._
+import com.fastscala.db.*
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax

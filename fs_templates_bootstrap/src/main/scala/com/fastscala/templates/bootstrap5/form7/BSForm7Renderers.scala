@@ -1,9 +1,10 @@
 package com.fastscala.templates.bootstrap5.form7
 
 import com.fastscala.templates.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.fields._
-import com.fastscala.templates.form7.renderers._
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.fields.*
+import com.fastscala.templates.form7.renderers.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -14,7 +15,7 @@ abstract class BSForm7Renderers()(
   checkboxSide: CheckboxSide.Value,
 ) {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   def defaultRequiredFieldLabel: String
 

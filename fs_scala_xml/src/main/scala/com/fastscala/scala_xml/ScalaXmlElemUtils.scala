@@ -1,10 +1,12 @@
-package com.fastscala.xml.scala_xml
+package com.fastscala.scala_xml
 
 import com.fastscala.js.Js
-import com.fastscala.xml.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.js.JS
+import ScalaXmlElemUtils.RichElem
+import ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import java.util.regex.Pattern
-import scala.xml._
+import scala.xml.*
 
 trait ScalaXmlElemUtils {
   def elem: Elem

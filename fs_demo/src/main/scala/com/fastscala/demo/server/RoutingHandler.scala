@@ -2,19 +2,20 @@ package com.fastscala.demo.server
 
 import com.fastscala.core.{FSSession, FSSystem}
 import com.fastscala.demo.db.{CurrentUser, FakeDB}
-import com.fastscala.demo.docs._
+import com.fastscala.demo.docs.*
 import com.fastscala.demo.docs.bootstrap.BootstrapModalPage
 import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
 import com.fastscala.demo.docs.forms.BasicFormExamplePage
-import com.fastscala.demo.docs.tables._
+import com.fastscala.demo.docs.tables.*
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.inScriptTag
 import com.fastscala.routing.req.Get
 import com.fastscala.routing.resp.{Ok, Response}
 import com.fastscala.routing.{FilterUtils, RoutingHandlerHelper}
-import com.fastscala.xml.scala_xml.FSScalaXmlEnv
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
-import com.fastscala.xml.scala_xml.JS.RichJs
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.routing.ScalaXmlRoutingHandlerHelper
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
 import org.eclipse.jetty.util.Callback
 import org.slf4j.LoggerFactory
 
@@ -23,7 +24,7 @@ import java.nio.file.{Files, Paths}
 import java.util.{Collections, Date}
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
+class RoutingHandler(implicit fss: FSSystem) extends ScalaXmlRoutingHandlerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
@@ -41,7 +42,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
 
   override def handlerInSession(response: JettyServerResponse, callback: Callback)(implicit req: Request, session: FSSession): Option[Response] = {
     if (req.getHttpURI.getPath == "/basic1") {
-      Some(Ok.htmlFromString(
+      Some(Ok.html(
         """<html>
           |<body>
           |<h1>Basic example 1</h1>
@@ -53,9 +54,9 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
       Some(session.createPage(implicit fsc => {
         val callback = fsc.callback(() => {
           println("clicked!")
-          Js.void
+          JS.void
         })
-        Ok.htmlFromString(
+        Ok.html(
           <html>
             <body>
               <h1>Basic example 2</h1>
@@ -69,9 +70,9 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
       Some(session.createPage(implicit fsc => {
         val callback = fsc.callback(() => {
           println("clicked!")
-          Js.void
+          JS.void
         })
-        Ok.htmlFromString(
+        Ok.html(
           <html>
             <head>{fsc.fsPageScript().inScriptTag}</head>
             <body>
@@ -84,11 +85,11 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
       }))
     } else if (req.getHttpURI.getPath == "/basic4") {
       Some(session.createPage(implicit fsc => {
-        val callback = fsc.callback(Js("document.getElementById('myInput').value"), str => {
+        val callback = fsc.callback(JS("document.getElementById('myInput').value"), str => {
           println(s"input has value: '$str'")
-          Js.alert(s"The server has received your input ('$str') at ${new Date().toGMTString}")
+          JS.alert(s"The server has received your input ('$str') at ${new Date().toGMTString}")
         })
-        Ok.htmlFromString(
+        Ok.html(
           <html>
               <head>{fsc.fsPageScript().inScriptTag}</head>
               <body>
@@ -112,7 +113,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
         })
       }
 
-      FSDemoMainMenu.serve().map(servePage[FSScalaXmlEnv.type](_)).orElse({
+      FSDemoMainMenu.serve().map(servePage(_)).orElse({
         Some(req).collect {
           case Get("demo") => servePage(new SimpleTableExamplePage())
           case Get("demo", "simple_tables") => servePage(new SimpleTableExamplePage())

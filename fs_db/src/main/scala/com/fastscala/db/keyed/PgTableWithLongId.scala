@@ -1,7 +1,7 @@
 package com.fastscala.db.keyed
 
 import com.fastscala.db.{PgTable, TableWithId}
-import scalikejdbc._
+import scalikejdbc.*
 
 import java.lang.reflect.Field
 

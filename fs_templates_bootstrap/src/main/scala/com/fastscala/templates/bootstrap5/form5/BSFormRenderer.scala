@@ -2,14 +2,14 @@ package com.fastscala.templates.bootstrap5.form5
 
 import com.fastscala.templates.bootstrap5.helpers.BSHelpers
 import com.fastscala.templates.form5.FormRenderer
-import com.fastscala.templates.form5.fields._
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport
+import com.fastscala.templates.form5.fields.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
 abstract class BSFormRenderer {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   def defaultRequiredFieldLabel: String
 
@@ -37,14 +37,14 @@ abstract class BSFormRenderer {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
-        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId).apply(lbl)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty) ++
+        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId).apply(lbl)).getOrElse(NodeSeq.Empty) ++
           inputElem
             .withStyle(textFieldRendererInputElemStyle)
             .withClass(textFieldRendererInputElemClasses)
             .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
-          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty)
+          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
@@ -67,14 +67,14 @@ abstract class BSFormRenderer {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
-        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty) ++
+        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
           inputElem
             .withClass(textareaFieldRendererTextareaElemClasses)
             .withStyle(textareaFieldRendererTextareaElemStyle)
             .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
-          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty)
+          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
@@ -95,13 +95,13 @@ abstract class BSFormRenderer {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = true // hints.contains(ShowValidationsHint)
-        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty) ++
+        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
           elem
             .addClass(selectFieldRendererSelectElemClasses)
             .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
-          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty)
+          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }
@@ -122,13 +122,13 @@ abstract class BSFormRenderer {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = true // hints.contains(ShowValidationsHint)
-        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty) ++
+        label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
           elem
             .addClass(multiSelectFieldRendererSelectElemClasses)
             .withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
-          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(FSScalaXmlSupport.fsXmlSupport.Empty)
+          error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(NodeSeq.Empty)
       }
     }
   }

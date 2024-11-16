@@ -1,9 +1,9 @@
 package com.fastscala.chartjs
 
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import io.circe.generic.semiauto
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
@@ -29,13 +29,13 @@ case class ChartJs(
                     , options: Json = Json.Null
                   ) {
 
-  import ChartJsEncoders._
+  import ChartJsEncoders.*
 
   def installInCanvas(canvasId: String): Js = {
-    import io.circe.generic.auto._
-    import io.circe.syntax._
+    import io.circe.generic.auto.*
+    import io.circe.syntax.*
 
-    Js(
+    JS(
       s"""const ctx = document.getElementById('$canvasId'); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces}); """
     )
   }

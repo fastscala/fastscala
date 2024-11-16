@@ -34,7 +34,7 @@ case class Country(
 object CountriesData {
 
   lazy val data = {
-    import io.circe._
+    import io.circe.*
     import io.circe.parser.parse
     implicit val CountryNameDecoder: Decoder[CountryName] = semiauto.deriveDecoder[CountryName]
     implicit val CountryDecoder: Decoder[Country] = semiauto.deriveDecoder[Country]

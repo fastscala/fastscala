@@ -2,17 +2,17 @@ package com.fastscala.templates.bootstrap5.toast
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.templates.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.templates.utils.Mutable
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.JS.RichJs
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
 abstract class BSToast2Base extends ClassEnrichableMutable with Mutable {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   val toastContainerId = IdGen.id("toast-container")
   val toastId = IdGen.id("toast")
@@ -106,23 +106,23 @@ abstract class BSToast2Base extends ClassEnrichableMutable with Mutable {
                , keyboard: Boolean = true
              )(implicit fsc: FSContext): Js = append2DOM()
 
-  def dispose(): Js = Js(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).dispose()""")
+  def dispose(): Js = JS(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).dispose()""")
 
   def remove(): Js = JS.removeId(toastContainerId)
 
   def hideAndRemove(): Js = hide() & onHidden(remove())
 
-  def hide(): Js = Js(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).hide()""")
+  def hide(): Js = JS(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).hide()""")
 
-  def show(): Js = Js(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).show()""")
+  def show(): Js = JS(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).show()""")
 
-  def onShow(js: Js): Js = Js(s"""$$('#$toastId').on('show.bs.toast', function (e) {${js.cmd}});""")
+  def onShow(js: Js): Js = JS(s"""$$('#$toastId').on('show.bs.toast', function (e) {${js.cmd}});""")
 
-  def onShown(js: Js): Js = Js(s"""$$('#$toastId').on('shown.bs.toast', function (e) {${js.cmd}});""")
+  def onShown(js: Js): Js = JS(s"""$$('#$toastId').on('shown.bs.toast', function (e) {${js.cmd}});""")
 
-  def onHide(js: Js): Js = Js(s"""$$('#$toastId').on('hide.bs.toast', function (e) {${js.cmd}});""")
+  def onHide(js: Js): Js = JS(s"""$$('#$toastId').on('hide.bs.toast', function (e) {${js.cmd}});""")
 
-  def onHidden(js: Js): Js = Js(s"""$$('#$toastId').on('hidden.bs.toast', function (e) {${js.cmd}});""")
+  def onHidden(js: Js): Js = JS(s"""$$('#$toastId').on('hidden.bs.toast', function (e) {${js.cmd}});""")
 
   def removeOnHidden(): Js = onHidden(remove())
 
@@ -146,7 +146,7 @@ abstract class BSToast2Base extends ClassEnrichableMutable with Mutable {
 
 object BSToast2 {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   def Simple(header: Elem)(contents: Elem): BSToast2Base = new BSToast2Base {
     override def toastHeader(): Elem = <div>{header.me_auto}</div>

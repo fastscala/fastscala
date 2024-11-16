@@ -4,8 +4,10 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.tables._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.bootstrap5.tables.*
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.Date
 
@@ -32,7 +34,7 @@ class BasicTableExamplePage() extends MultipleCodeExamples2Page() {
         override def tableResponsive: Option[Table5BootrapResponsiveSizes.Value] = Some(Table5BootrapResponsiveSizes.ALL)
 
         val ColActions = ColNs("Actions", implicit fsc => row => BSBtn().BtnPrimary.sm.lbl("Time?").ajax(implicit fsc => {
-          Js.alert(s"Time on server is: ${new Date().toGMTString}")
+          JS.alert(s"Time on server is: ${new Date().toGMTString}")
         }).btn)
         val ColName = ColStr("Name", _.name.common)
         val ColCCA2 = ColStr("CCA2", _.cca2)

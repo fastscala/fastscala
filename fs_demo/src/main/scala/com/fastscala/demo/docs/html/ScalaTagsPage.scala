@@ -13,7 +13,7 @@ class ScalaTagsPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "ScalaTags interoperability"
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     <p>
       Fastscala is not tied to {span.badge.text_bg_secondary.apply("scala-xml")}, but the libraries that are on top of do use it.
     </p>
@@ -32,7 +32,7 @@ class ScalaTagsPage extends MultipleCodeExamples2Page() {
       BSBtn().BtnPrimary.lbl("Open Modal").ajax(implicit fsc =>
         BSModal5.verySimple("Simple modal", "Close")({ modal =>
           implicit fsc =>
-            import scalatags.Text.all._
+            import scalatags.Text.all.*
             div(
               p("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce id elit velit. Proin convallis ultrices nisi ac fermentum."),
               p("Nunc a lobortis arcu. Nullam cursus dapibus risus in pulvinar.")

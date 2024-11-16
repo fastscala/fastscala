@@ -2,18 +2,18 @@ package com.fastscala.templates.bootstrap5.utils
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.helpers.{AttrEnrichableImmutable, ClassEnrichableImmutable}
 import com.fastscala.templates.bootstrap5.utils.IcnFA.RichIcn
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.xml.scala_xml.{FSScalaXmlSupport, JS}
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.xml.{Elem, NodeSeq}
 
 object BSBtn {
 
-  def apply(): BSBtn = new BSBtn("", FSScalaXmlSupport.fsXmlSupport.Empty)
+  def apply(): BSBtn = new BSBtn("", NodeSeq.Empty)
 }
 
 case class BSBtn(
@@ -60,7 +60,7 @@ case class BSBtn(
 
   def icn(i: Elem): BSBtn = copy(content = i ++ <span> </span> ++ content)
 
-  def lbl(s: String): BSBtn = copy(content = content ++ FSScalaXmlSupport.fsXmlSupport.buildText(s))
+  def lbl(s: String): BSBtn = copy(content = content ++ scala.xml.Text(s))
 
   def ns(ns: NodeSeq): BSBtn = copy(content = ns)
 

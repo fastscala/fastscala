@@ -5,8 +5,10 @@ import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.components.Widget
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
-import com.fastscala.templates.bootstrap5.tables._
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.bootstrap5.tables.*
 import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.Date
 import scala.xml.{Elem, NodeSeq}
@@ -18,7 +20,7 @@ class SelectableColsTableExamplePage extends MultipleCodeExamples2Page() {
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
       lazy val mainTable = new Table5Base
         with Table5BaseBootrapSupport
@@ -38,7 +40,7 @@ class SelectableColsTableExamplePage extends MultipleCodeExamples2Page() {
         override def tableResponsive: Option[Table5BootrapResponsiveSizes.Value] = Some(Table5BootrapResponsiveSizes.ALL)
 
         val ColActions = ColNs("Actions", implicit fsc => row => BSBtn().BtnPrimary.sm.lbl("Time?").ajax(implicit fsc => {
-          Js.alert(s"Time on server is: ${new Date().toGMTString}")
+          JS.alert(s"Time on server is: ${new Date().toGMTString}")
         }).btn)
         val ColName = ColStr("Name", _.name.common)
         val ColCCA2 = ColStr("CCA2", _.cca2)

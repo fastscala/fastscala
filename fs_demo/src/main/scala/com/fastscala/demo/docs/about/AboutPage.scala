@@ -4,13 +4,14 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.modals.BSModal5
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.fields.F7SubmitButtonField
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.text.F7StringField
 import com.fastscala.templates.form7.{DefaultForm7, F7Field}
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import io.circe.Decoder
 import io.circe.generic.semiauto
 
@@ -24,7 +25,7 @@ class AboutPage extends MultipleCodeExamples2Page {
 
   override def pageTitle: String = "FastScala | About"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderHtml() {
@@ -140,7 +141,7 @@ class AboutPage extends MultipleCodeExamples2Page {
       </p>
     }
     renderSnippet("Easily create advanced forms") {
-      import DefaultFSDemoBSForm7Renderers._
+      import DefaultFSDemoBSForm7Renderers.*
       val nameField = new F7StringField().label("Name").required(true)
       val emailField = new F7StringField().label("Email").inputType("email").required(true)
 
@@ -158,7 +159,7 @@ class AboutPage extends MultipleCodeExamples2Page {
       }.render()
     }
     renderSnippet("Support advanced interactions with a few lines of code") {
-      import DefaultFSDemoBSForm7Renderers._
+      import DefaultFSDemoBSForm7Renderers.*
       case class Definition(definition: Option[String], example: Option[String], synonyms: List[String], antonyms: List[String]) {
         def render(): NodeSeq = definition.map(definition => <li><i>{definition}</i>{example.map(": " + _).getOrElse("")}</li>).getOrElse(NodeSeq.Empty)
       }

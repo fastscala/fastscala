@@ -2,9 +2,9 @@ package com.fastscala.templates.form6.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form6.Form6
-import com.fastscala.xml.scala_xml.JS
-import com.fastscala.xml.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -218,22 +218,22 @@ class F6SaveButtonField[B](
   override def fieldsMatching(predicate: PartialFunction[F6Field, Boolean]): List[F6Field] = if (predicate.applyOrElse[F6Field, Boolean](this, _ => false)) List(this) else Nil
 
   val btnRenderer = JS.rerenderableP[(B => B, Form6)](_ => implicit fsc => {
-    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((Js.focus(elemId) & form.onSaveClientSide()).cmd)
+    case (transformer, form) => (evidence(transformer(btn(fsc))): Elem).withId(elemId).addOnClick((JS.focus(elemId) & form.onSaveClientSide()).cmd)
   })
 
   override def onEvent(event: FormEvent)(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
     case PostSave =>
       //btnRenderer.rerender((toInitialState, form)).printToConsoleBefore()
-      Js.void
-    case PreSave => Js.void
+      JS.void
+    case PreSave => JS.void
     case FailedSave =>
       //btnRenderer.rerender((toErrorState, form)).printToConsoleBefore()
-      Js.void
+      JS.void
     case ChangedField(_) =>
       //btnRenderer.rerender((toChangedState, form)).printToConsoleBefore()
-      Js.void
-    case Save => Js.void
-    case _ => Js.void
+      JS.void
+    case Save => JS.void
+    case _ => JS.void
   })
 
   override def render()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Elem =

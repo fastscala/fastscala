@@ -3,14 +3,16 @@ package com.fastscala.taskmanager.app
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.components.Widget
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.taskmanager.db.{DB, User}
 import com.fastscala.templates.bootstrap5.form7.layout.F7BSFormInputGroup
 import com.fastscala.templates.bootstrap5.modals.BSModal5WithForm7Base
-import com.fastscala.templates.bootstrap5.tables._
+import com.fastscala.templates.bootstrap5.tables.*
 import com.fastscala.templates.bootstrap5.utils.BSBtn
 import com.fastscala.templates.form7.F7Field
 import com.fastscala.templates.form7.fields.layout.F7VerticalField
 import com.fastscala.templates.form7.fields.text.F7StringField
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -18,7 +20,7 @@ class UsersPage extends BasePage() {
 
   override def pageTitle: String = "Users"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
     new Widget {
@@ -58,7 +60,7 @@ class UsersPage extends BasePage() {
 
       override def widgetTopRight()(implicit fsc: FSContext): NodeSeq = super.widgetTopRight() ++
         BSBtn().BtnSuccess.sm.lbl("Create User").ajax(implicit fsc => {
-          import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers._
+          import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers.*
           new BSModal5WithForm7Base("New User") {
             val user = new User("", "", "")
             override val rootField: F7Field = F7VerticalField()(

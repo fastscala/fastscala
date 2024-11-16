@@ -1,6 +1,6 @@
 package com.fastscala.db
 
-import scalikejdbc._
+import scalikejdbc.*
 
 trait Row[R <: Row[R]] extends RowBase {
   self: R =>

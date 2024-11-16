@@ -1,6 +1,6 @@
 package com.fastscala.templates.form7.fields.text
 
-import com.fastscala.templates.form7.renderers._
+import com.fastscala.templates.form7.renderers.*
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

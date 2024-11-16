@@ -3,8 +3,9 @@ package com.fastscala.demo.db
 import at.favre.lib.crypto.bcrypt.BCrypt
 import com.fastscala.core.{FSContext, FSSessionVarOpt}
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.io.File
 import java.nio.file.Files
@@ -38,7 +39,7 @@ class User(
   })
 
   def miniHeadshotOrPlaceholderRendered: Elem = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers._
+    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
     photo.map({
       case (photoFileName, photoBytes) =>
         def imageData = s"data:${Files.probeContentType(new File(photoFileName).toPath())};base64,${Base64.getEncoder.encodeToString(photoBytes)}"

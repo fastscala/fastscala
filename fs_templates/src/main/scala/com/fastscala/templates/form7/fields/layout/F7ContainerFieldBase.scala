@@ -3,9 +3,10 @@ package com.fastscala.templates.form7.fields.layout
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.templates.form7._
-import com.fastscala.templates.form7.mixins._
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.templates.form7.*
+import com.fastscala.templates.form7.mixins.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -40,7 +41,7 @@ abstract class F7ContainerFieldBase
     if (enabled != currentlyEnabled) {
       JS.replace(aroundId, render())
     } else {
-      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(Js.void)
+      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
     }
   }
 
@@ -49,5 +50,5 @@ abstract class F7ContainerFieldBase
       children.toList.flatMap(_._2.fieldAndChildreenMatchingPredicate(predicate))
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(Js.void)
+    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 }

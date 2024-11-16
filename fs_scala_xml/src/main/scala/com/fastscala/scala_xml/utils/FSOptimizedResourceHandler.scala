@@ -1,12 +1,11 @@
-package com.fastscala.utils
+package com.fastscala.scala_xml.utils
 
-import com.fastscala.core.FSXmlUtils.elem2NodeSeq
-import com.fastscala.core.{FSXmlElem, FSXmlNodeSeq, FSXmlEnv, FSXmlSupport}
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.method.GET
 import com.fastscala.routing.req.{Get, Req}
 import com.fastscala.routing.resp.{ClientError, Ok, Response}
 import com.fastscala.server.*
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
 import org.eclipse.jetty.util.{Callback, IO}
 
@@ -22,13 +21,14 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.Using
+import scala.xml.{Elem, NodeSeq}
 
 object FSOptimizedResourceHandler {
 
   def cssLoaderUrl(files: String*): String = "/static/optimized/css_loader.css?" + files.map("f=" + URLEncoder.encode(_, "UTF-8")).mkString("&")
 
-  def cssLoaderElem[E <: FSXmlEnv](using env: FSXmlSupport[E])(files: String*): FSXmlElem[E] =
-    env.buildElem("link", "rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files: _*))(env.Empty)
+  def cssLoaderElem(files: String*): Elem =
+    <link></link>.withAttrs("rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files: _*))
 }
 
 class FSOptimizedResourceHandler(
@@ -173,11 +173,11 @@ class FSOptimizedResourceHandler(
 
   var version = System.currentTimeMillis()
 
-  def optimizedCss[E <: FSXmlEnv](using env: FSXmlSupport[E])(cssFiles: String*): FSXmlNodeSeq[E] =
-    elem2NodeSeq(env.buildElem("link",
+  def optimizedCss(cssFiles: String*): NodeSeq =
+    <link></link>.withAttrs(
       "rel" -> "stylesheet",
       "type" -> "text/css",
       "media" -> "all",
       "href" -> (s"/static/css_loader.css?version=$version&" + cssFiles.map("f=" + _).mkString("&"))
-    )(env.Empty))
+    )
 }

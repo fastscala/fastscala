@@ -5,10 +5,9 @@ import com.fastscala.demo.db.{CurrentUser, FakeDB}
 import com.fastscala.routing.req.Get
 import com.fastscala.routing.resp.{Ok, Redirect, Response}
 import com.fastscala.routing.{FilterUtils, RoutingHandlerHelper}
+import com.fastscala.scala_xml.routing.ScalaXmlRoutingHandlerHelper
 import com.fastscala.taskmanager.app.{FSTaskmanagerMainMenu, TasksPage}
-import com.fastscala.xml.scala_xml.FSScalaXmlEnv
-import com.fastscala.xml.scala_xml.FSScalaXmlSupport.fsXmlSupport
-import org.eclipse.jetty.server.{Request, Response => JettyServerResponse}
+import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
 import org.eclipse.jetty.util.Callback
 import org.slf4j.LoggerFactory
 
@@ -17,7 +16,7 @@ import java.nio.file.{Files, Paths}
 import java.util.Collections
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
+class RoutingHandler(implicit fss: FSSystem) extends ScalaXmlRoutingHandlerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
@@ -43,7 +42,7 @@ class RoutingHandler(implicit fss: FSSystem) extends RoutingHandlerHelper {
         })
       }
 
-      FSTaskmanagerMainMenu.serve().map(servePage[FSScalaXmlEnv.type](_)).orElse({
+      FSTaskmanagerMainMenu.serve().map(servePage(_)).orElse({
         Some(req).collect {
           case Get() | Get("tasks") => servePage(new TasksPage())
         }

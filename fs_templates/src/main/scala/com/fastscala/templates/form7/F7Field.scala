@@ -2,9 +2,10 @@ package com.fastscala.templates.form7
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithState}
 import com.fastscala.templates.utils.ElemWithRandomId
-import com.fastscala.xml.scala_xml.JS
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -20,28 +21,28 @@ trait F7Field
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
     case ChangedField(field) if deps.contains(field) => updateFieldStatus() & form.onEvent(ChangedField(this))
     case ChangedField(f) if f == this => updateFieldStatus()
-    case _ => Js.void
+    case _ => JS.void
   }
 
-  def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = Js.void
+  def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = JS.void
 
   val aroundId: String = randomElemId
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem
 
-  def postRenderSetupJs()(implicit fsc: FSContext): Js = Js.void
+  def postRenderSetupJs()(implicit fsc: FSContext): Js = JS.void
 
-  def preValidation()(implicit form: Form7, fsc: FSContext): Js = Js.void
+  def preValidation()(implicit form: Form7, fsc: FSContext): Js = JS.void
 
   def validate(): Seq[(F7Field, NodeSeq)] = Nil
 
-  def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = Js.void
+  def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = JS.void
 
-  def preSubmit()(implicit form: Form7, fsc: FSContext): Js = Js.void
+  def preSubmit()(implicit form: Form7, fsc: FSContext): Js = JS.void
 
-  def submit()(implicit form: Form7, fsc: FSContext): Js = Js.void
+  def submit()(implicit form: Form7, fsc: FSContext): Js = JS.void
 
-  def postSubmit()(implicit form: Form7, fsc: FSContext): Js = Js.void
+  def postSubmit()(implicit form: Form7, fsc: FSContext): Js = JS.void
 
   def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field]
 
@@ -61,8 +62,8 @@ trait F7Field
   }
 
   def shouldShowValidation_?(implicit form: Form7): Boolean = {
-    import F7FormValidationStrategy._
-    import Form7State._
+    import F7FormValidationStrategy.*
+    import Form7State.*
     def aux(validationStrategy: F7FormValidationStrategy.Value): Boolean = {
       validationStrategy match {
         case ValidateBeforeUserInput => true

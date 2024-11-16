@@ -4,7 +4,7 @@ import sbt.Keys.*
 resolvers += Resolver.mavenLocal
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / scalaVersion := "2.13.15"
+ThisBuild / scalaVersion := "3.6.1"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
@@ -48,7 +48,7 @@ lazy val fs_circe = (project in file(FSRoot + "fs_circe"))
   )
   .dependsOn(fastscala)
 
-lazy val fs_scala_xml = (project in file(FSRoot + "fs_scala_xml_support"))
+lazy val fs_scala_xml = (project in file(FSRoot + "fs_scala_xml"))
   .settings(
     name := "fs_scala_xml",
 
@@ -61,11 +61,12 @@ lazy val fs_scala_xml = (project in file(FSRoot + "fs_scala_xml_support"))
 lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .settings(
     name := "fs_db",
+
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.7.3",
-      "org.xerial" % "sqlite-jdbc" % "3.46.0.1",
-      "org.scalikejdbc" %% "scalikejdbc" % "4.3.1",
-      "com.google.guava" % "guava" % "33.2.1-jre",
+      "org.postgresql" % "postgresql" % "42.7.4",
+      "org.xerial" % "sqlite-jdbc" % "3.47.0.0",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.3.2",
+      "com.google.guava" % "guava" % "33.3.1-jre",
       "commons-codec" % "commons-codec" % "1.17.1",
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
     ),
@@ -87,12 +88,18 @@ lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
   .dependsOn(fs_scala_xml)
 
 lazy val fs_templates_bootstrap = (project in file(FSRoot + "fs_templates_bootstrap"))
-  .settings(name := "fs_templates_bootstrap")
+  .settings(
+    name := "fs_templates_bootstrap",
+  )
   .dependsOn(fs_templates)
   .dependsOn(fs_circe)
 
 lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
-  .settings(name := "fs_chartjs")
+  .settings(
+    name := "fs_chartjs",
+
+    scalacOptions ++= Seq("-Xmax-inlines", "50"),
+  )
   .dependsOn(fastscala)
   .dependsOn(fs_scala_xml)
   .dependsOn(fs_circe)
@@ -143,12 +150,6 @@ lazy val fs_taskmanager = (project in file(FSRoot + "fs_taskmanager"))
     Compile / unmanagedResourceDirectories += baseDirectory.value / "src" / "main" / "scala",
 
     publishArtifact := true,
-
-    libraryDependencies ++= Seq(
-      ("org.typelevel" % "cats-effect" % "3.5.5") cross CrossVersion.for3Use2_13,
-      "at.favre.lib" % "bcrypt" % "0.10.2",
-      "com.lihaoyi" %% "scalatags" % "0.13.1",
-    ),
 
     bashScriptEnvConfigLocation := Some("/etc/default/" + (Linux / packageName).value),
     rpmRelease := "1.0.0",

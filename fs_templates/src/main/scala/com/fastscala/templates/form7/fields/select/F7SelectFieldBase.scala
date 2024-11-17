@@ -85,6 +85,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
 
         val onchangeJs = fsc.callback(JS.elementValueById(elemId), id => {
           ids2Option.get(id) match {
+            case Some(value) if currentValue == value => JS.void
             case Some(value) =>
               currentRenderedValue = Some(value)
               if (currentValue != value) {
@@ -92,7 +93,6 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
                 currentValue = value
                 form.onEvent(ChangedField(this))
               } else JS.void
-            case Some(value) if currentValue == value => JS.void
             case None =>
               // Log error
               JS.void

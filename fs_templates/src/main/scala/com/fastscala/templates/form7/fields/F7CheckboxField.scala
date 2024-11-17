@@ -56,6 +56,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
 
         val onchangeJs = fsc.callback(JS.isCheckedById(elemId), str => {
           str.toBooleanOption match {
+            case Some(value) if currentValue == value => JS.void
             case Some(value) =>
               currentRenderedValue = Some(value)
               if (currentValue != value) {
@@ -65,7 +66,6 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
               } else {
                 JS.void
               }
-            case Some(value) if currentValue == value => JS.void
             case None =>
               // Log error
               JS.void

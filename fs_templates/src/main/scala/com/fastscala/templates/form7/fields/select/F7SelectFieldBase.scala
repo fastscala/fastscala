@@ -51,7 +51,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
-  
+
   override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
     super.updateFieldStatus() &
       currentRenderedOptions.flatMap({

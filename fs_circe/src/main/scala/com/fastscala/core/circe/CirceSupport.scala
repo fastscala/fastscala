@@ -4,7 +4,7 @@ import com.fastscala.core.{FSContext, FSFunc}
 import com.fastscala.js.Js
 import io.circe.{Decoder, Json}
 
-object CIrceSupport {
+object CirceSupport {
 
   implicit class FSContextWithCirceSupport(val fsc: FSContext) extends AnyVal {
 

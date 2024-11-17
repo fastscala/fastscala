@@ -26,7 +26,7 @@ object FileUpload {
              clipboardUpload: Boolean = false,
              acceptTypes: Option[String] = None
            )(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.core.circe.CIrceSupport.*
+    import com.fastscala.core.circe.CirceSupport.*
 
     val actionUrl = fsc.fileUploadActionUrl({
       case uploadedFile => processUpload(uploadedFile)

@@ -1,7 +1,7 @@
 package com.fastscala.demo.docs.fastscala
 
 import com.fastscala.core.FSContext
-import com.fastscala.core.circe.CIrceSupport.FSContextWithCirceSupport
+import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS

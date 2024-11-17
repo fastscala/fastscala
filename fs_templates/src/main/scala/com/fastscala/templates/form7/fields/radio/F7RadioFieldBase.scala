@@ -58,7 +58,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
     case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
     case ChangedField(f) if f == this => updateFieldStatus()
-    case _ => Js.void
+    case _ => JS.void
   }
 
   override def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = _disabled().pipe(shouldBeDisabled => {

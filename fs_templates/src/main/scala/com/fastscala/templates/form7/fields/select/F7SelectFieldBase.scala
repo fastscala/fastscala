@@ -51,13 +51,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
   var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
-
-  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
-    case ChangedField(field) if deps.contains(field) => reRender() & form.onEvent(ChangedField(this))
-    case ChangedField(f) if f == this => updateFieldStatus()
-    case _ => JS.void
-  }
-
+  
   override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
     super.updateFieldStatus() &
       currentRenderedOptions.flatMap({

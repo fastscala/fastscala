@@ -47,10 +47,8 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
-
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.updateFieldStatus() &
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().map(_ &
       currentRenderedOptions.flatMap({
         case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
           this.currentRenderedValue = Some(currentValue)
@@ -64,6 +62,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
           })
         case _ => Some(JS.void)
       }).getOrElse(JS.void)
+    )
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)

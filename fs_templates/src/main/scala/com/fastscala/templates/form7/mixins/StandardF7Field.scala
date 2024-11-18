@@ -2,10 +2,10 @@ package com.fastscala.templates.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.renderers.StandardF7FieldRenderer
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
@@ -16,8 +16,9 @@ trait StandardF7Field extends F7Field
 
   def visible: () => Boolean = () => enabled
 
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.updateFieldStatus() &
-    updateValidation()
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().map(_ &
+      updateValidation())
 
   override def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = {
     implicit val renderHints: Seq[RenderHint] = form.formRenderHits()

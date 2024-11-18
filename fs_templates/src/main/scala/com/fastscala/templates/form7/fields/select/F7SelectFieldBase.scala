@@ -2,12 +2,13 @@ package com.fastscala.templates.form7.fields.select
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.mixins.*
 import com.fastscala.templates.form7.renderers.*
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
+import scala.util.{Failure, Success}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRenderer) extends StandardOneInputElemF7Field[T]
@@ -50,18 +51,18 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
-
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.updateFieldStatus() &
-      currentRenderedOptions.flatMap({
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().flatMap(superJs => {
+      currentRenderedOptions.map({
+        // The value rendered on the client side is different from the one on the server side:
         case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
           option2Id.get(currentValue).map(valueId => {
             this.currentRenderedValue = Some(currentValue)
-            JS.setElementValue(elemId, valueId)
-          })
-        case _ => Some(JS.void)
-      }).getOrElse(JS.void)
+            Success(superJs & JS.setElementValue(elemId, valueId))
+          }).getOrElse(Failure(new Exception("CurrentValue is not one of the rendered values")))
+        case _ => Success(superJs)
+      }).getOrElse(Success(superJs))
+    })
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)

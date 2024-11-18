@@ -2,11 +2,11 @@ package com.fastscala.templates.form7.fields
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.mixins.*
 import com.fastscala.templates.form7.renderers.*
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -43,8 +43,9 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer) extends 
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.updateFieldStatus() &
-    JS.setChecked(elemId, currentValue)
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().map(_ &
+      JS.setChecked(elemId, currentValue))
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)

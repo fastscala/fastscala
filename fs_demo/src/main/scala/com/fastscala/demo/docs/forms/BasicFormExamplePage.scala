@@ -4,6 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.bootstrap5.form7.BSForm7Renderers
 import com.fastscala.templates.bootstrap5.modals.BSModal5
@@ -13,7 +14,6 @@ import com.fastscala.templates.form7.fields.*
 import com.fastscala.templates.form7.fields.layout.{F7ContainerField, F7VerticalField}
 import com.fastscala.templates.form7.fields.select.F7SelectField
 import com.fastscala.templates.form7.fields.text.{F7IntOptField, F7LocalDateOptField, F7StringField}
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 class User1(
              var firstName: String,

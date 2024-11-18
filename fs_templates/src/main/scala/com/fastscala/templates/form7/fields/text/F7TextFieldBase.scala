@@ -2,11 +2,11 @@ package com.fastscala.templates.form7.fields.text
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.*
 import com.fastscala.templates.form7.mixins.*
 import com.fastscala.templates.form7.renderers.*
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -52,12 +52,13 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.updateFieldStatus() &
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().map(_ &
       currentRenderedValue.filter(_ != currentValue).map(currentRenderedValue => {
         this.currentRenderedValue = Some(currentValue)
         JS.setElementValue(elemId, this.toString(currentValue))
       }).getOrElse(JS.void)
+    )
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)
@@ -105,7 +106,10 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer) 
   }
 
   def inputTypeEmail = super.inputType("email")
+
   def inputTypePassword = super.inputType("password")
+
   def inputTypeTel = super.inputType("tel")
+
   def inputTypeUrl = super.inputType("url")
 }

@@ -51,12 +51,12 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.updateFieldStatus() &
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().map(_ &
       currentRenderedValue.filter(_ != currentValue).map(currentRenderedValue => {
         this.currentRenderedValue = Some(currentValue)
         JS.setElementValue(elemId, this.toString(currentValue))
-      }).getOrElse(JS.void)
+      }).getOrElse(JS.void))
 
   def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
     if (!enabled) renderer.renderDisabled(this)

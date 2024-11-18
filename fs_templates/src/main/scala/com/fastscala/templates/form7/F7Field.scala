@@ -2,11 +2,12 @@ package com.fastscala.templates.form7
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.templates.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithState}
 import com.fastscala.templates.utils.ElemWithRandomId
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
+import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 /**
@@ -19,12 +20,16 @@ trait F7Field
     with ElemWithRandomId {
 
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
-    case ChangedField(field) if deps.contains(field) => updateFieldStatus() & form.onEvent(ChangedField(this))
-    case ChangedField(f) if f == this => updateFieldStatus()
+    case ChangedField(field) if deps.contains(field) => updateFieldWithoutReRendering().getOrElse(reRender()) &
+      // If this field (B) depends on field A and field C depends on B, then we want to trigger also a ChangedField event for this field (B), so that field C also updates:
+      form.onEvent(ChangedField(this))
     case _ => JS.void
   }
 
-  def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = JS.void
+  /**
+   * Tries to update the field without needing to rerender. If
+   */
+  def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Try[Js] = Success(JS.void)
 
   val aroundId: String = randomElemId
 

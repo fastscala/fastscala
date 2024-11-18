@@ -47,6 +47,6 @@ trait F7FieldWithDisabled extends F7FieldInputFieldMixin {
     }
   })
 
-  override def updateFieldStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js =
-    super.updateFieldStatus() & updateFieldDisabledStatus()
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().map(_ & updateFieldDisabledStatus())
 }

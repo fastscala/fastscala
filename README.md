@@ -48,6 +48,7 @@ To run the project, you can use SBT, Scala's interactive build tool:
 ```
 sbt fs_demo/run
 ```
+Open the demo at [http://localhost:9064/](http://localhost:9064/)
 
 ## 🤝 Contributing
 Contributions are always welcome! Whether you want to file a bug report, suggest an enhancement, or submit a pull request, feel free to get involved.

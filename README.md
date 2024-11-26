@@ -33,9 +33,8 @@ Follow these steps to get FastScala up and running:
 
 Ensure that you have the following tools installed on your system:
 
-- 🟢 **Scala 2.13+** – [Download Scala](https://www.scala-lang.org/download/)
 - 🔵 **SBT (Scala Build Tool)** – [Install SBT](https://www.scala-sbt.org/download.html)
-- 🟡 **Java 8+** – [Get Java](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
+- 🟡 **Java 17+** – [OpenJDK](https://openjdk.org/install/)
 
 ### 2️⃣ Cloning the Repository
 
@@ -47,9 +46,9 @@ cd fastscala
 ### 3️⃣ Running the Project
 To run the project, you can use SBT, Scala's interactive build tool:
 ```
-sbt
-fs_demo/run
+sbt fs_demo/run
 ```
+Open the demo at [http://localhost:9064/](http://localhost:9064/)
 
 ## 🤝 Contributing
 Contributions are always welcome! Whether you want to file a bug report, suggest an enhancement, or submit a pull request, feel free to get involved.

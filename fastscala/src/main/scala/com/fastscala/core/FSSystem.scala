@@ -1,5 +1,6 @@
 package com.fastscala.core
 
+import com.fastscala.core.FSContext.logger
 import com.fastscala.js.{JS, Js}
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.req.{Get, Post}
@@ -120,35 +121,16 @@ class FSContext(
     }
   }
 
-  def createNewChildContextAndGCExistingOne(key: AnyRef, debugLabel: Option[String] = None): FSContext = {
+  def inNewChildContextFor[T](contextFor: AnyRef, debugLabel: Option[String] = None)(f: FSContext => T): T = {
     if (deleted) throw new Exception("Trying to create child of deleted context")
-    page.key2FSContext.get(key).foreach(existing => {
-      children -= existing
-      existing.delete()
-    })
+    // If it already exists, delete:
+    page.deleteContextFor(contextFor)
+
     val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
-    page.key2FSContext(key) = newContext
+    page.key2FSContext(contextFor) = newContext
     logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
-    children += page.key2FSContext(key)
-    page.key2FSContext(key)
-  }
-
-  def getOrCreateContext(key: AnyRef, debugLabel: Option[String] = None): FSContext = {
-    if (deleted) throw new Exception("Trying to get child of deleted context")
-    page.key2FSContext.getOrElseUpdate(key, {
-      val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
-      children += newContext
-      logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
-      newContext
-    })
-  }
-
-  def deleteContext(key: AnyRef): Unit = {
-    page.key2FSContext.get(key).foreach(existing => {
-      logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
-      children -= existing
-      existing.delete()
-    })
+    children += newContext
+    f(newContext)
   }
 
   def delete(): Unit = {
@@ -192,9 +174,9 @@ class FSContext(
   }
 
   def anonymousPageURL(
-    render: FSContext => String
-    , name: String
-  ): String = {
+                        render: FSContext => String
+                        , name: String
+                      ): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
     session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
@@ -299,6 +281,20 @@ class FSPage(
   val fileDownloadCallbacks = collection.mutable.Map[String, FSFileDownload]()
 
   val rootFSContext = new FSContext(session, this, onPageUnload = onPageUnload, debugLbl = Some("page_root_context"))
+
+  def inContextFor[T](contextFor: AnyRef)(f: FSContext => T): T = {
+    if (!key2FSContext.contains(contextFor)) throw new Exception(s"Trying to get context for $contextFor, but wasn't found")
+    if (key2FSContext(contextFor).deleted) throw new Exception(s"Trying to get context for $contextFor, but it was deleted")
+    f(key2FSContext(contextFor))
+  }
+
+  def deleteContextFor(key: AnyRef): Unit = {
+    key2FSContext.get(key).foreach(existing => {
+      logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
+      existing.parentFSContext.foreach(_.children -= existing)
+      existing.delete()
+    })
+  }
 
   def deleteOlderThan(ts: Long): Unit = {
     val callbacksToRemove = callbacks.filter(_._2.keepAliveAt < ts)
@@ -430,13 +426,13 @@ abstract class FSSessionVarOpt[T]() {
 }
 
 class FSAnonymousPage(
-  val id: String
-  , val session: FSSession
-  , val render: FSContext => String
-  , val createdAt: Long = System.currentTimeMillis()
-  , var keepAliveAt: Long = System.currentTimeMillis()
-  , var debugLbl: Option[String] = None
-) extends FSHasSession {
+                       val id: String
+                       , val session: FSSession
+                       , val render: FSContext => String
+                       , val createdAt: Long = System.currentTimeMillis()
+                       , var keepAliveAt: Long = System.currentTimeMillis()
+                       , var debugLbl: Option[String] = None
+                     ) extends FSHasSession {
 
   def renderAsString()(implicit fsc: FSContext): String = render(fsc)
 

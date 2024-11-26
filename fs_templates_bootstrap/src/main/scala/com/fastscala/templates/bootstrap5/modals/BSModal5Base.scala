@@ -81,9 +81,9 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def dispose(): Js = JS(s"""$$('#$modalId').modal('dispose')""")
 
-  def deleteContext()(implicit fsc: FSContext): Unit = fsc.page.rootFSContext.deleteContext(this)
+  def deleteContext()(implicit fsc: FSContext): Unit = fsc.page.deleteContextFor(this)
 
-  def removeAndDeleteContext()(implicit fsc: FSContext): Js = JS.removeId(modalId) & fsc.page.rootFSContext.getOrCreateContext(this).callback(() => {
+  def removeAndDeleteContext()(implicit fsc: FSContext): Js = JS.removeId(modalId) & fsc.callback(() => {
     deleteContext()
     JS.void
   })
@@ -154,7 +154,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
   }
 
   def renderModal()(implicit fsc: FSContext): Elem = {
-    fsc.page.rootFSContext.createNewChildContextAndGCExistingOne(this, Some("modal")).pipe(implicit fsc => {
+    fsc.page.rootFSContext.inNewChildContextFor(this, Some("modal")).pipe(implicit fsc => {
       transformModalElem {
         div.withAttr("tabindex" -> "-1") {
           transformModalDialogElem {

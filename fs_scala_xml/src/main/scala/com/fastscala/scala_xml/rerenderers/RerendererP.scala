@@ -12,7 +12,6 @@ class RerendererP[P](
                       renderFunc: RerendererP[P] => FSContext => P => Elem,
                       idOpt: Option[String] = None,
                       debugLabel: Option[String] = None,
-                      gcOldFSContext: Boolean = true
                     ) {
 
   var aroundId = idOpt.getOrElse("around" + IdGen.id)
@@ -20,10 +19,7 @@ class RerendererP[P](
 
   def render(param: P)(implicit fsc: FSContext): Elem = {
     rootRenderContext = Some(fsc)
-    val rendered = renderFunc(this)({
-      if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
-      else fsc
-    })(param)
+    val rendered = fsc.inNewChildContextFor(this, debugLabel = debugLabel)(renderFunc(this)(_)(param))
     RerendererDebugStatusState().render(rendered.getId match {
       case Some(id) =>
         aroundId = id

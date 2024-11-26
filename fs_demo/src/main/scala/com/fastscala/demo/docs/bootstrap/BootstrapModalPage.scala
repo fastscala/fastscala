@@ -22,7 +22,7 @@ class BootstrapModalPage extends MultipleCodeExamples2Page() {
             span.apply("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed posuere nec nisl non blandit. Ut vel libero dictum, feugiat risus quis, placerat lorem. Nam eleifend egestas pulvinar. Vestibulum non viverra sapien, at hendrerit ex. Vestibulum tempor eu risus ut vestibulum. Nullam semper vitae ex quis vestibulum. Fusce posuere, purus non consequat scelerisque, nulla risus bibendum diam, finibus mollis ipsum ligula eu enim.")
 
           override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = {
-            Some(BSBtn().BtnPrimary.lbl("Hide Modal").onclick(hide() & removeAndDeleteContext()).btn)
+            Some(BSBtn().BtnPrimary.lbl("Remove Modal").onclick(hide() & removeAndDeleteContext()).btn)
           }
         }.installAndShow()).btn
       }

@@ -14,7 +14,6 @@ class ContentRerenderer(
                          renderFunc: ContentRerenderer => FSContext => NodeSeq,
                          id: Option[String] = None,
                          debugLabel: Option[String] = None,
-                         gcOldFSContext: Boolean = true
                        ) {
 
   val outterElem: Elem = <div></div>
@@ -25,10 +24,7 @@ class ContentRerenderer(
   def render()(implicit fsc: FSContext): Elem = {
     rootRenderContext = Some(fsc)
     RerendererDebugStatusState().render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
-      elem.withContents(renderFunc(this)({
-        if (gcOldFSContext) fsc.createNewChildContextAndGCExistingOne(this, debugLabel = debugLabel)
-        else fsc
-      }))
+      elem.withContents(fsc.inNewChildContextFor(this, debugLabel = debugLabel)(renderFunc(this)(_)))
     }))
   }
 

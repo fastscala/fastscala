@@ -4,7 +4,7 @@ import com.fastscala.core.{FSSession, FSSystem}
 import com.fastscala.demo.db.{CurrentUser, FakeDB}
 import com.fastscala.demo.docs.*
 import com.fastscala.demo.docs.bootstrap.BootstrapModalPage
-import com.fastscala.demo.docs.chartjs.SimpleChartjsPage
+import com.fastscala.demo.docs.other.SimpleChartjsPage
 import com.fastscala.demo.docs.forms.BasicFormExamplePage
 import com.fastscala.demo.docs.tables.*
 import com.fastscala.js.Js

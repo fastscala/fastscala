@@ -89,6 +89,8 @@ trait ScalaXmlElemUtils extends Any {
   def withAppendedToContents(value: NodeSeq): Elem = elem.copy(child = elem.child ++ value)
 
   def withContents(value: NodeSeq): Elem = apply(value)
+  
+  def withContents(value: Elem): Elem = apply(value)
 
   def apply(value: NodeSeq): Elem = elem.copy(child = value)
 

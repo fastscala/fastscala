@@ -22,38 +22,38 @@ object TestEntity3 extends PgTable[TestEntity3] {
 
 trait TableRowSpecBase extends AnyFlatSpec {
 
-  def runTests() {
-  "Create table" should "succeed" in {
-    DB.localTx({ implicit session =>
-      TestEntity3.__createTableSQL.foreach(_.execute())
-    })
-  }
-  "Insert row" should "succeed" in {
-    DB.localTx({ implicit session =>
-      new TestEntity3().insert()
-    })
-  }
-  "Read row" should "succeed" in {
-    DB.localTx({ implicit session =>
-      val example = new TestEntity3()
-      val single = TestEntity3.selectAll().head
+  def runTests(): Unit = {
+    "Create table" should "succeed" in {
+      DB.localTx({ implicit session =>
+        TestEntity3.__createTableSQL.foreach(_.execute())
+      })
+    }
+    "Insert row" should "succeed" in {
+      DB.localTx({ implicit session =>
+        new TestEntity3().insert()
+      })
+    }
+    "Read row" should "succeed" in {
+      DB.localTx({ implicit session =>
+        val example = new TestEntity3()
+        val single = TestEntity3.selectAll().head
 
-      assert(example.myInt == single.myInt)
-      assert(example.myLong == single.myLong)
-      assert(example.myDouble == single.myDouble)
-      assert(example.myFloat == single.myFloat)
-      assert(example.myShort == single.myShort)
-      assert(example.myString == single.myString)
-      assert(example.myBoolean == single.myBoolean)
-      assert(example.myChar == single.myChar)
-    })
+        assert(example.myInt == single.myInt)
+        assert(example.myLong == single.myLong)
+        assert(example.myDouble == single.myDouble)
+        assert(example.myFloat == single.myFloat)
+        assert(example.myShort == single.myShort)
+        assert(example.myString == single.myString)
+        assert(example.myBoolean == single.myBoolean)
+        assert(example.myChar == single.myChar)
+      })
+    }
+    "Delete table" should "succeed" in {
+      DB.localTx({ implicit session =>
+        TestEntity3.__dropTableSQL.execute()
+      })
+    }
   }
-  "Delete table" should "succeed" in {
-    DB.localTx({ implicit session =>
-      TestEntity3.__dropTableSQL.execute()
-    })
-  }
-}
 }
 
 class SQLiteTableRowSpec extends TableRowSpecBase with SQLiteDB

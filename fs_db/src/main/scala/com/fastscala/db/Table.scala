@@ -65,6 +65,12 @@ trait Table[R] extends TableBase {
     })
   }
 
+  def select(modify: SQLSyntax => SQLSyntax): List[R] = {
+    DB.readOnly({ implicit session =>
+      sql"${modify(selectFromSQL)}".map(fromWrappedResultSet).list()
+    })
+  }
+
   def delete(rest: SQLSyntax): Long = {
     DB.localTx({ implicit session =>
       val query = deleteFrom.append(rest)

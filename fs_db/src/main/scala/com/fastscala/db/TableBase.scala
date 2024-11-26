@@ -25,8 +25,12 @@ trait TableBase {
 
   def sampleRow: Any
 
+  val transientAnnotations = Set("java.beans.Transient", "scala.transient")
+
   val fieldsList: List[Field] = sampleRow.getClass.getDeclaredFields.iterator.filter({
-    case field => !field.getAnnotations.exists(anno => Set("java.beans.Transient", "scala.transient").contains(anno.annotationType().getName))
+    case field =>
+      !field.getName.contains("$") &&
+        !field.getAnnotations.exists(anno => transientAnnotations.contains(anno.annotationType().getName))
   }).toList
 
   def tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, sampleRow.getClass.getSimpleName)

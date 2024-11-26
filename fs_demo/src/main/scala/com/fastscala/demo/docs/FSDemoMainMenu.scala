@@ -9,6 +9,7 @@ import com.fastscala.demo.docs.js.JsUtilsPage
 import com.fastscala.demo.docs.loggedout.LoginPage
 import com.fastscala.demo.docs.navigation.DefaultBSMenuRenderer.*
 import com.fastscala.demo.docs.navigation.{BSMenu, MenuSection, RoutingMenuItem, SimpleMenuItem}
+import com.fastscala.demo.docs.other.JSTreePage
 import com.fastscala.demo.docs.tables.ModifyingTableExamplePage
 
 object FSDemoMainMenu extends BSMenu(
@@ -68,7 +69,8 @@ object FSDemoMainMenu extends BSMenu(
   MenuSection("Logged in")(
     new RoutingMenuItem("demo", "login")("Login example", () => new LoginPage()),
   ),
-  //  MenuSection("chart.js integration")(
-  //    SimpleMenuItem("Simple", "/demo/chartjs/simple")
-  //  ),
+  MenuSection("Other integrations")(
+    SimpleMenuItem("ChartJS", "/demo/chartjs/simple"),
+    new RoutingMenuItem("demo", "jstree", "simple")("JSTree", () => new JSTreePage()),
+  ),
 )

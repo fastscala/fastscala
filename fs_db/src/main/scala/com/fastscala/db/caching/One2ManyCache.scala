@@ -34,11 +34,13 @@ class One2ManyCache[
 
   def getMany(one: O): Seq[M] = getMany(one.key)
 
-  def getMany(oneId: K): Seq[M] = cacheMany.select(filterOneOnMany(oneId))
+  def getMany(one: O, where: SQLSyntax): Seq[M] = getMany(one.key, where)
 
-  override def beforeSaved(table: TableBase, row: RowBase): Unit = ()
+  def getMany(oneId: K, where: SQLSyntax = SQLSyntax.empty): Seq[M] = cacheMany.select(filterOneOnMany(oneId).and(Some(where).filter(_ != SQLSyntax.empty)))
 
-  override def saved(table: TableBase, row: RowBase): Unit = (table, row) match {
+  override def preSave(table: TableBase, row: RowBase): Unit = ()
+
+  override def postSave(table: TableBase, row: RowBase): Unit = (table, row) match {
     case (OneTable, row: O) =>
     case (ManyTable, many: M) =>
       cacheOne.getForIdOptX(getOneId(many)).foreach(one => {
@@ -48,7 +50,7 @@ class One2ManyCache[
     case _ =>
   }
 
-  override def beforeDelete(table: TableBase, row: RowBase): Unit = (table, row) match {
+  override def preDelete(table: TableBase, row: RowBase): Unit = (table, row) match {
     case (OneTable, one: O) =>
       one2Many.get(one).toSeq.flatten.foreach(many => {
         assert(many2One(many) == one)
@@ -65,5 +67,5 @@ class One2ManyCache[
     case _ =>
   }
 
-  override def deleted(table: TableBase, row: RowBase): Unit = ()
+  override def postDelete(table: TableBase, row: RowBase): Unit = ()
 }

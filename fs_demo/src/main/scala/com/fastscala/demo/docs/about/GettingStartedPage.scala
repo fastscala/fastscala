@@ -2,7 +2,7 @@ package com.fastscala.demo.docs.about
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.BasePage
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.utils.BSBtn
 
 import scala.xml.NodeSeq
 
@@ -11,7 +11,7 @@ class GettingStartedPage extends BasePage() {
   override def pageTitle: String = "FastScala Web Framework Author | Getting Started"
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+    import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
     div.withStyle("background('#f8fafd'); border-style: solid; border-color: #b3c7de;").border_1.shadow_sm.py_2.px_3.apply {
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-3 mb-3">
         <h1 class="h3" style="color: #1b4d88;">Getting Started</h1>

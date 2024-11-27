@@ -14,7 +14,7 @@ class JsUtilsPage extends MultipleCodeExamples2Page() {
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+    import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
     renderSnippet("Create Js") {
       button.btn.btn_success.apply("click me").addOnClick(JS("alert('clicked')"))

@@ -39,7 +39,7 @@ class User(
   })
 
   def miniHeadshotOrPlaceholderRendered: Elem = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+    import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
     photo.map({
       case (photoFileName, photoBytes) =>
         def imageData = s"data:${Files.probeContentType(new File(photoFileName).toPath())};base64,${Base64.getEncoder.encodeToString(photoBytes)}"

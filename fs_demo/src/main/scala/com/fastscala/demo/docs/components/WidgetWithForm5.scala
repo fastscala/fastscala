@@ -1,7 +1,7 @@
 package com.fastscala.demo.docs.components
 
 import com.fastscala.core.FSContext
-import com.fastscala.templates.form5.{Form5, FormRenderer}
+import com.fastscala.components.form5.{Form5, FormRenderer}
 
 import scala.xml.NodeSeq
 

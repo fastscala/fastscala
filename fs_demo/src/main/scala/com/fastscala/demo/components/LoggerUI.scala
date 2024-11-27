@@ -3,8 +3,8 @@ package com.fastscala.demo.components
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.modals.{BSModal5Base, BSModal5Size}
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.modals.{BSModal5Base, BSModal5Size}
+import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.utils.IdGen
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
@@ -52,7 +52,7 @@ class LoggerUISysoutOnly(val title: String) extends LoggerUI {
 
 class LoggerUIImpl(val title: String)(implicit fsc: FSContext) extends LoggerUI {
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   val loggerOutputId = IdGen.id
   private var continue: Boolean = true

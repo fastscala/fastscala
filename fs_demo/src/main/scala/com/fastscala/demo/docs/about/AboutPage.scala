@@ -5,12 +5,12 @@ import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.forms.DefaultFSDemoBSForm7Renderers
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.modals.BSModal5
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.fields.F7SubmitButtonField
-import com.fastscala.templates.form7.fields.layout.F7VerticalField
-import com.fastscala.templates.form7.fields.text.F7StringField
-import com.fastscala.templates.form7.{DefaultForm7, F7Field}
+import com.fastscala.components.bootstrap5.modals.BSModal5
+import com.fastscala.components.bootstrap5.utils.BSBtn
+import com.fastscala.components.form7.fields.F7SubmitButtonField
+import com.fastscala.components.form7.fields.layout.F7VerticalField
+import com.fastscala.components.form7.fields.text.F7StringField
+import com.fastscala.components.form7.{DefaultForm7, F7Field}
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import io.circe.Decoder
 import io.circe.generic.semiauto
@@ -25,7 +25,7 @@ class AboutPage extends MultipleCodeExamples2Page {
 
   override def pageTitle: String = "FastScala | About"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderHtml() {

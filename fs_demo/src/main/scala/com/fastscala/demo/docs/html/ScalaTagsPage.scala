@@ -2,8 +2,8 @@ package com.fastscala.demo.docs.html
 
 import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
-import com.fastscala.templates.bootstrap5.modals.BSModal5
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.modals.BSModal5
+import com.fastscala.components.bootstrap5.utils.BSBtn
 import scalatags.Text.TypedTag
 
 import scala.xml.NodeSeq
@@ -13,7 +13,7 @@ class ScalaTagsPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "ScalaTags interoperability"
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq = {
-    import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+    import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
     <p>
       Fastscala is not tied to {span.badge.text_bg_secondary.apply("scala-xml")}, but the libraries that are on top of do use it.
     </p>

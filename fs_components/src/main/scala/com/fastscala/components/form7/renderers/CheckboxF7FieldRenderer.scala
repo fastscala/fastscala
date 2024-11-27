@@ -1,0 +1,4 @@
+package com.fastscala.components.form7.renderers
+
+
+trait CheckboxF7FieldRenderer extends StandardOneInputElemF7FieldRenderer

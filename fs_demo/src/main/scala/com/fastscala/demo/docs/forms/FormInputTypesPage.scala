@@ -4,11 +4,11 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.modals.BSModal5
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.fields.*
-import com.fastscala.templates.form7.fields.layout.F7VerticalField
-import com.fastscala.templates.form7.{DefaultForm7, F7Field}
+import com.fastscala.components.bootstrap5.modals.BSModal5
+import com.fastscala.components.bootstrap5.utils.BSBtn
+import com.fastscala.components.form7.fields.*
+import com.fastscala.components.form7.fields.layout.F7VerticalField
+import com.fastscala.components.form7.{DefaultForm7, F7Field}
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 class FormInputTypesPage extends MultipleCodeExamples2Page() {
@@ -16,7 +16,7 @@ class FormInputTypesPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "Form 7 Input Types"
 
   import DefaultFSDemoBSForm7Renderers.*
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 

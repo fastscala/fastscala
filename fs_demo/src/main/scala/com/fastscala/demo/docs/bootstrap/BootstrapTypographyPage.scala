@@ -7,7 +7,7 @@ class BootstrapTypographyPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Bootstrap Typography"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Headings") {

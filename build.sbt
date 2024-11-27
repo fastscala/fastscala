@@ -17,6 +17,7 @@ lazy val root = (project in file(".")).aggregate(fs_demo)
 lazy val fastscala = (project in file(FSRoot + "fastscala"))
   .settings(
     name := "fastscala",
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
 
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.5.6",
@@ -76,38 +77,26 @@ lazy val fs_db = (project in file(FSRoot + "fs_db"))
   .dependsOn(fs_scala_xml)
   .dependsOn(fs_circe)
 
-lazy val fs_templates = (project in file(FSRoot + "fs_templates"))
+lazy val fs_components = (project in file(FSRoot + "fs_components"))
   .settings(
-    name := "fs_templates",
+    name := "fs_components",
+
+    scalacOptions ++= Seq("-Xmax-inlines", "50"),
 
     libraryDependencies ++= Seq(
       "joda-time" % "joda-time" % "2.12.7"
     ),
   )
   .dependsOn(fastscala)
-  .dependsOn(fs_scala_xml)
-
-lazy val fs_templates_bootstrap = (project in file(FSRoot + "fs_templates_bootstrap"))
-  .settings(
-    name := "fs_templates_bootstrap",
-  )
-  .dependsOn(fs_templates)
   .dependsOn(fs_circe)
-
-lazy val fs_chartjs = (project in file(FSRoot + "fs_chartjs"))
-  .settings(
-    name := "fs_chartjs",
-
-    scalacOptions ++= Seq("-Xmax-inlines", "50"),
-  )
-  .dependsOn(fastscala)
   .dependsOn(fs_scala_xml)
-  .dependsOn(fs_circe)
 
 lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
   .enablePlugins(JavaServerAppPackaging, SystemdPlugin)
   .settings(
     name := "fs_demo",
+
+    //    scalacOptions ++= Seq("-explain"),
 
     Compile / packageBin / mainClass := Some("com.fastscala.demo.server.JettyServer"),
     Compile / mainClass := Some("com.fastscala.demo.server.JettyServer"),
@@ -136,8 +125,7 @@ lazy val fs_demo = (project in file(FSRoot + "fs_demo"))
     javaOptions += "-Xmx2G",
     javaOptions += "-Xms400M",
   )
-  .dependsOn(fs_templates_bootstrap)
-  .dependsOn(fs_chartjs)
+  .dependsOn(fs_components)
 
 lazy val fs_taskmanager = (project in file(FSRoot + "fs_taskmanager"))
   .enablePlugins(JavaServerAppPackaging, SystemdPlugin)

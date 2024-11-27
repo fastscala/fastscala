@@ -5,8 +5,8 @@ import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.tables.*
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.tables.*
+import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import java.util.Date

@@ -6,8 +6,8 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.inScriptTag
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.RenderableWithFSContext
-import com.fastscala.templates.bootstrap5.helpers.BSHelpers
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.helpers.BSHelpers
+import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.typesafe.config.ConfigFactory
 

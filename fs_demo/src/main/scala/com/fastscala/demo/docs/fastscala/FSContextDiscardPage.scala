@@ -6,16 +6,16 @@ import com.fastscala.demo.docs.components.Widget
 import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.rerenderers.{RerendererDebugStatus, RerendererDebugStatusState}
-import com.fastscala.templates.bootstrap5.tables.*
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.bootstrap5.components.BSBtnToogle.RichBSBtnToogler
+import com.fastscala.components.bootstrap5.tables.*
+import com.fastscala.components.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.components.BSBtnToogle.RichBSBtnToogler
 
 import scala.xml.{Elem, NodeSeq}
 
 class FSContextDiscardPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "FSContext discard"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 

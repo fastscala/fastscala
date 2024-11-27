@@ -5,9 +5,9 @@ import com.fastscala.scala_xml.js.inScriptTag
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.taskmanager.db.DB
-import com.fastscala.templates.bootstrap5.helpers.BSHelpers
-import com.fastscala.templates.bootstrap5.toast.BSToast2
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.helpers.BSHelpers
+import com.fastscala.components.bootstrap5.toast.BSToast2
+import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.typesafe.config.ConfigFactory
 
 import scala.io.Source

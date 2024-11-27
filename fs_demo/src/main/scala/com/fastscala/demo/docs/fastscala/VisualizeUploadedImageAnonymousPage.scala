@@ -18,7 +18,7 @@ class VisualizeUploadedImageAnonymousPage(
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+      import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
       JS.rerenderable(rerenderer => implicit fsc => {
         div.border.p_2.rounded.apply {
           h3.apply("Uploaded image:") ++

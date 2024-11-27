@@ -4,14 +4,14 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.utils.BSBtn
+import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 class BootstrapButtonsPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "Bootstrap Buttons"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 

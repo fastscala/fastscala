@@ -16,7 +16,7 @@ class ServerSidePushPage extends MultipleCodeExamples2Page() {
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
 
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+      import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
       val id = IdGen.id
       val N = 30
 

@@ -1,7 +1,7 @@
 package com.fastscala.demo.docs.forms
 
-import com.fastscala.templates.bootstrap5.form7.BSForm7Renderers
-import com.fastscala.templates.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
+import com.fastscala.components.bootstrap5.form7.BSForm7Renderers
+import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 
 object DefaultFSDemoBSForm7Renderers extends FSDemoBSForm7Renderers
 

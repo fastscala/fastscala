@@ -6,14 +6,14 @@ import com.fastscala.demo.docs.data.{CountriesData, Country}
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.form7.BSForm7Renderers
-import com.fastscala.templates.bootstrap5.modals.BSModal5
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.*
-import com.fastscala.templates.form7.fields.*
-import com.fastscala.templates.form7.fields.layout.{F7ContainerField, F7VerticalField}
-import com.fastscala.templates.form7.fields.select.F7SelectField
-import com.fastscala.templates.form7.fields.text.{F7IntOptField, F7LocalDateOptField, F7StringField}
+import com.fastscala.components.bootstrap5.form7.BSForm7Renderers
+import com.fastscala.components.bootstrap5.modals.BSModal5
+import com.fastscala.components.bootstrap5.utils.BSBtn
+import com.fastscala.components.form7.*
+import com.fastscala.components.form7.fields.*
+import com.fastscala.components.form7.fields.layout.{F7ContainerField, F7VerticalField}
+import com.fastscala.components.form7.fields.select.F7SelectField
+import com.fastscala.components.form7.fields.text.{F7IntOptField, F7LocalDateOptField, F7StringField}
 
 class User1(
              var firstName: String,
@@ -47,7 +47,7 @@ class BasicFormExamplePage extends MultipleCodeExamples2Page() {
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+      import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
       var editing = new User1(
         firstName = "",
         lastName = "",

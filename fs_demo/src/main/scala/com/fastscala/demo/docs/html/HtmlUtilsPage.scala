@@ -12,7 +12,7 @@ class HtmlUtilsPage extends MultipleCodeExamples2Page() {
 
   override def pageTitle: String = "HTML Basics"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderExplanation()(implicit fsc: FSContext): NodeSeq =
     <p>

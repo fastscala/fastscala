@@ -5,7 +5,7 @@ import com.fastscala.scala_xml.fsc.anonymousPageURLScalaXml
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.utils.{ElemWithId, ElemWithRandomId}
+import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import org.eclipse.jetty.server.Request
 
 import scala.util.chaining.scalaUtilChainingOps

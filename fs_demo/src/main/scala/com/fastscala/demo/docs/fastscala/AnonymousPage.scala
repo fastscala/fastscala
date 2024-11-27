@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.utils.FileUpload
+import com.fastscala.components.bootstrap5.utils.FileUpload
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 class AnonymousPage() extends MultipleCodeExamples2Page() {
@@ -13,7 +13,7 @@ class AnonymousPage() extends MultipleCodeExamples2Page() {
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
     renderSnippet("Source") {
-      import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+      import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
       JS.rerenderable(rerenderer => implicit fsc => {
         div.border.p_2.rounded.apply {
           h3.apply("Upload an image:") ++

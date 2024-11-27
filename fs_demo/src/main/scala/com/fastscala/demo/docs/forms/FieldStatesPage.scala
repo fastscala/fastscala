@@ -5,15 +5,15 @@ import com.fastscala.demo.docs.MultipleCodeExamples2Page
 import com.fastscala.demo.docs.data.{Continents, Fruit}
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.templates.bootstrap5.toast.BSToast2
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.fields.*
-import com.fastscala.templates.form7.fields.layout.{F7ContainerField, F7VerticalField}
-import com.fastscala.templates.form7.fields.multiselect.F7MultiSelectField
-import com.fastscala.templates.form7.fields.radio.F7RadioField
-import com.fastscala.templates.form7.fields.select.F7SelectField
-import com.fastscala.templates.form7.fields.text.*
-import com.fastscala.templates.form7.{DefaultForm7, F7Field}
+import com.fastscala.components.bootstrap5.toast.BSToast2
+import com.fastscala.components.bootstrap5.utils.BSBtn
+import com.fastscala.components.form7.fields.*
+import com.fastscala.components.form7.fields.layout.{F7ContainerField, F7VerticalField}
+import com.fastscala.components.form7.fields.multiselect.F7MultiSelectField
+import com.fastscala.components.form7.fields.radio.F7RadioField
+import com.fastscala.components.form7.fields.select.F7SelectField
+import com.fastscala.components.form7.fields.text.*
+import com.fastscala.components.form7.{DefaultForm7, F7Field}
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.Random
@@ -24,7 +24,7 @@ class FieldStatesPage extends MultipleCodeExamples2Page() {
   override def pageTitle: String = "Form 7 - Update client values after changes on server side"
 
   import DefaultFSDemoBSForm7Renderers.*
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderContentsWithSnippets()(implicit fsc: FSContext): Unit = {
 

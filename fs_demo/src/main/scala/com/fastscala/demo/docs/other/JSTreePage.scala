@@ -1,6 +1,5 @@
 package com.fastscala.demo.docs.other
 
-import com.fastscala.chartjs.*
 import com.fastscala.core.FSContext
 import com.fastscala.demo.components.{JSTree, JSTreeNode, JSTreeSimpleNode}
 import com.fastscala.demo.docs.MultipleCodeExamples2Page

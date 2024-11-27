@@ -6,14 +6,14 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.rerenderers.RerendererDebugStatus
 import com.fastscala.taskmanager.db.{DB, Task, User}
-import com.fastscala.templates.bootstrap5.modals.BSModal5WithForm7Base
-import com.fastscala.templates.bootstrap5.tables.*
-import com.fastscala.templates.bootstrap5.toast.BSToast2
-import com.fastscala.templates.bootstrap5.utils.BSBtn
-import com.fastscala.templates.form7.F7Field
-import com.fastscala.templates.form7.fields.layout.F7VerticalField
-import com.fastscala.templates.form7.fields.select.F7SelectOptField
-import com.fastscala.templates.form7.fields.text.F7StringField
+import com.fastscala.components.bootstrap5.modals.BSModal5WithForm7Base
+import com.fastscala.components.bootstrap5.tables.*
+import com.fastscala.components.bootstrap5.toast.BSToast2
+import com.fastscala.components.bootstrap5.utils.BSBtn
+import com.fastscala.components.form7.F7Field
+import com.fastscala.components.form7.fields.layout.F7VerticalField
+import com.fastscala.components.form7.fields.select.F7SelectOptField
+import com.fastscala.components.form7.fields.text.F7StringField
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
@@ -22,7 +22,7 @@ class TasksPage extends BasePage() {
 
   override def pageTitle: String = "Tasks Page"
 
-  import com.fastscala.templates.bootstrap5.helpers.BSHelpers.*
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def renderPageContents()(implicit fsc: FSContext): NodeSeq = {
 //    fsc.page.rerendererDebugStatus = RerendererDebugStatus.Enabled

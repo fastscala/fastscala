@@ -56,6 +56,8 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def append2DOM()(implicit fsc: FSContext): Js = JS.append2Body(modalRenderer.render())
 
+  var modalInstalled: Option[String] = None
+
   def installAndShow(
                       backdrop: Boolean = true
                       , backdropStatic: Boolean = false
@@ -70,7 +72,8 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
                , focus: Boolean = true
                , keyboard: Boolean = true
              )(implicit fsc: FSContext): Js =
-    append2DOM() &
+    append2DOM()(using fsc.page.rootFSContext) & {
+      modalInstalled = Some(modalId)
       JS(
         s""";new bootstrap.Modal(document.getElementById('$modalId'), {
            |  backdrop: ${if (backdropStatic) "'static'" else backdrop.toString},
@@ -78,19 +81,20 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
            |  focus: $focus,
            |});""".stripMargin
       )
+    }
 
   def dispose(): Js = JS(s"""$$('#$modalId').modal('dispose')""")
 
-  def deleteContext()(implicit fsc: FSContext): Unit = fsc.page.deleteContextFor(this)
+  def deleteContext()(implicit fsc: FSContext): Unit = fsc.page.deleteContextFor(modalRenderer)
 
-  def removeAndDeleteContext()(implicit fsc: FSContext): Js = JS.removeId(modalId) & fsc.callback(() => {
+  def removeAndDeleteContext(modalId: String = modalId)(implicit fsc: FSContext): Js = JS.removeId(modalId) & fsc.callback(() => {
     deleteContext()
     JS.void
   })
 
   def handleUpdate(): Js = JS(s"""$$('#$modalId').modal('handleUpdate')""")
 
-  def hideAndRemoveAndDeleteContext()(implicit fsc: FSContext): Js = hide() & onHidden(removeAndDeleteContext())
+  def hideAndRemoveAndDeleteContext()(implicit fsc: FSContext): Js = hide() & removeOnHidden()
 
   def hide(): Js = JS(s"""$$('#$modalId').modal('hide')""")
 
@@ -106,7 +110,13 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def onHidden(js: Js): Js = JS(s"""$$('#$modalId').on('hidden.bs.modal', function (e) {${js.cmd}});""")
 
-  def removeOnHidden()(implicit fsc: FSContext): Js = onHidden(removeAndDeleteContext())
+  def removeOnHidden()(implicit fsc: FSContext): Js =
+    modalInstalled.flatMap{ modalId =>
+      fsc.page.inContextForOption(modalRenderer){implicit fsc =>
+        modalInstalled = None
+        onHidden(removeAndDeleteContext(modalId))
+      }
+    }.getOrElse(JS.void)
 
   def modalHeaderTitle: String
 
@@ -154,17 +164,15 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
   }
 
   def renderModal()(implicit fsc: FSContext): Elem = {
-    fsc.page.rootFSContext.inNewChildContextFor(this, Some("modal")).pipe(implicit fsc => {
-      transformModalElem {
-        div.withAttr("tabindex" -> "-1") {
-          transformModalDialogElem {
-            div.withClass(modalClasses).apply {
-              modalContentsRenderer.render()
-            }
+    transformModalElem {
+      div.withAttr("tabindex" -> "-1") {
+        transformModalDialogElem {
+          div.withClass(modalClasses).apply {
+            modalContentsRenderer.render()
           }
         }
       }
-    })
+    }
   }
 }
 

@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.scala_xml.fsc.anonymousPageURLScalaXml
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
-import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.js.{JS, inScriptTag}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import org.eclipse.jetty.server.Request
 
@@ -15,7 +15,9 @@ class JSTreeSimpleNode[T](
                            title: String,
                            val value: T,
                            val id: String,
-                           val open: Boolean = false
+                           val open: Boolean = false,
+                           val disabled: Boolean = false,
+                           val icon: Option[String] = None,
                          )(children: Seq[JSTreeNode[T]]) extends JSTreeNode[T] {
   override def titleNs: NodeSeq = scala.xml.Text(title)
 
@@ -32,11 +34,16 @@ abstract class JSTreeNode[T] {
 
   def open: Boolean
 
+  def disabled: Boolean
+
+  def icon: Option[String]
+
   def childrenF: () => Seq[JSTreeNode[T]]
 
   def renderLi(): Elem = {
     val appendedChildren = if (open) <ul>{childrenF().map(_.renderLi()).mkNS}</ul> else NodeSeq.Empty
-    <li id={id} class={if (!open) "jstree-closed" else ""}>{titleNs}{appendedChildren}</li>
+    val dataJSTree = Some(List(icon.map(icon => s""""icon":"$icon""""), Some(disabled).filter(_ == true).map(disabled => s""""disabled":$disabled""")).flatten).filter(_.nonEmpty).map(_.mkString("{", ",", "}")).getOrElse(null)
+    <li id={id} data-jstree={dataJSTree} class={if (!open) "jstree-closed" else ""}>{titleNs}{appendedChildren}</li>
   }
 }
 
@@ -45,6 +52,8 @@ abstract class JSTree[T] extends ElemWithRandomId {
   def rootNodes: Seq[JSTreeNode[T]]
 
   def render()(implicit fsc: FSContext): Elem = <div id={elemId}></div>
+
+  def renderAndInit()(implicit fsc: FSContext): NodeSeq = render() ++ init().onDOMContentLoaded.inScriptTag
 
   //  protected val childrenOfId = collection.mutable.Map[String, Seq[JSTreeNode[T]]]()
   protected val nodeById = collection.mutable.Map[String, JSTreeNode[T]]()

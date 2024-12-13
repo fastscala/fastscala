@@ -9,7 +9,7 @@ resolvers += Resolver.mavenLocal
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / version := "0.0.3"
+ThisBuild / version := "0.0.5"
 ThisBuild / scalaVersion := "3.6.2"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }

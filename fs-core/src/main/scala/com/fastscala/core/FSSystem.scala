@@ -1,7 +1,7 @@
 package com.fastscala.core
 
 import com.fastscala.core.FSContext.logger
-import com.fastscala.js.{JS, Js}
+import com.fastscala.js.{Js, JsUtils}
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.req.{Get, Post}
 import com.fastscala.routing.resp.*
@@ -21,6 +21,8 @@ import java.net.URLEncoder
 import java.nio.file.{Files, Path}
 import java.util.Collections
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
+
+object JS extends JsUtils
 
 class FSFunc(
               val id: String
@@ -286,6 +288,12 @@ class FSPage(
     if (!key2FSContext.contains(contextFor)) throw new Exception(s"Trying to get context for $contextFor, but wasn't found")
     if (key2FSContext(contextFor).deleted) throw new Exception(s"Trying to get context for $contextFor, but it was deleted")
     f(key2FSContext(contextFor))
+  }
+
+  def inContextForOption[T](contextFor: AnyRef)(f: FSContext => T): Option[T] = {
+    if !key2FSContext.contains(contextFor) then None
+    if key2FSContext(contextFor).deleted then None
+    Some(f(key2FSContext(contextFor)))
   }
 
   def deleteContextFor(key: AnyRef): Unit = {

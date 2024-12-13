@@ -10,6 +10,8 @@ import org.eclipse.jetty.util.BufferUtil
 
 import java.util.Date
 
+import Js as JS
+
 trait Js {
 
   def cmd: String
@@ -195,5 +197,3 @@ trait JsUtils {
 
   def catchAndLogErrors(js: Js): Js = JS(s"""try {${js.cmd}} catch (error) { console.error(error); }""")
 }
-
-object JS extends JsUtils

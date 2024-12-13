@@ -291,8 +291,8 @@ class FSPage(
   }
 
   def inContextForOption[T](contextFor: AnyRef)(f: FSContext => T): Option[T] = {
-    if !key2FSContext.contains(contextFor) then None
-    if key2FSContext(contextFor).deleted then None
+    if (!key2FSContext.contains(contextFor)) None
+    if (key2FSContext(contextFor).deleted) None
     Some(f(key2FSContext(contextFor)))
   }
 

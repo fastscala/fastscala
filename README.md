@@ -25,34 +25,13 @@ Welcome to **FastScala**!: quickly create complex web applications, leveraging S
 
 ---
 
-## 📦 Installation
+## 📦 Start with the demo app!
 
-Follow these steps to get FastScala up and running:
+Start with getting the FastScala Demo Web Application up and running: [FastScala Demo Repo](https://github.com/fastscala/fastscala-demo)
 
-### 1️⃣ Prerequisites
-
-Ensure that you have the following tools installed on your system:
-
-- 🔵 **SBT (Scala Build Tool)** – [Install SBT](https://www.scala-sbt.org/download.html)
-- 🟡 **Java 17+** – [OpenJDK](https://openjdk.org/install/)
-
-### 2️⃣ Cloning the Repository
-
-```bash
-git clone https://github.com/fastscala/fastscala.git
-cd fastscala
-```
-
-### 3️⃣ Running the Project
-To run the project, you can use SBT, Scala's interactive build tool:
-```
-sbt fs_demo/run
-```
-Open the demo at [http://localhost:9064/](http://localhost:9064/)
 
 ## 🤝 Contributing
 Contributions are always welcome! Whether you want to file a bug report, suggest an enhancement, or submit a pull request, feel free to get involved.
-
 
 Steps to contribute:
 - Fork the repository 🍴

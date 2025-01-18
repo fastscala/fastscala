@@ -23,7 +23,7 @@ class ContentRerendererP[P](
   def render(param: P)(implicit fsc: FSContext) = {
     rootRenderContext = Some(fsc)
     RerendererDebugStatusState().render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
-      elem.withContents(fsc.inNewChildContextFor(this, debugLabel = debugLabel)(renderFunc.apply(this)(_)(param)))
+      elem.withContents(fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel)(renderFunc.apply(this)(_)(param)))
     }))
   }
 

@@ -19,7 +19,7 @@ class Rerenderer(
 
   def render()(implicit fsc: FSContext): Elem = {
     rootRenderContext = Some(fsc)
-    val rendered: Elem = fsc.inNewChildContextFor(this, debugLabel = debugLabel)(renderFunc(this)(_))
+    val rendered: Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel)(renderFunc(this)(_))
     RerendererDebugStatusState().render(rendered.getId match {
       case Some(id) =>
         aroundId = id

@@ -130,7 +130,8 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
 
     libraryDependencies ++= Seq(
-      "joda-time" % "joda-time" % "2.12.7"
+      "joda-time" % "joda-time" % "2.12.7",
+      "com.lihaoyi" %% "upickle" % "4.1.0",
     ),
   )
   .dependsOn(fs_core)

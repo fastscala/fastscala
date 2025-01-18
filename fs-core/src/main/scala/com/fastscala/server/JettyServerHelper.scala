@@ -13,8 +13,11 @@ import org.eclipse.jetty.server.handler.{ContextHandler, ResourceHandler, Statis
 import org.eclipse.jetty.util.VirtualThreads
 import org.eclipse.jetty.util.resource.{ResourceFactory, Resources}
 import org.eclipse.jetty.util.thread.QueuedThreadPool
+import org.slf4j.LoggerFactory
 
 abstract class JettyServerHelper() {
+
+  val logger = LoggerFactory.getLogger(getClass.getName)
 
   val config = ConfigFactory.load()
 
@@ -112,9 +115,14 @@ abstract class JettyServerHelper() {
     }
 
     if (prometheusHttpServerEnabled) {
-      HTTPServer.builder()
-        .port(prometheusHttpServerPort)
-        .buildAndStart()
+      try {
+        HTTPServer.builder()
+          .port(prometheusHttpServerPort)
+          .buildAndStart()
+      } catch {
+        case ex: java.net.BindException if ex.getMessage.contains("Address already in use") =>
+          logger.error(s"Prometheus port ($prometheusHttpServerPort) already in use")
+      }
     }
 
     server.setHandler(statHandler)

@@ -2610,6 +2610,14 @@ trait BSClassesHelper[T] extends Any {
 
   def offcanvas_title: T = withClass("offcanvas-title")
 
+  def offcanvas_start: T = withClass("offcanvas-start")
+
+  def offcanvas_end: T = withClass("offcanvas-end")
+
+  def offcanvas_top: T = withClass("offcanvas-top")
+
+  def offcanvas_bottom: T = withClass("offcanvas-bottom")
+
   def offcanvas_xl: T = withClass("offcanvas-xl")
 
   def offcanvas_xxl: T = withClass("offcanvas-xxl")

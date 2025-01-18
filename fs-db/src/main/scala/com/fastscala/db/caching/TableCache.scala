@@ -46,6 +46,8 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
     })
   }
 
+  def apply(key: K): R = getForIdX(key)
+  
   def getForIdX(key: K): R = getForIdOptX(key).get
 
   def getForIdOptX(key: K): Option[R] = {

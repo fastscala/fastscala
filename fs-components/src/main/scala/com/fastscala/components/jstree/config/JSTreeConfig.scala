@@ -2,6 +2,18 @@ package com.fastscala.components.jstree.config
 
 import com.fastscala.js.Js
 import upickle.default.{macroW, Writer}
+import com.fastscala.components.utils.upickle.JsWriter
+
+case class ContextMenu(
+                        select_node: Option[Boolean] = None,
+                        show_at_node: Option[Boolean] = None,
+                        items: Option[Js] = None
+                      )
+
+object ContextMenu {
+
+  implicit val writer: Writer[ContextMenu] = macroW
+}
 
 case class Data(
                  url: Option[String] = None,
@@ -9,8 +21,6 @@ case class Data(
                )
 
 object Data {
-
-  import com.fastscala.components.utils.upickle.JsWriter
 
   implicit val writer: Writer[Data] = macroW
 }
@@ -26,6 +36,7 @@ object Core {
 
 case class JSTreeConfig(
                          core: Option[Core] = None,
+                         contextmenu: Option[ContextMenu] = None,
                          plugins: Option[Seq[String]] = None
                        )
 

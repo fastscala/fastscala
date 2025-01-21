@@ -75,7 +75,7 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
   //  protected val childrenOfId = collection.mutable.Map[String, Seq[N]]()
   protected val nodeById = collection.mutable.Map[String, N]()
 
-  def jsTreeConfig: JSTreeConfig = {
+  def jsTreeConfig(implicit fsc: FSContext): JSTreeConfig = {
     implicit def nonOption2Option[T](v: T): Option[T] = Some(v)
 
     JSTreeConfig(
@@ -107,8 +107,7 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
       )
     )
 
-    import com.github.loki4j.client.writer.JsonWriter._
     import upickle.default._
     s"""$$('#$elemId').jstree(${write(config)});"""
-  }.printBeforeExec
+  }
 }

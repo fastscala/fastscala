@@ -46,20 +46,17 @@ scalacOptions += "-Ypartial-unification"
 
 val FSRoot = "./"
 
-lazy val root = (project in file("."))
-  .aggregate(fs_core)
-  .aggregate(fs_circe)
-  .aggregate(fs_scala_xml)
-  .aggregate(fs_db)
-  .aggregate(fs_components)
-
 lazy val fs_core = (project in file(FSRoot + "fs-core"))
   .settings(
-    commonSettings,
     name := "fs-core",
+    version := "0.0.3",
+    organization := "com.fastscala",
+
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
 
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.5.6",
+      // "net.logstash.logback" % "logstash-logback-encoder" % "8.0",
       "org.slf4j" % "slf4j-api" % "2.0.16",
       "com.github.loki4j" % "loki-logback-appender" % "1.5.2",
       "io.prometheus" % "prometheus-metrics-core" % "1.3.1",
@@ -77,8 +74,8 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .settings(
-    commonSettings,
     name := "fs-circe",
+    version := "0.0.1",
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
@@ -91,8 +88,8 @@ lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
   .settings(
-    commonSettings,
     name := "fs-scala-xml",
+    version := "0.0.1",
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
@@ -103,8 +100,8 @@ lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
   .settings(
-    commonSettings,
     name := "fs-db",
+    version := "0.0.1",
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
@@ -123,8 +120,8 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
 
 lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .settings(
-    commonSettings,
     name := "fs-components",
+    version := "0.0.1",
     organization := "com.fastscala",
 
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
@@ -132,7 +129,12 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
     libraryDependencies ++= Seq(
       "joda-time" % "joda-time" % "2.12.7",
       "com.lihaoyi" %% "upickle" % "4.1.0",
+      "com.softwaremill.quicklens" %% "quicklens" % "1.9.11",
     ),
+
+    javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
+    Compile / run / fork := true,
+    Compile / run / connectInput := true,
   )
   .dependsOn(fs_core)
   .dependsOn(fs_circe)

@@ -105,18 +105,22 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
-      "org.postgresql" % "postgresql" % "42.7.4",
-      "org.xerial" % "sqlite-jdbc" % "3.47.0.0",
+      "io.circe" %% "circe-core" % "0.14.10",
+      "io.circe" %% "circe-generic" % "0.14.10",
+      "io.circe" %% "circe-parser" % "0.14.10",
+
+      "org.postgresql" % "postgresql" % "42.7.5",
+      "org.xerial" % "sqlite-jdbc" % "3.48.0.0",
       "org.scalikejdbc" %% "scalikejdbc" % "4.3.2",
-      "com.google.guava" % "guava" % "33.3.1-jre",
-      "commons-codec" % "commons-codec" % "1.17.1",
+      "com.google.guava" % "guava" % "33.4.0-jre",
+      "commons-codec" % "commons-codec" % "1.17.2",
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
     ),
     Test / parallelExecution := false
   )
   .dependsOn(fs_core)
-  .dependsOn(fs_scala_xml)
-  .dependsOn(fs_circe)
+//  .dependsOn(fs_scala_xml)
+//  .dependsOn(fs_circe)
 
 lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .settings(

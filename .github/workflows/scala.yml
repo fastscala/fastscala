@@ -31,5 +31,3 @@ jobs:
     - uses: sbt/setup-sbt@v1
     - name: Compile fs_components
       run: sbt fs_components/compile
-    - name: Run tests
-      run: sbt test

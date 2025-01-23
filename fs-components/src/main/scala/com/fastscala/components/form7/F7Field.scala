@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithState}
+import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithOnChangedField, F7FieldWithState}
 import com.fastscala.components.utils.ElemWithRandomId
 
 import scala.util.{Failure, Success, Try}

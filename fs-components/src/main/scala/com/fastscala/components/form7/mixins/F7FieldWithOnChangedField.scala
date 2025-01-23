@@ -2,7 +2,7 @@ package com.fastscala.components.form7.mixins
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.components.form7.*
 import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
@@ -21,7 +21,7 @@ trait F7FieldWithOnChangedField extends F7Field with Mutable {
 
   def addOnThisFieldChanged(onChange: this.type => Js): this.type = mutate {
     _onChangedField += new F7OnChangedFieldHandler {
-      override def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = if (field == self) onChange(self) else JS.void
+      override def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = if (field == self) onChange(self).printBeforeExec else JS.void
     }
   }
 

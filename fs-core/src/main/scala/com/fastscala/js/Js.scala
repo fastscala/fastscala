@@ -21,8 +21,13 @@ trait Js {
   def &(js: Js) = RawJs(cmd + ";" + js.cmd)
 
   def onDOMContentLoaded: Js = JS {
-    s"""if (/complete|interactive|loaded/.test(document.readyState)) {$cmd}
-       |else { document.addEventListener('DOMContentLoaded', function() {$cmd}, false); }""".stripMargin
+    s"""(function () {
+       |  var load = function() {
+       |    $cmd;
+       |  };
+       |  if (/complete|interactive|loaded/.test(document.readyState)) {load();}
+       |  else { document.addEventListener('DOMContentLoaded', function() {load();}, false); }
+       |})();""".stripMargin
   }
 
   def writeTo(

@@ -70,8 +70,6 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
 
   def renderAndInit()(implicit fsc: FSContext): NodeSeq = render() ++ init().onDOMContentLoaded.inScriptTag
 
-  def rerender()(implicit fsc: FSContext): Js = JS.void
-
   //  protected val childrenOfId = collection.mutable.Map[String, Seq[N]]()
   protected val nodeById = collection.mutable.Map[String, N]()
 
@@ -82,12 +80,14 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
       core = Core(
         check_callback = true,
         data = Data(
-          data = Js("""function (node) { console.log(node); return { 'id' : node.id }; }""")
+          data = Js("""function (node) { return { 'id' : node.id }; }""")
         )
       ),
       plugins = this.plugins,
     )
   }
+
+  def refresh(): Js = Js(s"""$$('#$elemId').jstree(true).refresh($$('#$elemId').jstree(true).get_node('#'));""").printBeforeExec
 
   def init()(implicit fsc: FSContext): Js = Js {
     val callback = fsc.anonymousPageURLScalaXml(implicit fsc => {

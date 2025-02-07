@@ -13,11 +13,13 @@ import com.fastscala.utils.IdGen
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-abstract class BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
+trait BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   val offcanvasId = IdGen.id("offcanvas")
+
+  val position: OffcanvasPosition
 
   var offcanvasClasses = ""
 
@@ -26,11 +28,27 @@ abstract class BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
     this
   }
 
-  def transformOffcanvasElem(elem: Elem): Elem = elem.offcanvas.withId(offcanvasId).withAttr("tabindex" -> "-1")
+  var onOffcanvasTransforms: Elem => Elem = identity[Elem]
+  var onOffcanvasHeaderTransforms: Elem => Elem = identity[Elem]
+  var onOffcanvasBodyTransforms: Elem => Elem = identity[Elem]
 
-  def transformOffcanvasHeaderElem(elem: Elem): Elem = elem.offcanvas_header
+  def onOffcanvas(f: Elem => Elem): this.type = mutate {
+    onOffcanvasTransforms = onOffcanvasTransforms.pipe(onOffcanvasTransforms => elem => f(onOffcanvasTransforms(elem)))
+  }
 
-  def transformOffcanvasBodyElem(elem: Elem): Elem = elem.offcanvas_body
+  def onOffcanvasHeader(f: Elem => Elem): this.type = mutate {
+    onOffcanvasHeaderTransforms = onOffcanvasHeaderTransforms.pipe(onOffcanvasHeaderTransforms => elem => f(onOffcanvasHeaderTransforms(elem)))
+  }
+
+  def onOffcanvasBody(f: Elem => Elem): this.type = mutate {
+    onOffcanvasBodyTransforms = onOffcanvasBodyTransforms.pipe(onOffcanvasBodyTransforms => elem => f(onOffcanvasBodyTransforms(elem)))
+  }
+
+  def transformOffcanvasElem(elem: Elem): Elem = onOffcanvasTransforms(elem.offcanvas.withClass(position.clas).withId(offcanvasId).withAttr("tabindex" -> "-1"))
+
+  def transformOffcanvasHeaderElem(elem: Elem): Elem = onOffcanvasHeaderTransforms(elem.offcanvas_header)
+
+  def transformOffcanvasBodyElem(elem: Elem): Elem = onOffcanvasBodyTransforms(elem.offcanvas_body)
 
   lazy val offcanvasRenderer: Rerenderer = JS.rerenderable(_ => implicit fsc => renderOffcanvas(), debugLabel = Some("offcanvas"))
 

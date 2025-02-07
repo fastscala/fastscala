@@ -31,12 +31,12 @@ trait JSTreeContextMenuAction {
 
   def subactions: Seq[JSTreeContextMenuAction]
 
-  def run: FSContext => Js
+  def action: Option[FSContext => Js]
 }
 
 class DefaultJSTreeContextMenuAction(
                                       val label: String,
-                                      val run: FSContext => Js,
+                                      val action: Option[FSContext => Js] = None,
                                       val shortcut: Option[Int] = None,
                                       val shortcutLabel: Option[String] = None,
                                       val separatorBefore: Boolean = false,
@@ -67,10 +67,14 @@ trait JSTreeWithContextMenu[T, N <: JSTreeNodeWithContextMenu[T, N]] extends JST
                                  ) {
 
     def this(node: N, action: JSTreeContextMenuAction)(implicit fsc: FSContext) = this(
-      action = if (action.subactions.nonEmpty) Some(JS._false) else {
-        fsc.runInNewOrRenewedChildContextFor((this, node.id, action.label))(implicit fsc => {
-          Some(JS.function()(fsc.callback(() => action.run(fsc))))
-        })
+      action = Some {
+        JS.function0(
+          action.action.map(js => {
+            fsc.runInNewOrRenewedChildContextFor((this, node.id, action.label))(implicit fsc => {
+              js(fsc)
+            })
+          }).getOrElse(JS.void)
+        )
       },
       _disabled = Some(action.disabled),
       icon = action.icon,
@@ -117,9 +121,9 @@ trait JSTreeWithContextMenu[T, N <: JSTreeNodeWithContextMenu[T, N]] extends JST
       nodeById.get(id) match {
         case Some(node) =>
           val menuItems = node.actions.map(action => JS.asJsStr(action.label).cmd + ": " + renderJSTreeContextMenuAction(node, action)).mkString("({", ",", "})")
-          println(s"GET MENU ITEMS FOR NODE '$id'")
           Js(s"env.callback(eval(${JS.asJsStr(menuItems)}));")
-        case None => throw new Exception(s"Could not find node for id '$id'")
+        case None =>
+          throw new Exception(s"Could not find node for id '$id' (Existing ids: ${nodeById.keys.toSeq.sorted.mkString("; ")})")
       }
     }, env = Js("{callback: callback}"))
     super.jsTreeConfig.pipe(config =>

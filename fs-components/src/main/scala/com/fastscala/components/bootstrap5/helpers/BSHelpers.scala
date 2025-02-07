@@ -9,7 +9,7 @@ object BSHelpers extends BSClassesHelper[Elem] with BasicElemsHelper {
 
   override protected def withClass(clas: String): Elem = <div></div>.addClass(clas)
 
-  implicit class RichElemBootstrapClasses(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtils {
+  implicit class RichElemBootstrapClasses(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with BSColorsHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtils {
     override def withClass(clas: String): Elem = elem.addClass(clas)
 
     override protected def setAttribute(name: String, value: String): Elem = elem.withAttr((name, value))

@@ -18,7 +18,8 @@ object BSModal5 {
   def verySimple(
                   title: String,
                   closeBtnText: String,
-                  onHidden: Js = JS.void
+                  onHidden: Js = JS.void,
+                  modalFooterButton: BSBtn = BSBtn().BtnPrimary
                 )(
                   contents: BSModal5Base => FSContext => NodeSeq
                 )(implicit fsc: FSContext): Js = {
@@ -27,7 +28,7 @@ object BSModal5 {
 
       override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = contents(this)(fsc)
 
-      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(BSBtn().BtnPrimary.lbl(closeBtnText).onclick(hideAndRemoveAndDeleteContext()).btn)
+      override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(modalFooterButton.lbl(closeBtnText).onclick(hideAndRemoveAndDeleteContext()).btn)
     }
     modal.installAndShow() & modal.onHidden(onHidden)
   }

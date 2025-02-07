@@ -27,9 +27,11 @@ trait F7Field
   }
 
   /**
-   * Tries to update the field without needing to rerender. If
+   * Tries to update the field without needing to rerender.
    */
   def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Try[Js] = Success(JS.void)
+  
+  def updateFieldWithoutReRenderingOrFallbackToRerender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = updateFieldWithoutReRendering().getOrElse(reRender())
 
   val aroundId: String = randomElemId
 

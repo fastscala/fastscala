@@ -1,10 +1,15 @@
 package com.fastscala.components.aceeditor
 
+import com.fastscala.components.aceeditor.json.{Command, OnChangeEvent}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
+import com.fastscala.core.FSContext
+import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
+import com.fastscala.utils.Lazy
 
+import scala.collection.mutable.ListBuffer
 import scala.xml.{Elem, NodeSeq}
 
 object AceEditor {
@@ -29,6 +34,15 @@ object AceEditor {
 }
 
 trait AceEditor extends ElemWithRandomId {
+
+  def initalValue: String
+
+  private lazy val currentValueHolder: Lazy[ListBuffer[String]] = Lazy(ListBuffer(initalValue.split("\\n"): _*))
+
+  def currentValue: String = currentValueHolder().mkString(System.lineSeparator())
+
+  def currentValue_=(v: String) = currentValueHolder() = ListBuffer(v.split("\\n"): _*)
+
   // =================== EditSessionOptions ===================
   def defaultWrap: Option["off" | "free" | "printmargin" | Boolean | Int] = None
 
@@ -312,7 +326,80 @@ trait AceEditor extends ElemWithRandomId {
 
   def setEnableMobileMenu(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("enableMobileMenu", v)}});""")
 
-  def onChangeFunc: Js = JS.void
+  def addCommand(cmd: FSContext => Command)(implicit fsc: FSContext): Js = {
+    import upickle.default._
+    import com.fastscala.components.utils.upickle.JsWriter
+    fsc.runInNewOrRenewedChildContextFor(this)(implicit fsc => {
+      Js(s"""editor.commands.addCommand(${write(cmd(fsc))})""")
+    })
+  }
+
+  def currentId: Js = Js(s"""ace.edit("$elemId").currentId""")
+  
+  def onChangeClientSide(implicit fsc: FSContext): Js = {
+    import OnChangeEvent._
+    JS.function1(arg => {
+      Js(
+        s"""var editor = ace.edit("$elemId");
+           |if (typeof editor.currentId == "undefined") { editor.currentId = 0 }
+           |editor.currentId = editor.currentId + 1;
+           |$arg.id = editor.currentId;
+           |""".stripMargin
+      ) &
+        fsc.callbackJSONDecoded[OnChangeEvent](arg, event => applyOnChangeEventToCurrentState(event))
+    })
+  }
+
+  def onChange(currentValue: String): Js = JS.void
+
+  var lastId = 0L
+  var changesQueue = List[OnChangeEvent]()
+
+  def applyOnChangeEventToCurrentState(event: OnChangeEvent): Js = synchronized {
+    changesQueue ::= event
+
+    changesQueue.sortBy(_.id).map(event => {
+
+      if (event.id == lastId + 1) {
+        //        println("EVENT: " + event)
+        //        println("INITIAL STATE:")
+        //        currentValueHolder().zipWithIndex.foreach({
+        //          case (line, idx) => printf("%4d: %s\n", idx, line)
+        //        })
+
+        val state = currentValueHolder()
+
+        event match {
+          case OnChangeEvent(start, end, "remove", lines, id) if start.row == end.row =>
+            val line = state(start.row)
+            state(start.row) = line.substring(0, start.column) + line.substring(end.column, line.length)
+          case OnChangeEvent(start, end, "remove", lines, id) =>
+            state(start.row) = state(start.row).take(start.column) + state(end.row).drop(end.column)
+            state.remove(start.row + 1, end.row - start.row)
+          case OnChangeEvent(start, end, "insert", List(text), id) if start.row == end.row =>
+            val line = state(start.row)
+            state(start.row) = line.substring(0, start.column) + text + line.substring(start.column, line.length)
+          case OnChangeEvent(start, end, "insert", firstLine :: rest, id) =>
+            val line = state(start.row)
+            state(start.row) = line.substring(0, start.column) + firstLine
+            state.insertAll(start.row + 1, rest.dropRight(1) ::: (rest.last + line.substring(start.column, line.length)) :: Nil)
+          case OnChangeEvent(start, end, action, lines, id) => println(s"UNKNOWN ACTION: $action")
+        }
+
+        //        println("FINAL STATE:")
+        //        currentValueHolder().zipWithIndex.foreach({
+        //          case (line, idx) => printf("%4d: %s\n", idx, line)
+        //        })
+
+        lastId = event.id
+
+        onChange(currentValue)
+      } else {
+        JS.void
+      }
+
+    }).reduceOption(_ & _).getOrElse(JS.void)
+  }
 
   def toJson(name: String, v: Any): String = (name, v) match {
     case (name, Left(v)) => toJson(name, v)
@@ -397,18 +484,15 @@ trait AceEditor extends ElemWithRandomId {
     defaultEnableMobileMenu.map(v => toJson("enableMobileMenu", v)),
   ).flatten.mkString("{", ",", "}")
 
-  def install(): Js = {
+  def initialize()(implicit fsc: FSContext): Js = {
     Js {
-      s"""var editor = ace.edit("$elemId");
-         |editor.setTheme("ace/theme/solarized_light");
-         |editor.session.on('change', $onChangeFunc);
+      s"""var editor = ace.edit("$elemId", $defaultOptionsJson);
+         |editor.session.on('change', $onChangeClientSide);
          |""".stripMargin
     }.printBeforeExec
   }
 
-  var contents: String
-
-  def render(): Elem = {
-    <div id={elemId}>{contents}</div>
+  def render()(implicit fsc: FSContext): Elem = {
+    <div id={elemId}>{currentValue}</div>
   }
 }

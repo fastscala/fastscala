@@ -11,13 +11,22 @@ trait F7FieldWithValue[T] extends Mutable {
 
   def defaultValue: T
 
-  private lazy val currentValueHolder: Lazy[T] = Lazy(_getter())
-  private lazy val internalValue: Lazy[T] = Lazy(defaultValue)
-
   /**
    * This is the value that is currently visible on the client side.
    */
   protected var currentRenderedValue: Option[T] = None
+
+  /**
+   * The current value of the field. Because this can be changed on the server side it may yet to be updated on the client side. currentRenderedValue should hold what is currently rendered on the client side.
+   */
+  private lazy val currentValueHolder: Lazy[T] = Lazy(_getter())
+
+  /**
+   * Fields can get and set (on submit) the value from an external variable. But they can also simply store this value internally. This is what this field is for.
+   *
+   * So, for example, when the user changes a text-field the currentValue is changed immediately. The internal value, if in use, would be changed to that value on form submit. But the form could be unable to be submitted because it doesn't pass validations.
+   */
+  private lazy val internalValue: Lazy[T] = Lazy(defaultValue)
 
   def currentValue = currentValueHolder()
 

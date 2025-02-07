@@ -18,7 +18,12 @@ trait Js {
 
   def cmdEscaped: String = "'" + StringEscapeUtils.escapeEcmaScript(cmd.replaceAll("\n", "")) + "'"
 
-  def &(js: Js) = RawJs(cmd + ";" + js.cmd)
+  def &(js: Js) = (this, js) match {
+    case (Js.Void, Js.Void) => Js.Void
+    case (Js.Void, js) => js
+    case (js, Js.Void) => js
+    case (js1, js2) => RawJs(js1.cmd + ";" + js2.cmd)
+  }
 
   def onDOMContentLoaded: Js = JS {
     s"""(function () {
@@ -44,7 +49,26 @@ trait Js {
   override def toString: String = cmd
 }
 
+class JsFunc0(body0: Js) extends JsFunc1(_ => body0) {
+  override def cmd: String = JS(s"""function(){$body0}""").cmd
+}
+
+class JsFunc1(body1: Js => Js) extends JsFunc2((arg1, _) => body1(arg1)) {
+  override def cmd: String = JS(s"""function(arg1){${body1(Js("arg1"))}}""").cmd
+}
+
+class JsFunc2(body2: (Js, Js) => Js) extends JsFunc3((arg1, arg2, _) => body2(arg1, arg2)) {
+  override def cmd: String = JS(s"""function(arg1, arg2){${body2(Js("arg1"), Js("arg2"))}}""").cmd
+}
+
+class JsFunc3(body3: (Js, Js, Js) => Js) extends Js {
+  override def cmd: String = JS(s"""function(arg1, arg2, arg3){${body3(Js("arg1"), Js("arg2"), Js("arg3"))}}""").cmd
+}
+
 object Js {
+
+  val Void = Js("")
+
   def apply(js: String): Js = RawJs(js)
 }
 
@@ -145,7 +169,13 @@ trait JsUtils {
 
   def alert(text: String): Js = JS(s"""alert("${escapeStr(text)}");""")
 
-  def function()(body: Js): Js = JS(s"""function(){$body}""")
+  def function0(body: Js): Js = JS(s"""function(){$body}""")
+
+  def function1(body: Js => Js): Js = JS(s"""function(arg1){${body(Js("arg1"))}}""")
+
+  def function2(body: (Js, Js) => Js): Js = JS(s"""function(arg1, arg2){${body(Js("arg1"), Js("arg2"))}}""")
+
+  def function3(body: (Js, Js, Js) => Js): Js = JS(s"""function(arg1, arg2, arg3){${body(Js("arg1"), Js("arg2"), Js("arg3"))}}""")
 
   def copy2Clipboard(text: String): Js = JS(s"navigator.clipboard.writeText('${escapeStr(text)}');")
 
@@ -176,6 +206,8 @@ trait JsUtils {
   def removeId(id: String): Js = JS(s"""document.getElementById("$id").remove();""")
 
   def show(id: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").style.display = "";""")
+
+  def undefined(js: Js): Js = JS(s"""($js === undefined)""")
 
   def hide(id: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").style.display = "none";""")
 

@@ -51,7 +51,7 @@ abstract class JSTreeNode[T, +N <: JSTreeNode[T, N]] {
 
   def icon: Option[String]
 
-  def childrenF: () => Seq[N]
+  def childrenF: () => collection.Seq[N]
 
   def renderLi(): Elem = {
     val appendedChildren = if (open) <ul>{childrenF().map(_.renderLi()).mkNS}</ul> else NodeSeq.Empty
@@ -75,6 +75,8 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
   //  protected val childrenOfId = collection.mutable.Map[String, Seq[N]]()
   protected val nodeById = collection.mutable.Map[String, N]()
 
+  def findNode(id: String): N = nodeById(id)
+
   def jsTreeConfig(implicit fsc: FSContext): JSTreeConfig = {
     implicit def nonOption2Option[T](v: T): Option[T] = Some(v)
 
@@ -82,14 +84,14 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
       core = Core(
         check_callback = true,
         data = Data(
-          data = Js("""function (node) { console.log(node); return { 'id' : node.id }; }""")
+          data = Js("""function (node) { return { 'id' : node.id }; }""")
         )
       ),
       plugins = this.plugins,
     )
   }
 
-  def init()(implicit fsc: FSContext): Js = Js {
+  def init(using fsc: FSContext)(config: JSTreeConfig = jsTreeConfig, onSelect: Js = JS.void): Js = Js {
     val callback = fsc.anonymousPageURLScalaXml(implicit fsc => {
       Option(Request.getParameters(fsc.page.req).getValue("id")) match {
         case Some("#") => <ul>{rootNodes.tap(_.foreach(node => nodeById += (node.id -> node))).map(_.renderLi()).mkNS}</ul>
@@ -99,15 +101,23 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
     }, "nodes.html")
 
     import com.softwaremill.quicklens._
-    val config: JSTreeConfig = jsTreeConfig.pipe(config =>
+    val jsTreeConfig =
       config.modify(_.core).setToIf(config.core.isEmpty)(Some(Core())).pipe(config =>
         config.modify(_.core.each.data).setToIf(config.core.get.data.isEmpty)(Some(Data())).pipe(config =>
           config.modify(_.core.each.data.each.url).setTo(Some(callback))
         )
       )
-    )
 
     import upickle.default._
-    s"""$$('#$elemId').jstree(${write(config)});"""
+    s"""$$('#$elemId').on("changed.jstree", function(e, data){${onSelect.cmd}}).jstree(${write(jsTreeConfig)});"""
   }
+
+  def refreshJSTreeNode(node: String): Js =
+    Js(s"""$$('#$elemId').jstree(true).refresh_node('$node')""")
+
+  def loadAndEditJSTreeNode(parent: String, node: String, onEdit: Js): Js =
+    Js(s"""$$('#$elemId').jstree(true).load_node('$parent', function(){ this.edit('$node', null, function(node, success, cancelled){ if (!cancelled && success) {${onEdit.cmd}} }) })""")
+
+  def editJSTreeNode(node: String, onEdit: Js, text: Option[String] = None): Js =
+    Js(s"""$$('#$elemId').jstree(true).edit('$node', ${text.map(t => s"'$t'").getOrElse("null")}, function(node, success, cancelled){ if (!cancelled && success) {${onEdit.cmd}} })""")
 }

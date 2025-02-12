@@ -1,6 +1,6 @@
 package com.fastscala.components.jstree
 
-import com.fastscala.components.jstree.config.{Core, Data, JSTreeConfig}
+import com.fastscala.components.jstree.config.{Core, Data, JSTreeConfig, Themes}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -85,7 +85,8 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
         check_callback = true,
         data = Data(
           data = Js("""function (node) { return { 'id' : node.id }; }""")
-        )
+        ),
+        themes = Themes(),
       ),
       plugins = this.plugins,
     )

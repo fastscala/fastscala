@@ -27,9 +27,9 @@ object Data {
 
 case class Themes(
                   dots: Option[Boolean] = None,
-                  icons: Option[Boolean] = Some(true),
-                  ellipsis: Option[Boolean] = Some(true),
-                  stripes: Option[Boolean] = Some(true),
+                  icons: Option[Boolean] = None,
+                  ellipsis: Option[Boolean] = None,
+                  stripes: Option[Boolean] = None,
                  )
 
 object Themes {

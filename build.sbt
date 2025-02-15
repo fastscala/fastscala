@@ -9,7 +9,7 @@ resolvers += Resolver.mavenLocal
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / version := "0.0.5"
+ThisBuild / version := "0.0.6"
 ThisBuild / scalaVersion := "3.6.2"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
@@ -48,6 +48,7 @@ val FSRoot = "./"
 
 lazy val fs_core = (project in file(FSRoot + "fs-core"))
   .settings(
+    commonSettings,
     name := "fs-core",
     version := "0.0.3",
     organization := "com.fastscala",

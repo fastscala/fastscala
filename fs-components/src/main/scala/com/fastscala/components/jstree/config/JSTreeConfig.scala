@@ -25,9 +25,22 @@ object Data {
   implicit val writer: Writer[Data] = macroW
 }
 
+case class Themes(
+                  dots: Option[Boolean] = None,
+                  icons: Option[Boolean] = None,
+                  ellipsis: Option[Boolean] = None,
+                  stripes: Option[Boolean] = None,
+                 )
+
+object Themes {
+
+  implicit val writer: Writer[Themes] = macroW
+}
+
 case class Core(
                  check_callback: Option[Boolean] = None,
                  data: Option[Data] = None,
+                 themes: Option[Themes] = None,
                )
 
 object Core {

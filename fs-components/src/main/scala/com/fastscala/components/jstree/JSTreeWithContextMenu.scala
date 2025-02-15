@@ -1,11 +1,14 @@
 package com.fastscala.components.jstree
 
+import com.fastscala.components.bootstrap5.toast.BSToast2
 import com.fastscala.components.jstree.config.{ContextMenu, Core, Data, JSTreeConfig}
 import com.fastscala.components.jstree.{JSTree, JSTreeNode}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
+
 import scala.util.chaining.scalaUtilChainingOps
+import scala.xml.NodeSeq
 
 trait JSTreeContextMenuAction {
 
@@ -46,10 +49,43 @@ class DefaultJSTreeContextMenuAction(
                                       val subactions: Seq[JSTreeContextMenuAction] = Nil
                                     ) extends JSTreeContextMenuAction
 
+object DefaultJSTreeContextMenuAction {
+  def apply(
+             label: String,
+             action: FSContext => Js,
+             shortcut: Option[Int] = None,
+             shortcutLabel: Option[String] = None,
+             separatorBefore: Boolean = false,
+             separatorAfter: Boolean = true,
+             disabled: Boolean = false,
+             icon: Option[String] = None,
+             subactions: Seq[JSTreeContextMenuAction] = Nil,
+           ): DefaultJSTreeContextMenuAction =
+    new DefaultJSTreeContextMenuAction(
+      label = label,
+      action = Some(fsc => action(fsc)),
+      shortcut = shortcut,
+      shortcutLabel = shortcutLabel,
+      separatorBefore = separatorBefore,
+      separatorAfter = separatorAfter,
+      disabled = disabled,
+      icon = icon,
+      subactions = subactions,
+    )
+}
+
 trait JSTreeNodeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTreeNode[N] {
   self: N =>
 
   def actions: Seq[JSTreeContextMenuAction]
+}
+
+object JSTreeNodeWithContextMenu {
+  case class OnEditData(id: String, text: String)
+
+  import io.circe.generic.semiauto.*
+
+  implicit lazy val decoder: io.circe.Decoder[OnEditData] = deriveDecoder
 }
 
 trait JSTreeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTree[N] {
@@ -63,11 +99,11 @@ trait JSTreeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTree[N]
                                    separator_before: Option[Boolean],
                                    shortcut: Option[Int],
                                    shortcut_label: Option[String],
-                                   submenu: Option[String],
+                                   submenu: Option[Map[String, RenderableMenuAction]],
                                  ) {
 
     def this(node: N, action: JSTreeContextMenuAction)(implicit fsc: FSContext) = this(
-      action = Some {
+      action = if (action.subactions.nonEmpty) Some(JS._false) else Some {
         JS.function0(
           action.action.map(js => {
             fsc.runInNewOrRenewedChildContextFor((this, node.id, action.label))(implicit fsc => {
@@ -83,7 +119,14 @@ trait JSTreeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTree[N]
       separator_before = Some(action.separatorBefore),
       shortcut = action.shortcut,
       shortcut_label = action.shortcutLabel,
-      submenu = None,
+      submenu = action.subactions match {
+        case Nil => None
+        case actions => Some(
+          actions.map(action =>
+            JS.asJsStr(action.label).cmd -> new RenderableMenuAction(node, action)
+          ).toMap
+        )
+      },
     )
   }
 

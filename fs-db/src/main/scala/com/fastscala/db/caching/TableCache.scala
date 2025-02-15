@@ -47,8 +47,14 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
   }
 
   def apply(key: K): R = getForIdX(key)
-  
-  def getForIdX(key: K): R = getForIdOptX(key).get
+
+  def getForIdX(key: K): R = try {
+    getForIdOptX(key).get
+  } catch {
+    case ex: java.util.NoSuchElementException =>
+      println(s"Not found: key ${key} in table ${table.tableName}")
+      throw ex
+  }
 
   def getForIdOptX(key: K): Option[R] = {
 

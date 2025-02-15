@@ -19,7 +19,7 @@ class JSTreeLazyLoadNode[T](
                              val open: Boolean = false,
                              val disabled: Boolean = false,
                              val icon: Option[String] = None,
-                           )(val childrenF: () => Seq[JSTreeLazyLoadNode[T]]) extends JSTreeNode[T, JSTreeLazyLoadNode[T]] {
+                           )(val childrenF: () => Seq[JSTreeLazyLoadNode[T]]) extends JSTreeNode[JSTreeLazyLoadNode[T]] {
   override def titleNs: NodeSeq = scala.xml.Text(title)
 }
 
@@ -30,18 +30,16 @@ class JSTreeSimpleNode[T](
                            val open: Boolean = false,
                            val disabled: Boolean = false,
                            val icon: Option[String] = None,
-                         )(children: Seq[JSTreeSimpleNode[T]]) extends JSTreeNode[T, JSTreeSimpleNode[T]] {
+                         )(children: Seq[JSTreeSimpleNode[T]]) extends JSTreeNode[JSTreeSimpleNode[T]] {
   override def titleNs: NodeSeq = scala.xml.Text(title)
 
   def childrenF = () => children
 }
 
-abstract class JSTreeNode[T, +N <: JSTreeNode[T, N]] {
+abstract class JSTreeNode[+N <: JSTreeNode[N]] {
   self: N =>
 
   def titleNs: NodeSeq
-
-  def value: T
 
   def id: String
 
@@ -53,14 +51,18 @@ abstract class JSTreeNode[T, +N <: JSTreeNode[T, N]] {
 
   def childrenF: () => Seq[N]
 
-  def renderLi(): Elem = {
-    val appendedChildren = if (open) <ul>{childrenF().map(_.renderLi()).mkNS}</ul> else NodeSeq.Empty
+  def renderLi(registerNodes: Seq[N] => Unit): Elem = {
+    val loadedChildren = if (open) childrenF() else Nil
+    if (loadedChildren.nonEmpty) {
+      registerNodes(loadedChildren)
+    }
+    val appendedChildren = if (open) <ul>{loadedChildren.map(_.renderLi(registerNodes)).mkNS}</ul> else NodeSeq.Empty
     val dataJSTree = Some(List(icon.map(icon => s""""icon":"$icon""""), Some(disabled).filter(_ == true).map(disabled => s""""disabled":$disabled""")).flatten).filter(_.nonEmpty).map(_.mkString("{", ",", "}")).getOrElse(null)
     <li id={id} data-jstree={dataJSTree} class={if (!open) "jstree-closed" else ""}>{titleNs}{appendedChildren}</li>
   }
 }
 
-abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
+abstract class JSTree[N <: JSTreeNode[N]] extends ElemWithRandomId {
 
   def plugins: List[String] = Nil
 
@@ -89,11 +91,17 @@ abstract class JSTree[T, N <: JSTreeNode[T, N]] extends ElemWithRandomId {
 
   def refresh(): Js = Js(s"""$$('#$elemId').jstree(true).refresh($$('#$elemId').jstree(true).get_node('#'));""").printBeforeExec
 
+  def registerNodes(nodes: Seq[N]): Unit = {
+    nodes.foreach(node => {
+      nodeById += (node.id -> node)
+    })
+  }
+
   def init()(implicit fsc: FSContext): Js = Js {
     val callback = fsc.anonymousPageURLScalaXml(implicit fsc => {
       Option(Request.getParameters(fsc.page.req).getValue("id")) match {
-        case Some("#") => <ul>{rootNodes.tap(_.foreach(node => nodeById += (node.id -> node))).map(_.renderLi()).mkNS}</ul>
-        case Some(id) => <ul>{nodeById(id).childrenF().tap(_.foreach(node => nodeById += (node.id -> node))).map(_.renderLi()).mkNS}</ul>
+        case Some("#") => <ul>{rootNodes.tap(registerNodes).map(_.renderLi(registerNodes)).mkNS}</ul>
+        case Some(id) => <ul>{nodeById(id).childrenF().tap(registerNodes).map(_.renderLi(registerNodes)).mkNS}</ul>
         case None => throw new Exception(s"Id parameter not found")
       }
     }, "nodes.html")

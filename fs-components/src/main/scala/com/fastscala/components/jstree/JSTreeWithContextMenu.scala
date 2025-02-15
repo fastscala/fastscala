@@ -46,13 +46,13 @@ class DefaultJSTreeContextMenuAction(
                                       val subactions: Seq[JSTreeContextMenuAction] = Nil
                                     ) extends JSTreeContextMenuAction
 
-trait JSTreeNodeWithContextMenu[T, N <: JSTreeNodeWithContextMenu[T, N]] extends JSTreeNode[T, N] {
+trait JSTreeNodeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTreeNode[N] {
   self: N =>
 
   def actions: Seq[JSTreeContextMenuAction]
 }
 
-trait JSTreeWithContextMenu[T, N <: JSTreeNodeWithContextMenu[T, N]] extends JSTree[T, N] {
+trait JSTreeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTree[N] {
 
   case class RenderableMenuAction(
                                    action: Option[Js],

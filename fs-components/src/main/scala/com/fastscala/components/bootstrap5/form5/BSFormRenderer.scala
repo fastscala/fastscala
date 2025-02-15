@@ -7,7 +7,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class BSFormRenderer {
+abstract class BSFormRenderer  {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 

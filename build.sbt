@@ -8,9 +8,11 @@ resolvers += Resolver.mavenLocal
 
 ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 
+ThisBuild / publishTo := sonatypePublishToBundle.value
+
 ThisBuild / organization := "com.fastscala"
-ThisBuild / version := "0.0.6"
-ThisBuild / scalaVersion := "3.6.2"
+ThisBuild / version := "0.0.11"
+ThisBuild / scalaVersion := "3.6.3"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
@@ -18,6 +20,8 @@ lazy val commonSettings = Seq(
   organization := "com.fastscala",
 
   sonatypeCentralDeploymentName := s"${organization.value}.${name.value}-${version.value}",
+
+  sbtPluginPublishLegacyMavenStyle := false,
 
   scalacOptions ++= Seq("-old-syntax", "-rewrite"),
 
@@ -50,7 +54,6 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   .settings(
     commonSettings,
     name := "fs-core",
-    version := "0.0.3",
     organization := "com.fastscala",
 
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
@@ -75,8 +78,8 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .settings(
+    commonSettings,
     name := "fs-circe",
-    version := "0.0.1",
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
@@ -89,8 +92,8 @@ lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
   .settings(
+    commonSettings,
     name := "fs-scala-xml",
-    version := "0.0.1",
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
@@ -101,8 +104,8 @@ lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
   .settings(
+    commonSettings,
     name := "fs-db",
-    version := "0.0.1",
     organization := "com.fastscala",
 
     libraryDependencies ++= Seq(
@@ -125,8 +128,8 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
 
 lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .settings(
+    commonSettings,
     name := "fs-components",
-    version := "0.0.1",
     organization := "com.fastscala",
 
     scalacOptions ++= Seq("-Xmax-inlines", "50"),

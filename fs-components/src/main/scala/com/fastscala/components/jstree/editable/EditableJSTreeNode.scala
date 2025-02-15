@@ -38,9 +38,9 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
         if (node.title != data.text && !allowDuplicated) {
           val (pid, _) = data.id.splitAt(data.id.lastIndexOf("_"))
           if (pid.nonEmpty && jsTree.findNode(pid).children.exists(_.title == data.text)) {
-            BSToast2.VerySimple(<label class="text-danger">Error</label>)
-              (<p class="text-danger">Duplicated title found: {data.text}.</p>)
-              .installAndShow() &
+            BSToast2.VerySimple(<label class="text-danger">Error</label>)(
+                <p class="text-danger">Duplicated title found: {data.text}.</p>
+              ).installAndShow() &
               jsTree.editJSTreeNode(data.id, onEditJs(onEdit), text = Some(node.title))
           } else
             onEdit(node, data.text)
@@ -111,17 +111,15 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
                              onRemove: (N, String) => Js,
                            ) extends DefaultJSTreeContextMenuAction(
     label = label,
-    action = Some(implicit fsc =>
+    action = Some(implicit fsc => {
       val (pid, _) = id.splitAt(id.lastIndexOf("_"))
       if (pid.nonEmpty) {
         jsTree.findNode(pid).children.pipe { children =>
-          println("Find id " + id)
-          println(s"children of ${pid}: " + children.map(_.id).mkString("[", ",", "]"))
           onRemove(children.remove(children.indexWhere(_.id == id)), pid) &
             jsTree.refreshJSTreeNode(pid)
         }
-      }
-      else JS.void),
+      } else JS.void
+    }),
     shortcut = shortcut,
     shortcutLabel = shortcutLabel,
     separatorBefore = separatorBefore,

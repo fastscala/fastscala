@@ -107,7 +107,7 @@ trait JSTreeWithContextMenu[N <: JSTreeNodeWithContextMenu[N]] extends JSTree[N]
         JS.function0(
           action.action.map(js => {
             fsc.runInNewOrRenewedChildContextFor((this, node.id, action.label))(implicit fsc => {
-              js(fsc)
+              fsc.callback(() => js(fsc))
             })
           }).getOrElse(JS.void)
         )

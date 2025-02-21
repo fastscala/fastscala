@@ -49,6 +49,21 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
       })
   }
 
+  def nextId(pid: String, childrenIds: Set[String]): String = {
+    s"${pid}_Sub${childrenIds.size}".pipe{ subId =>
+      if (!childrenIds.contains(subId))
+        subId
+      else {
+        (0 until childrenIds.size)
+          .collectFirst {
+            case idx if !childrenIds.contains(s"${pid}_Sub$idx") =>
+              s"${pid}_Sub$idx"
+          }.getOrElse(throw Exception(s"Cannot make nextId for childrenIds: ${childrenIds}"))
+      }
+    }
+  }
+
+
   class DefaultCreateAction(
                              label: String,
                              shortcut: Option[Int] = None,
@@ -64,7 +79,7 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
     label = label,
     action = Some(implicit fsc =>
       jsTree.findNode(id).children.pipe { children =>
-        val subId = s"${id}_Sub${children.length}"
+        val subId = nextId(id, children.map(_.id).toSet)
         children.append(onCreate(subId))
         jsTree.loadAndEditJSTreeNode(id, subId, onEditJs(onEdit))
       }),

@@ -49,6 +49,21 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
       })
   }
 
+  def nextId(pid: String, childrenIds: Set[String]): String = {
+    s"${pid}_Sub${childrenIds.size}".pipe{ subId =>
+      if (!childrenIds.contains(subId))
+        subId
+      else {
+        (0 until childrenIds.size)
+          .collectFirst {
+            case idx if !childrenIds.contains(s"${pid}_Sub$idx") =>
+              s"${pid}_Sub$idx"
+          }.getOrElse(throw Exception(s"Cannot make nextId for childrenIds: ${childrenIds}"))
+      }
+    }
+  }
+
+
   class DefaultCreateAction(
                              label: String,
                              shortcut: Option[Int] = None,
@@ -63,11 +78,14 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
                            ) extends DefaultJSTreeContextMenuAction(
     label = label,
     action = Some(implicit fsc =>
-      jsTree.findNode(id).children.pipe { children =>
-        val subId = s"${id}_Sub${children.length}"
-        children.append(onCreate(subId))
-        jsTree.loadAndEditJSTreeNode(id, subId, onEditJs(onEdit))
-      }),
+      fsc.callback{ () =>
+        jsTree.findNode(id).children.pipe { children =>
+          val subId = nextId(id, children.map(_.id).toSet)
+          children.append(onCreate(subId))
+          jsTree.loadAndEditJSTreeNode(id, subId, onEditJs(onEdit))
+        }
+      }
+    ),
     shortcut = shortcut,
     shortcutLabel = shortcutLabel,
     separatorBefore = separatorBefore,
@@ -89,7 +107,9 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
                              onEdit: (N, String) => Js,
                            ) extends DefaultJSTreeContextMenuAction(
     label = label,
-    action = Some(implicit fsc => jsTree.editJSTreeNode(id, onEditJs(onEdit))),
+    action = Some(implicit fsc =>
+      fsc.callback{ () => jsTree.editJSTreeNode(id, onEditJs(onEdit)) }
+    ),
     shortcut = shortcut,
     shortcutLabel = shortcutLabel,
     separatorBefore = separatorBefore,
@@ -111,15 +131,17 @@ trait EditableJSTreeNode[N <: EditableJSTreeNode[N]](implicit jsTree: JSTreeWith
                              onRemove: (N, String) => Js,
                            ) extends DefaultJSTreeContextMenuAction(
     label = label,
-    action = Some(implicit fsc => {
-      val (pid, _) = id.splitAt(id.lastIndexOf("_"))
-      if (pid.nonEmpty) {
-        jsTree.findNode(pid).children.pipe { children =>
-          onRemove(children.remove(children.indexWhere(_.id == id)), pid) &
-            jsTree.refreshJSTreeNode(pid)
-        }
-      } else JS.void
-    }),
+    action = Some(implicit fsc =>
+      fsc.callback{ () =>
+        val (pid, _) = id.splitAt(id.lastIndexOf("_"))
+        if (pid.nonEmpty) {
+          jsTree.findNode(pid).children.pipe { children =>
+            onRemove(children.remove(children.indexWhere(_.id == id)), pid) &
+              jsTree.refreshJSTreeNode(pid)
+          }
+        } else JS.void
+      }
+    ),
     shortcut = shortcut,
     shortcutLabel = shortcutLabel,
     separatorBefore = separatorBefore,

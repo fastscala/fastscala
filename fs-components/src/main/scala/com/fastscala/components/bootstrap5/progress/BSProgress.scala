@@ -54,8 +54,8 @@ case class BSProgress(
   def bgDarkSubtle: BSProgress = copy(progressBarClasses = progressBarClasses + bg_dark_subtle.getClassAttr)
 
   def render(percent: Double, label: String = ""): Elem =
-    <div class={progressClasses} role="progressbar" aria-valuenow={percent.formatted("%.2f")} aria-valuemin="0" aria-valuemax="100">
-      <div class={progressBarClasses} style={"width: " + percent.formatted("%.2f%%")}>{label}</div>
+    <div class={progressClasses} role="progressbar" aria-valuenow={percent.toString} aria-valuemin="0" aria-valuemax="100">
+      <div class={progressBarClasses} style={"width: " + percent.toString + "%"}>{label}</div>
     </div>
 
   def renderXofY(x: Double, ofY: Double, label: String = ""): Elem = render(x / ofY * 100.0, label)

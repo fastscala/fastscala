@@ -18,7 +18,7 @@ class F7DoubleField()(implicit renderer: TextF7FieldRenderer)
 
   override def defaultValue: Double = 0
 
-  def toString(value: Double): String = (prefix + " " + value.formatted("%.2f") + " " + suffix).trim
+  def toString(value: Double): String = (prefix + " " + value.toString + " " + suffix).trim
 
   def fromString(str: String): Either[String, Double] = {
     str

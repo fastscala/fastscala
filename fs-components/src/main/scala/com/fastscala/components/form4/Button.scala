@@ -1,12 +1,13 @@
-package com.fastscala.components.utils
+package com.fastscala.components.form4
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.js.JS
 
 import scala.xml.{Elem, Node, NodeSeq}
 
+@deprecated
 case class Button(
                    classes: String = "btn",
                    styles: String = "",
@@ -18,18 +19,25 @@ case class Button(
                  ) {
 
   def lg = copy(classes = classes + " btn-lg")
+
   def md = copy(classes = classes + " btn-md")
+
   def sm = copy(classes = classes + " btn-sm")
+
   def xs = copy(classes = classes + " btn-xs")
 
   def fullcolor = copy(classes = classes + " btn-fullcolor")
+
   def fullwhite = copy(classes = classes + " btn-fullwhite")
+
   def fullblack = copy(classes = classes + " btn-fullblack")
 
   def text(s: String) = copy(contentsNs = scala.xml.Text(s))
+
   def contents(ns: Node) = copy(contentsNs = ns)
 
   def onclick(onclick: Js) = copy(onclick = Some(onclick))
+
   def ajax(callback: () => Js)(implicit fsc: FSContext) = copy(onclick = Some(fsc.callback(() => callback())))
 
   def id(_id: String): Button = this.copy(`id` = Some(_id))

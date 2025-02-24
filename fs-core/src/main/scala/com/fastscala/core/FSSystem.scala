@@ -135,6 +135,19 @@ class FSContext(
     f(newContext)
   }
 
+  def runInContextFor[T](contextFor: AnyRef, debugLabel: Option[String] = None)(f: FSContext => T): T = {
+    if (deleted) throw new Exception(s"Trying to create child of deleted context ($fullPath)")
+    // If it already exists, delete:
+    val ctx = page.key2FSContext.getOrElseUpdate(contextFor, {
+      val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel.orElse(Some(s"ctx4$contextFor")))
+      page.key2FSContext(contextFor) = newContext
+      logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
+      children += newContext
+      newContext
+    })
+    f(ctx)
+  }
+
   def delete(): Unit = {
     logger.debug(s"Delete context $fullPath")
     parentFSContext.foreach(_.children -= this)

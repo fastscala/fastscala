@@ -3,7 +3,7 @@ package com.fastscala.components.form4
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.utils.{Button, ElemWithRandomId}
+import com.fastscala.components.utils.ElemWithRandomId
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 

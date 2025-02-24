@@ -11,7 +11,7 @@ ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / version := "0.0.11"
+ThisBuild / version := "0.0.13"
 ThisBuild / scalaVersion := "3.6.3"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }

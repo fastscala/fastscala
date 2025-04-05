@@ -21,7 +21,7 @@ trait F7FieldWithOnChangedField extends F7Field with Mutable {
 
   def addOnThisFieldChanged(onChange: this.type => Js): this.type = mutate {
     _onChangedField += new F7OnChangedFieldHandler {
-      override def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = if (field == self) onChange(self).printBeforeExec else JS.void
+      override def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = if (field == self) onChange(self) else JS.void
     }
   }
 

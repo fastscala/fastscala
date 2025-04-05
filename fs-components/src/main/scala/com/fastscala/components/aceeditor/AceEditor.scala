@@ -1,12 +1,12 @@
 package com.fastscala.components.aceeditor
 
-import com.fastscala.components.aceeditor.json.{Command, OnChangeEvent}
+import com.fastscala.components.aceeditor.json.{Command, OnChangeEvent, SelectionRange}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.core.FSContext
 import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
-import com.fastscala.js.Js
+import com.fastscala.js.{Js, JsFunc0, JsFunc1}
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
-import com.fastscala.scala_xml.js.{JS, printBeforeExec}
+import com.fastscala.scala_xml.js.{JS, print2Console, printBeforeExec}
 import com.fastscala.utils.Lazy
 
 import scala.collection.mutable.ListBuffer
@@ -14,23 +14,26 @@ import scala.xml.{Elem, NodeSeq}
 
 object AceEditor {
 
-  def jsImports(
-                 language: Language.Value,
-                 theme: Theme.Value
-               ): NodeSeq =
+  def jsImports(language: Language.Value, theme: Theme.Value): NodeSeq =
     <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-min-noconflict/ace.js" integrity="sha256-ii6u0BJo0Yx3y2GCg5RRVXCO2bo6oysPMXp8ik9sLQc=" crossorigin="anonymous"></script> ++
       jsForTheme(theme) ++
       jsForLanguage(language)
 
-  def jsBase: NodeSeq = <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-min-noconflict/ace.js" integrity="sha256-ii6u0BJo0Yx3y2GCg5RRVXCO2bo6oysPMXp8ik9sLQc=" crossorigin="anonymous"></script>
+  def jsBase: NodeSeq =
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-min-noconflict/ace.js" integrity="sha256-ii6u0BJo0Yx3y2GCg5RRVXCO2bo6oysPMXp8ik9sLQc=" crossorigin="anonymous"></script>
 
-  def jsForTheme(theme: Theme.Value): NodeSeq = <script src={s"https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-min-noconflict/theme-${theme}.js"}></script>
+  def jsForTheme(theme: Theme.Value): NodeSeq = <script src={
+    s"https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-min-noconflict/theme-${theme}.js"
+  }></script>
 
   def jsForAllThemes: NodeSeq = Theme.values.toList.map(jsForTheme).mkNS
 
-  def jsForLanguage(language: Language.Value): NodeSeq = <script src={s"https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-noconflict/snippets/${language}.min.js"}></script>
+  def jsForLanguage(language: Language.Value): NodeSeq = <script src={
+    s"https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/src-noconflict/snippets/${language}.min.js"
+  }></script>
 
-  def cssImports: NodeSeq = <link href="https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/css/ace.min.css" rel="stylesheet"/>
+  def cssImports: NodeSeq =
+    <link href="https://cdn.jsdelivr.net/npm/ace-builds@1.37.5/css/ace.min.css" rel="stylesheet"/>
 }
 
 trait AceEditor extends ElemWithRandomId {
@@ -240,9 +243,8 @@ trait AceEditor extends ElemWithRandomId {
 
   def setReadOnly(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("readOnly", v)}});""")
 
-  /**
-   * copy/cut the full line if selection is empty, defaults to false
-   */
+  /** copy/cut the full line if selection is empty, defaults to false
+    */
   def defaultCopyWithEmptySelection: Option[Boolean] = None
 
   def setCopyWithEmptySelection(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("copyWithEmptySelection", v)}});""")
@@ -287,9 +289,8 @@ trait AceEditor extends ElemWithRandomId {
 
   def setEnableSnippets(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("enableSnippets", v)}});""")
 
-  /**
-   * this is needed if editor is inside scrollable page
-   */
+  /** this is needed if editor is inside scrollable page
+    */
   def defaultAutoScrollEditorIntoView: Option[Boolean] = None
 
   def setAutoScrollEditorIntoView(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("autoScrollEditorIntoView", v)}});""")
@@ -327,90 +328,82 @@ trait AceEditor extends ElemWithRandomId {
   def setEnableMobileMenu(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("enableMobileMenu", v)}});""")
 
   def addCommand(cmd: FSContext => Command)(implicit fsc: FSContext): Js = {
-    import upickle.default._
     import com.fastscala.components.utils.upickle.JsWriter
+    import upickle.default.*
     fsc.runInNewOrRenewedChildContextFor(this)(implicit fsc => {
       Js(s"""editor.commands.addCommand(${write(cmd(fsc))})""")
     })
   }
 
-  def currentId: Js = Js(s"""ace.edit("$elemId").currentId""")
-  
-  def onChangeClientSide(implicit fsc: FSContext): Js = {
-    import OnChangeEvent._
-    JS.function1(arg => {
-      Js(
-        s"""var editor = ace.edit("$elemId");
-           |if (typeof editor.currentId == "undefined") { editor.currentId = 0 }
-           |editor.currentId = editor.currentId + 1;
-           |$arg.id = editor.currentId;
-           |""".stripMargin
-      ) &
-        fsc.callbackJSONDecoded[OnChangeEvent](arg, event => applyOnChangeEventToCurrentState(event))
-    })
-  }
+  def aceEditorJsReference: Js = Js(s"""ace.edit("$elemId")""")
 
-  def onChange(currentValue: String): Js = JS.void
+  def currentId: Js = Js(s"""$aceEditorJsReference.currentId""")
+
+  def onChangeServerSide(currentValue: String)(implicit fsc: FSContext): Js = JS.void
 
   var lastId = 0L
   var changesQueue = List[OnChangeEvent]()
 
-  def applyOnChangeEventToCurrentState(event: OnChangeEvent): Js = synchronized {
+  def applyOnChangeEventToCurrentState(event: OnChangeEvent)(implicit fsc: FSContext): Js = synchronized {
     changesQueue ::= event
 
-    changesQueue.sortBy(_.id).map(event => {
+    changesQueue
+      .sortBy(_.id)
+      .map(event => {
 
-      if (event.id == lastId + 1) {
-        //        println("EVENT: " + event)
-        //        println("INITIAL STATE:")
-        //        currentValueHolder().zipWithIndex.foreach({
-        //          case (line, idx) => printf("%4d: %s\n", idx, line)
-        //        })
+        if (event.id == lastId + 1) {
+          //        println("EVENT: " + event)
+          //        println("INITIAL STATE:")
+          //        currentValueHolder().zipWithIndex.foreach({
+          //          case (line, idx) => printf("%4d: %s\n", idx, line)
+          //        })
 
-        val state = currentValueHolder()
+          val state = currentValueHolder()
 
-        event match {
-          case OnChangeEvent(start, end, "remove", lines, id) if start.row == end.row =>
-            val line = state(start.row)
-            state(start.row) = line.substring(0, start.column) + line.substring(end.column, line.length)
-          case OnChangeEvent(start, end, "remove", lines, id) =>
-            state(start.row) = state(start.row).take(start.column) + state(end.row).drop(end.column)
-            state.remove(start.row + 1, end.row - start.row)
-          case OnChangeEvent(start, end, "insert", List(text), id) if start.row == end.row =>
-            val line = state(start.row)
-            state(start.row) = line.substring(0, start.column) + text + line.substring(start.column, line.length)
-          case OnChangeEvent(start, end, "insert", firstLine :: rest, id) =>
-            val line = state(start.row)
-            state(start.row) = line.substring(0, start.column) + firstLine
-            state.insertAll(start.row + 1, rest.dropRight(1) ::: (rest.last + line.substring(start.column, line.length)) :: Nil)
-          case OnChangeEvent(start, end, action, lines, id) => println(s"UNKNOWN ACTION: $action")
+          event match {
+            case OnChangeEvent(start, end, "remove", lines, id) if start.row == end.row =>
+              val line = state(start.row)
+              state(start.row) = line.substring(0, start.column) + line.substring(end.column, line.length)
+            case OnChangeEvent(start, end, "remove", lines, id) =>
+              state(start.row) = state(start.row).take(start.column) + state(end.row).drop(end.column)
+              state.remove(start.row + 1, end.row - start.row)
+            case OnChangeEvent(start, end, "insert", List(text), id) if start.row == end.row =>
+              val line = state(start.row)
+              state(start.row) = line.substring(0, start.column) + text + line.substring(start.column, line.length)
+            case OnChangeEvent(start, end, "insert", firstLine :: rest, id) =>
+              val line = state(start.row)
+              state(start.row) = line.substring(0, start.column) + firstLine
+              state.insertAll(start.row + 1, rest.dropRight(1) ::: (rest.last + line.substring(start.column, line.length)) :: Nil)
+            case OnChangeEvent(start, end, action, lines, id) => println(s"UNKNOWN ACTION: $action")
+          }
+
+          //        println("FINAL STATE:")
+          //        currentValueHolder().zipWithIndex.foreach({
+          //          case (line, idx) => printf("%4d: %s\n", idx, line)
+          //        })
+
+          lastId = event.id
+
+          onChangeServerSide(currentValue)
+        } else {
+          JS.void
         }
 
-        //        println("FINAL STATE:")
-        //        currentValueHolder().zipWithIndex.foreach({
-        //          case (line, idx) => printf("%4d: %s\n", idx, line)
-        //        })
-
-        lastId = event.id
-
-        onChange(currentValue)
-      } else {
-        JS.void
-      }
-
-    }).reduceOption(_ & _).getOrElse(JS.void)
+      })
+      .reduceOption(_ & _)
+      .getOrElse(JS.void)
   }
 
   def toJson(name: String, v: Any): String = (name, v) match {
-    case (name, Left(v)) => toJson(name, v)
+    case (name, Left(v))  => toJson(name, v)
     case (name, Right(v)) => toJson(name, v)
 
     case ("theme", v: Enumeration#Value) => s"$name: 'ace/theme/$v'"
-    case ("mode", v: Enumeration#Value) => s"$name: 'ace/mode/$v'"
-    case (name, v: Enumeration#Value) => s"$name: '$v'"
-    case (name, s: String) => s"$name: '$s'"
-    case (name, null) => s"$name: null"
-    case (name, other) => s"$name: $other"
+    case ("mode", v: Enumeration#Value)  => s"$name: 'ace/mode/$v'"
+    case (name, v: Enumeration#Value)    => s"$name: '$v'"
+    case (name, s: String)               => s"$name: '$s'"
+    case (name, null)                    => s"$name: null"
+    case (name, other)                   => s"$name: $other"
   }
 
   def defaultOptionsJson: String = List(
@@ -481,15 +474,30 @@ trait AceEditor extends ElemWithRandomId {
     defaultEnableKeyboardAccessibility.map(v => toJson("enableKeyboardAccessibility", v)),
     defaultEnableCodeLens.map(v => toJson("enableCodeLens", v)),
     defaultTextInputAriaLabel.map(v => toJson("textInputAriaLabel", v)),
-    defaultEnableMobileMenu.map(v => toJson("enableMobileMenu", v)),
+    defaultEnableMobileMenu.map(v => toJson("enableMobileMenu", v))
   ).flatten.mkString("{", ",", "}")
 
+  def jsRef = Js(s"ace.edit(\"$elemId\")")
+
+  def onChange(js: JsFunc1): Js = Js(s"$jsRef.session.on('change', $js);")
+
+  def onChangeSelection(js: Js): Js = Js(s"$jsRef.session.on('changeSelection', $js);")
+
+  def setupInternalChangeListener()(implicit fsc: FSContext): Js = {
+    import OnChangeEvent.*
+    onChange(JsFunc1(arg => {
+      Js(s"""var editor = ace.edit("$elemId");
+            |if (typeof editor.currentId == "undefined") { editor.currentId = 0 }
+            |editor.currentId = editor.currentId + 1;
+            |$arg.id = editor.currentId;
+            |""".stripMargin) &
+        fsc.callbackJSONDecoded[OnChangeEvent](arg, event => applyOnChangeEventToCurrentState(event))
+    }))
+  }
+
   def initialize()(implicit fsc: FSContext): Js = {
-    Js {
-      s"""var editor = ace.edit("$elemId", $defaultOptionsJson);
-         |editor.session.on('change', $onChangeClientSide);
-         |""".stripMargin
-    }.printBeforeExec
+    Js(s"""var editor = ace.edit("$elemId", $defaultOptionsJson);""") &
+      setupInternalChangeListener()
   }
 
   def render()(implicit fsc: FSContext): Elem = {

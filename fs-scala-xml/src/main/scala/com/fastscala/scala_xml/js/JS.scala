@@ -12,31 +12,28 @@ object JS extends JsXmlUtils
 
 class JsXmlUtils extends JsUtils {
 
-  def rerenderable(
-                    render: Rerenderer => FSContext => Elem,
-                    idOpt: Option[String] = None,
-                    debugLabel: Option[String] = None,
-                  ): Rerenderer =
+  def rerenderable(render: Rerenderer => FSContext => Elem, idOpt: Option[String] = None, debugLabel: Option[String] = None): Rerenderer =
+    new Rerenderer(rerenderer => fsc => (render(rerenderer)(fsc), Js.Void), idOpt = idOpt, debugLabel = debugLabel)
+
+  def rerenderableP[P](render: RerendererP[P] => FSContext => P => Elem, idOpt: Option[String] = None, debugLabel: Option[String] = None): RerendererP[P] =
+    new RerendererP[P](rerenderer => fsc => param => (render(rerenderer)(fsc)(param), Js.Void), idOpt = idOpt, debugLabel = debugLabel)
+
+  def rerenderableContents(render: ContentRerenderer => FSContext => NodeSeq, id: Option[String] = None, debugLabel: Option[String] = None): ContentRerenderer =
+    new ContentRerenderer(rerenderer => fsc => (render(rerenderer)(fsc), Js.Void), id = id, debugLabel = debugLabel)
+
+  def rerenderableContentsP[P](render: ContentRerendererP[P] => FSContext => P => NodeSeq, id: Option[String] = None, debugLabel: Option[String] = None): ContentRerendererP[P] =
+    new ContentRerendererP[P](rerenderer => fsc => param => (render(rerenderer)(fsc)(param), Js.Void), id = id, debugLabel = debugLabel)
+
+  def rerenderableWithJs(render: Rerenderer => FSContext => (Elem, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None): Rerenderer =
     new Rerenderer(render, idOpt = idOpt, debugLabel = debugLabel)
 
-  def rerenderableP[P](
-                        render: RerendererP[P] => FSContext => P => Elem,
-                        idOpt: Option[String] = None,
-                        debugLabel: Option[String] = None,
-                      ): RerendererP[P] = new RerendererP[P](render, idOpt = idOpt, debugLabel = debugLabel)
+  def rerenderablePWithJs[P](render: RerendererP[P] => FSContext => P => (Elem, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None): RerendererP[P] =
+    new RerendererP[P](render, idOpt = idOpt, debugLabel = debugLabel)
 
-  def rerenderableContents(
-                            render: ContentRerenderer => FSContext => NodeSeq,
-                            id: Option[String] = None,
-                            debugLabel: Option[String] = None,
-                          ): ContentRerenderer =
+  def rerenderableContentsWithJs(render: ContentRerenderer => FSContext => (NodeSeq, Js), id: Option[String] = None, debugLabel: Option[String] = None): ContentRerenderer =
     new ContentRerenderer(render, id = id, debugLabel = debugLabel)
 
-  def rerenderableContentsP[P](
-                                render: ContentRerendererP[P] => FSContext => P => NodeSeq,
-                                id: Option[String] = None,
-                                debugLabel: Option[String] = None,
-                              ): ContentRerendererP[P] =
+  def rerenderableContentsPWithJs[P](render: ContentRerendererP[P] => FSContext => P => (NodeSeq, Js), id: Option[String] = None, debugLabel: Option[String] = None): ContentRerendererP[P] =
     new ContentRerendererP[P](render, id = id, debugLabel = debugLabel)
 
   def append2Body(ns: NodeSeq): Js = {
@@ -57,21 +54,26 @@ class JsXmlUtils extends JsUtils {
       removeId(elemId)
   }
 
-  def replace(id: String, by: NodeSeq): Js = JS(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
+  def replace(id: String, by: NodeSeq): Js = JS(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(
+      by
+    ).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
 
   def setContents(id: String, ns: NodeSeq): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
+  
+  def setContents(id: String, js: Js): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = $js; """)
 
   def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js = JS {
-    s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${StringEscapeUtils.escapeEcmaScript(html.toString())}"))).content"""
+    s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${StringEscapeUtils.escapeEcmaScript(
+        html.toString()
+      )}"))).content"""
   }
 
   def forceHttps: Elem = {
     <script type="text/javascript">{
-      scala.xml.Unparsed(
-        """//<![CDATA[
+      scala.xml.Unparsed("""//<![CDATA[
           |if (location.protocol !== 'https:' && location.hostname !== 'localhost') { location.protocol = 'https:'; }
-          |//]]>""".stripMargin
-      )}</script>
+          |//]]>""".stripMargin)
+    }</script>
   }
 
   def inScriptTag(js: Js): Elem = {
@@ -83,7 +85,8 @@ class JsXmlUtils extends JsUtils {
           """
 // ]]>
 """
-      )}</script>
+      )
+    }</script>
   }
 
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
@@ -96,5 +99,9 @@ extension (js: Js) {
   def printBeforeExec: Js = {
     println("> " + js.cmd)
     JS.consoleLog(js.cmd) & js
+  }
+
+  def print2Console: Js = {
+    JS.consoleLog(js.cmd)
   }
 }

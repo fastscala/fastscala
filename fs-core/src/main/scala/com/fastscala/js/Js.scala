@@ -221,13 +221,13 @@ trait JsUtils {
 
   def removeAttr(id: String, name: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").removeAttribute(${this.asJsStr(name)})""")
 
-  def addClass(id: String, clas: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").classList.add(${this.asJsStr(clas)})""")
+  def addClass(id: String, clas: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").classList.add(${clas.split(" +").map(clas => this.asJsStr(clas)).mkString(", ")})""")
 
-  def addClassToElemsMatchingSelector(selector: String, clas: String): Js = JS(s"""document.querySelectorAll(${this.asJsStr(selector)}).forEach(el=>el.classList.add(${this.asJsStr(clas)}))""")
+  def addClassToElemsMatchingSelector(selector: String, clas: String): Js = JS(s"""document.querySelectorAll(${this.asJsStr(selector)}).forEach(el=>el.classList.add(${clas.split(" +").map(clas => this.asJsStr(clas)).mkString(", ")}))""")
 
-  def removeClass(id: String, clas: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").classList.remove(${this.asJsStr(clas)})""")
+  def removeClass(id: String, clas: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").classList.remove(${clas.split(" +").map(clas => this.asJsStr(clas)).mkString(", ")})""")
 
-  def removeClassFromElemsMatchingSelector(selector: String, clas: String): Js = JS(s"""document.querySelectorAll(${this.asJsStr(selector)}).forEach(el=>el.classList.remove(${this.asJsStr(clas)}))""")
+  def removeClassFromElemsMatchingSelector(selector: String, clas: String): Js = JS(s"""document.querySelectorAll(${this.asJsStr(selector)}).forEach(el=>el.classList.remove(${clas.split(" +").map(clas => this.asJsStr(clas)).mkString(", ")}))""")
 
   def setCookie(name: String, cookie: String, expires: Option[Long] = None, path: Option[String] = None): Js =
     JS(s"""document.cookie='$name=${escapeStr(cookie)};${expires.map(new Date(_)).map(_.toGMTString).map("; expires=" + _).getOrElse("")}${path.map("; path=" + _).getOrElse("")}'""")

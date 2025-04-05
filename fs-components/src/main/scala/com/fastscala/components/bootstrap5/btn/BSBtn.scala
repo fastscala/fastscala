@@ -66,19 +66,25 @@ case class BSBtn(
 
   def onclick(jsCmd: Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & jsCmd))
 
-  def ajax(jsCmd: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => jsCmd(fsc))))
+  def ajax(jsCmd: FSContext => Js): BSBtn = callback(jsCmd)
+  
+  def callback(func: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc))))
 
-  def ajaxOnce(jsCmd: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = {
+  def ajaxOnce(jsCmd: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = callbackRunOnce(jsCmd)
+
+  def callbackRunOnce(func: FSContext => Js, onFurtherAttemptsJs: Option[Js] = None): BSBtn = {
     val used = new AtomicBoolean(false)
     ajax(fsc => {
-      if (!used.getAndSet(true)) jsCmd(fsc)
-      else moreThanOnceRslt.getOrElse(JS.void)
+      if (!used.getAndSet(true)) func(fsc)
+      else onFurtherAttemptsJs.getOrElse(JS.void)
     })
   }
 
-  def ajaxConfirm(question: String, jsCmd: FSContext => Js): BSBtn =
-    copy(onclickOpt = Some(fsc => JS.confirm(question, onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => jsCmd(fsc)))))
+  def ajaxConfirm(question: String, jsCmd: FSContext => Js): BSBtn = callbackWithConfirm(question, jsCmd)
 
+  def callbackWithConfirm(question: String, jsCmd: FSContext => Js): BSBtn =
+    copy(onclickOpt = Some(fsc => JS.confirm(question, onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => jsCmd(fsc)))))
+    
   def href(s: String): BSBtn = copy(hrefOpt = Some(s))
 
   def target(s: String): BSBtn = copy(targetOpt = Some(s))

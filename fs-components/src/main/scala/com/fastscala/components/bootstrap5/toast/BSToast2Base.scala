@@ -97,7 +97,7 @@ abstract class BSToast2Base extends ClassEnrichableMutable with Mutable {
                       , focus: Boolean = true
                       , keyboard: Boolean = true
                     )(implicit fsc: FSContext): Js =
-    (install(backdrop, backdropStatic, focus, keyboard) & show()).printBeforeExec
+    (install(backdrop, backdropStatic, focus, keyboard) & show())
 
   def install(
                backdrop: Boolean = true
@@ -153,6 +153,8 @@ object BSToast2 {
 
     override def toastContents(): Elem = contents
   }
+
+  def VerySimple(header: String, contents: String): BSToast2Base = VerySimple(h6.apply(header))(p.apply(contents))
 
   def VerySimple(header: Elem)(contents: Elem): BSToast2Base = new BSToast2Base {
     override def toastHeader(): Elem = <div>{header.me_auto}</div>

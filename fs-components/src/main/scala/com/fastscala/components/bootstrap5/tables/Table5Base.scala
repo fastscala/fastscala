@@ -198,7 +198,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     JS.rerenderable(implicit rerenderer => implicit fsc => {
       implicit val tableBodyRerenderer: TableBodyRerenderer = TableBodyRerenderer(rerenderer)
       val contents = renderTableBodyContents()
-      <tbody id={rerenderer.aroundId}>{contents}</tbody>
+      <tbody id={rerenderer.getOrGenerateAroundId}>{contents}</tbody>
     }, debugLabel = Some("table_body")).render()
   }
 
@@ -296,7 +296,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     JS.rerenderable(implicit rerenderer => implicit fsc => {
       implicit val tableHeadRerenderer: TableHeadRerenderer = TableHeadRerenderer(rerenderer)
       val contents = renderTableHeadContents()
-      <thead id={rerenderer.aroundId}>{contents}</thead>
+      <thead id={IdGen.id("thead")}>{contents}</thead>
     },
       debugLabel = Some(s"table_head")
     ).render()

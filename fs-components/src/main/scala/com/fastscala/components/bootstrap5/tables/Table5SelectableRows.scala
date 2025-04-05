@@ -43,7 +43,7 @@ trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
       rerenderTableAround()
   })
 
-  def onRowSelectionChanged(trRerenderer: TRRerenderer): Js = trRerenderer.rerenderer.rerender()
+  def onRowSelectionChanged(trRerenderer: TRRerenderer)(implicit fsc: FSContext): Js = trRerenderer.rerenderer.rerender()
 
   val ColSelectRow = new Table5StandardColumn[R] {
 

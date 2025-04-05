@@ -2,32 +2,32 @@ package com.fastscala.scala_xml.rerenderers
 
 import com.fastscala.core.*
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.js.JS
-import com.fastscala.utils.IdGen
 import com.fastscala.scala_xml.ScalaXmlElemUtils.*
+import com.fastscala.scala_xml.js.{JS, inScriptTag}
+import com.fastscala.utils.IdGen
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-class ContentRerendererP[P](
-                             renderFunc: ContentRerendererP[P] => FSContext => P => NodeSeq,
-                             id: Option[String] = None,
-                             debugLabel: Option[String] = None,
-                           ) {
+class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P => (NodeSeq, Js), id: Option[String] = None, debugLabel: Option[String] = None) {
 
   val outterElem: Elem = <div></div>
 
   val aroundId = id.getOrElse("around" + IdGen.id)
-  var rootRenderContext: Option[FSContext] = None
 
-  def render(param: P)(implicit fsc: FSContext) = {
-    rootRenderContext = Some(fsc)
-    RerendererDebugStatusState().render(outterElem.withIdIfNotSet(aroundId).pipe(elem => {
-      elem.withContents(fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel)(renderFunc.apply(this)(_)(param)))
-    }))
+  private def renderImpl(param: P)(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+    val (rendered: NodeSeq, setupJs: Js) = renderFunc(this)(fsc)(param)
+    val renderedWithId: Elem = outterElem.withIdIfNotSet(aroundId).withContents(rendered)
+    (RerendererDebugStatusState().render(renderedWithId), setupJs)
   }
 
-  def rerender(param: P) = rootRenderContext.map(implicit fsc => {
-    RerendererDebugStatusState().rerender(aroundId, JS.replace(aroundId, (render(param))))
-  }).getOrElse(throw new Exception("Missing context - did you call render() first?"))
+  def render(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+    val (rendered: Elem, setupJs: Js) = renderImpl(param)
+    rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
+  }
+
+  def rerender(param: P)(implicit fsc: FSContext): Js = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+    val (rendered: Elem, setupJs: Js) = renderImpl(param)
+    RerendererDebugStatusState().rerender(aroundId, JS.replace(aroundId, rendered) & setupJs)
+  }
 }

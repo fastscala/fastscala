@@ -20,7 +20,7 @@ trait Form5 extends ElemWithRandomId {
 
   implicit def form: Form5 = this
 
-  val rootField: FormField
+  def rootField: FormField
 
   def initForm()(implicit fsc: FSContext): Unit = ()
 

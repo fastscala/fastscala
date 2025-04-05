@@ -2,51 +2,52 @@ package com.fastscala.scala_xml.rerenderers
 
 import com.fastscala.core.*
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.js.JS
-import com.fastscala.utils.IdGen
 import com.fastscala.scala_xml.ScalaXmlElemUtils.*
+import com.fastscala.scala_xml.js.{JS, inScriptTag}
+import com.fastscala.utils.IdGen
 
 import scala.xml.Elem
 
-class Rerenderer(
-                  renderFunc: Rerenderer => FSContext => Elem,
-                  idOpt: Option[String] = None,
-                  debugLabel: Option[String] = None,
-                ) {
+class Rerenderer(renderFunc: Rerenderer => FSContext => (Elem, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None) {
 
-  var aroundId = idOpt.getOrElse("around" + IdGen.id)
-  var rootRenderContext: Option[FSContext] = None
+  var aroundId: Option[String] = None
 
-  def render()(implicit fsc: FSContext): Elem = {
-    rootRenderContext = Some(fsc)
-    val rendered: Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel)(renderFunc(this)(_))
-    RerendererDebugStatusState().render(rendered.getId match {
-      case Some(id) =>
-        aroundId = id
-        rendered
-      case None => rendered.withIdIfNotSet(aroundId)
-    })
+  def getOrGenerateAroundId: String = aroundId.getOrElse({
+    aroundId = Some(IdGen.id("rerenderer"))
+    aroundId.get
+  })
+
+  private def renderImpl()(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+    val (rendered: Elem, setupJs: Js) = renderFunc(this)(fsc)
+    aroundId = aroundId.orElse(rendered.getId)
+    val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
+    (RerendererDebugStatusState().render(renderedWithId), setupJs)
   }
 
-  def rerender() = rootRenderContext.map(implicit fsc => {
-    RerendererDebugStatusState().rerender(aroundId, JS.replace(aroundId, (render())))
-  }).getOrElse(throw new Exception("Missing context - did you call render() first?"))
-
-  def replaceBy(elem: Elem): Js = JS.replace(aroundId, (elem.withId(aroundId)))
-
-  def replaceContentsBy(elem: Elem): Js = JS.setContents(aroundId, (elem))
-
-  def map(f: Elem => Elem) = {
-    val out = this
-    new Rerenderer(null, None, None) {
-      override def render()(implicit fsc: FSContext): Elem = f(out.render())
-
-      override def rerender(): Js = JS.replace(out.aroundId,
-        (f(out.render()(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))))) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-
-      override def replaceBy(elem: Elem): Js = out.replaceBy(elem)
-
-      override def replaceContentsBy(elem: Elem): Js = out.replaceContentsBy(elem)
-    }
+  def render()(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+    val (rendered: Elem, setupJs: Js) = renderImpl()
+    rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
   }
+
+  def rerender()(implicit fsc: FSContext) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+    val (rendered: Elem, setupJs: Js) = renderImpl()
+    RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replace(getOrGenerateAroundId, render()) & setupJs)
+  }
+
+  def replaceBy(elem: Elem): Js = JS.replace(getOrGenerateAroundId, (elem.withId(getOrGenerateAroundId)))
+
+  def replaceContentsBy(elem: Elem): Js = JS.setContents(getOrGenerateAroundId, (elem))
+
+//  def map(f: Elem => Elem) = {
+//    val out = this
+//    new Rerenderer(null, None, None) {
+//      override def render()(implicit fsc: FSContext): Elem = f(out.render())
+//
+//      override def rerender(): Js = JS.replace(out.aroundId, f(out.render()(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))))
+//
+//      override def replaceBy(elem: Elem): Js = out.replaceBy(elem)
+//
+//      override def replaceContentsBy(elem: Elem): Js = out.replaceContentsBy(elem)
+//    }
+//  }
 }

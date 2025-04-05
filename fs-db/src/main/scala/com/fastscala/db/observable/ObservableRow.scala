@@ -12,6 +12,14 @@ trait ObservableRow[K, R <: ObservableRow[K, R]] extends RowWithId[K, R] with Ob
     obs.postSave(table, this)
   }
 
+  def updateX(func: R => Unit)(implicit obs: DBObserver): R = {
+    val inDB = reload()
+    func(inDB)
+    inDB.saveX()
+    func(this)
+    this
+  }
+  
   override def deleteX()(implicit obs: DBObserver): Unit = try {
     obs.preDelete(table, this)
     delete()

@@ -101,7 +101,7 @@ class DateFieldOpt(
             form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else JS.void)
           },
           toString = _.map(_.toString).getOrElse("--"),
-          elemId = rerenderer.aroundId
+          elemId = rerenderer.getOrGenerateAroundId
         )
       })
       val monthField = ImmediateInputFields.select[Option[Int]](

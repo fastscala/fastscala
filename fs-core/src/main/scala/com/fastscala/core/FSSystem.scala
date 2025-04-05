@@ -21,15 +21,11 @@ import java.net.URLEncoder
 import java.nio.file.{Files, Path}
 import java.util.Collections
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
+import scala.util.chaining.scalaUtilChainingOps
 
 object JS extends JsUtils
 
-class FSFunc(
-              val id: String
-              , val func: String => Js
-              , var keepAliveAt: Long = System.currentTimeMillis()
-              , val debugLbl: Option[String] = None
-            )(implicit val fsc: FSContext) {
+class FSFunc(val id: String, val func: String => Js, var keepAliveAt: Long = System.currentTimeMillis(), val debugLbl: Option[String] = None)(implicit val fsc: FSContext) {
 
   def fullPath = fsc.fullPath + " => " + debugLbl.getOrElse("anon func")
 
@@ -41,11 +37,7 @@ class FSFunc(
   }
 }
 
-class FSFileUpload(
-                    val id: String
-                    , val func: Seq[FSUploadedFile] => Js
-                    , var keepAliveAt: Long = System.currentTimeMillis()
-                  )(implicit val fsc: FSContext) {
+class FSFileUpload(val id: String, val func: Seq[FSUploadedFile] => Js, var keepAliveAt: Long = System.currentTimeMillis())(implicit val fsc: FSContext) {
 
   def allKeepAlivesIterable: Iterable[Long] = Iterable(keepAliveAt)
 
@@ -55,13 +47,9 @@ class FSFileUpload(
   }
 }
 
-class FSFileDownload(
-                      val id: String
-                      , val contentType: String
-                      , val func: () => Array[Byte]
-                      , var keepAliveAt: Long = System.currentTimeMillis()
-                      , val debugLbl: Option[String] = None
-                    )(implicit val fsc: FSContext) {
+class FSFileDownload(val id: String, val contentType: String, val func: () => Array[Byte], var keepAliveAt: Long = System.currentTimeMillis(), val debugLbl: Option[String] = None)(implicit
+  val fsc: FSContext
+) {
 
   def allKeepAlivesIterable: Iterable[Long] = Iterable(keepAliveAt)
 
@@ -76,13 +64,13 @@ object FSContext {
 }
 
 class FSContext(
-                 val session: FSSession
-                 , val page: FSPage
-                 , val parentFSContext: Option[FSContext] = None
-                 , val onPageUnload: () => Js = () => JS.void
-                 , val debugLbl: Option[String] = None
-                 , var deleted: Boolean = false
-               ) extends FSHasSession {
+  val session: FSSession,
+  val page: FSPage,
+  val parentFSContext: Option[FSContext] = None,
+  val onPageUnload: () => Js = () => JS.void,
+  val debugLbl: Option[String] = None,
+  var deleted: Boolean = false
+) extends FSHasSession {
 
   import FSContext.logger
 
@@ -103,7 +91,23 @@ class FSContext(
   val functionsFileDownloadGenerated = collection.mutable.Set[String]()
   val children = collection.mutable.Set[FSContext]()
 
-  def fullPath = Iterator.unfold(Option(this))(_.map(ctx => (ctx, ctx.parentFSContext))).toSeq.reverse.map(_.debugLbl.getOrElse("anon")).mkString(" => ")
+  def fullPath = Iterator.unfold(Option(this))(_.map(ctx => (ctx, ctx.parentFSContext))).toSeq.reverse.map(ctx =>
+    ctx.debugLbl.getOrElse(s"anon[${ctx.##.toHexString}]").pipe(name => if (ctx.deleted) s"[del: $name]" else name)
+  ).mkString(" => ")
+
+  def sendToPages(f: PartialFunction[(FSPage, FSPageImpl[_]), FSContext => Js]): Unit = {
+    for {
+      (_, session) <- page.session.fsSystem.sessions
+      page <- session.pages.values
+      if f.isDefinedAt((page, page.impl))
+    } {
+      try {
+        page.rootFSContext.sendToPage(f.apply((page, page.impl))(page.rootFSContext))
+      } catch {
+        case ex: Exception => ex.printStackTrace()
+      }
+    }
+  }
 
   def sendToPage(js: Js): Unit = {
     page.wsLock.synchronized {
@@ -124,7 +128,7 @@ class FSContext(
   }
 
   def runInNewOrRenewedChildContextFor[T](contextFor: AnyRef, debugLabel: Option[String] = None)(f: FSContext => T): T = {
-    if (deleted) throw new Exception("Trying to create child of deleted context")
+    // if (deleted) throw new Exception(s"Trying to create child of deleted context ($fullPath)")
     // If it already exists, delete:
     page.deleteContextFor(contextFor)
 
@@ -138,13 +142,15 @@ class FSContext(
   def runInContextFor[T](contextFor: AnyRef, debugLabel: Option[String] = None)(f: FSContext => T): T = {
     if (deleted) throw new Exception(s"Trying to create child of deleted context ($fullPath)")
     // If it already exists, delete:
-    val ctx = page.key2FSContext.getOrElseUpdate(contextFor, {
-      val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel.orElse(Some(s"ctx4$contextFor")))
-      page.key2FSContext(contextFor) = newContext
-      logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
-      children += newContext
-      newContext
-    })
+    val ctx = page.key2FSContext.getOrElseUpdate(
+      contextFor, {
+        val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel.orElse(Some(s"ctx4$contextFor")))
+        page.key2FSContext(contextFor) = newContext
+        logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
+        children += newContext
+        newContext
+      }
+    )
     f(ctx)
   }
 
@@ -152,6 +158,7 @@ class FSContext(
     logger.debug(s"Delete context $fullPath")
     parentFSContext.foreach(_.children -= this)
     page.callbacks --= functionsGenerated
+    println(s"DELETED ${functionsGenerated.size} CALLBACKS")
     session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
     session.fsSystem.stats.currentCallbacks.dec(functionsGenerated.size)
     page.fileUploadCallbacks --= functionsFileUploadGenerated
@@ -166,14 +173,7 @@ class FSContext(
 
   def callback(func: () => Js): Js = callback(JS.void, _ => func())
 
-  def callback(
-                arg: Js,
-                func: String => Js,
-                async: Boolean = true,
-                expectReturn: Boolean = true,
-                ignoreErrors: Boolean = false,
-                env: Js = Js("{}")
-              ): Js = {
+  def callback(arg: Js, func: String => Js, async: Boolean = true, expectReturn: Boolean = true, ignoreErrors: Boolean = false, env: Js = Js("{}")): Js = {
     logger.trace(s"CREATING CALLBACK IN CONTEXT ${fullPath}")
     session.fsSystem.gc()
     val funcId = session.nextID()
@@ -189,10 +189,7 @@ class FSContext(
     )
   }
 
-  def anonymousPageURL(
-                        render: FSContext => String
-                        , name: String
-                      ): String = {
+  def anonymousPageURL(render: FSContext => String, name: String): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
     session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
@@ -236,12 +233,7 @@ class FSContext(
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = page.fsPageScript(openWSSessionAtStart)
 }
 
-class FSUploadedFile(
-                      val name: String,
-                      val submittedFileName: String,
-                      val contentType: String,
-                      val content: Array[Byte]
-                    )
+class FSUploadedFile(val name: String, val submittedFileName: String, val contentType: String, val content: Array[Byte])
 
 object FSUploadedFile {
   def unapply(file: FSUploadedFile): Option[(String, String, String, Array[Byte])] = Some((file.name, file.submittedFileName, file.contentType, file.content))
@@ -251,19 +243,30 @@ object FSPage {
   val logger = LoggerFactory.getLogger(getClass.getName)
 }
 
+/** Your own page implementation (should be a subclass)
+  * @tparam R
+  *   The result type of rendering the page
+  */
+trait FSPageImpl[R] {
+  def render()(implicit fsc: FSContext): R
+}
+
+trait NoFSPageImplProvided[T] extends FSPageImpl[T]
+
 class FSPage(
-              val id: String
-              , val session: FSSession
-              , val req: Request
-              , val createdAt: Long = System.currentTimeMillis()
-              , val onPageUnload: () => Js = () => JS.void
-              , var keepAliveAt: Long = System.currentTimeMillis()
-              , var autoKeepAliveAt: Long = System.currentTimeMillis()
-              , var wsSession: Option[Session] = None
-              , var wsQueue: List[Js] = Nil
-              , var wsLock: AnyRef = new AnyRef
-              , val debugLbl: Option[String] = None
-            ) extends FSHasSession {
+  val id: String,
+  val session: FSSession,
+  val req: Request,
+  val impl: FSPageImpl[_],
+  val createdAt: Long = System.currentTimeMillis(),
+  val onPageUnload: () => Js = () => JS.void,
+  var keepAliveAt: Long = System.currentTimeMillis(),
+  var autoKeepAliveAt: Long = System.currentTimeMillis(),
+  var wsSession: Option[Session] = None,
+  var wsQueue: List[Js] = Nil,
+  var wsLock: AnyRef = new AnyRef,
+  val debugLbl: Option[String] = None
+) extends FSHasSession {
 
   def periodicKeepAliveEnabled: Boolean = session.fsSystem.config.getBoolean("com.fastscala.core.periodic-page-keep-alive.enabled")
 
@@ -312,8 +315,12 @@ class FSPage(
 
   def deleteContextFor(key: AnyRef): Unit = {
     key2FSContext.get(key).foreach(existing => {
-      logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
-      existing.delete()
+      if (existing.deleted) {
+        logger.trace(s"ALREADY DELETED CONTEXT ${existing.fullPath} ($existing)")
+      } else {
+        logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
+        existing.delete()
+      }
     })
   }
 
@@ -392,7 +399,10 @@ class FSPage(
          |  },
          |  initWebSocket: function() {
          |    if(!window._fs.ws) {
-         |      window._fs.ws = new WebSocket(location.origin.replace(/^http/, 'ws') + "/${session.fsSystem.FSPrefix}/ws?sessionId=${URLEncoder.encode(fsc.session.id, "UTF-8")}&pageId=${URLEncoder.encode(fsc.page.id, "UTF-8")}", "fs");
+         |      window._fs.ws = new WebSocket(location.origin.replace(/^http/, 'ws') + "/${session.fsSystem.FSPrefix}/ws?sessionId=${URLEncoder.encode(
+          fsc.session.id,
+          "UTF-8"
+        )}&pageId=${URLEncoder.encode(fsc.page.id, "UTF-8")}", "fs");
          |      window._fs.ws.onmessage = function(event) {
          |        try {eval(event.data);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + event.data); }
          |      };
@@ -440,20 +450,20 @@ abstract class FSSessionVarOpt[T]() {
 
   def setOrClear(valueOpt: Option[T])(implicit hasSession: FSHasSession): Unit = valueOpt match {
     case Some(value) => update(value)
-    case None => clear()
+    case None        => clear()
   }
 
   def clear()(implicit hasSession: FSHasSession): Unit = hasSession.session.clear(this)
 }
 
 class FSAnonymousPage(
-                       val id: String
-                       , val session: FSSession
-                       , val render: FSContext => String
-                       , val createdAt: Long = System.currentTimeMillis()
-                       , var keepAliveAt: Long = System.currentTimeMillis()
-                       , var debugLbl: Option[String] = None
-                     ) extends FSHasSession {
+  val id: String,
+  val session: FSSession,
+  val render: FSContext => String,
+  val createdAt: Long = System.currentTimeMillis(),
+  var keepAliveAt: Long = System.currentTimeMillis(),
+  var debugLbl: Option[String] = None
+) extends FSHasSession {
 
   def renderAsString()(implicit fsc: FSContext): String = render(fsc)
 
@@ -475,13 +485,13 @@ trait FSHasSession {
 }
 
 class FSSession(
-                 val id: String
-                 , val fsSystem: FSSystem
-                 , data: collection.mutable.Map[Any, Any] = collection.mutable.Map.empty[Any, Any]
-                 , val createdAt: Long = System.currentTimeMillis()
-                 , var keepAliveAt: Long = System.currentTimeMillis()
-                 , val debugLbl: Option[String] = None
-               ) extends FSHasSession {
+  val id: String,
+  val fsSystem: FSSystem,
+  data: collection.mutable.Map[Any, Any] = collection.mutable.Map.empty[Any, Any],
+  val createdAt: Long = System.currentTimeMillis(),
+  var keepAliveAt: Long = System.currentTimeMillis(),
+  val debugLbl: Option[String] = None
+) extends FSHasSession {
 
   val config = ConfigFactory.load()
 
@@ -537,14 +547,20 @@ class FSSession(
 
   def clear[T](key: Any): Unit = data.remove(key)
 
-  def createPage[T](
-                     generatePage: FSContext => T,
-                     debugLbl: Option[String] = None,
-                     onPageUnload: () => Js = () => JS.void
-                   )(implicit req: Request): T = try {
+  def createPage[T](generatePage: FSContext => T, debugLbl: Option[String] = None, onPageUnload: () => Js = () => JS.void)(implicit req: Request): T = createAndRenderPageWithImpl(
+    new NoFSPageImplProvided[T] {
+      override def render()(implicit fsc: FSContext): T = generatePage(fsc)
+    }
+  )
+
+  /** Allows you to store your own page implementation in the page
+    *
+    * @return
+    */
+  def createAndRenderPageWithImpl[T](impl: FSPageImpl[T], debugLbl: Option[String] = None, onPageUnload: () => Js = () => JS.void)(implicit req: Request): T = try {
     session.fsSystem.gc()
     val copy = new Request.Wrapper(req)
-    val page = new FSPage(nextID(), this, copy, onPageUnload = onPageUnload, debugLbl = debugLbl)
+    val page = new FSPage(nextID(), this, copy, impl, onPageUnload = onPageUnload, debugLbl = debugLbl)
     if (logger.isTraceEnabled) logger.trace(s"Created page ${page.id}")
     fsSystem.stats.event(StatEvent.CREATE_PAGE)
     session.fsSystem.stats.pagesTotal.inc()
@@ -553,7 +569,7 @@ class FSSession(
       pages += (page.id -> page)
     }
     // FSSession.logger.trace(s"Created page: page_id=${page.id}, evt_type=create_page")
-    generatePage(page.rootFSContext)
+    impl.render()(page.rootFSContext)
   } catch {
     case ex: Exception =>
       ex.printStackTrace()
@@ -600,12 +616,8 @@ class FSSession(
   }
 }
 
-class FSSystem(
-                val beforeCallBackJs: Option[Js] = None
-                , val afterCallBackJs: Option[FSContext => Js] = None
-                , val appName: String = "app"
-                , val stats: FSStats = new FSStats()
-              ) extends RoutingHandlerNoSessionHelper {
+class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Option[FSContext => Js] = None, val appName: String = "app", val stats: FSStats = new FSStats())
+    extends RoutingHandlerNoSessionHelper {
 
   val config = ConfigFactory.load()
 
@@ -636,6 +648,11 @@ class FSSystem(
     this.synchronized(sessions.put(session.id, session))
     FSSession.logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
     session
+  }
+
+  def createSessionAndSetSessionId(): (FSSession, Js) = {
+    val session = createSession()
+    (session, JS.setCookie(FSSessionIdCookieName, session.id, path = Some("/")))
   }
 
   def inSession[T](inSession: FSSession => T)(implicit req: Request): Option[(List[HttpCookie], T)] = {
@@ -682,9 +699,7 @@ class FSSystem(
   override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = {
     val cookies = Option(Request.getCookies(req)).getOrElse(Collections.emptyList).asScala
 
-    val sessionIdOpt = cookies.find(_.getName == FSSessionIdCookieName).map(_.getValue).orElse(
-      Option(Request.getParameters(req).getValue(FSSessionIdCookieName)).filter(_ != "")
-    )
+    val sessionIdOpt = cookies.find(_.getName == FSSessionIdCookieName).map(_.getValue).orElse(Option(Request.getParameters(req).getValue(FSSessionIdCookieName)).filter(_ != ""))
     val sessionOpt = sessionIdOpt.flatMap(sessionId => sessions.get(sessionId))
 
     Some(req).collect {
@@ -729,7 +744,10 @@ class FSSystem(
                       stats.callbacksInProcessing.dec()
                     }
                 }
-                if (logger.isTraceEnabled) logger.trace(s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func")
+                if (logger.isTraceEnabled)
+                  logger.trace(
+                    s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func"
+                  )
                 Ok.js(rslt).respond(response, callback)
               })
               VoidResponse
@@ -762,26 +780,30 @@ class FSSystem(
                       handleFileUploadCallbackException(failure)
                     case None =>
                       stats.fileUploadCallbacksInProcessing.inc()
-                      fSFileUpload.func(parts.asScala.map(part => try {
-                        new FSUploadedFile(
-                          name = part.getName,
-                          submittedFileName = part.getFileName,
-                          contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
-                          content = Content.Source.asByteBuffer(part.getContentSource).array
-                        )
-                      } catch {
-                        case ex: Throwable =>
-                          handleFileUploadCallbackException(ex)
-                          throw ex
-                      } finally {
-                        stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
-                        stats.fileUploadCallbacksInProcessing.dec()
-                        try {
-                          part.close()
-                        } finally {
-                          part.delete()
-                        }
-                      }).toSeq)
+                      fSFileUpload.func(
+                        parts.asScala.map(part =>
+                          try {
+                            new FSUploadedFile(
+                              name = part.getName,
+                              submittedFileName = part.getFileName,
+                              contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
+                              content = Content.Source.asByteBuffer(part.getContentSource).array
+                            )
+                          } catch {
+                            case ex: Throwable =>
+                              handleFileUploadCallbackException(ex)
+                              throw ex
+                          } finally {
+                            stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
+                            stats.fileUploadCallbacksInProcessing.dec()
+                            try {
+                              part.close()
+                            } finally {
+                              part.delete()
+                            }
+                          }
+                        ).toSeq
+                      )
                   }
                   Ok.js(rslt).respond(response, callback)
                 })
@@ -823,88 +845,56 @@ class FSSystem(
         sessionOpt.map(implicit session => {
           session.anonymousPages.get(anonymousPageId).map(implicit anonymousPage => {
             anonymousPage.keepAlive()
-            val nodeSeq = session.createPage(implicit fsc => anonymousPage.renderAsString(), onPageUnload = () => {
-              anonymousPage.onPageUnload()
-            }, debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}"))
+            val nodeSeq = session.createPage(
+              implicit fsc => anonymousPage.renderAsString(),
+              onPageUnload = () => {
+                anonymousPage.onPageUnload()
+              },
+              debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}")
+            )
             Ok.html(nodeSeq)
           }).getOrElse(onAnonymousPageNotFound(Missing.AnonPage, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = Some(session), page = None))
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }
   }
 
-  def transformCallbackResponse(
-                                 resp: Js,
-                                 fsFunc: FSFunc,
-                                 page: FSPage,
-                               ): Js = resp
+  def transformCallbackResponse(resp: Js, fsFunc: FSFunc, page: FSPage): Js = resp
 
-  def onKeepAliveNotFound(
-                           missing: Missing.Value,
-                           sessionId: Option[String],
-                           pageId: String,
-                           session: Option[FSSession],
-                           page: Option[FSPage],
-                         )(implicit req: Request): Js = {
+  def onKeepAliveNotFound(missing: Missing.Value, sessionId: Option[String], pageId: String, session: Option[FSSession], page: Option[FSPage])(implicit req: Request): Js = {
     missing.updateStats()
     JS.void
   }
 
-  def onCallbackNotFound(
-                          missing: Missing.Value,
-                          sessionId: Option[String],
-                          pageId: String,
-                          functionId: String,
-                          session: Option[FSSession],
-                          page: Option[FSPage],
-                        )(implicit req: Request): Js = {
+  def onCallbackNotFound(missing: Missing.Value, sessionId: Option[String], pageId: String, functionId: String, session: Option[FSSession], page: Option[FSPage])(implicit req: Request): Js = {
     missing.updateStats()
     if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) JS.void
     else JS.confirm(s"Page has expired, please reload", JS.reload())
   }
 
-  def onFileUploadNotFound(
-                            missing: Missing.Value,
-                            sessionId: Option[String],
-                            pageId: String,
-                            functionId: String,
-                            session: Option[FSSession],
-                            page: Option[FSPage],
-                          )(implicit req: Request): Js = {
+  def onFileUploadNotFound(missing: Missing.Value, sessionId: Option[String], pageId: String, functionId: String, session: Option[FSSession], page: Option[FSPage])(implicit req: Request): Js = {
     missing.updateStats()
     if (Option(Request.getParameters(req).getValue("ignore_errors")).map(_ == "true").getOrElse(false)) JS.void
     else JS.confirm(s"Page has expired, please reload", JS.reload())
   }
 
   def onFileDownloadNotFound(
-                              missing: Missing.Value,
-                              sessionId: Option[String],
-                              pageId: String,
-                              functionId: String,
-                              session: Option[FSSession],
-                              page: Option[FSPage],
-                            )(implicit req: Request): Response = {
+    missing: Missing.Value,
+    sessionId: Option[String],
+    pageId: String,
+    functionId: String,
+    session: Option[FSSession],
+    page: Option[FSPage]
+  )(implicit req: Request): Response = {
     missing.updateStats()
     Redirect.temporaryRedirect("/")
   }
 
-  def onAnonymousPageNotFound(
-                               missing: Missing.Value,
-                               sessionId: Option[String],
-                               anonPageId: String,
-                               session: Option[FSSession],
-                               page: Option[FSPage],
-                             )(implicit req: Request): Response = {
+  def onAnonymousPageNotFound(missing: Missing.Value, sessionId: Option[String], anonPageId: String, session: Option[FSSession], page: Option[FSPage])(implicit req: Request): Response = {
     missing.updateStats()
     Redirect.temporaryRedirect("/")
   }
 
-  def onWebsocketNotFound(
-                           missing: Missing.Value,
-                           sessionId: String,
-                           pageId: String,
-                           session: Option[FSSession],
-                           page: Option[FSPage],
-                         )(implicit wsSession: Session): Js = {
+  def onWebsocketNotFound(missing: Missing.Value, sessionId: String, pageId: String, session: Option[FSSession], page: Option[FSPage])(implicit wsSession: Session): Js = {
     missing.updateStats()
     if (wsSession.getUpgradeRequest.getParameterMap.asScala.get("ignore_errors").flatMap(_.asScala.headOption).map(_ == "true").getOrElse(false)) JS.void
     else JS.confirm(s"Page has expired, please reload", JS.reload())
@@ -942,7 +932,7 @@ class FSSystem(
     // Delete pages:
     pagesToDelete.groupBy(_.session).foreach({
       case (session, toDelete) if !sessionsToDelete.contains(session) => session.deletePages(toDelete)
-      case _ =>
+      case _                                                          =>
     })
 
     stats.gcTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))

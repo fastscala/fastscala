@@ -13,6 +13,8 @@ trait BSClassesHelper[T] extends Any {
   def accordion_flush: T = withClass("accordion-flush")
 
   def accordion_header: T = withClass("accordion-header")
+  
+  def accordion_collapse: T = withClass("accordion-collapse")
 
   def accordion_item: T = withClass("accordion-item")
 
@@ -577,6 +579,8 @@ trait BSClassesHelper[T] extends Any {
   def col_form_label_sm: T = withClass("col-form-label-sm")
 
   def collapse: T = withClass("collapse")
+  
+  def collapsed: T = withClass("collapsed")
 
   def collapsing: T = withClass("collapsing")
 

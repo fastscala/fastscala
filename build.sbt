@@ -1,8 +1,8 @@
-import sbt.{url, *}
 import sbt.Keys.*
-
+import sbt.{url, *}
 import xerial.sbt.Sonatype.sonatypeCentralHost
-import scala.concurrent.duration.*
+
+val Version := "0.0.16"
 
 resolvers += Resolver.mavenLocal
 
@@ -11,7 +11,7 @@ ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / version := "0.0.15"
+ThisBuild / version := Version
 ThisBuild / scalaVersion := "3.6.3"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
@@ -54,7 +54,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   .settings(
     commonSettings,
     name := "fs-core",
-    version := "0.0.3",
+    version := Version,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     libraryDependencies ++= Seq(
@@ -75,21 +75,25 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .settings(
+    commonSettings,
     name := "fs-circe",
-    version := "0.0.1",
+    version := Version,
     organization := "com.fastscala",
     libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.10", "io.circe" %% "circe-generic" % "0.14.10", "io.circe" %% "circe-parser" % "0.14.10")
   )
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(name := "fs-scala-xml", version := "0.0.1", organization := "com.fastscala", libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
+  .settings(
+    commonSettings,
+    name := "fs-scala-xml", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
   .settings(
+    commonSettings,
     name := "fs-db",
-    version := "0.0.1",
+    version := Version,
     organization := "com.fastscala",
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % "0.14.10",
@@ -108,8 +112,9 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
 
 lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .settings(
+    commonSettings,
     name := "fs-components",
-    version := "0.0.1",
+    version := Version,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
     libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.12.7", "com.lihaoyi" %% "upickle" % "4.1.0", "com.softwaremill.quicklens" %% "quicklens" % "1.9.11"),

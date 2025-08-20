@@ -2,7 +2,7 @@ import sbt.Keys.*
 import sbt.{url, *}
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val Version = "0.0.17"
+val Version = "0.0.18"
 
 resolvers += Resolver.mavenLocal
 
@@ -12,7 +12,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
 ThisBuild / version := Version
-ThisBuild / scalaVersion := "3.6.3"
+ThisBuild / scalaVersion := "3.7.2"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 

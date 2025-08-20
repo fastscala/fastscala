@@ -19,7 +19,7 @@ trait F7Field
     with F7FieldWithEnabled
     with ElemWithRandomId {
 
-  def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = event match {
+  def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = event match {
     case ChangedField(field) if deps.contains(field) => updateFieldWithoutReRendering().getOrElse(reRender()) &
       // If this field (B) depends on field A and field C depends on B, then we want to trigger also a ChangedField event for this field (B), so that field C also updates:
       form.onEvent(ChangedField(this))
@@ -29,13 +29,13 @@ trait F7Field
   /**
    * Tries to update the field without needing to rerender.
    */
-  def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Try[Js] = Success(JS.void)
+  def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): Try[Js] = Success(JS.void)
   
-  def updateFieldWithoutReRenderingOrFallbackToRerender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = updateFieldWithoutReRendering().getOrElse(reRender())
+  def updateFieldWithoutReRenderingOrFallbackToRerender()(implicit form: Form7, fsc: FSContext): Js = updateFieldWithoutReRendering().getOrElse(reRender())
 
   val aroundId: String = randomElemId
 
-  def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem
+  def render()(implicit form: Form7, fsc: FSContext): Elem
 
   def postRenderSetupJs()(implicit fsc: FSContext): Js = JS.void
 
@@ -59,13 +59,8 @@ trait F7Field
 
   def disabled: Boolean
 
-  def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
+  def reRender()(implicit form: Form7, fsc: FSContext): Js = {
     JS.replace(aroundId, render()) & postRenderSetupJs()
-  }
-
-  def withFieldRenderHints[T](f: Seq[RenderHint] => T)(implicit renderHints: Seq[RenderHint]): T = f {
-    List(DisableFieldsHint).filter(_ => disabled) ++
-      renderHints
   }
 
   def shouldShowValidation_?(implicit form: Form7): Boolean = {
@@ -78,7 +73,7 @@ trait F7Field
           case F7FieldState.Filled => true
           case F7FieldState.AwaitingInput => aux(ValidateOnAttemptSubmitOnly)
         }
-        case ValidateOnAttemptSubmitOnly => form.state match {
+        case ValidateOnAttemptSubmitOnly => form.state() match {
           case Filling => false
           case ValidationFailed => true
           case Saved => false

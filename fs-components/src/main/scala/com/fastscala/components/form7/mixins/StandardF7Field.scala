@@ -17,12 +17,11 @@ trait StandardF7Field extends F7Field
 
   def visible: () => Boolean = () => enabled
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ &
       updateValidation())
 
   override def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = {
-    implicit val renderHints: Seq[RenderHint] = form.formRenderHits()
     updateValidation()
   }
 

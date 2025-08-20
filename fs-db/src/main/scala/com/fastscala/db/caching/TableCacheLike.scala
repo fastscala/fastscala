@@ -5,7 +5,7 @@ import scalikejdbc.interpolation.SQLSyntax
 
 trait TableCacheLike[K, R <: RowWithIdBase with RowWithId[K, R]] {
 
-  def values: Seq[R]
+  def all: Seq[R]
 
   def select(rest: SQLSyntax): List[R]
 

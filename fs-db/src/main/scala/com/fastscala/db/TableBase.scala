@@ -2,6 +2,7 @@ package com.fastscala.db
 
 import com.google.common.base.CaseFormat
 import org.apache.commons.text.StringEscapeUtils
+import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
@@ -14,6 +15,8 @@ import scalikejdbc.*
 import java.util.UUID
 
 trait TableBase {
+
+  private val logger = LoggerFactory.getLogger(getClass.getName)
 
   def createSampleRow(): Any
 
@@ -187,7 +190,7 @@ trait TableBase {
     })
   }
 
-  def __dropTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""drop table ${s"\"$tableName\""}""")
+  def __dropTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""DROP TABLE IF EXISTS ${s"\"$tableName\""}""")
   
   def __dropAndCreateTableSQL: List[SQL[Nothing, NoExtractor]] = __dropTableSQL :: __createTableSQL
 

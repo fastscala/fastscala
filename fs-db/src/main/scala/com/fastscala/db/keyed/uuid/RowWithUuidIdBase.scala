@@ -12,7 +12,10 @@ trait RowWithUuidIdBase extends RowWithIdBase {
 
   var uuid: Option[UUID] = None
 
-  def id: UUID = uuid.get
+  def id: UUID = {
+    if(!isPersisted_?) throw new Exception(s"Trying to get the UUID of a row of table ${table.tableName} that is not persistent")
+    uuid.get
+  }
 
   def isPersisted_? : Boolean = uuid.isDefined
 

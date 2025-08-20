@@ -14,7 +14,7 @@ class TableSubCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
                                                                                  var status: CacheStatus.Value = CacheStatus.NONE_LOADED
                                                                                ) extends TableCacheLike[K, R] {
 
-  override def values: Seq[R] = {
+  override def all: Seq[R] = {
     if (status != CacheStatus.ALL_LOADED) {
       status = CacheStatus.ALL_LOADED
       cache.select(loadSubsetSQL)

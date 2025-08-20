@@ -19,10 +19,10 @@ class JsXmlUtils extends JsUtils {
     new RerendererP[P](rerenderer => fsc => param => (render(rerenderer)(fsc)(param), Js.Void), idOpt = idOpt, debugLabel = debugLabel)
 
   def rerenderableContents(render: ContentRerenderer => FSContext => NodeSeq, id: Option[String] = None, debugLabel: Option[String] = None): ContentRerenderer =
-    new ContentRerenderer(rerenderer => fsc => (render(rerenderer)(fsc), Js.Void), id = id, debugLabel = debugLabel)
+    new ContentRerenderer(rerenderer => fsc => (render(rerenderer)(fsc), Js.Void), idOpt = id, debugLabel = debugLabel)
 
   def rerenderableContentsP[P](render: ContentRerendererP[P] => FSContext => P => NodeSeq, id: Option[String] = None, debugLabel: Option[String] = None): ContentRerendererP[P] =
-    new ContentRerendererP[P](rerenderer => fsc => param => (render(rerenderer)(fsc)(param), Js.Void), id = id, debugLabel = debugLabel)
+    new ContentRerendererP[P](rerenderer => fsc => param => (render(rerenderer)(fsc)(param), Js.Void), idOpt = id, debugLabel = debugLabel)
 
   def rerenderableWithJs(render: Rerenderer => FSContext => (Elem, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None): Rerenderer =
     new Rerenderer(render, idOpt = idOpt, debugLabel = debugLabel)
@@ -31,10 +31,10 @@ class JsXmlUtils extends JsUtils {
     new RerendererP[P](render, idOpt = idOpt, debugLabel = debugLabel)
 
   def rerenderableContentsWithJs(render: ContentRerenderer => FSContext => (NodeSeq, Js), id: Option[String] = None, debugLabel: Option[String] = None): ContentRerenderer =
-    new ContentRerenderer(render, id = id, debugLabel = debugLabel)
+    new ContentRerenderer(render, idOpt = id, debugLabel = debugLabel)
 
   def rerenderableContentsPWithJs[P](render: ContentRerendererP[P] => FSContext => P => (NodeSeq, Js), id: Option[String] = None, debugLabel: Option[String] = None): ContentRerendererP[P] =
-    new ContentRerendererP[P](render, id = id, debugLabel = debugLabel)
+    new ContentRerendererP[P](render, idOpt = id, debugLabel = debugLabel)
 
   def append2Body(ns: NodeSeq): Js = {
     val elemId = IdGen.id("template")

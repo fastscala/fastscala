@@ -9,7 +9,9 @@ import com.fastscala.utils.IdGen
 
 import scala.xml.{Elem, NodeSeq}
 
-class BSAccordion(items: (NodeSeq, FSContext => Int => NodeSeq)*) extends ElemWithRandomId {
+class BSAccordionControls(val tabIdx: Int, val deleteTab: () => Js, val changeTitle: NodeSeq => Js)
+
+class BSAccordion(items: (NodeSeq, FSContext => BSAccordionControls => NodeSeq)*) extends ElemWithRandomId {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -17,8 +19,8 @@ class BSAccordion(items: (NodeSeq, FSContext => Int => NodeSeq)*) extends ElemWi
 
   def elemAccordionItem: Elem = accordion_item
 
-  def elemAccordionHeader(title: NodeSeq, onclick: Js): Elem = h2.accordion_header.apply {
-    button.collapsed.addOnClick(onclick).accordion_button.apply(title)
+  def elemAccordionHeader(tabTitleId: String, title: NodeSeq, onclick: Js): Elem = h2.accordion_header.apply {
+    button.collapsed.addOnClick(onclick).accordion_button.withId(tabTitleId).apply(title)
   }
 
   def elemAccordionCollapse: Elem = accordion_collapse.collapse.apply {
@@ -32,29 +34,36 @@ class BSAccordion(items: (NodeSeq, FSContext => Int => NodeSeq)*) extends ElemWi
 
   def render()(implicit fsc: FSContext): NodeSeq = {
     elemAccordion.withId(elemId).apply {
-      items.zipWithIndex.map({
-        case ((titleNs, func), idx) => {
+      items.zipWithIndex.map({ case ((titleNs, func), idx) =>
+        fsc.runInNewOrRenewedChildContextFor((elemId, idx), Some("tab" + idx)) { implicit fsc =>
           val tabId = elemId + s"tab-$idx"
+          val collapseId = elemId + s"tab-collapse-$idx"
+          val tabTitleId = elemId + s"tab-title-$idx"
           val tabHeaderId = elemId + s"tab-header-$idx"
           val tabBodyId = elemId + s"tab-body-$idx"
           val callback = fsc.callback(() => {
-            (if (openTabIds.contains(tabId)) {
-               openTabIds -= tabId
-               fsc.page.deleteContextFor((contentsContextKey, tabId))
-               Js(s"$$('#$tabId').collapse('hide'); $$('#$tabHeaderId > button').addClass('collapsed');") &
+            (if (openTabIds.contains(collapseId)) {
+               openTabIds -= collapseId
+               fsc.page.deleteContextFor((contentsContextKey, collapseId))
+               Js(s"$$('#$collapseId').collapse('hide'); $$('#$tabHeaderId > button').addClass('collapsed');") &
                  Js(s"$$('#$tabBodyId').html('')")
              } else {
-               openTabIds += tabId
-               JS.setContents(tabBodyId, fsc.runInNewOrRenewedChildContextFor((contentsContextKey, tabId))(implicit fsc => {
-                 println("IN CONTEXT: "+fsc.fullPath)
-                 func(fsc)(idx)
-               })) &
-                 Js(s"$$('#$tabId').collapse('show'); $$('#$tabHeaderId > button').removeClass('collapsed');")
+               openTabIds += collapseId
+               JS.setContents(
+                 tabBodyId,
+                 fsc.runInNewOrRenewedChildContextFor((contentsContextKey, collapseId))(implicit fsc => {
+                   func(fsc)(new BSAccordionControls(idx, () => {
+                     fsc.delete()
+                     JS.removeId(tabId)
+                   }, changeTitle = title => JS.setContents(tabTitleId, title)))
+                 })
+               ) &
+                 Js(s"$$('#$collapseId').collapse('show'); $$('#$tabHeaderId > button').removeClass('collapsed');")
              })
           })
-          elemAccordionItem.apply {
-            elemAccordionHeader(titleNs, callback).withId(tabHeaderId) ++
-              elemAccordionCollapse.withId(tabId).apply {
+          elemAccordionItem.withId(tabId).apply {
+            elemAccordionHeader(tabTitleId, titleNs, callback).withId(tabHeaderId) ++
+              elemAccordionCollapse.withId(collapseId).apply {
                 elemAccordionBody.withId(tabBodyId)
               }
           }

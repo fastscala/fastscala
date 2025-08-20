@@ -1,6 +1,6 @@
 package com.fastscala.components.aceeditor
 
-import com.fastscala.components.aceeditor.json.{Command, OnChangeEvent, SelectionRange}
+import com.fastscala.components.aceeditor.json.{BindKey, Command, OnChangeEvent, SelectionRange}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.core.FSContext
 import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
@@ -327,11 +327,11 @@ trait AceEditor extends ElemWithRandomId {
 
   def setEnableMobileMenu(v: Boolean): Js = Js(s"""ace.edit("$elemId").setOptions({${toJson("enableMobileMenu", v)}});""")
 
-  def addCommand(cmd: FSContext => Command)(implicit fsc: FSContext): Js = {
+  def addCommand(name: String, bindKey: BindKey, exec: FSContext => Js)(implicit fsc: FSContext): Js = {
     import com.fastscala.components.utils.upickle.JsWriter
     import upickle.default.*
-    fsc.runInNewOrRenewedChildContextFor(this)(implicit fsc => {
-      Js(s"""editor.commands.addCommand(${write(cmd(fsc))})""")
+    fsc.runInNewOrRenewedChildContextFor((this, bindKey))(implicit fsc => {
+      Js(s"""editor.commands.addCommand(${write(Command(name, bindKey, exec(fsc)))})""")
     })
   }
 

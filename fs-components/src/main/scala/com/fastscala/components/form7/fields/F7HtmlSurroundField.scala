@@ -21,7 +21,7 @@ class F7HtmlSurroundField[T <: F7Field](
     with F7FieldWithDisabled
     with F7FieldWithEnabled {
 
-  override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem =
+  override def render()(implicit form: Form7, fsc: FSContext): Elem =
     if (!enabled) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{surround(field.render())}</div>
 
@@ -29,5 +29,5 @@ class F7HtmlSurroundField[T <: F7Field](
     List(this).filter(_ => predicate.applyOrElse[F7Field, Boolean](this, _ => false)) :::
       List(field).flatMap(_.fieldAndChildreenMatchingPredicate(predicate))
 
-  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = field.onEvent(event)
+  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = field.onEvent(event)
 }

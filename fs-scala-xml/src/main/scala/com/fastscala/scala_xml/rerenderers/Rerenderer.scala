@@ -13,7 +13,7 @@ class Rerenderer(renderFunc: Rerenderer => FSContext => (Elem, Js), idOpt: Optio
   var aroundId: Option[String] = None
 
   def getOrGenerateAroundId: String = aroundId.getOrElse({
-    aroundId = Some(IdGen.id("rerenderer"))
+    aroundId = Some(idOpt.getOrElse(IdGen.id("rerenderer")))
     aroundId.get
   })
 

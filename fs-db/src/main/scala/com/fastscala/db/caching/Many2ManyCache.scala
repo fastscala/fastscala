@@ -20,8 +20,8 @@ class Many2ManyCache[
    val cacheR: TableCache[K, R],
    val getLeft: J => K,
    val getRight: J => K,
-   val filterLeftOnJoin: K => SQLSyntax,
-   val filterRightOnJoin: K => SQLSyntax,
+   val filterLeftOnJoinTable: Seq[K] => SQLSyntax,
+   val filterRightOnJoinTable: Seq[K] => SQLSyntax,
    val left2Right: collection.mutable.Map[L, ListBuffer[R]] = collection.mutable.Map[L, ListBuffer[R]](),
    val right2Left: collection.mutable.Map[R, ListBuffer[L]] = collection.mutable.Map[R, ListBuffer[L]]()
  ) extends DBObserver {
@@ -32,32 +32,32 @@ class Many2ManyCache[
 
   def deleteX(left: L, right: R)(implicit obs: DBObserver): Unit = getRightForLeft(left).find(_ == right).foreach(_.deleteX()(obs))
 
-  def deleteX(left: K, right: K)(implicit obs: DBObserver): Unit = getRightForLeft(left).find(_.key == right).foreach(_.deleteX()(obs))
+  def deleteX(left: K, right: K)(implicit obs: DBObserver): Unit = getRightForLeftIds(left).find(_.key == right).foreach(_.deleteX()(obs))
 
-  def getRightForLeft(left: L): Seq[R] = getRightForLeft(left.key)
+  def getRightForLeft(left: L*): Seq[R] = getRightForLeftIds(left.map(_.key): _*)
 
-  def getRightForLeft(left: K): Seq[R] = {
-    val right = cacheJ.select(sqls"where ${filterLeftOnJoin(left)}").map(j => cacheR.getForIdX(getRight(j)))
+  def getRightForLeftIds(left: K*): Seq[R] = {
+    val right = cacheJ.select(sqls"where ${filterLeftOnJoinTable(left)}").map(j => cacheR.getForIdX(getRight(j)))
     cacheR.getForIdsX(right.map(_.key): _*)
   }
 
-  def getJoinForLeft(left: K): Seq[J] = cacheJ.select(sqls"where ${filterLeftOnJoin(left)}")
+  def getJoinForLeftIds(left: K*): Seq[J] = cacheJ.select(sqls"where ${filterLeftOnJoinTable(left)}")
 
-  def getJoinForLeft(left: L): Seq[J] = getJoinForLeft(left.key)
+  def getJoinForLeft(left: L*): Seq[J] = getJoinForLeftIds(left.map(_.key): _*)
 
-  def getLeftForRight(right: R): Seq[L] = getLeftForRight(right.key)
+  def getLeftForRight(right: R*): Seq[L] = getLeftForRightIds(right.map(_.key): _*)
 
-  def getLeftForRight(right: K): Seq[L] = {
-    val left = cacheJ.select(sqls"where ${filterRightOnJoin(right)}").map(j => cacheL.getForIdX(getLeft(j)))
+  def getLeftForRightIds(right: K*): Seq[L] = {
+    val left = cacheJ.select(sqls"where ${filterRightOnJoinTable(right)}").map(j => cacheL.getForIdX(getLeft(j)))
     cacheL.getForIdsX(left.map(_.key): _*)
   }
 
-  def getJoinForRight(right: K): Seq[J] = cacheJ.select(sqls"where ${filterRightOnJoin(right)}")
+  def getJoinForRightId(right: K): Seq[J] = cacheJ.select(sqls"where ${filterRightOnJoinTable(Seq(right))}")
 
-  def getJoinForRight(right: R): Seq[J] = getJoinForRight(right.key)
+  def getJoinForRight(right: R): Seq[J] = getJoinForRightId(right.key)
 
   def getJoinRow(left: L, right: R): Option[J] =
-    cacheJ.select(sqls"where ${filterLeftOnJoin(left.key)} and ${filterRightOnJoin(right.key)}").headOption
+    cacheJ.select(sqls"where ${filterLeftOnJoinTable(Seq(left.key))} and ${filterRightOnJoinTable(Seq(right.key))}").headOption
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()
 

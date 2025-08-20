@@ -1,9 +1,9 @@
 package com.fastscala.components.bootstrap5.tables
 
-import com.fastscala.core.FSContext
 import com.fastscala.components.bootstrap5.utils.{BSBtn, ImmediateInputFields}
-import com.fastscala.utils.Lazy
+import com.fastscala.core.FSContext
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
+import com.fastscala.utils.Lazy
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -19,11 +19,13 @@ trait Table5Paginated extends Table5SeqDataSource {
 
   def visiblePageSizes: List[Int] = List(10, 20, 50, 100, 500)
 
+  def hidePaginationBottomControlsIfUnnecessary: Boolean = false
+
   lazy val currentPageSize = Lazy(defaultPageSize)
 
   lazy val currentPage = Lazy(defaultCurrentPage)
 
-  def maxPages = (seqRowsSource.size - 1) / currentPageSize()
+  def maxPages: Int = (seqRowsSource.size - 1) / currentPageSize()
 
   override def rowsHints(): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
     offset = currentPage() * currentPageSize()
@@ -68,10 +70,13 @@ trait Table5Paginated extends Table5SeqDataSource {
     ).mb_3.mx_3
   }
 
-  def renderPaginationBottomControls()(implicit fsc: FSContext): Elem = {
-    row.apply {
-      col.apply(renderPagesButtons()) ++
-        col.apply(renderPageSizeDropdown())
+  def renderPaginationBottomControls()(implicit fsc: FSContext): NodeSeq = {
+    if (hidePaginationBottomControlsIfUnnecessary && maxPages <= 1) NodeSeq.Empty
+    else {
+      row.apply {
+        col.apply(renderPagesButtons()) ++
+          col.apply(renderPageSizeDropdown())
+      }
     }
   }
 

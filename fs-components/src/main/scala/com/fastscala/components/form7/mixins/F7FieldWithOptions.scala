@@ -23,7 +23,7 @@ trait F7FieldWithOptions[T] extends F7Field with Mutable {
 
   protected var currentRenderedOptions = Option.empty[(Seq[T], Map[String, T], Map[T, String])]
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().flatMap(superJs => {
       val currentOptions = options
       // Check if options changed:

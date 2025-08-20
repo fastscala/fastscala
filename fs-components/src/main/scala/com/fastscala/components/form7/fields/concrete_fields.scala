@@ -40,7 +40,7 @@ package com.fastscala.components.form7.fields
 //
 //  var currentValue = get()
 //
-//  override def reRender()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = {
+//  override def reRender()(implicit form: Form7, fsc: FSContext): Js = {
 //    if (!hints.contains(OnSaveRerender)) super.reRender()
 //    else Js.void
 //  }
@@ -85,7 +85,7 @@ package com.fastscala.components.form7.fields
 //    )
 //  }
 //
-//  override def onEvent(event: FormEvent)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+//  override def onEvent(event: FormEvent)(implicit form: Form7, fsc: FSContext): Js = super.onEvent(event) & (event match {
 //    case PerformSave => set(currentValue)
 //    case _ => Js.void
 //  })
@@ -93,7 +93,7 @@ package com.fastscala.components.form7.fields
 //  override def errors(): Seq[(ValidatableField, NodeSeq)] = super.errors() ++
 //    (if (required() && currentValue.trim == "") Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 //
-//  override def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+//  override def render()(implicit form: Form7, fsc: FSContext): Elem = {
 //    if (!enabled) <div style="display:none;" id={aroundId}></div>
 //    else {
 //      withFieldRenderHints { implicit hints =>
@@ -150,15 +150,15 @@ package com.fastscala.components.form7.fields
 //
 //trait FileUploadFieldRenderer {
 //
-//  def transformFormElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+//  def transformFormElem(field: F6FileUploadField)(elem: Elem): Elem = elem
 //
-//  def transforLabelElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+//  def transforLabelElem(field: F6FileUploadField)(elem: Elem): Elem = elem
 //
-//  def transforSubmitButtonElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+//  def transforSubmitButtonElem(field: F6FileUploadField)(elem: Elem): Elem = elem
 //
-//  def transforResetButtonElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+//  def transforResetButtonElem(field: F6FileUploadField)(elem: Elem): Elem = elem
 //
-//  def transforFileInputElem(field: F6FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = elem
+//  def transforFileInputElem(field: F6FileUploadField)(elem: Elem): Elem = elem
 //}
 //
 //class F6FileUploadField(
@@ -185,14 +185,14 @@ package com.fastscala.components.form7.fields
 //
 //  var currentValue: Option[(String, Array[Byte])] = get()
 //
-//  override def onEvent(event: FormEvent)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = super.onEvent(event) & (event match {
+//  override def onEvent(event: FormEvent)(implicit form: Form7, fsc: FSContext): Js = super.onEvent(event) & (event match {
 //    case PerformSave => set(currentValue)
 //    case _ => Js.void
 //  })
 //
 //  override def errors(): Seq[(ValidatableField, NodeSeq)] = Nil
 //
-//  def render()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Elem = {
+//  def render()(implicit form: Form7, fsc: FSContext): Elem = {
 //    if (!enabled) <div style="display:none;" id={aroundId}></div>
 //    else {
 //      withFieldRenderHints { implicit hints =>

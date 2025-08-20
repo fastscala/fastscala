@@ -24,7 +24,8 @@ object FileUpload {
              buttonLbl: Option[String] = None,
              multiple: Boolean = false,
              clipboardUpload: Boolean = false,
-             acceptTypes: Option[String] = None
+             acceptTypes: Option[String] = None,
+             inputClasses: String = "form-control"
            )(implicit fsc: FSContext): NodeSeq = {
     import com.fastscala.core.circe.CirceSupport.*
 
@@ -77,7 +78,7 @@ object FileUpload {
         {
         labelOpt.map(label => label.withFor(inputId)).getOrElse(Empty)
         }
-        <input class="form-control" name="file" type="file" accept={acceptTypes.getOrElse(null)} multiple={Some("true").filter(_ => multiple).getOrElse(null)} id={inputId} onchange={JS.show(buttonId).cmd} />
+        <input class={inputClasses} name="file" type="file" accept={acceptTypes.getOrElse(null)} multiple={Some("true").filter(_ => multiple).getOrElse(null)} id={inputId} onchange={JS.show(buttonId).cmd} />
         {
         transformSubmit(button.withId(buttonId).withStyle("display:none").withTypeSubmit()).pipe(btn => buttonLbl.map(lbl => btn.apply(lbl)).getOrElse(btn))
         }

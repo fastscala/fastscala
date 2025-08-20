@@ -11,5 +11,5 @@ trait MultiSelectF7FieldRenderer extends StandardOneInputElemF7FieldRenderer {
                     selected: Boolean,
                     value: String,
                     label: NodeSeq
-                  )(implicit hints: Seq[RenderHint]): Elem
+                  ): Elem
 }

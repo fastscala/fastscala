@@ -34,6 +34,10 @@ trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends PgTable[R] with TableWithUU
   def deleteAll(rows: Seq[R]): Long = {
     delete(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(rows.flatMap(_.uuid.map(_.toString)).toArray[String])))
   }
+
+  def deleteAllById(rows: Seq[UUID]): Long = {
+    delete(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(rows.map(_.toString).toArray[String])))
+  }
 }
 
 object PgTableWithUUID {

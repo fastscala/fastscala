@@ -14,6 +14,8 @@ import scala.xml.{Elem, NodeSeq}
 object BSBtn {
 
   def apply(): BSBtn = new BSBtn("", NodeSeq.Empty)
+  
+  implicit def evidence(implicit fsc: FSContext): BSBtn => Elem = _.btn
 }
 
 case class BSBtn(

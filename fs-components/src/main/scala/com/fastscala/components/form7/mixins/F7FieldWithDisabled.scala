@@ -34,7 +34,7 @@ trait F7FieldWithDisabled extends F7FieldInputFieldMixin {
     if (currentlyDisabled) input.withAttr("disabled", "disabled") else input
   }
 
-  def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = _disabled().pipe(shouldBeDisabled => {
+  def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): Js = _disabled().pipe(shouldBeDisabled => {
     if (shouldBeDisabled != currentlyDisabled) {
       currentlyDisabled = shouldBeDisabled
       if (currentlyDisabled) {
@@ -47,6 +47,6 @@ trait F7FieldWithDisabled extends F7FieldInputFieldMixin {
     }
   })
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & updateFieldDisabledStatus())
 }

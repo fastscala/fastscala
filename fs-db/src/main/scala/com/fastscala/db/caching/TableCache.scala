@@ -3,6 +3,7 @@ package com.fastscala.db.caching
 import com.fastscala.db.*
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
 import com.fastscala.db.util.Utils
+import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
@@ -20,31 +21,26 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
 
   def valuesLoadedInCache: Seq[R] = entries.values.toSeq
 
-  def values: Seq[R] = {
+  def isFullyInMemory = status == CacheStatus.ALL_LOADED
+
+  def loadAllEntries(): Unit = {
     if (status != CacheStatus.ALL_LOADED) {
       Utils.time({
-        loadAll(table).foreach(e => {
-          if (!entries.contains(e.key)) {
-            entries += (e.key -> e)
-          }
-        })
+        val allEntries = loadAll(table)
+        processLoadedRows(allEntries)
         status = CacheStatus.ALL_LOADED
       })(ms => {
-        logger.trace(s"${table.tableName}.values: LOADED ${entries.size} entries FROM DB in ${ms}ms")
+        logger.debug(s"LOADED ${entries.size} entries FROM ${table.tableName} in ${ms}ms")
       })
     }
+  }
+
+  def all: Seq[R] = {
+    loadAllEntries()
     entries.values.toList
   }
 
-  def select(rest: SQLSyntax): List[R] = {
-    val rslt = table.select(rest)
-    rslt.map(loaded => entries.get(loaded.key) match {
-      case Some(existing) =>
-        existing.copyFrom(loaded)
-        existing
-      case None => loaded
-    })
-  }
+  def select(rest: SQLSyntax): List[R] = processLoadedRows(table.select(rest))
 
   def apply(key: K): R = getForIdX(key)
 
@@ -52,14 +48,13 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
     getForIdOptX(key).get
   } catch {
     case ex: java.util.NoSuchElementException =>
-      println(s"Not found: key ${key} in table ${table.tableName}")
-      throw ex
+      throw new java.util.NoSuchElementException(s"Not found: key ${key} in table ${table.tableName}")
   }
 
   def getForIdOptX(key: K): Option[R] = {
 
     if (status != CacheStatus.ALL_LOADED) {
-      this.values
+      this.all
     }
 
     entries.get(key) match {
@@ -88,10 +83,24 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
     }
   }
 
-  def getForIdsX(ids: K*): List[R] =
-    ids.toList.flatMap(id => table.getForIdOpt(id))
+  def getForIdsX(ids: K*): List[R] = {
+    entries.keySet.intersect(ids.toSet).map(entries) ++ (ids.toSet.diff(entries.keySet).toList match {
+      case Nil => Seq()
+      case missingIds => table.getForIds(missingIds *)
+    })
+  }.toList
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()
+
+  def processLoadedRows(rows: List[R]): List[R] = rows.map(row => entries.get(row.key) match {
+    case Some(existing) =>
+      existing.copyFrom(row)
+      existing
+    case None =>
+      entries += (row.key -> row)
+      processLoadedRows(List(row))
+      row
+  })
 
   def postSave(t: TableBase, row: RowBase): Unit = (table, row) match {
     case (`table`, row: R) =>

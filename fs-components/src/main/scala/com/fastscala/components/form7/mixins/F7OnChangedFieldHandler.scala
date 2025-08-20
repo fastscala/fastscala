@@ -8,5 +8,5 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 trait F7OnChangedFieldHandler {
-  def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js
+  def onChanged(field: F7Field)(implicit form: Form7, fsc: FSContext): Js
 }

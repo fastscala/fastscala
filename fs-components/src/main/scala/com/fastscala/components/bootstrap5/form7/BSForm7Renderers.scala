@@ -8,12 +8,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class BSForm7Renderers()(
-  implicit
-  checkboxAlignment: CheckboxAlignment.Value,
-  checkboxStyle: CheckboxStyle.Value,
-  checkboxSide: CheckboxSide.Value,
-) {
+abstract class BSForm7Renderers()(implicit checkboxAlignment: CheckboxAlignment.Value, checkboxStyle: CheckboxStyle.Value, checkboxSide: CheckboxSide.Value) {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -32,14 +27,14 @@ abstract class BSForm7Renderers()(
   implicit val selectFieldRenderer: SelectF7FieldRenderer = new SelectF7FieldRenderer with BSStandardF7FieldRendererImpl {
     def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
 
-    override def renderOption(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
+    override def renderOption(selected: Boolean, value: String, label: NodeSeq): Elem =
       <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
   implicit val multiSelectFieldRenderer: MultiSelectF7FieldRenderer = new MultiSelectF7FieldRenderer with BSStandardF7FieldRendererImpl {
     def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
 
-    override def renderOption(selected: Boolean, value: String, label: NodeSeq)(implicit hints: Seq[RenderHint]): Elem =
+    override def renderOption(selected: Boolean, value: String, label: NodeSeq): Elem =
       <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
@@ -52,16 +47,13 @@ abstract class BSForm7Renderers()(
   }
 
   //  implicit val fileUploadFieldRenderer = new FileUploadFieldRenderer {
-  //    override def transformFormElem(field: F5FileUploadField)(elem: Elem)(implicit hints: Seq[RenderHint]): Elem = super.transformFormElem(field)(elem).mb_3
+  //    override def transformFormElem(field: F5FileUploadField)(elem: Elem): Elem = super.transformFormElem(field)(elem).mb_3
   //  }
 
   implicit val buttonFieldRenderer: ButtonF7FieldRenderer = new ButtonF7FieldRenderer {
-    override def render(field: F7SubmitButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
+    override def render(field: F7SubmitButtonField[_])(btn: Elem): Elem = {
       if (!field.enabled) div.withId(field.aroundId).withStyle(";display:none;")
-      else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(
-        btn
-          .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
-      )
+      else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(btn)
     }
   }
 

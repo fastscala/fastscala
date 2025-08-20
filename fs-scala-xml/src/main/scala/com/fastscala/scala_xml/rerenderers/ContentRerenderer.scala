@@ -12,13 +12,13 @@ import scala.xml.{Elem, NodeSeq}
 
 class ContentRerenderer(
                          renderFunc: ContentRerenderer => FSContext => (NodeSeq, Js),
-                         id: Option[String] = None,
+                         idOpt: Option[String] = None,
                          debugLabel: Option[String] = None,
                        ) {
 
   val outterElem: Elem = <div></div>
 
-  val aroundId = id.getOrElse("around" + IdGen.id)
+  val aroundId = idOpt.getOrElse(IdGen.id("around"))
 
   private def renderImpl()(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: NodeSeq, setupJs: Js) = renderFunc(this)(fsc)

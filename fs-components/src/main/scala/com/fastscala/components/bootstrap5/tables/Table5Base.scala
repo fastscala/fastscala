@@ -1,13 +1,13 @@
 package com.fastscala.components.bootstrap5.tables
 
-import com.fastscala.core.FSContext
-import com.fastscala.js.Js
-import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.components.utils.Mutable
-import com.fastscala.utils.IdGen
+import com.fastscala.core.FSContext
+import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.{MkNSFromElems, MkNSFromNodeSeq}
+import com.fastscala.scala_xml.js.JS
+import com.fastscala.utils.IdGen
 
 import java.util.UUID
 import scala.util.chaining.scalaUtilChainingOps
@@ -20,6 +20,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
 
   lazy val aroundId: AroundId = new AroundId(IdGen.id("around"))
   lazy val tableId: TableId = new TableId(IdGen.id("table"))
+  lazy val tbodyId: String = IdGen.id("tbody")
 
   var additionalTableClasses = ""
 
@@ -32,7 +33,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
   var onTableBodyTRTDTransforms: Elem => Elem = identity[Elem]
 
   override def addClass(clas: String): this.type = mutate {
-    additionalTableClasses +=additionalTableClasses.pipe(additionalTableClasses =>  s" $clas")
+    additionalTableClasses += additionalTableClasses.pipe(additionalTableClasses => s" $clas")
   }
 
   def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = additionalTableClasses
@@ -114,7 +115,9 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
 
   def aroundStyle()(implicit fsc: FSContext): String = ""
 
-  def renderTableAround()(implicit fsc: FSContext): Elem = <div class={aroundClasses()} style={aroundStyle()}>{renderAroundContents()}</div>
+  def renderTableAround()(implicit fsc: FSContext): Elem = <div class={aroundClasses()} style={aroundStyle()}>
+    {renderAroundContents()}
+  </div>
 
   def renderAroundContents()(implicit fsc: FSContext): NodeSeq = tableRenderer.rerenderer.render()
 
@@ -180,7 +183,9 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
 
     val tableContents = renderTableContents()
 
-    <table id={tableId.id}>{tableContents}</table>.pipe(transformTableElem)
+    <table id={tableId.id}>
+      {tableContents}
+    </table>.pipe(transformTableElem)
   }
 
   def renderTableContents()(
@@ -198,8 +203,10 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     JS.rerenderable(implicit rerenderer => implicit fsc => {
       implicit val tableBodyRerenderer: TableBodyRerenderer = TableBodyRerenderer(rerenderer)
       val contents = renderTableBodyContents()
-      <tbody id={rerenderer.getOrGenerateAroundId}>{contents}</tbody>
-    }, debugLabel = Some("table_body")).render()
+      <tbody id={rerenderer.getOrGenerateAroundId}>
+        {contents}
+      </tbody>
+    }, idOpt = Some(tbodyId), debugLabel = Some("table_body")).render()
   }
 
   def renderTableBodyContents()(
@@ -251,7 +258,9 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
   ): Elem = {
 
     val trContents = renderTRContents()
-    <tr>{trContents}</tr>
+    <tr>
+      {trContents}
+    </tr>
   }
 
   def renderTRAppend()(
@@ -296,7 +305,9 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     JS.rerenderable(implicit rerenderer => implicit fsc => {
       implicit val tableHeadRerenderer: TableHeadRerenderer = TableHeadRerenderer(rerenderer)
       val contents = renderTableHeadContents()
-      <thead id={IdGen.id("thead")}>{contents}</thead>
+      <thead id={IdGen.id("thead")}>
+        {contents}
+      </thead>
     },
       debugLabel = Some(s"table_head")
     ).render()
@@ -339,7 +350,9 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
   ): Elem = {
 
     val trContents = renderTableHeadTRContents()
-    <tr>{trContents}</tr>
+    <tr>
+      {trContents}
+    </tr>
   }
 
   def renderTableHeadTRAppend()(

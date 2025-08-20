@@ -34,7 +34,7 @@ trait F7FieldWithReadOnly extends F7FieldInputFieldMixin {
     if (currentlyReadOnly) input.withAttr("readonly", "true") else input
   }
 
-  def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): Js = _readOnly().pipe(shouldBeReadOnly => {
+  def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): Js = _readOnly().pipe(shouldBeReadOnly => {
     if (shouldBeReadOnly != currentlyReadOnly) {
       currentlyReadOnly = shouldBeReadOnly
       if (currentlyReadOnly) {
@@ -47,6 +47,6 @@ trait F7FieldWithReadOnly extends F7FieldInputFieldMixin {
     }
   })
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext, hints: Seq[RenderHint]): scala.util.Try[Js] =
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & updateFieldReadOnlyStatus())
 }

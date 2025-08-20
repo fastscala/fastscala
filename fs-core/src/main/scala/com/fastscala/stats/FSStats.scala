@@ -55,7 +55,7 @@ class FSStats(
 
   def eventLevel(event: StatEvent): Level = event match {
     case CREATE_CALLBACK | USE_CALLBACK | GC_CALLBACK => Level.TRACE
-    case _ => Level.DEBUG
+    case _ => Level.TRACE
   }
 
   def event(

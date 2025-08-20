@@ -9,11 +9,11 @@ import com.fastscala.utils.IdGen
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P => (NodeSeq, Js), id: Option[String] = None, debugLabel: Option[String] = None) {
+class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P => (NodeSeq, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None) {
 
   val outterElem: Elem = <div></div>
 
-  val aroundId = id.getOrElse("around" + IdGen.id)
+  val aroundId = idOpt.getOrElse(IdGen.id("around"))
 
   private def renderImpl(param: P)(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: NodeSeq, setupJs: Js) = renderFunc(this)(fsc)(param)

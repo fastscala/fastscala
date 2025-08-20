@@ -1,5 +1,7 @@
 package com.fastscala.db
 
+import org.postgresql.util.PSQLException
+import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
@@ -9,6 +11,8 @@ import java.lang.reflect.Field
 import scalikejdbc.*
 
 trait Table[R] extends TableBase {
+
+  private val logger = LoggerFactory.getLogger(getClass.getName)
 
   def createSampleRow(): R
 
@@ -61,7 +65,13 @@ trait Table[R] extends TableBase {
   def select(rest: SQLSyntax): List[R] = {
     DB.readOnly({ implicit session =>
       val query = selectFromSQL.append(rest)
-      sql"${query}".map(fromWrappedResultSet).list()
+      try {
+        sql"${query}".map(fromWrappedResultSet).list()
+      } catch {
+        case ex: PSQLException =>
+          logger.error(s"Error on query $query", ex)
+          throw ex
+      }
     })
   }
 

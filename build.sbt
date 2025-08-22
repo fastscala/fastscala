@@ -23,8 +23,6 @@ lazy val commonSettings = Seq(
 
   sbtPluginPublishLegacyMavenStyle := false,
 
-  scalacOptions ++= Seq("-old-syntax", "-rewrite"),
-
   sonatypeCredentialHost := Sonatype.sonatypeCentralHost,
 
   sonatypeProfileName := "com.fastscala",
@@ -41,9 +39,9 @@ lazy val commonSettings = Seq(
     Developer(id = "david", name = "David Miguel Antunes", email = "davidmiguel@antunes.net", url = url("https://www.linkedin.com/in/david-miguel-antunes/")),
   ),
 
-  // isSnapshot := false,
-
   publishTo := sonatypePublishToBundle.value,
+
+  // crossScalaVersions := List("2.13.16"),
 )
 
 scalacOptions += "-Ypartial-unification"
@@ -56,7 +54,6 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
     name := "fs-core",
     version := Version,
     organization := "com.fastscala",
-    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.5.6",
       // "net.logstash.logback" % "logstash-logback-encoder" % "8.0",

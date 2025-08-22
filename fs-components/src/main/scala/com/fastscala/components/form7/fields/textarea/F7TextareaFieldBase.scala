@@ -11,7 +11,7 @@ import com.fastscala.scala_xml.js.JS
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRenderer)
-  extends StandardOneInputElemF7Field[T]
+    extends StandardOneInputElemF7Field[T]
     with F7Field
     with StringSerializableF7Field
     with FocusableF7Field
@@ -70,27 +70,28 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
       currentRenderedValue = Some(currentValue)
 
       renderer.render(this)(
-        inputElem = processInputElem(
-          <textarea
+        inputElem = processInputElem(<textarea
           type="text"
-          onblur={fsc.callback(JS.elementValueById(elemId), str => {
-            fromString(str) match {
-              case Right(value) =>
-                setFilled()
-                currentRenderedValue = Some(value)
-                if (currentValue != value) {
-                  currentValue = value
-                  form.onEvent(ChangedField(this))
-                } else {
-                  JS.void
+          onblur={
+            fsc.callback(
+              JS.elementValueById(elemId),
+              str => {
+                fromString(str) match {
+                  case Right(value) =>
+                    setFilled()
+                    currentRenderedValue = Some(value)
+                    if (currentValue != value) {
+                      currentValue = value
+                      form.onEvent(ChangedField(this))
+                    } else {
+                      JS.void
+                    }
+                  case Left(error) =>
+                    JS.void
                 }
-              case Left(error) =>
-                JS.void
-            }
-          }).cmd}>
-            {this.toString(currentRenderedValue.get)}
-          </textarea>
-        ),
+              }
+            ).cmd
+          }>{this.toString(currentRenderedValue.get)}</textarea>),
         label = _label(),
         invalidFeedback = errorsToShow.headOption.map(error => <div>
           {error._2}

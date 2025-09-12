@@ -49,18 +49,54 @@ trait Table6SelectableRows extends Table6Base with Table6ColsLabeled with Table6
 
   def onRowSelectionChanged(trRerenderer: TrRerenderer)(implicit fsc: FSContext): Js = trRerenderer.rerenderer.rerender()
 
-  val ColSelectRow = new Table6StandardColumn[R, C, Ctx] {
+  val ColSelectRow = new Table6StandardColumn[R, Ctx] {
 
     override def label: String = ""
 
-    override def renderTheadTrTh()(implicit tableHeadRerenderer: TableHeadRerenderer, trRerenderer: TrRerenderer, thRerenderer: ThRerenderer, colIdx: TableColIdx, pageRows: Seq[(String, R)], fsc: FSContext): Elem = <th></th>
+    override def renderTheadTrTh()(
+      implicit
+      fsc: FSContext,
+      ctx: Ctx,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableWrapperRenderer: TableWrapperRerenderer,
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      thRerenderer: ThRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId
+    ): Elem = <th></th>
 
-    override def renderTbodyTrTd()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, tdRerenderer: TdRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem = {
+
+    override def renderTbodyTrTd()(
+      implicit
+      fsc: FSContext,
+      ctx: Ctx,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableWrapperRenderer: TableWrapperRerenderer,
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      tdRerenderer: TdRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId,
+      row: R,
+      rowIdx: TableRowIdx,
+      rowId: TableRowId
+    ): Elem =  {
       val contents = ImmediateInputFields.checkbox(
-        () => allSelectedRowsEvenIfNotVisible.contains(value),
+        () => allSelectedRowsEvenIfNotVisible.contains(row),
         selected => {
-          if (selected) allSelectedRowsEvenIfNotVisible += value
-          else allSelectedRowsEvenIfNotVisible -= value
+          if (selected) allSelectedRowsEvenIfNotVisible += row
+          else allSelectedRowsEvenIfNotVisible -= row
           onSelectedRowsChange() &
             onRowSelectionChanged(trRerenderer)
         },
@@ -68,5 +104,23 @@ trait Table6SelectableRows extends Table6Base with Table6ColsLabeled with Table6
       ).m_0.d_inline_block
       <td>{contents}</td>
     }
+
+    override def renderTfootTrTh()(
+      implicit
+      fsc: FSContext,
+      ctx: Ctx,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableWrapperRenderer: TableWrapperRerenderer,
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      thRerenderer: ThRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId
+    ): Elem = <th></th>
   }
 }

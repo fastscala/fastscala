@@ -4,14 +4,16 @@ import scala.util.chaining.scalaUtilChainingOps
 
 trait Table6SeqSortableDataSource extends Table6SeqDataSource with Table6Sortable {
 
+  type Ctx = Null
+
   def seqRowsSource: Seq[R]
 
   def rowsSorter: PartialFunction[C, Seq[R] => Seq[R]]
 
   def isSortable(col: C): Boolean = rowsSorter.isDefinedAt(col)
 
-  override def rows(hints: Seq[RowsHint]): Seq[R] = {
-    seqRowsSource.pipe(rows => {
+  override def rows(hints: Seq[RowsHint]): (Seq[R], Ctx) = {
+    (seqRowsSource.pipe(rows => {
       hints.collectFirst({ case hint: SortingRowsHint[C] => hint }).collect({
         case SortingRowsHint(sortCol: C, ascending) if rowsSorter.isDefinedAt(sortCol) =>
           val sorted = rowsSorter.apply(sortCol)(rows)
@@ -21,6 +23,6 @@ trait Table6SeqSortableDataSource extends Table6SeqDataSource with Table6Sortabl
       hints.collectFirst({ case hint: PagingRowsHint => hint }).map({
         case PagingRowsHint(offset, limit) => rows.drop(offset.toInt).take(limit.toInt)
       }).getOrElse(rows)
-    })
+    }), null)
   }
 }

@@ -32,7 +32,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   lazy val state = new Lazy[Form7State.Value](initialState)
 
-  def onChangedState(from: Form7State.Value, to: Form7State.Value)(implicit fsc: FSContext): Js = onEvent(ChangedFormState(from, to))(this, fsc)
+  def onChangedState(from: Form7State.Value, to: Form7State.Value)(using fsc: FSContext): Js = onEvent(ChangedFormState(from, to))(using this, fsc)
 
   /** NOTE: Implementation should usually be a val or lazy val! don't re-instantiate the fields every time this method is called!
    */

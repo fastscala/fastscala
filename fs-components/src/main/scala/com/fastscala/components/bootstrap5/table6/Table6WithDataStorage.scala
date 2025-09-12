@@ -1,6 +1,6 @@
-package com.fastscala.components.bootstrap5.tables
+package com.fastscala.components.bootstrap5.table6
 
-trait Table5WithDataStorage {
+trait Table6WithDataStorage {
 
   def getProp(name: String): Option[String]
 

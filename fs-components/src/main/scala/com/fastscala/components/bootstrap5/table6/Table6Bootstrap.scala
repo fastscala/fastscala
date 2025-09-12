@@ -1,10 +1,11 @@
-package com.fastscala.components.bootstrap5.tables
+package com.fastscala.components.bootstrap5.table6
 
 import com.fastscala.core.FSContext
 
+import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-object Table5BootrapStyles extends Enumeration {
+object Table6BootrapStyles extends Enumeration {
   val Primary = Value("table-primary")
   val Secondary = Value("table-secondary")
   val Success = Value("table-success")
@@ -15,7 +16,7 @@ object Table5BootrapStyles extends Enumeration {
   val Dark = Value("table-dark")
 }
 
-object Table5BootrapBorderStyles extends Enumeration {
+object Table6BootrapBorderStyles extends Enumeration {
   val Primary = Value("table-primary")
   val Secondary = Value("table-secondary")
   val Success = Value("table-success")
@@ -26,7 +27,7 @@ object Table5BootrapBorderStyles extends Enumeration {
   val Dark = Value("table-dark")
 }
 
-object Table5BootrapResponsiveSizes extends Enumeration {
+object Table6BootrapResponsiveSizes extends Enumeration {
   val ALL = Value("table-responsive")
   val SM = Value("table-responsive-sm")
   val MD = Value("table-responsive-md")
@@ -35,9 +36,11 @@ object Table5BootrapResponsiveSizes extends Enumeration {
   val XXL = Value("table-responsive-xxl")
 }
 
-trait Table5BaseBootrapSupport extends Table5Base {
+trait Table6BaseBootrapSupport extends Table6Base {
 
-  def tableResponsive: Option[Table5BootrapResponsiveSizes.Value] = None
+  import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
+  
+  def tableResponsive: Option[Table6BootrapResponsiveSizes.Value] = None
 
   def tableSmall: Boolean = false
 
@@ -51,11 +54,11 @@ trait Table5BaseBootrapSupport extends Table5Base {
 
   def tableStripedColumns: Boolean = false
 
-  def tableStyle: Option[Table5BootrapStyles.Value] = None
+  def tableStyle: Option[Table6BootrapStyles.Value] = None
 
-  def tableHeadStyle: Option[Table5BootrapStyles.Value] = None
+  def tableHeadStyle: Option[Table6BootrapStyles.Value] = None
 
-  def tableBorderStyle: Option[Table5BootrapBorderStyles.Value] = None
+  def tableBorderStyle: Option[Table6BootrapBorderStyles.Value] = None
 
   override def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String =
     super.tableClasses() + " table " +
@@ -70,7 +73,6 @@ trait Table5BaseBootrapSupport extends Table5Base {
     super.tableHeadClasses() + " table " +
       tableHeadStyle.map(" " + _ + " ").getOrElse("")
 
-  override def renderTable()(implicit fsc: FSContext): Elem = tableResponsive.map(size => {
-    <div class={size.toString}>{super.renderTable()}</div>
-  }).getOrElse(super.renderTable())
+  override def transformTableElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = 
+    super.transformTableElem(elem).pipe(elem => tableResponsive.map(size => elem.addClass(size.toString)).getOrElse(elem))
 }

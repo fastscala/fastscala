@@ -1,4 +1,4 @@
-package com.fastscala.components.bootstrap5.tables
+package com.fastscala.components.bootstrap5.table5
 
 import com.fastscala.scala_xml.rerenderers.Rerenderer
 

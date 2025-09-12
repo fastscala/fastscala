@@ -1,4 +1,4 @@
-package com.fastscala.components.bootstrap5.tables
+package com.fastscala.components.bootstrap5.table5
 
 trait Table5WithName {
 

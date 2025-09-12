@@ -1,6 +1,6 @@
-package com.fastscala.components.bootstrap5.tables
+package com.fastscala.components.bootstrap5.table6
 
-trait Table5Persistable extends Table5Base {
+trait Table6Persistable extends Table6Base {
 
   def persistedState: io.circe.JsonObject
 

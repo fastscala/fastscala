@@ -12,7 +12,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
 ThisBuild / version := Version
-ThisBuild / scalaVersion := "3.7.2"
+ThisBuild / scalaVersion := "3.7.3"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 

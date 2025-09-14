@@ -28,7 +28,7 @@ object FSOptimizedResourceHandler {
   def cssLoaderUrl(files: String*): String = "/static/optimized/css_loader.css?" + files.map("f=" + URLEncoder.encode(_, "UTF-8")).mkString("&")
 
   def cssLoaderElem(files: String*): Elem =
-    <link></link>.withAttrs("rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files: _*))
+    <link></link>.withAttrs("rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files*))
 }
 
 class FSOptimizedResourceHandler(

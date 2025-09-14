@@ -86,7 +86,7 @@ object F5VerticalField {
   def apply(
              enabled: () => Boolean = () => true
              , deps: Set[FormField] = Set()
-           )(children: FormField*) = new F5VerticalField(enabled, deps)(children: _*)
+           )(children: FormField*) = new F5VerticalField(enabled, deps)(children*)
 }
 
 class F5HorizontalField(
@@ -130,7 +130,7 @@ object F5HorizontalField {
   def apply[T <: FormField](
                              enabled: () => Boolean = () => true
                              , deps: Set[FormField] = Set()
-                           )(children: (String, FormField)*) = new F5HorizontalField(enabled, deps)(children: _*)
+                           )(children: (String, FormField)*) = new F5HorizontalField(enabled, deps)(children*)
 }
 
 abstract class F5TextField[T](
@@ -196,7 +196,7 @@ abstract class F5TextField[T](
                    value={this.toString(currentValue)}
                    tabindex={tabindex.map(_ + "").getOrElse(null)}
                    maxlength={maxlength.map(_ + "").getOrElse(null)}
-                   required={if (required()) "true" else null}/>.withAttrs(finalAdditionalAttrs: _*),
+                   required={if (required()) "true" else null}/>.withAttrs(finalAdditionalAttrs*),
           errors().headOption.map(_._2)
         )
       }
@@ -1614,9 +1614,9 @@ class F5SaveButtonField[B](
                             , val disabled: () => Boolean = () => false
                             , val enabled: () => Boolean = () => true
                             , val deps: Set[FormField] = Set()
-                            , val toInitialState: B => B = identity[B] _
-                            , val toChangedState: B => B = identity[B] _
-                            , val toErrorState: B => B = identity[B] _
+                            , val toInitialState: B => B = identity[B]
+                            , val toChangedState: B => B = identity[B]
+                            , val toErrorState: B => B = identity[B]
                           )(implicit renderer: ButtonFieldRenderer, evidence: B => Elem) extends StandardFormField {
 
   def readOnly: () => Boolean = () => false
@@ -1668,11 +1668,11 @@ class F5FileUploadField(
                          , val enabled: () => Boolean = () => true
                          , val deps: Set[FormField] = Set()
 
-                         , val transformFormElem: Elem => Elem = identity[Elem] _
-                         , val transforLabelElem: Elem => Elem = identity[Elem] _
-                         , val transforSubmitButtonElem: Elem => Elem = identity[Elem] _
-                         , val transforResetButtonElem: Elem => Elem = identity[Elem] _
-                         , val transforFileInputElem: Elem => Elem = identity[Elem] _
+                         , val transformFormElem: Elem => Elem = identity[Elem]
+                         , val transforLabelElem: Elem => Elem = identity[Elem]
+                         , val transforSubmitButtonElem: Elem => Elem = identity[Elem]
+                         , val transforResetButtonElem: Elem => Elem = identity[Elem]
+                         , val transforFileInputElem: Elem => Elem = identity[Elem]
                        )(implicit renderer: FileUploadFieldRenderer) extends StandardFormField with ValidatableField {
 
   var currentValue: Option[(String, Array[Byte])] = get()

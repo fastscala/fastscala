@@ -10,7 +10,7 @@ import scala.xml.{Elem, NodeSeq}
 trait RadioF7FieldRenderer extends StandardF7FieldRenderer {
 
   def render(
-              field: F7RadioFieldBase[_],
+              field: F7RadioFieldBase[?],
             )(
               inputElemsAndLabels: Seq[(Elem, Option[Elem])],
               label: Option[Elem],
@@ -20,10 +20,10 @@ trait RadioF7FieldRenderer extends StandardF7FieldRenderer {
             ): Elem
 
   def showOrUpdateValidation(
-                              field: F7RadioFieldBase[_]
+                              field: F7RadioFieldBase[?]
                             )(ns: NodeSeq): Js
 
   def hideValidation(
-                      field: F7RadioFieldBase[_]
+                      field: F7RadioFieldBase[?]
                     )(): Js
 }

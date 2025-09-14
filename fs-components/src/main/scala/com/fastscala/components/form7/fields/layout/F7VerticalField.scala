@@ -9,6 +9,6 @@ class F7VerticalField()(childrenFields: F7Field*) extends F7ContainerFieldBase {
 }
 
 object F7VerticalField {
-  def apply()(children: F7Field*) = new F7VerticalField()(children: _*)
+  def apply()(children: F7Field*) = new F7VerticalField()(children*)
 }
 

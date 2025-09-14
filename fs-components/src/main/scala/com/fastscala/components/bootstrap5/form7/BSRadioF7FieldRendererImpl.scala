@@ -21,7 +21,7 @@ abstract class BSRadioF7FieldRendererImpl()(
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
-  override def render(field: F7RadioFieldBase[_])(
+  override def render(field: F7RadioFieldBase[?])(
     inputElemsAndLabels: Seq[(Elem, Option[Elem])],
     label: Option[Elem],
     invalidFeedback: Option[Elem],
@@ -67,7 +67,7 @@ abstract class BSRadioF7FieldRendererImpl()(
                   } else {
                     invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
                   }) ++
-                    label.map(help => "aria-labelledby" -> labelId): _*
+                    label.map(help => "aria-labelledby" -> labelId)*
                 ) ++
                   label.map(_.form_check_label.withIdIfNotSet(labelId).withFor(inputId)).getOrElse(Empty): NodeSeq)
               }
@@ -79,7 +79,7 @@ abstract class BSRadioF7FieldRendererImpl()(
   }
 
   def showOrUpdateValidation(
-                              field: F7RadioFieldBase[_]
+                              field: F7RadioFieldBase[?]
                             )(ns: NodeSeq): Js =
     JS.setContents(field.invalidFeedbackId, ns) &
       JS.removeClass(field.invalidFeedbackId, "visually-hidden") &
@@ -90,7 +90,7 @@ abstract class BSRadioF7FieldRendererImpl()(
       JS.removeClassFromElemsMatchingSelector(s"#${field.aroundId} > .form-check > input", "is-valid")
 
   def hideValidation(
-                      field: F7RadioFieldBase[_]
+                      field: F7RadioFieldBase[?]
                     )(): Js =
     JS.addClass(field.invalidFeedbackId, "visually-hidden") &
       JS.removeClassFromElemsMatchingSelector(s"#${field.aroundId} > .form-check", "is-invalid") &

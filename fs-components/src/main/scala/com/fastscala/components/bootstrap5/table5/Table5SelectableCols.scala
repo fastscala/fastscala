@@ -14,7 +14,7 @@ import scala.xml.Elem
 
 trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
 
-  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns.filter(columnStartsVisible): _*))
+  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns.filter(columnStartsVisible)*))
 
   def allColumns: Seq[C]
 
@@ -69,6 +69,6 @@ trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
           rerenderTable()
       },
       colLabel(col)
-    )).withStyle("padding-top: 1px; padding-bottom: 1px;")): _*
+    )).withStyle("padding-top: 1px; padding-bottom: 1px;"))*
   )
 }

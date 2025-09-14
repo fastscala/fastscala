@@ -39,7 +39,7 @@ trait BSStandardF7FieldRendererImpl extends StandardOneInputElemF7FieldRenderer 
           } else {
             invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
           }) ++
-            label.map(_ => "aria-labelledby" -> helpId).toSeq: _*
+            label.map(_ => "aria-labelledby" -> helpId).toSeq*
         ) ++
         invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.elemId).withIdIfNotSet(invalidFeedbackId) ++
         validFeedback.getOrElse(div.visually_hidden).valid_feedback.withIdIfNotSet(validFeedbackId) ++

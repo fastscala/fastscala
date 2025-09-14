@@ -66,7 +66,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*) extends F7ContainerFieldBase
                   case elem: Elem if elem.label == "input"                                                                       => Seq(elem)
                   case _                                                                                                         => Seq()
                 }).flatten
-            }).flatten: _*) ++
+            }).flatten*) ++
           renderedChildren.map(_._4).flatten.map(adaptNodes): NodeSeq)
       }
     }

@@ -12,5 +12,5 @@ object BSHorizontalField {
              enabled: () => Boolean = () => true
              , deps: Set[FormField] = Set()
            )(children: FormField*) =
-    new F5HorizontalField(enabled, deps)(children.map[(String, FormField)](f => col.getClassAttr -> f): _*)
+    new F5HorizontalField(enabled, deps)(children.map[(String, FormField)](f => col.getClassAttr -> f)*)
 }

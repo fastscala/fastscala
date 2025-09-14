@@ -84,7 +84,7 @@ abstract class JettyServerHelper() {
       val resourceFactory = ResourceFactory.of(resourceHandler)
       resourceRoots.map(resourceFactory.newClassLoaderResource(_))
         .filter(Resources.isReadableDirectory(_))
-    }: _*))
+    }*))
 
     val wsHandler = FSWebsocketJettyContextHandler(server, "/" + fss.FSPrefix)
     val gzipHandler = new GzipHandler() {
@@ -103,7 +103,7 @@ abstract class JettyServerHelper() {
           wsHandler,
           resourceHandler,
         ) :::
-        appendToHandlerList): _*
+        appendToHandlerList)*
     ))
 
     val statHandler = new StatisticsHandler(gzipHandler)

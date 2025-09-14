@@ -7,5 +7,5 @@ import scala.xml.Elem
 
 
 trait ButtonF7FieldRenderer {
-  def render(field: F7SubmitButtonField[_])(btn: Elem): Elem
+  def render(field: F7SubmitButtonField[?])(btn: Elem): Elem
 }

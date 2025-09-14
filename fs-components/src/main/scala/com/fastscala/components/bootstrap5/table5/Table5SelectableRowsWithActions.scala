@@ -21,14 +21,14 @@ trait Table5SelectableRowsWithActions extends Table5SelectableRows with Table5St
 
   lazy val actionsDropdownBtnRenderer: Rerenderer = JS.rerenderable(rerenderer => implicit fsc => {
     BSBtnDropdown(actionsBtnToIncludeInTopDropdown)(
-      actionsForRows(selectedVisibleRows): _*
+      actionsForRows(selectedVisibleRows)*
     )
   }, debugLabel = Some("actions_dropdown_btn"))
 
   lazy val ColActionsDefault = ColNsFullTd(actionsBtnToIncludeInRowDropdown.content.toString(), implicit fsc => {
     case (tableBodyRerenderer, trRerenderer, tdRerenderer, elem, rowIdx, colIdx, rows) =>
       val contents = BSBtnDropdown(actionsBtnToIncludeInRowDropdown)(
-        actionsForRows(Set(elem)): _*
+        actionsForRows(Set(elem))*
       )
       <td class="py-1">{contents}</td>
   })

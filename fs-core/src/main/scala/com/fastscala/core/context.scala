@@ -72,7 +72,7 @@ class FSContext(
     ctx.debugLbl.getOrElse(s"anon[${ctx.##.toHexString}]").pipe(name => if (ctx.deleted) s"[del: $name]" else name)
   ).mkString(" => ")
 
-  def sendToPages(f: PartialFunction[(FSPage, FSPageImpl[_]), FSContext => Js]): Unit = {
+  def sendToPages(f: PartialFunction[(FSPage, FSPageImpl[?]), FSContext => Js]): Unit = {
     for {
       (_, session) <- page.session.fsSystem.sessions
       page <- session.pages.values

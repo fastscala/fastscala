@@ -40,11 +40,11 @@ trait AceEditor extends ElemWithRandomId {
 
   def initalValue: String
 
-  private lazy val currentValueHolder: Lazy[ListBuffer[String]] = Lazy(ListBuffer(initalValue.split("\\n"): _*))
+  private lazy val currentValueHolder: Lazy[ListBuffer[String]] = Lazy(ListBuffer(initalValue.split("\\n")*))
 
   def currentValue: String = currentValueHolder().mkString(System.lineSeparator())
 
-  def currentValue_=(v: String) = currentValueHolder() = ListBuffer(v.split("\\n"): _*)
+  def currentValue_=(v: String) = currentValueHolder() = ListBuffer(v.split("\\n")*)
 
   // =================== EditSessionOptions ===================
   def defaultWrap: Option["off" | "free" | "printmargin" | Boolean | Int] = None

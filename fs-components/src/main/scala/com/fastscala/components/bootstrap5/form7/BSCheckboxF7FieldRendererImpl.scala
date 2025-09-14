@@ -50,7 +50,7 @@ abstract class BSCheckboxF7FieldRendererImpl()(
           } else {
             invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
           }) ++
-            label.map(help => "aria-labelledby" -> help.getId.getOrElse(field.helpId)): _*
+            label.map(help => "aria-labelledby" -> help.getId.getOrElse(field.helpId))*
         ) ++
           label.map(_.form_check_label.withFor(field.elemId)).getOrElse(Empty) ++
           invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.elemId).withIdIfNotSet(field.invalidFeedbackId) ++

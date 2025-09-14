@@ -40,7 +40,7 @@ class F6VerticalField()(children: F6Field*)
 }
 
 object F6VerticalField {
-  def apply()(children: F6Field*) = new F6VerticalField()(children: _*)
+  def apply()(children: F6Field*) = new F6VerticalField()(children*)
 }
 
 abstract class F6ContainerFieldBase
@@ -88,5 +88,5 @@ abstract class F6ContainerFieldBase
 class F6ContainerField(val aroundClass: String)(val children: (String, F6Field)*) extends F6ContainerFieldBase
 
 object F6ContainerField {
-  def apply(aroundClass: String)(children: (String, F6Field)*) = new F6ContainerField(aroundClass)(children: _*)
+  def apply(aroundClass: String)(children: (String, F6Field)*) = new F6ContainerField(aroundClass)(children*)
 }

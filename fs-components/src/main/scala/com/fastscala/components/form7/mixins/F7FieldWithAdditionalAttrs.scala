@@ -20,6 +20,6 @@ trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin {
   }
 
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    input.withAttrs(_additionalAttrs(): _*)
+    input.withAttrs(_additionalAttrs()*)
   }
 }

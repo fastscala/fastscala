@@ -94,7 +94,7 @@ abstract class F6TextareaField[T]()(implicit renderer: TextareaF6FieldRenderer) 
                       }).cmd
                       }
                       onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13 && event.ctrlKey) {${JS.evalIf(hints.contains(SaveOnEnterHint))(JS.blur(elemId) & form.onSaveClientSide())}}"}
-          >{this.toString(currentValue)}</textarea>).withAttrs(finalAdditionalAttrs: _*),
+          >{this.toString(currentValue)}</textarea>).withAttrs(finalAdditionalAttrs*),
           errors().headOption.map(_._2)
         )
       }

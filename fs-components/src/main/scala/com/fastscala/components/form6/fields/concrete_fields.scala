@@ -200,14 +200,14 @@ trait CheckboxF6FieldRenderer {
 //}
 //
 trait ButtonF6FieldRenderer {
-  def render(field: F6SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
+  def render(field: F6SaveButtonField[?])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
 class F6SaveButtonField[B](
                             btn: FSContext => B
-                            , val toInitialState: B => B = identity[B] _
-                            , val toChangedState: B => B = identity[B] _
-                            , val toErrorState: B => B = identity[B] _
+                            , val toInitialState: B => B = identity[B]
+                            , val toChangedState: B => B = identity[B]
+                            , val toErrorState: B => B = identity[B]
                           )(implicit renderer: ButtonF6FieldRenderer, evidence: B => Elem)
   extends StandardF6Field
     with F6FieldWithReadOnly

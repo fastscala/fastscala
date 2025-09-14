@@ -42,7 +42,7 @@ class FSPage(
               val id: String,
               val session: FSSession,
               val req: Request,
-              val impl: FSPageImpl[_],
+              val impl: FSPageImpl[?],
               val createdAt: Long = System.currentTimeMillis(),
               val onPageUnload: () => Js = () => JS.void,
               var keepAliveAt: Long = System.currentTimeMillis(),

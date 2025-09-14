@@ -237,15 +237,15 @@ case class BSBtn(
 
   // ================================== RENDERING ==================================
 
-  def btn(implicit fsc: FSContext): Elem = <button class={cls} id={id} type="button" style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>.withAttrs(additionalAttrs: _*)
+  def btn(implicit fsc: FSContext): Elem = <button class={cls} id={id} type="button" style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>.withAttrs(additionalAttrs*)
 
   def btnRerender(implicit fsc: FSContext): Js = JS.replace(id, btn)
 
-  def span(implicit fsc: FSContext): Elem = <span class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</span>.withAttrs(additionalAttrs: _*)
+  def span(implicit fsc: FSContext): Elem = <span class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</span>.withAttrs(additionalAttrs*)
 
   def spanRerender(implicit fsc: FSContext): Js = JS.replace(id, span)
 
-  def btnLink(implicit fsc: FSContext): Elem = <a class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} href={hrefOpt.getOrElse("javascript:void(0)")} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</a>.withAttrs(additionalAttrs: _*)
+  def btnLink(implicit fsc: FSContext): Elem = <a class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} href={hrefOpt.getOrElse("javascript:void(0)")} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</a>.withAttrs(additionalAttrs*)
 
   def btnLinkRerender(implicit fsc: FSContext): Js = JS.replace(id, btnLink)
 }

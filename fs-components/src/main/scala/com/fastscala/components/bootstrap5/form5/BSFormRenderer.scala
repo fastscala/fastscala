@@ -163,7 +163,7 @@ abstract class BSFormRenderer  {
   }
 
   implicit val buttonFieldRenderer: ButtonFieldRenderer = new ButtonFieldRenderer {
-    override def render(field: F5SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
+    override def render(field: F5SaveButtonField[?])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
       if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId).apply(
         btn

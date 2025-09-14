@@ -37,7 +37,7 @@ trait CheckboxFieldRenderer {
 }
 
 trait ButtonFieldRenderer {
-  def render(field: F5SaveButtonField[_])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
+  def render(field: F5SaveButtonField[?])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem
 }
 
 trait FileUploadFieldRenderer {

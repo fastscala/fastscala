@@ -61,7 +61,7 @@ class F6CheckboxField()(implicit renderer: CheckboxF6FieldRenderer) extends Stan
                       }).cmd
                       }
                       checked={if (currentValue) "true" else null}
-          ></input>).withAttrs(finalAdditionalAttrs: _*),
+          ></input>).withAttrs(finalAdditionalAttrs*),
           errors().headOption.map(_._2)
         )
       }

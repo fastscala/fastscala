@@ -36,7 +36,7 @@ trait Table6SelectableCols extends Table6Base with Table6ColsLabeled {
     onDropdownIndividualBtnTransforms = onDropdownIndividualBtnTransforms.pipe(onDropdownIndividualBtnTransforms => elem => f(onDropdownIndividualBtnTransforms(elem)))
   }
 
-  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns.filter(columnStartsVisible): _*))
+  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns.filter(columnStartsVisible)*))
 
   def allColumns: Seq[C]
 
@@ -100,6 +100,6 @@ trait Table6SelectableCols extends Table6Base with Table6ColsLabeled {
             colLabel(col)
           )).withStyle("padding-top: 1px; padding-bottom: 1px;").btnLink
         )
-      ): _*
+      )*
     ))
 }

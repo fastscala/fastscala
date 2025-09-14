@@ -333,7 +333,7 @@ trait F6FieldWithAdditionalAttrs extends F6FieldInputFieldMixin {
   }
 
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    input.withAttrs(_additionalAttrs(): _*)
+    input.withAttrs(_additionalAttrs()*)
   }
 }
 
@@ -508,7 +508,7 @@ abstract class F6TextField[T]()(implicit renderer: TextF6FieldRenderer) extends 
                    }).cmd}
                    onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.evalIf(hints.contains(SaveOnEnterHint))(JS.blur(elemId) & form.onSaveClientSide())}}"}
                    value={toString(currentValue)}
-            />).withAttrs(finalAdditionalAttrs: _*),
+            />).withAttrs(finalAdditionalAttrs*),
           errors().headOption.map(_._2)
         )
       }

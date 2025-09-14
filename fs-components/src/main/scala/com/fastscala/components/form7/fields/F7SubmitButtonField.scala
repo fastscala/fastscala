@@ -10,7 +10,7 @@ import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 
 import scala.xml.Elem
 
-class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B] _, val toChangedState: B => B = identity[B] _, val toErrorState: B => B = identity[B] _)(implicit
+class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B], val toChangedState: B => B = identity[B], val toErrorState: B => B = identity[B])(implicit
   renderer: ButtonF7FieldRenderer,
   evidence: B => Elem
 ) extends F7Field

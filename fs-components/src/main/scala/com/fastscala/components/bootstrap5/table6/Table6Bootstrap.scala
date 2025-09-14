@@ -36,11 +36,13 @@ object Table6BootrapResponsiveSizes extends Enumeration {
   val XXL = Value("table-responsive-xxl")
 }
 
-trait Table6BaseBootrapSupport extends Table6Base {
+trait Table6BootrapStyling extends Table6Base {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
-  
+
   def tableResponsive: Option[Table6BootrapResponsiveSizes.Value] = None
+
+  def tableDark: Boolean = false
 
   def tableSmall: Boolean = false
 
@@ -62,6 +64,7 @@ trait Table6BaseBootrapSupport extends Table6Base {
 
   override def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String =
     super.tableClasses() + " table " +
+      (if (tableDark) " table-dark " else "") +
       (if (tableStriped) " table-striped " else "") +
       (if (tableStripedColumns) " table-striped-columns " else "") +
       (if (tableHoverable) " table-hover " else "") +
@@ -70,9 +73,9 @@ trait Table6BaseBootrapSupport extends Table6Base {
       (if (tableSmall) " table-sm " else "")
 
   override def tableHeadClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String =
-    super.tableHeadClasses() + " table " +
+    super.tableHeadClasses() +
       tableHeadStyle.map(" " + _ + " ").getOrElse("")
 
-  override def transformTableElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = 
+  override def transformTableElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
     super.transformTableElem(elem).pipe(elem => tableResponsive.map(size => elem.addClass(size.toString)).getOrElse(elem))
 }

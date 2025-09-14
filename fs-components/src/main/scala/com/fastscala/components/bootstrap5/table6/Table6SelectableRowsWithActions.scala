@@ -26,7 +26,7 @@ trait Table6SelectableRowsWithActions extends Table6SelectableRows with Table6St
   }, debugLabel = Some("actions_dropdown_btn"))
 
   lazy val ColActionsDefault = ColNsFullTd(actionsBtnToIncludeInRowDropdown.content.toString(), implicit fsc => {
-    case (ctx, rowsWithIds, columnsWithIds, tableWrapperRenderer, tableRenderer, tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer, trRerenderer, tdRerenderer, col, colIdx, colId, row, rowIdx, rowId) =>
+    case (rowsWithIds, columnsWithIds, tableWrapperRenderer, tableRenderer, tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer, trRerenderer, tdRerenderer, col, colIdx, colId, row, rowIdx, rowId) =>
       val contents = BSBtnDropdown(actionsBtnToIncludeInRowDropdown)(
         actionsForRows(Set(row)): _*
       )

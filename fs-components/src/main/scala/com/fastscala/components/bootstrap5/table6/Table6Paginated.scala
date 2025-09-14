@@ -81,6 +81,6 @@ trait Table6Paginated extends Table6SeqDataSource {
     }
   }
 
-  override def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
+  override def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
     super.transformTableWrapperElem(elem).withAppendedToContents(renderPaginationBottomControls())
 }

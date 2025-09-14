@@ -72,7 +72,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
 
   def tableBodyStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyClasses(f: Elem => Elem): this.type = mutate {
+  def onTableBodyClasses(f: Elem => Elem): this.type = mutate {
     onTableBodyTransforms = onTableBodyTransforms.pipe(onTableBodyTransforms => elem => f(onTableBodyTransforms(elem)))
   }
 

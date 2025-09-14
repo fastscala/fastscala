@@ -24,21 +24,20 @@ trait Table6Sortable extends Table6Base with Table6StandardColumns {
   }).toList
 
   def clickedClientSide()(
-    implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableWrapperRenderer: TableWrapperRerenderer,
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer,
-    thRerenderer: ThRerenderer,
-    col: C,
-    colIdx: TableColIdx,
-    colId: TableColId
+      implicit
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableWrapperRenderer: TableWrapperRerenderer,
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      thRerenderer: ThRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId
   ): Js = {
     fsc.callback(() => {
       if (currentSortCol() == Some(col)) {
@@ -52,21 +51,20 @@ trait Table6Sortable extends Table6Base with Table6StandardColumns {
   }
 
   override def renderTableHeadTrTh()(
-    implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableWrapperRenderer: TableWrapperRerenderer,
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer,
-    thRerenderer: ThRerenderer,
-    col: C,
-    colIdx: TableColIdx,
-    colId: TableColId
+      implicit
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableWrapperRenderer: TableWrapperRerenderer,
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      thRerenderer: ThRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId
   ): Elem = {
     val elem = super.renderTableHeadTrTh()
     ({

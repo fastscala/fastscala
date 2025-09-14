@@ -36,7 +36,7 @@ case class ChartJs(
     import io.circe.syntax.*
 
     JS(
-      s"""const ctx = document.getElementById('$canvasId'); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces}); """
+      s"""const ctx = document.getElementById('$canvasId'); new Chart(${this.asJson.deepDropNullValues.noSpaces}); """
     )
   }
 

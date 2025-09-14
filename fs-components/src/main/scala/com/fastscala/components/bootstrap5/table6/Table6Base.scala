@@ -18,7 +18,6 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   type R
   type C
-  type Ctx
 
   lazy val tableWrapperId: String = IdGen.id("table_wrapper")
   lazy val tableId: String = IdGen.id("table")
@@ -46,7 +45,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   def tableWrapperStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
   def onTableWrapper(f: Elem => Elem): this.type = mutate {
-    onTableWrapperTransforms = onTableWrapperTransforms.pipe(onTableTransforms => elem => f(onTableWrapperTransforms(elem)))
+    onTableWrapperTransforms = onTableWrapperTransforms.pipe(onTableWrapperTransforms => elem => f(onTableWrapperTransforms(elem)))
   }
 
   // Table level:
@@ -81,7 +80,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableHeadTrThStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableHeadTrThClasses(f: Elem => Elem): this.type = mutate {
+  def onAllTableHeadTrTh(f: Elem => Elem): this.type = mutate {
     onTableHeadTrThTransforms = onTableHeadTrThTransforms.pipe(onTableHeadTRTHTransforms => elem => f(onTableHeadTRTHTransforms(elem)))
   }
 
@@ -90,7 +89,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableBodyStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyClasses(f: Elem => Elem): this.type = mutate {
+  def onTableBody(f: Elem => Elem): this.type = mutate {
     onTableBodyTransforms = onTableBodyTransforms.pipe(onTableBodyTransforms => elem => f(onTableBodyTransforms(elem)))
   }
 
@@ -99,7 +98,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableBodyTRStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyTRClasses(f: Elem => Elem): this.type = mutate {
+  def onAllTableBodyTR(f: Elem => Elem): this.type = mutate {
     onTableBodyTrTransforms = onTableBodyTrTransforms.pipe(onTableBodyTRTransforms => elem => f(onTableBodyTRTransforms(elem)))
   }
 
@@ -108,7 +107,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableBodyTRTDStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableBodyTRTDClasses(f: Elem => Elem): this.type = mutate {
+  def onAllTableBodyTRTD(f: Elem => Elem): this.type = mutate {
     onTableBodyTrTdTransforms = onTableBodyTrTdTransforms.pipe(onTableBodyTRTDTransforms => elem => f(onTableBodyTRTDTransforms(elem)))
   }
 
@@ -117,7 +116,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableFootStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableFootClasses(f: Elem => Elem): this.type = mutate {
+  def onAllTableFoot(f: Elem => Elem): this.type = mutate {
     onTableFootTransforms = onTableFootTransforms.pipe(onTableFootTransforms => elem => f(onTableFootTransforms(elem)))
   }
 
@@ -126,7 +125,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableFootTRStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableFootTRClasses(f: Elem => Elem): this.type = mutate {
+  def onAllTableFootTR(f: Elem => Elem): this.type = mutate {
     onTableFootTrTransforms = onTableFootTrTransforms.pipe(onTableFootTRTransforms => elem => f(onTableFootTRTransforms(elem)))
   }
 
@@ -135,40 +134,76 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def tableFootTrThStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
 
-  def onAllTableFootTrThClasses(f: Elem => Elem): this.type = mutate {
+  def onAllTableFootTrTh(f: Elem => Elem): this.type = mutate {
     onTableFootTrThTransforms = onTableFootTrThTransforms.pipe(onTableFootTrThTransforms => elem => f(onTableFootTrThTransforms(elem)))
   }
 
   // Transform methods:
 
-  def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableWrapperTransforms(elem.withClass(tableWrapperClasses()).withStyle(tableWrapperStyle()))
+  def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
+    onTableWrapperTransforms(elem.withClass(tableWrapperClasses()).withStyle(tableWrapperStyle()))
 
-  def transformTableElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableTransforms(elem.withClass(tableClasses()).withStyle(tableStyle()))
+  def transformTableElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableTransforms(elem.withClass(tableClasses()).withStyle(tableStyle()))
 
-  def transformTableHeadElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableHeadTransforms(elem.withClass(tableHeadClasses()).withStyle(tableHeadStyle()))
+  def transformTableHeadElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
+    onTableHeadTransforms(elem.withClass(tableHeadClasses()).withStyle(tableHeadStyle()))
 
-  def transformTableBodyElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableBodyTransforms(elem.withClass(tableBodyClasses()).withStyle(tableBodyStyle()))
+  def transformTableBodyElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
+    onTableBodyTransforms(elem.withClass(tableBodyClasses()).withStyle(tableBodyStyle()))
 
-  def transformTableFootElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableFootTransforms(elem.withClass(tableFootClasses()).withStyle(tableFootStyle()))
+  def transformTableFootElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
+    onTableFootTransforms(elem.withClass(tableFootClasses()).withStyle(tableFootStyle()))
 
-  def transformTableHeadTrElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)], tableHeadRerenderer: TableHeadRerenderer): Elem = onTableHeadTrTransforms(elem.withClass(tableHeadTrClasses()).withStyle(tableHeadTrStyle()))
+  def transformTableHeadTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], tableHeadRerenderer: TableHeadRerenderer): Elem =
+    onTableHeadTrTransforms(elem.withClass(tableHeadTrClasses()).withStyle(tableHeadTrStyle()))
 
-  def transformTableHeadTrThElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)], tableHeadRerenderer: TableHeadRerenderer, trRerenderer: TrRerenderer): Elem = onTableHeadTrThTransforms(
-    elem.withClass(tableHeadTrThClasses()).withStyle(tableHeadTrThStyle())
-  )
+  def transformTableHeadTrThElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], tableHeadRerenderer: TableHeadRerenderer, trRerenderer: TrRerenderer): Elem =
+    onTableHeadTrThTransforms(
+      elem.withClass(tableHeadTrThClasses()).withStyle(tableHeadTrThStyle())
+    )
 
-  def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)], tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem =
+  def transformTableBodyTrElem(elem: Elem)(implicit
+      fsc: FSContext,
+      columns: Seq[(String, C)],
+      rows: Seq[(String, R)],
+      tableBodyRerenderer: TableBodyRerenderer,
+      trRerenderer: TrRerenderer,
+      row: R,
+      rowIdx: TableRowIdx,
+      rowId: TableRowId
+  ): Elem =
     onTableBodyTrTransforms(elem.withClass(tableBodyTRClasses()).withStyle(tableBodyTRStyle()))
 
   def transformTableBodyTrTdElem(
-    elem: Elem
-  )(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)], tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, col: C, colIdx: TableColIdx, colId: TableColId, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem =
+      elem: Elem
+  )(implicit
+      fsc: FSContext,
+      columns: Seq[(String, C)],
+      rows: Seq[(String, R)],
+      tableBodyRerenderer: TableBodyRerenderer,
+      trRerenderer: TrRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId,
+      row: R,
+      rowIdx: TableRowIdx,
+      rowId: TableRowId
+  ): Elem =
     onTableBodyTrTdTransforms(elem.withClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle()))
 
-  def transformTableFootTrElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)], tableFootRerenderer: TableFootRerenderer, trRerenderer: TrRerenderer): Elem =
+  def transformTableFootTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], tableFootRerenderer: TableFootRerenderer, trRerenderer: TrRerenderer): Elem =
     onTableFootTrTransforms(elem.withClass(tableFootTRClasses()).withStyle(tableBodyTRStyle()))
 
-  def transformTableFootTrThElem(elem: Elem)(implicit fsc: FSContext, ctx: Ctx, columns: Seq[(String, C)], rows: Seq[(String, R)], tableFootRerenderer: TableFootRerenderer, trRerenderer: TrRerenderer, col: C, colIdx: TableColIdx, colId: TableColId): Elem =
+  def transformTableFootTrThElem(elem: Elem)(implicit
+      fsc: FSContext,
+      columns: Seq[(String, C)],
+      rows: Seq[(String, R)],
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      col: C,
+      colIdx: TableColIdx,
+      colId: TableColId
+  ): Elem =
     onTableFootTrThTransforms(elem.withClass(tableFootTrThClasses()).withStyle(tableFootTrThStyle()))
 
   def columns(): Seq[C]
@@ -177,7 +212,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   /** Generates the rows and a context relevant for this rendering.
     */
-  def rows(hints: Seq[RowsHint] = rowsHints()): (Seq[R], Ctx)
+  def rows(hints: Seq[RowsHint] = rowsHints()): Seq[R]
 
   def idForRow(row: R, rowIdx: Int): String = "rowId" + rowIdx
 
@@ -189,9 +224,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
       implicit rerenderer =>
         implicit fsc => {
 
-          val (rows, context): (Seq[R], Ctx) = this.rows()
-          implicit val _context: Ctx = context
-          implicit val rowsWithIds: Seq[(String, R)] = rows.zipWithIndex.map({ case (row, rowIdx) =>
+          implicit val rowsWithIds: Seq[(String, R)] = rows().zipWithIndex.map({ case (row, rowIdx) =>
             (idForRow(row, rowIdx), row)
           })
           implicit val columnsWithIds: Seq[(String, C)] = columns().zipWithIndex.map({ case (col, colIdx) =>
@@ -209,12 +242,14 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
 
   def rerender()(implicit fsc: FSContext): Js = rerenderer.rerenderer.rerender()
 
-  def renderTableWrapper()(implicit fsc: FSContext, ctx: Ctx, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)]): Elem = {
+  def renderTableWrapper()(implicit fsc: FSContext, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)]): Elem = {
     implicit lazy val tableRenderer: TableRerenderer = TableRerenderer(JS.rerenderable(implicit rerenderer => implicit fsc => renderTable(), idOpt = Some(tableId), debugLabel = Some("table")))
     <div></div>.apply(tableRenderer.rerenderer.render()).pipe(transformTableWrapperElem)
   }
 
-  def renderTable()(implicit fsc: FSContext, ctx: Ctx, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer): Elem = {
+  def tableFootEnabled: Boolean = false
+
+  def renderTable()(implicit fsc: FSContext, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer): Elem = {
 
     implicit lazy val tableHeadRerenderer: TableHeadRerenderer = TableHeadRerenderer(
       JS.rerenderableP[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
@@ -261,11 +296,19 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
     <table></table>.apply {
       tableHeadRerenderer.rerenderer.render((tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer)) ++
         tableBodyRerenderer.rerenderer.render((tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer)) ++
-        tableFootRerenderer.rerenderer.render((tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer))
+        (if (tableFootEnabled) tableFootRerenderer.rerenderer.render((tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer)) else NodeSeq.Empty)
     }.pipe(transformTableElem)
   }
 
-  def renderTableHead()(implicit fsc: FSContext, ctx: Ctx, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): Elem = {
+  def renderTableHead()(implicit
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer
+  ): Elem = {
     <thead></thead>.apply {
       val rerenderer: Rerenderer = JS.rerenderable(
         rerenderer =>
@@ -284,39 +327,36 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   }
 
   def renderTableHeadTRPrepend()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer
   ): NodeSeq = NodeSeq.Empty
 
   def renderTableHeadTRAppend()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer
   ): NodeSeq = NodeSeq.Empty
 
   def renderTableHeadTr()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer
   ): Elem = {
     <tr></tr>.apply {
       columnsWithIds.zipWithIndex.map({ case ((colThId, col), colIdx) =>
@@ -336,7 +376,15 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   }
 
   // ### Table body: ###
-  def renderTableBody()(implicit fsc: FSContext, ctx: Ctx, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): Elem = {
+  def renderTableBody()(implicit
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer
+  ): Elem = {
     <tbody></tbody>.apply {
       rowsWithIds.zipWithIndex.map({ case ((rowId, row), rowIdx) =>
         implicit val _row: R = row
@@ -360,30 +408,31 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   }
 
   def renderTableBodyTrPrepend()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      row: R,
+      rowIdx: TableRowIdx,
+      rowId: TableRowId
   ): NodeSeq = NodeSeq.Empty
 
   def renderTableBodyTr()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer,
-    row: R,
-    rowIdx: TableRowIdx,
-    rowId: TableRowId
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      row: R,
+      rowIdx: TableRowIdx,
+      rowId: TableRowId
   ): Elem = {
     <tr></tr>.apply {
       columnsWithIds.zipWithIndex.map({ case ((colThId, col), colIdx) =>
@@ -403,20 +452,30 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   }
 
   def renderTableBodyTrAppend()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer,
+      row: R,
+      rowIdx: TableRowIdx,
+      rowId: TableRowId
   ): NodeSeq = NodeSeq.Empty
 
   // ### Table foot: ###
 
-  def renderTableFoot()(implicit fsc: FSContext, ctx: Ctx, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): Elem = {
+  def renderTableFoot()(implicit
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer
+  ): Elem = {
     <tfoot></tfoot>.apply {
       val rerenderer: Rerenderer = JS.rerenderable(
         rerenderer =>
@@ -435,39 +494,36 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   }
 
   def renderTableFootTRPrepend()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer
   ): NodeSeq = NodeSeq.Empty
 
   def renderTableFootTRAppend()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer
   ): NodeSeq = NodeSeq.Empty
 
   def renderTableFootTr()(implicit
-    fsc: FSContext,
-    ctx: Ctx,
-    rowsWithIds: Seq[(String, R)],
-    columnsWithIds: Seq[(String, C)],
-    tableRenderer: TableRerenderer,
-    tableHeadRerenderer: TableHeadRerenderer,
-    tableBodyRerenderer: TableBodyRerenderer,
-    tableFootRerenderer: TableFootRerenderer,
-    trRerenderer: TrRerenderer
+      fsc: FSContext,
+      rowsWithIds: Seq[(String, R)],
+      columnsWithIds: Seq[(String, C)],
+      tableRenderer: TableRerenderer,
+      tableHeadRerenderer: TableHeadRerenderer,
+      tableBodyRerenderer: TableBodyRerenderer,
+      tableFootRerenderer: TableFootRerenderer,
+      trRerenderer: TrRerenderer
   ): Elem = {
     <tr></tr>.apply {
       columnsWithIds.zipWithIndex.map({ case ((colThId, col), colIdx) =>

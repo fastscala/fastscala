@@ -9,6 +9,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.utils.Lazy
+import org.slf4j.LoggerFactory
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -21,12 +22,15 @@ trait F7FormRenderer {
 abstract class DefaultForm7()(implicit val formRenderer: F7FormRenderer) extends Form7
 
 object Form7State extends Enumeration {
-  val Filling = Value
+  val Initial = Value
+  val Modified = Value
   val ValidationFailed = Value
   val Saved = Value
 }
 
 trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWithValidationStrategy with F7FormWithInitialState {
+
+  val logger = LoggerFactory.getLogger(getClass.getName)
 
   implicit def form: this.type = this
 
@@ -35,7 +39,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   def onChangedState(from: Form7State.Value, to: Form7State.Value)(using fsc: FSContext): Js = onEvent(ChangedFormState(from, to))(using this, fsc)
 
   /** NOTE: Implementation should usually be a val or lazy val! don't re-instantiate the fields every time this method is called!
-   */
+    */
   def rootField: F7Field
 
   def initForm()(implicit fsc: FSContext): Unit = ()
@@ -44,13 +48,19 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   def changedField(field: F7Field)(implicit fsc: FSContext): Js = onEvent(ChangedField(field))(this, fsc)
 
+  def submitOnSuggestion: Boolean = true
+
+  def submitOnChangedField: Boolean = false
+
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = {
     (event match {
-      case RequestedSubmit(_) => submitFormServerSide()
+      case SuggestSubmit(_) if submitOnSuggestion => submitFormServerSide()
       case ChangedField(_) =>
         val previousState = state()
-        state() = Form7State.Filling
-        onChangedState(previousState, state())
+        state() = Form7State.Modified
+        val onChangedStateJs = onChangedState(previousState, state())
+        if (submitOnChangedField) onChangedStateJs & submitFormServerSide()
+        else onChangedStateJs
       case _ => Js.Void
     }) &
       rootField.onEvent(event)
@@ -74,7 +84,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   }
 
   /** Used to run JS to initialize the form after it is rendered or re-rendered.
-   */
+    */
   def postRenderSetupJs()(implicit fsc: FSContext): Js = rootField.fieldAndChildreenMatchingPredicate(_.enabled).map(_.postRenderSetupJs()).reduceOption(_ & _).getOrElse(JS.void)
 
   def reRender()(implicit fsc: FSContext): Js = {
@@ -91,8 +101,13 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   def submitFormClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => submitFormServerSide())
 
+  def onSubmitIgnoredFormAlreadySaved()(implicit fsc: FSContext): Js = Js.Void
+  
   def submitFormServerSide()(implicit fsc: FSContext): Js = {
-    if (fsc != fsc.page.rootFSContext) submitFormServerSide()(fsc.page.rootFSContext)
+    if (state() == Form7State.Saved) {
+      logger.info("Ignoring form submit since form is in saved state")
+      onSubmitIgnoredFormAlreadySaved()
+    } else if (fsc != fsc.page.rootFSContext) submitFormServerSide()(fsc.page.rootFSContext)
     else {
       val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled)
       onEvent(PreValidate)(this, fsc) &
@@ -100,21 +115,21 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
         enabledFields.map(_.preValidation()).reduceOption(_ & _).getOrElse(JS.void) &
         enabledFields.collect(_.validate()).flatten.pipe(errors => {
           (if (errors.nonEmpty) {
-            val previousState = state()
-            state() = Form7State.ValidationFailed
-            onChangedState(previousState, state())
-          } else Js.Void)
-            &
+             val previousState = state()
+             state() = Form7State.ValidationFailed
+             onChangedState(previousState, state())
+           } else Js.Void)
+          &
             onEvent(PostValidate)(this, fsc) &
             enabledFields.map(_.postValidation(errors)).reduceOption(_ & _).getOrElse(JS.void) &
             postValidateForm(errors) &
             (if (errors.isEmpty) {
-              savePipeline(enabledFields) & {
-                val previousState = state()
-                state() = Form7State.Saved
-                onChangedState(previousState, state())
-              }
-            } else JS.void)
+               savePipeline(enabledFields) & {
+                 val previousState = state()
+                 state() = Form7State.Saved
+                 onChangedState(previousState, state())
+               }
+             } else JS.void)
         })
     }
   }

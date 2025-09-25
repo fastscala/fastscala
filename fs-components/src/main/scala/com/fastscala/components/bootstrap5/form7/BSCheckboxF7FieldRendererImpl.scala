@@ -46,11 +46,11 @@ abstract class BSCheckboxF7FieldRendererImpl()(
           else elem
         }).withAttrs(
           (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
-            help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
+            help.map(help => "aria-describedby" -> help.getIdOpt.getOrElse(field.helpId)).toSeq
           } else {
-            invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
+            invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getIdOpt.getOrElse(field.invalidFeedbackId)).toSeq
           }) ++
-            label.map(help => "aria-labelledby" -> help.getId.getOrElse(field.helpId))*
+            label.map(help => "aria-labelledby" -> help.getIdOpt.getOrElse(field.helpId))*
         ) ++
           label.map(_.form_check_label.withFor(field.elemId)).getOrElse(Empty) ++
           invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.elemId).withIdIfNotSet(field.invalidFeedbackId) ++

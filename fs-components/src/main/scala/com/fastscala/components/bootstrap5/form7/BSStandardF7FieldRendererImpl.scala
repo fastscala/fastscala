@@ -21,11 +21,11 @@ trait BSStandardF7FieldRendererImpl extends StandardOneInputElemF7FieldRenderer 
                        help: Option[Elem],
                      ): Elem = {
     val aroundId = field.aroundId
-    val inputId = inputElem.getId.getOrElse(field.elemId)
-    val labelId = label.flatMap(_.getId).getOrElse(field.labelId)
-    val invalidFeedbackId = invalidFeedback.flatMap(_.getId).getOrElse(field.invalidFeedbackId)
-    val validFeedbackId = validFeedback.flatMap(_.getId).getOrElse(field.validFeedbackId)
-    val helpId = help.flatMap(_.getId).getOrElse(field.helpId)
+    val inputId = inputElem.getIdOpt.getOrElse(field.elemId)
+    val labelId = label.flatMap(_.getIdOpt).getOrElse(field.labelId)
+    val invalidFeedbackId = invalidFeedback.flatMap(_.getIdOpt).getOrElse(field.invalidFeedbackId)
+    val validFeedbackId = validFeedback.flatMap(_.getIdOpt).getOrElse(field.validFeedbackId)
+    val helpId = help.flatMap(_.getIdOpt).getOrElse(field.helpId)
 
     div.mb_3.withId(aroundId).apply {
       (label.map(_.withIdIfNotSet(labelId).form_label.withFor(inputId)).getOrElse(Empty) ++
@@ -35,9 +35,9 @@ trait BSStandardF7FieldRendererImpl extends StandardOneInputElemF7FieldRenderer 
           else elem
         }).withAttrs(
           (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
-            help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
+            help.map(help => "aria-describedby" -> help.getIdOpt.getOrElse(field.helpId)).toSeq
           } else {
-            invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
+            invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getIdOpt.getOrElse(field.invalidFeedbackId)).toSeq
           }) ++
             label.map(_ => "aria-labelledby" -> helpId).toSeq*
         ) ++

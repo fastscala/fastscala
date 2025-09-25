@@ -10,10 +10,8 @@ import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 
 import scala.xml.Elem
 
-class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B], val toChangedState: B => B = identity[B], val toErrorState: B => B = identity[B])(implicit
-  renderer: ButtonF7FieldRenderer,
-  evidence: B => Elem
-) extends F7Field
+class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B], val toChangedState: B => B = identity[B], val toErrorState: B => B = identity[B])(implicit renderer: ButtonF7FieldRenderer, evidence: B => Elem)
+    extends F7Field
     with F7FieldWithValidations
     with F7FieldWithReadOnly
     with F7FieldWithDependencies
@@ -29,8 +27,9 @@ class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = i
   )
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = super.onEvent(event) & (event match {
+    case ChangedFormState(from, Form7State.Initial)          => Some(toInitialState)
     case ChangedFormState(from, Form7State.Saved)            => Some(toInitialState)
-    case ChangedFormState(from, Form7State.Filling)          => Some(toChangedState)
+    case ChangedFormState(from, Form7State.Modified)         => Some(toChangedState)
     case ChangedFormState(from, Form7State.ValidationFailed) => Some(toErrorState)
     case _                                                   => None
   }).flatMap(toRelevantStateF => {
@@ -46,8 +45,9 @@ class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = i
     else {
       renderer.render(this)({
         form.state() match {
+          case com.fastscala.components.form7.Form7State.Initial          => btnRenderer.render((toInitialState, form))
           case com.fastscala.components.form7.Form7State.Saved            => btnRenderer.render((toInitialState, form))
-          case com.fastscala.components.form7.Form7State.Filling          => btnRenderer.render((toChangedState, form))
+          case com.fastscala.components.form7.Form7State.Modified         => btnRenderer.render((toChangedState, form))
           case com.fastscala.components.form7.Form7State.ValidationFailed => btnRenderer.render((toErrorState, form))
         }
       })

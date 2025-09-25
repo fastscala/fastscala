@@ -4,12 +4,12 @@ import com.fastscala.components.form7.Form7State
 import com.fastscala.components.utils.Mutable
 
 trait F7FormWithInitialState extends Mutable {
-  var _initialState: () => Form7State.Value = () => Form7State.Filling
+  var _initialState: () => Form7State.Value = () => Form7State.Initial
 
   def initialState: Form7State.Value = _initialState()
 
-  def initialStateFilling(): this.type = mutate {
-    _initialState = () => Form7State.Filling
+  def initialStateModified(): this.type = mutate {
+    _initialState = () => Form7State.Modified
   }
 
   def initialStateValidationFailed(): this.type = mutate {

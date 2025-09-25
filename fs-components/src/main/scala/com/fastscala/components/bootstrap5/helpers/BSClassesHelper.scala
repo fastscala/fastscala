@@ -4015,4 +4015,6 @@ trait BSClassesHelper[T] extends Any {
   def show: T = withClass("show")
 
   def form_check_label: T = withClass("form-check-label")
+
+  def small_c: T = withClass("small")
 }

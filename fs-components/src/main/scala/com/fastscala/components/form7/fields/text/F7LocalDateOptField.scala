@@ -9,7 +9,7 @@ import scala.xml.NodeSeq
 
 
 object F7LocalDateOptField {
-  def apply(
+  def asString(
              get: => Option[String]
              , set: Option[String] => Unit
              , pattern: String = "yyyy-MM-dd"

@@ -1,9 +1,9 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
-import ScalaXmlElemUtils.RichElem
-import ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import java.util.regex.Pattern
 import scala.xml.*
@@ -13,26 +13,32 @@ trait ScalaXmlElemUtils extends Any {
 
   def attributeTransform(attrName: String, transform: Option[String] => String): Elem = {
 
-    def updateMetaData(
-                        metaData: MetaData = Option(elem.attributes).getOrElse(Null),
-                        found: Boolean = false
-                      ): MetaData = metaData match {
+    def updateMetaData(metaData: MetaData = Option(elem.attributes).getOrElse(Null), found: Boolean = false): MetaData = metaData match {
       case Null if !found => new UnprefixedAttribute(attrName, transform(None), Null)
-      case Null if found => Null
+      case Null if found  => Null
       case PrefixedAttribute((pre, key, value, next)) if key == attrName =>
-        new PrefixedAttribute(pre, key, value match {
-          case null => Seq(Text(transform(None)))
-          case Seq(Text(value)) => Seq(Text(transform(Some(value))))
-          case other => other
-        }, updateMetaData(next, found = true))
+        new PrefixedAttribute(
+          pre,
+          key,
+          value match {
+            case null             => Seq(Text(transform(None)))
+            case Seq(Text(value)) => Seq(Text(transform(Some(value))))
+            case other            => other
+          },
+          updateMetaData(next, found = true)
+        )
       case UnprefixedAttribute((key, value, next)) if key == attrName =>
-        new UnprefixedAttribute(key, value match {
-          case null => Seq(Text(transform(None)))
-          case Seq(Text(value)) => Seq(Text(transform(Some(value))))
-          case other => other
-        }, updateMetaData(next, found = true))
+        new UnprefixedAttribute(
+          key,
+          value match {
+            case null             => Seq(Text(transform(None)))
+            case Seq(Text(value)) => Seq(Text(transform(Some(value))))
+            case other            => other
+          },
+          updateMetaData(next, found = true)
+        )
       case PrefixedAttribute((pre, key, value, next)) => new PrefixedAttribute(pre, key, value, updateMetaData(next, found))
-      case UnprefixedAttribute((key, value, next)) => new UnprefixedAttribute(key, value, updateMetaData(next, found))
+      case UnprefixedAttribute((key, value, next))    => new UnprefixedAttribute(key, value, updateMetaData(next, found))
     }
 
     new Elem(elem.prefix, elem.label, updateMetaData(), elem.scope, elem.minimizeEmpty, elem.child*)
@@ -70,9 +76,11 @@ trait ScalaXmlElemUtils extends Any {
 
   def withAttr(kv: (String, String)): Elem = withAttr(kv._1)(_ => kv._2)
 
-  def withAttrs(attrs: (String, String)*): Elem = attrs.foldLeft[Elem](elem)((acc, next) => new ScalaXmlElemUtils {
-    override def elem: Elem = acc
-  }.withAttr(next))
+  def withAttrs(attrs: (String, String)*): Elem = attrs.foldLeft[Elem](elem)((acc, next) =>
+    new ScalaXmlElemUtils {
+      override def elem: Elem = acc
+    }.withAttr(next)
+  )
 
   def withRole(role: String): Elem = attributeTransform("role", _ => role)
 
@@ -89,7 +97,7 @@ trait ScalaXmlElemUtils extends Any {
   def withAppendedToContents(value: NodeSeq): Elem = elem.copy(child = elem.child ++ value)
 
   def withContents(value: NodeSeq): Elem = apply(value)
-  
+
   def withContents(value: Elem): Elem = apply(value)
 
   def apply(value: NodeSeq): Elem = elem.copy(child = value)
@@ -112,7 +120,9 @@ trait ScalaXmlElemUtils extends Any {
 
   def getStyleAttr: String = elem.attributes.get("style").map(_.map(_.toString()).mkString(" ")).getOrElse("")
 
-  def getId: Option[String] = elem.attributes.get("id").map(_.map(_.toString()).mkString(" "))
+  def getId: String = getIdOpt.get
+
+  def getIdOpt: Option[String] = elem.attributes.get("id").map(_.map(_.toString()).mkString(" "))
 }
 
 object ScalaXmlElemUtils {

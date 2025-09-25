@@ -21,7 +21,7 @@ object RerendererDebugStatus extends Enumeration {
     def render(rendered: Elem): Elem = {
       if (v == RerendererDebugStatus.Enabled && !Unsupported.contains(rendered.label)) {
         rendered.attributeTransform("style", _.getOrElse("") + ";position:relative;").withAppendedToContents(
-          <span></span>.withAttrs("for" -> rendered.toString, "style" -> style(), "id" -> rendered.getId.map(_ + "-overlay").getOrElse(null))
+          <span></span>.withAttrs("for" -> rendered.toString, "style" -> style(), "id" -> rendered.getIdOpt.map(_ + "-overlay").getOrElse(null))
         )
       } else rendered
     }

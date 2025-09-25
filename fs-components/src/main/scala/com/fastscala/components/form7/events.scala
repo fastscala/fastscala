@@ -11,7 +11,7 @@ case class ChangedField(field: F7Field) extends F7Event
 /**
  * Requested submit by, for example, pressing return.
  */
-case class RequestedSubmit(byField: F7Field) extends F7Event
+case class SuggestSubmit(byField: F7Field) extends F7Event
 
 case class PostValidation(errors: Seq[(F7Field, NodeSeq)]) extends F7Event
 

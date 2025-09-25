@@ -19,7 +19,7 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => (Elem, Js),
 
   private def renderImpl(param: P)(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: Elem, setupJs: Js) = renderFunc(this)(fsc)(param)
-    aroundId = aroundId.orElse(rendered.getId)
+    aroundId = aroundId.orElse(rendered.getIdOpt)
     val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
     (RerendererDebugStatusState().render(renderedWithId), setupJs)
   }

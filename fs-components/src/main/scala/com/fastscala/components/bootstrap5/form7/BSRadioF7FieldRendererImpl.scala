@@ -29,10 +29,10 @@ abstract class BSRadioF7FieldRendererImpl()(
     help: Option[Elem]
   ): Elem = {
     div.mb_3.withId(field.aroundId).apply {
-      val labelId = label.flatMap(_.getId).getOrElse(field.labelId)
-      val invalidFeedbackId = invalidFeedback.flatMap(_.getId).getOrElse(field.invalidFeedbackId)
-      val validFeedbackId = validFeedback.flatMap(_.getId).getOrElse(field.validFeedbackId)
-      val helpId = help.flatMap(_.getId).getOrElse(field.helpId)
+      val labelId = label.flatMap(_.getIdOpt).getOrElse(field.labelId)
+      val invalidFeedbackId = invalidFeedback.flatMap(_.getIdOpt).getOrElse(field.invalidFeedbackId)
+      val validFeedbackId = validFeedback.flatMap(_.getIdOpt).getOrElse(field.validFeedbackId)
+      val helpId = help.flatMap(_.getIdOpt).getOrElse(field.helpId)
 
       label.map(_.withIdIfNotSet(labelId).form_label).getOrElse(Empty) ++
         inputElemsAndLabels.map({
@@ -55,17 +55,17 @@ abstract class BSRadioF7FieldRendererImpl()(
                 else if (validFeedback.isDefined) elem.is_valid
                 else elem
               }).apply {
-                val inputId = inputElem.getId.getOrElse(IdGen.id("input"))
-                val labelId = label.flatMap(_.getId).getOrElse(IdGen.id("label"))
+                val inputId = inputElem.getIdOpt.getOrElse(IdGen.id("input"))
+                val labelId = label.flatMap(_.getIdOpt).getOrElse(IdGen.id("label"))
                 inputElem.withName(field.radioNameId).withIdIfNotSet(inputId).form_check_input.pipe(elem => {
                   if (invalidFeedback.isDefined) elem.is_invalid
                   else if (validFeedback.isDefined) elem.is_valid
                   else elem
                 }.withAttrs(
                   (if (invalidFeedback.isEmpty && validFeedback.isEmpty) {
-                    help.map(help => "aria-describedby" -> help.getId.getOrElse(field.helpId)).toSeq
+                    help.map(help => "aria-describedby" -> help.getIdOpt.getOrElse(field.helpId)).toSeq
                   } else {
-                    invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getId.getOrElse(field.invalidFeedbackId)).toSeq
+                    invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getIdOpt.getOrElse(field.invalidFeedbackId)).toSeq
                   }) ++
                     label.map(help => "aria-labelledby" -> labelId)*
                 ) ++

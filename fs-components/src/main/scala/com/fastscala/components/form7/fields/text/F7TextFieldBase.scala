@@ -18,7 +18,6 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
     with F7FieldWithRequired
     with F7FieldWithReadOnly
     with F7FieldWithEnabled
-    with F7FieldWithSubmitOnEnter
     with F7FieldWithTabIndex
     with F7FieldWithName
     with F7FieldWithPlaceholder
@@ -70,19 +69,21 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
 
       currentRenderedValue = Some(currentValue)
 
-      val onChange = fsc.callback(
+      def sync(suggestSubmit: Boolean) = fsc.callback(
         JS.elementValueById(elemId),
         str => {
           fromString(str) match {
             case Right(value) =>
               setFilled()
               currentRenderedValue = Some(value)
-              if (currentValue != value) {
-                currentValue = value
-                form.onEvent(ChangedField(this))
-              } else {
-                JS.void
-              }
+              (if (currentValue != value) {
+                 currentValue = value
+                 form.onEvent(ChangedField(this))
+               } else {
+                 JS.void
+               })
+              &
+                (if (suggestSubmit) form.onEvent(SuggestSubmit(this)) else Js.Void)
             case Left(error) =>
               JS.void
           }
@@ -92,9 +93,9 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
       renderer.render(this)(
         inputElem = processInputElem(<input
               type={inputType}
-              onblur={onChange}
-              onchange={if (syncToServerOnChange) onChange else null}
-              onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.evalIf(submitOnEnter)(JS.blur(elemId) & form.submitFormClientSide())}}"}
+              onblur={sync(false)}
+              onchange={if (syncToServerOnChange) sync(false) else null}
+              onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${sync(true)}}"}
               value={this.toString(currentRenderedValue.get)}
             />),
         label = _label(),

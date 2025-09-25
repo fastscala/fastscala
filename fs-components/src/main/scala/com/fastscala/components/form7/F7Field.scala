@@ -74,7 +74,8 @@ trait F7Field
           case F7FieldState.AwaitingInput => aux(ValidateOnAttemptSubmitOnly)
         }
         case ValidateOnAttemptSubmitOnly => form.state() match {
-          case Filling => false
+          case Initial => false
+          case Modified => false
           case ValidationFailed => true
           case Saved => false
         }

@@ -14,7 +14,7 @@ import com.fastscala.utils.Lazy
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-trait Table6SelectableCols extends Table6Base with Table6ColsLabeled {
+trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   var onDropdownBtnTransforms: Elem => Elem = identity[Elem]
 
@@ -51,7 +51,7 @@ trait Table6SelectableCols extends Table6Base with Table6ColsLabeled {
 
   def colLabel(col: C): String
 
-  def renderSelectColsButton()(implicit fsc: FSContext): Elem =
+  def renderColumnSelectionButton()(implicit fsc: FSContext): Elem =
     BSBtn().BtnPrimary.lbl("Columns").ajax(implicit fsc => openColumnSelectionModal()).btn
 
   def openColumnSelectionModal()(implicit fsc: FSContext): Js = BSModal5.verySimple(
@@ -77,17 +77,17 @@ trait Table6SelectableCols extends Table6Base with Table6ColsLabeled {
     }
   )
 
-  def colSelectionDropdownBtnRightAligned: Boolean = true
+  def columnSelectionDropdownBtnRightAligned: Boolean = true
 
-  def colSelectionDropdownBtn()(implicit fsc: FSContext): BSBtn = BSBtn().BtnPrimary.lbl("Columns...").sm.dataBsAutoCloseAsOutside
+  def columnSelectionDropdownBtn()(implicit fsc: FSContext): BSBtn = BSBtn().BtnPrimary.lbl("Columns...").sm.dataBsAutoCloseAsOutside
 
-  def colSelectionDropdownIndividualBtn()(implicit fsc: FSContext): BSBtn = BSBtn()
+  def columnSelectionDropdownIndividualBtn()(implicit fsc: FSContext): BSBtn = BSBtn()
 
-  def colSelectionDropdown()(implicit fsc: FSContext): Elem =
-    onDropdownBtnTransforms(BSBtnDropdown.custom(colSelectionDropdownBtn(), rightAlignedMenu = colSelectionDropdownBtnRightAligned)(
+  def columnSelectionDropdown()(implicit fsc: FSContext): Elem =
+    onDropdownBtnTransforms(BSBtnDropdown.custom(columnSelectionDropdownBtn(), rightAlignedMenu = columnSelectionDropdownBtnRightAligned)(
       allColumns.map(col =>
         onDropdownIndividualBtnTransforms(
-          colSelectionDropdownIndividualBtn().ns(ImmediateInputFields.checkbox(
+          columnSelectionDropdownIndividualBtn().ns(ImmediateInputFields.checkbox(
             () => currentSelectedCols().contains(col),
             {
               case true =>

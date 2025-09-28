@@ -24,6 +24,7 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
     with F7FieldWithName
     with F7FieldWithPlaceholder
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithMaxlength
@@ -72,6 +73,7 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
       renderer.render(this)(
         inputElem = processInputElem(<textarea
           type="text"
+          id={id.getOrElse(null)}
           onblur={
             fsc.callback(
               JS.elementValueById(elemId),

@@ -4,7 +4,7 @@ import com.fastscala.utils.IdGen
 
 trait ElemWithRandomId extends ElemWithId {
 
-  def randomElemId = IdGen.id
+  protected val randomElemId = "elem_" + IdGen.id
 
-  override val elemId: String = "elem_" + randomElemId
+  override def elemId: String = randomElemId
 }

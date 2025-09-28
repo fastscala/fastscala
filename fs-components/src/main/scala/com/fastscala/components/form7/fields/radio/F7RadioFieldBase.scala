@@ -28,6 +28,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
     with F7FieldWithHelp
     with F7FieldWithName
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
     with F7FieldWithValue[T]

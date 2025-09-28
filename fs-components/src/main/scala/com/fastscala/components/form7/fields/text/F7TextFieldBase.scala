@@ -22,6 +22,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
     with F7FieldWithName
     with F7FieldWithPlaceholder
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithMaxlength
@@ -92,6 +93,7 @@ abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
 
       renderer.render(this)(
         inputElem = processInputElem(<input
+              id={id.getOrElse(null)}
               type={inputType}
               onblur={sync(false)}
               onchange={if (syncToServerOnChange) sync(false) else null}

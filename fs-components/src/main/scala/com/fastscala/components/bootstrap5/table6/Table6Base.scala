@@ -6,7 +6,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.{MkNSFromElems, MkNSFromNodeSeq}
-import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.scala_xml.rerenderers.Rerenderer
 import com.fastscala.utils.IdGen
 

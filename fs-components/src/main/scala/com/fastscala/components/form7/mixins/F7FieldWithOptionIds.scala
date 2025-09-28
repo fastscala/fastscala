@@ -4,7 +4,7 @@ import com.fastscala.components.utils.Mutable
 
 
 trait F7FieldWithOptionIds[T] extends Mutable {
-  var _option2Id: (T, Seq[T]) => String = (opt, options) => "%X".formatted(options.indexOf(opt).toString)
+  var _option2Id: (T, Seq[T]) => String = (opt, options) => "%X".formatted(options.indexOf(opt))
 
   var _id2Option: (String, Seq[T]) => Option[T] = (id, options) => id.toIntOption.map(idx => options(idx))
 

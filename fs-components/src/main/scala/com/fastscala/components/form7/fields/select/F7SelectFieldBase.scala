@@ -28,6 +28,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
     with F7FieldWithHelp
     with F7FieldWithName
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
     with F7FieldWithOptionsNsLabel[T] {
@@ -104,6 +105,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
 
       renderer.render(this)(
         inputElem = processInputElem(<select
+              id={id.getOrElse(null)}
               onchange={onchangeJs}
             >{optionsRendered}</select>),
         label = _label(),

@@ -23,6 +23,7 @@ class F7CheckboxOptField()(implicit val renderer: CheckboxF7FieldRenderer)
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies {
 
@@ -88,7 +89,7 @@ class F7CheckboxOptField()(implicit val renderer: CheckboxF7FieldRenderer)
 
       renderer.render(this)(
         inputElem = processInputElem(<input type="checkbox"
-                   id={elemId}
+                   id={id.getOrElse(null)}
                    onchange={onchangeJs}
                    checked={if (currentRenderedValue.get == Some(true)) "true" else null}
             ></input>),

@@ -6,6 +6,7 @@ import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form6.Form6
 import com.fastscala.components.utils.ElemWithRandomId
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.utils.IdGen
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -37,7 +38,7 @@ trait FocusableF6Field extends F6Field {
 
 abstract class StandardF6Field() extends F6Field with ElemWithRandomId {
 
-  val aroundId: String = randomElemId
+  val aroundId: String = IdGen.id
 
   def reRender()(implicit form: Form6, fsc: FSContext, hints: Seq[RenderHint]): Js = {
     JS.replace(aroundId, render())

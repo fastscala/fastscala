@@ -4,8 +4,9 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithOnChangedField, F7FieldWithState}
-import com.fastscala.components.utils.ElemWithRandomId
+import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithId, F7FieldWithOnChangedField, F7FieldWithState}
+import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
+import com.fastscala.utils.IdGen
 
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
@@ -17,7 +18,8 @@ trait F7Field
   extends F7FieldWithDependencies
     with F7FieldWithState
     with F7FieldWithEnabled
-    with ElemWithRandomId {
+    with ElemWithId
+    with F7FieldWithId {
 
   def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = event match {
     case ChangedField(field) if deps.contains(field) => updateFieldWithoutReRendering().getOrElse(reRender()) &
@@ -33,7 +35,7 @@ trait F7Field
   
   def updateFieldWithoutReRenderingOrFallbackToRerender()(implicit form: Form7, fsc: FSContext): Js = updateFieldWithoutReRendering().getOrElse(reRender())
 
-  val aroundId: String = randomElemId
+  val aroundId: String = IdGen.id
 
   def render()(implicit form: Form7, fsc: FSContext): Elem
 

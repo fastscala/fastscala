@@ -40,7 +40,9 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   def allColumns: Seq[C]
 
-  def columnStartsVisible(c: C): Boolean = true
+  val initiallyVisibleColumns: Set[C] 
+  
+  def columnStartsVisible(c: C): Boolean = initiallyVisibleColumns.contains(c)
 
   def columns(): Seq[C] = {
     if (currentSelectedCols().exists(!allColumns.contains(_))) throw new Exception(

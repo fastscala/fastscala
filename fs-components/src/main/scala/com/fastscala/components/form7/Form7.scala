@@ -75,6 +75,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
       .getOrElse(JS.void)
 
   def render()(implicit fsc: FSContext): Elem = {
+    initForm()
     val rendered = rootField.render()
     if (postRenderSetupJs() != JS.void) {
       rendered.withAppendedToContents(JS.inScriptTag(postRenderSetupJs().onDOMContentLoaded))

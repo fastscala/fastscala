@@ -23,6 +23,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer)
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies {
 
@@ -80,9 +81,9 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer)
 
       renderer.render(this)(
         inputElem = processInputElem(<input type="checkbox"
-                   id={elemId}
-                   onchange={onchangeJs}
-                   checked={if (currentRenderedValue.get) "true" else null}
+                      id={id.getOrElse(null)}
+                      onchange={onchangeJs}
+                      checked={if (currentRenderedValue.get) "true" else null}
             ></input>),
         label = _label(),
         invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),

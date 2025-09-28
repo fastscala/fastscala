@@ -27,6 +27,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithLabel
+    with F7FieldWithId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
     with F7FieldWithOptionsNsLabel[T] {
@@ -77,7 +78,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
       val option2Id: Map[T, String] = ids2Option.map(_.swap)
       currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
 
-      currentValue = currentValue.filter(!renderedOptions.contains(_))
+      currentValue = currentValue.filter(renderedOptions.contains(_))
 
       currentRenderedValue = Some(currentValue)
       val optionsRendered = renderedOptions.map(opt => {
@@ -101,6 +102,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
 
       renderer.render(this)(
         inputElem = processInputElem(<select
+              id={id.getOrElse(null)}
               multiple="multiple"
               onblur={onchangeJs}
               onchange={onchangeJs}

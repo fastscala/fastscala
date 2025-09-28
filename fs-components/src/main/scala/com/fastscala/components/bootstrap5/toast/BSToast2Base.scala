@@ -294,32 +294,11 @@ object BSToast2 {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
-  class BSToast2WithoutPosition(toast: BSToast2Base) {
-
-    def positionTopLeft: BSToast2Base = toast.positionTopLeft
-
-    def positionTopCenter: BSToast2Base = toast.positionTopCenter
-
-    def positionTopRight: BSToast2Base = toast.positionTopRight
-
-    def positionMiddleLeft: BSToast2Base = toast.positionMiddleLeft
-
-    def positionMiddleCenter: BSToast2Base = toast.positionMiddleCenter
-
-    def positionMiddleRight: BSToast2Base = toast.positionMiddleRight
-
-    def positionBottomLeft: BSToast2Base = toast.positionBottomLeft
-
-    def positionBottomCenter: BSToast2Base = toast.positionBottomCenter
-
-    def positionBottomRight: BSToast2Base = toast.positionBottomRight
-  }
-
-  def Simple(header: Elem)(contents: Elem): BSToast2WithoutPosition = new BSToast2WithoutPosition(new BSToast2Base {
+  def Simple(header: Elem)(contents: Elem): BSToast2Base = new BSToast2Base {
     override def toastHeader(): Elem = <div>{header.me_auto}</div>
 
     override def toastContents(): Elem = contents
-  })
+  }
 
   def VerySimple(header: String, contents: String): BSToast2Base = VerySimple(h6.apply(header))(p.apply(contents))
 

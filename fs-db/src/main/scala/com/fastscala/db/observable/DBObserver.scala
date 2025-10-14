@@ -15,7 +15,7 @@ trait DBObserver {
 }
 
 object DBObserver {
-  implicit val NilObserver: DBObserver = new DBObserver {
+  val NilObserver: DBObserver = new DBObserver {
     override def observingTables: Seq[TableBase] = Seq()
 
     override def preSave(table: TableBase, row: RowBase): Unit = ()

@@ -116,7 +116,7 @@ class FSSession(
       pages += (page.id -> page)
     }
     // FSSession.logger.trace(s"Created page: page_id=${page.id}, evt_type=create_page")
-    impl.render()(page.rootFSContext)
+    impl.render()(using page.rootFSContext)
   } catch {
     case ex: Exception =>
       ex.printStackTrace()

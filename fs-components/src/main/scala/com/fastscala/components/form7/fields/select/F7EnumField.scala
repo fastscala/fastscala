@@ -1,4 +1,4 @@
-package com.fastscala.components.form7.fields
+package com.fastscala.components.form7.fields.select
 
 import com.fastscala.components.form7.fields.multiselect.F7MultiSelectField
 import com.fastscala.components.form7.fields.select.*

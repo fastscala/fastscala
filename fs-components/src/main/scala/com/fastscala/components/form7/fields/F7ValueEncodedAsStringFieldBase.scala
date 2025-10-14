@@ -1,4 +1,4 @@
-package com.fastscala.components.form7.fields.text
+package com.fastscala.components.form7.fields
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
@@ -10,7 +10,7 @@ import com.fastscala.scala_xml.js.JS
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7TextFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
+abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
     extends StandardOneInputElemF7Field[T]
     with StringSerializableF7Field
     with FocusableF7Field

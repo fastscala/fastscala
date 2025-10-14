@@ -1695,7 +1695,7 @@ class F5FileUploadField(
         val buttonId = IdGen.id("btn")
         val resetButtonId = IdGen.id("reset-btn")
 
-        val previewRenderer = JS.rerenderable(rerenderer => implicit fsc => renderPreview(currentValue)(fsc))
+        val previewRenderer = JS.rerenderable(rerenderer => implicit fsc => renderPreview(currentValue)(using fsc))
         val actionUrl = fsc.fileUploadActionUrl({
           case Seq(uploadedFile: FSUploadedFile, _ *) =>
             currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))

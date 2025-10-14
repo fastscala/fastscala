@@ -46,7 +46,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   def formRenderHits(): Seq[RenderHint] = Nil
 
-  def changedField(field: F7Field)(implicit fsc: FSContext): Js = onEvent(ChangedField(field))(this, fsc)
+  def changedField(field: F7Field)(implicit fsc: FSContext): Js = onEvent(ChangedField(field))(using this, fsc)
 
   def submitOnSuggestion: Boolean = true
 
@@ -108,10 +108,10 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
     if (state() == Form7State.Saved) {
       logger.info("Ignoring form submit since form is in saved state")
       onSubmitIgnoredFormAlreadySaved()
-    } else if (fsc != fsc.page.rootFSContext) submitFormServerSide()(fsc.page.rootFSContext)
+    } else if (fsc != fsc.page.rootFSContext) submitFormServerSide()(using fsc.page.rootFSContext)
     else {
       val enabledFields = rootField.fieldAndChildreenMatchingPredicate(_.enabled)
-      onEvent(PreValidate)(this, fsc) &
+      onEvent(PreValidate)(using this, fsc) &
         preValidateForm() &
         enabledFields.map(_.preValidation()).reduceOption(_ & _).getOrElse(JS.void) &
         enabledFields.collect(_.validate()).flatten.pipe(errors => {
@@ -121,7 +121,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
              onChangedState(previousState, state())
            } else Js.Void)
           &
-            onEvent(PostValidate)(this, fsc) &
+            onEvent(PostValidate)(using this, fsc) &
             enabledFields.map(_.postValidation(errors)).reduceOption(_ & _).getOrElse(JS.void) &
             postValidateForm(errors) &
             (if (errors.isEmpty) {
@@ -136,13 +136,13 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   }
 
   private def savePipeline(enabledFields: List[F7Field])(implicit fsc: FSContext): Js = {
-    onEvent(PreSubmit)(this, fsc) &
+    onEvent(PreSubmit)(using this, fsc) &
       preSubmitForm() &
       enabledFields.map(_.preSubmit()).reduceOption(_ & _).getOrElse(JS.void) &
-      onEvent(Submit)(this, fsc) &
+      onEvent(Submit)(using this, fsc) &
       enabledFields.map(_.submit()).reduceOption(_ & _).getOrElse(JS.void) &
       enabledFields.map(_.postSubmit()).reduceOption(_ & _).getOrElse(JS.void) &
       postSubmitForm() & // &      rootField.reRender()
-      onEvent(PostSubmit)(this, fsc)
+      onEvent(PostSubmit)(using this, fsc)
   }
 }

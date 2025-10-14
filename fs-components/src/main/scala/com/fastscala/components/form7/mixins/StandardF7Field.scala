@@ -13,8 +13,6 @@ trait StandardF7Field extends F7Field
   with F7FieldWithOnChangedField
   with F7FieldWithValidations {
 
-  def renderer: StandardF7FieldRenderer
-
   def visible: () => Boolean = () => enabled
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =

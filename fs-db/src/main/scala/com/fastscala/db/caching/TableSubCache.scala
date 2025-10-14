@@ -7,7 +7,7 @@ import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
 
-class TableSubCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
+class TableSubCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](
                                                                                  val cache: TableCache[K, R],
                                                                                  val loadSubsetSQL: SQLSyntax,
                                                                                  val filterSubset: R => Boolean,
@@ -29,5 +29,5 @@ class TableSubCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
 
   override def getForIdOptX(id: K): Option[R] = cache.getForIdOptX(id)
 
-  override def getForIdsX(ids: K*): List[R] = cache.getForIdsX(ids: _*)
+  override def getForIdsX(ids: K*): List[R] = cache.getForIdsX(ids*)
 }

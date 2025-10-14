@@ -33,9 +33,11 @@ trait Table[R] extends TableBase {
 
   def insertFields: List[Field] = fieldsList
 
+  def upsertFields: List[Field] = fieldsList
+
   def updateFields: List[Field] = fieldsList
 
-  def insertSQL(row: R): SQL[Nothing, NoExtractor] = {
+  def insertSQL(row: R, rest: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val columns: SQLSyntax = SQLSyntax.createUnsafely(insertFields.map(field => {
       field.setAccessible(true)
       fieldName(field)
@@ -46,7 +48,7 @@ trait Table[R] extends TableBase {
       valueToFragment(field, field.get(row))
     })
 
-    sql"""insert into "$tableNameSQLSyntax" $columns VALUES ($values)"""
+    sql"""insert into "$tableNameSQLSyntax" $columns VALUES ($values) $rest"""
   }
 
   def updateSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
@@ -62,9 +64,9 @@ trait Table[R] extends TableBase {
 
   def selectAll(): List[R] = select(SQLSyntax.empty)
 
-  def select(rest: SQLSyntax): List[R] = {
+  def select(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty): List[R] = {
     DB.readOnly({ implicit session =>
-      val query = selectFromSQL.append(rest)
+      val query = selectFromSQL.where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
       try {
         sql"${query}".map(fromWrappedResultSet).list()
       } catch {
@@ -75,9 +77,16 @@ trait Table[R] extends TableBase {
     })
   }
 
-  def select(modify: SQLSyntax => SQLSyntax): List[R] = {
+  def count(where: SQLSyntax = SQLSyntax.empty): Long = {
     DB.readOnly({ implicit session =>
-      sql"${modify(selectFromSQL)}".map(fromWrappedResultSet).list()
+      val query = sqls"""select count(*) from "$tableNameSQLSyntax"""".where(Some(where).filter(_ != SQLSyntax.empty))
+      try {
+        sql"${query}".map(fromWrappedResultSet).map(_.long(1)).list().head
+      } catch {
+        case ex: PSQLException =>
+          logger.error(s"Error on query $query", ex)
+          throw ex
+      }
     })
   }
 

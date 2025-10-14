@@ -17,7 +17,7 @@ trait JSTreeNodeWithDragAndDrop[N <: JSTreeNodeWithDragAndDrop[N]] extends JSTre
   self: N =>
 
   def removedChildNode(child: N, fromIdx: Int): Js
-  
+
   def addedChildNode(child: N, toIdx: Int): Js
 }
 
@@ -45,8 +45,9 @@ trait JSTreeWithDragAndDrop[N <: JSTreeNodeWithDragAndDrop[N]] extends JSTree[N]
 
       case class Data(nodeId: String, parentId: String, position: Int, oldParentId: String, oldPosition: Int)
       implicit val jsonDecoder: Decoder[Data] = semiauto.deriveDecoder[Data]
-      fsc.callbackJSONDecoded[Data](Js(s"{nodeId: $data.node.id, parentId: $data.parent, position: $data.position, oldParentId: $data.old_parent, oldPosition: $data.old_position}"), {
-        case Data(nodeId, parentId, position, oldParentId, oldPosition) =>
+      fsc.callbackJSONDecoded[Data](
+        Js(s"{nodeId: $data.node.id, parentId: $data.parent, position: $data.position, oldParentId: $data.old_parent, oldPosition: $data.old_position}"),
+        { case Data(nodeId, parentId, position, oldParentId, oldPosition) =>
           (for {
             node <- nodeById.get(nodeId)
             parent <- nodeById.get(parentId)
@@ -54,7 +55,8 @@ trait JSTreeWithDragAndDrop[N <: JSTreeNodeWithDragAndDrop[N]] extends JSTree[N]
           } yield {
             movedNode(node, oldParent, oldPosition, parent, position)
           }).get
-      })
+        }
+      )
     }))
   }
 }

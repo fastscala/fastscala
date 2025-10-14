@@ -8,8 +8,10 @@ trait Row[R <: Row[R]] extends RowBase {
   def table: Table[R]
 
   def insertSQL(): SQL[Nothing, NoExtractor] = table.insertSQL(this)
+  
+  def upsertSQL(): SQL[Nothing, NoExtractor] = table.insertSQL(this)
 
   def insert(): Unit = DB.localTx({ implicit session => insertSQL().execute() })
-
+  
   def copyFrom(row: R): Unit = table.copyRow(row, this)
 }

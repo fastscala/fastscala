@@ -1,6 +1,7 @@
-package com.fastscala.components.form7.fields.text
+package com.fastscala.components.form7.fields.datetimelocal
 
 import com.fastscala.components.form7.F7Field
+import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
 import com.fastscala.components.form7.renderers.*
 
 import java.time.LocalDateTime
@@ -8,7 +9,7 @@ import java.time.format.DateTimeFormatter
 import scala.xml.NodeSeq
 
 
-class F7LocalDateTimeOptField()(implicit renderer: TextF7FieldRenderer) extends F7TextFieldBase[Option[java.time.LocalDateTime]] {
+class F7LocalDateTimeOptField()(implicit renderer: TextF7FieldRenderer) extends F7ValueEncodedAsStringFieldBase[Option[java.time.LocalDateTime]] {
   override def _inputTypeDefault: String = "datetime-local"
 
   override def defaultValue: Option[LocalDateTime] = None

@@ -6,7 +6,7 @@ import com.fastscala.db.{RowBase, TableBase}
 trait DBCompositeObserver extends DBObserver {
 
   private lazy val allObservers: Seq[DBObserver] = {
-    val fields = Iterator.iterate[Class[_]](this.getClass)(_.getSuperclass)
+    val fields = Iterator.iterate[Class[?]](this.getClass)(_.getSuperclass)
       .takeWhile(c => c != null && c != AnyRef.getClass)
       .flatMap(_.getDeclaredFields)
       .filter(f => classOf[DBObserver].isAssignableFrom(f.getType))

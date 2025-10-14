@@ -11,8 +11,8 @@ import scala.collection.mutable.ListBuffer
 
 class One2ManyCache[
   K,
-  O <: Row[O] with RowWithId[K, O] with ObservableRowBase,
-  M <: Row[M] with RowWithId[K, M] with ObservableRowBase
+  O <: Row[O] & RowWithId[K, O] & ObservableRowBase,
+  M <: Row[M] & RowWithId[K, M] & ObservableRowBase
 ](
    val cacheOne: TableCache[K, O],
    val cacheMany: TableCache[K, M],
@@ -26,7 +26,7 @@ class One2ManyCache[
 
   val ManyTable = cacheMany.table
 
-  override def observingTables: Seq[Table[_]] = Seq[Table[_]](cacheOne.table, cacheMany.table)
+  override def observingTables: Seq[Table[?]] = Seq[Table[?]](cacheOne.table, cacheMany.table)
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 

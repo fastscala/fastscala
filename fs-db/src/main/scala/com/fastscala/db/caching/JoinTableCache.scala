@@ -13,9 +13,9 @@ import scalikejdbc.scalikejdbcSQLInterpolationImplicitDef
  */
 class JoinTableCache[
   K,
-  L <: Row[L] with ObservableRowBase with RowWithId[K, L],
-  J <: Row[J] with ObservableRowBase with RowWithId[K, J],
-  R <: Row[R] with ObservableRowBase with RowWithId[K, R]
+  L <: Row[L] & ObservableRowBase & RowWithId[K, L],
+  J <: Row[J] & ObservableRowBase & RowWithId[K, J],
+  R <: Row[R] & ObservableRowBase & RowWithId[K, R]
 ](
    val cacheL: TableCache[K, L],
    table: TableWithId[J, K],
@@ -24,34 +24,34 @@ class JoinTableCache[
    val getRightId: J => K,
    val leftIdsInSqlClause: Seq[K] => SQLSyntax,
    val rightIdsInSqlClause: Seq[K] => SQLSyntax,
-   loadAll: Table[J] => List[J] = (((table: Table[J]) => table.selectAll()): Table[J] => List[J]),
+   whereCond: SQLSyntax = SQLSyntax.empty,
    status: CacheStatus.Value = CacheStatus.NONE_LOADED,
    entries: collection.mutable.Map[K, J] = collection.mutable.Map[K, J](),
    val entriesWithLeft: collection.mutable.Map[K, collection.mutable.Set[J]] = collection.mutable.Map[K, collection.mutable.Set[J]](),
    val entriesWithRight: collection.mutable.Map[K, collection.mutable.Set[J]] = collection.mutable.Map[K, collection.mutable.Set[J]]()
- ) extends TableCache[K, J](table, loadAll, status, entries) {
+ ) extends TableCache[K, J](table, whereCond, status, entries) {
 
-  def getRightForLeft(left: L*): Seq[R] = getRightForLeftIds(left.map(_.key): _*)
+  def getRightForLeft(left: L*): Seq[R] = getRightForLeftIds(left.map(_.key)*)
 
   def getRightForLeftIds(left: K*): Seq[R] = cacheR.getForIdsX(
-    (if (isFullyInMemory) left.flatMap(entriesWithLeft.getOrElse(_, Seq())).distinct else processLoadedRows(select(sqls"where ${leftIdsInSqlClause(left)}"))).map(getRightId) *
+    (if (isFullyInMemory) left.flatMap(entriesWithLeft.getOrElse(_, Seq())).distinct else processLoadedRows(select(sqls"${leftIdsInSqlClause(left)}"))).map(getRightId) *
   )
 
-  def getLeftForRight(right: R*): Seq[L] = getLeftForRightIds(right.map(_.key): _*)
+  def getLeftForRight(right: R*): Seq[L] = getLeftForRightIds(right.map(_.key)*)
 
   def getLeftForRightIds(right: K*): Seq[L] = cacheL.getForIdsX(
-    (if (isFullyInMemory) right.flatMap(entriesWithRight.getOrElse(_, Seq())).distinct else processLoadedRows(select(sqls"where ${rightIdsInSqlClause(right)}"))).map(getLeftId) *
+    (if (isFullyInMemory) right.flatMap(entriesWithRight.getOrElse(_, Seq())).distinct else processLoadedRows(select(sqls"${rightIdsInSqlClause(right)}"))).map(getLeftId) *
   )
 
   def getJoinForLeftIds(left: K*): Seq[J] =
     if (isFullyInMemory) left.flatMap(entriesWithLeft.getOrElse(_, Seq())).distinct
-    else processLoadedRows(select(sqls"where ${leftIdsInSqlClause(left)}"))
+    else processLoadedRows(select(sqls"${leftIdsInSqlClause(left)}"))
 
-  def getJoinForLeft(left: L*): Seq[J] = getJoinForLeftIds(left.map(_.key): _*)
+  def getJoinForLeft(left: L*): Seq[J] = getJoinForLeftIds(left.map(_.key)*)
 
   def getJoinForRightIds(right: K*): Seq[J] =
     if (isFullyInMemory) right.flatMap(entriesWithRight.getOrElse(_, Seq())).distinct
-    else processLoadedRows(select(sqls"where ${rightIdsInSqlClause(right)}"))
+    else processLoadedRows(select(sqls"${rightIdsInSqlClause(right)}"))
 
   def getJoinForRight(right: J): Seq[J] = getJoinForRightIds(right.key)
 
@@ -59,7 +59,7 @@ class JoinTableCache[
 
   def deleteX(left: K, right: K)(implicit obs: DBObserver): Unit = {
     if (isFullyInMemory) getJoinForLeftIds(left).toSet.intersect(getJoinForRightIds(right).toSet).foreach(_.deleteX())
-    else processLoadedRows(select(sqls"where ${leftIdsInSqlClause(List(left))} and ${rightIdsInSqlClause(List(right))}")).foreach(_.deleteX())
+    else processLoadedRows(select(sqls"${leftIdsInSqlClause(List(left))} and ${rightIdsInSqlClause(List(right))}")).foreach(_.deleteX())
   }
 
   override def processLoadedRows(rows: List[J]): List[J] = super.processLoadedRows(rows).map(row => {

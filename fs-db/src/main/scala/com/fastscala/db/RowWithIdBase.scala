@@ -1,5 +1,8 @@
 package com.fastscala.db
 
+import scalikejdbc.interpolation.SQLSyntax
+import scalikejdbc.sqls
+
 trait RowWithIdBase extends RowBase {
 
   def reload(): Any

@@ -1,12 +1,12 @@
 package com.fastscala.db.keyed.numeric
 
-import com.fastscala.db.keyed.{PgTableWithLongId, RowWithLongId}
+import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
 import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc.{NoExtractor, SQL}
 
 import java.lang.reflect.Field
 
-trait TableWithLongIdSeqBacked[R <: RowWithLongId[R]] extends PgTableWithLongId[R] {
+trait TableWithLongIdSeqBacked[R <: PgRowWithLongId[R]] extends PgTableWithLongId[R] {
   def sequenceIdName = s"s_${tableName}_id"
 
   override def insertFields: List[Field] = (super.insertFields ::: fieldsList.filter(_.getName == "id")).distinct

@@ -7,12 +7,12 @@ import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
-class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
-                                                                              val table: TableWithId[R, K],
-                                                                              val loadAll: Table[R] => List[R] = (((table: Table[R]) => table.selectAll()): Table[R] => List[R]),
-                                                                              var status: CacheStatus.Value = CacheStatus.NONE_LOADED,
-                                                                              val entries: collection.mutable.Map[K, R] = collection.mutable.Map[K, R]()
-                                                                            ) extends DBObserver with TableCacheLike[K, R] {
+class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table: TableWithId[R, K], val whereCond: SQLSyntax = SQLSyntax.empty, var status: CacheStatus.Value = CacheStatus.NONE_LOADED, val entries: collection.mutable.Map[K, R] = collection.mutable.Map[K, R]())
+    extends DBObserver
+    with TableCacheLike[K, R] {
+
+  def loadAllEntriesAfterNFailedLookups: Int = 1
+
   val logger = LoggerFactory.getLogger(getClass.getName)
 
   override def observingTables: Seq[TableBase] = Seq(table)
@@ -26,7 +26,7 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
   def loadAllEntries(): Unit = {
     if (status != CacheStatus.ALL_LOADED) {
       Utils.time({
-        val allEntries = loadAll(table)
+        val allEntries = table.select(whereCond)
         processLoadedRows(allEntries)
         status = CacheStatus.ALL_LOADED
       })(ms => {
@@ -35,12 +35,24 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
     }
   }
 
-  def all: Seq[R] = {
+  def all: List[R] = {
     loadAllEntries()
     entries.values.toList
   }
 
-  def select(rest: SQLSyntax): List[R] = processLoadedRows(table.select(rest))
+  def count(): Long = {
+    if (status != CacheStatus.ALL_LOADED) {
+      table.count(whereCond)
+    } else {
+      entries.values.size
+    }
+  }
+
+  def selectAll(): List[R] = all
+
+  def select(where: SQLSyntax): List[R] = processLoadedRows(table.select(where))
+
+  def select(where: SQLSyntax, rest: SQLSyntax): List[R] = processLoadedRows(table.select(where, rest))
 
   def apply(key: K): R = getForIdX(key)
 
@@ -52,11 +64,6 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
   }
 
   def getForIdOptX(key: K): Option[R] = {
-
-    if (status != CacheStatus.ALL_LOADED) {
-      this.all
-    }
-
     entries.get(key) match {
       case Some(value) =>
         // logger.trace(s"${table.tableName}.getForIdOptX($uuid): CACHE HIT")
@@ -64,6 +71,10 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
       case None if status == CacheStatus.ALL_LOADED =>
         logger.debug(s"${table.tableName}.getForIdOptX($key): CACHE MISS (all loaded)")
         None
+      case None if entries.size + 1 >= loadAllEntriesAfterNFailedLookups =>
+        logger.trace(s"${table.tableName}.getForIdOptX($key): CACHE MISS (getting all from db, after ${entries.size + 1} cache misses)")
+        loadAllEntries()
+        getForIdOptX(key)
       case None =>
         logger.trace(s"${table.tableName}.getForIdOptX($key): CACHE MISS (getting from db...)")
         Utils.time(table.getForIdOpt(key))(ms => {
@@ -85,22 +96,24 @@ class TableCache[K, R <: Row[R] with ObservableRowBase with RowWithId[K, R]](
 
   def getForIdsX(ids: K*): List[R] = {
     entries.keySet.intersect(ids.toSet).map(entries) ++ (ids.toSet.diff(entries.keySet).toList match {
-      case Nil => Seq()
-      case missingIds => table.getForIds(missingIds *)
+      case Nil        => Seq()
+      case missingIds => table.getForIds(missingIds*)
     })
   }.toList
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()
 
-  def processLoadedRows(rows: List[R]): List[R] = rows.map(row => entries.get(row.key) match {
-    case Some(existing) =>
-      existing.copyFrom(row)
-      existing
-    case None =>
-      entries += (row.key -> row)
-      processLoadedRows(List(row))
-      row
-  })
+  def processLoadedRows(rows: List[R]): List[R] = rows.map(row =>
+    entries.get(row.key) match {
+      case Some(existing) =>
+        existing.copyFrom(row)
+        existing
+      case None =>
+        entries += (row.key -> row)
+        processLoadedRows(List(row))
+        row
+    }
+  )
 
   def postSave(t: TableBase, row: RowBase): Unit = (table, row) match {
     case (`table`, row: R) =>

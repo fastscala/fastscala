@@ -1,13 +1,13 @@
 package com.fastscala.db
 
-import com.fastscala.db.keyed.{PgTableWithLongId, RowWithLongId}
+import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
 import io.circe.Json
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc._
 
 class TestEntity7(
                    var config: Json = TestEntity7.testJson
-                 ) extends RowWithLongId[TestEntity7] {
+                 ) extends PgRowWithLongId[TestEntity7] {
   override def table: PgTableWithLongId[TestEntity7] with PgTableWithJsonSupport[TestEntity7] = TestEntity7
 }
 

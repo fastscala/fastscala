@@ -1,6 +1,7 @@
-package com.fastscala.components.form7.fields.text
+package com.fastscala.components.form7.fields.date
 
 import com.fastscala.components.form7.F7Field
+import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
 import com.fastscala.components.form7.renderers.*
 
 import java.time.LocalDate
@@ -19,7 +20,7 @@ object F7LocalDateOptField {
   )
 }
 
-class F7LocalDateOptField()(implicit renderer: TextF7FieldRenderer) extends F7TextFieldBase[Option[java.time.LocalDate]] {
+class F7LocalDateOptField()(implicit renderer: TextF7FieldRenderer) extends F7ValueEncodedAsStringFieldBase[Option[java.time.LocalDate]] {
   override def _inputTypeDefault: String = "date"
 
   override def defaultValue: Option[LocalDate] = None

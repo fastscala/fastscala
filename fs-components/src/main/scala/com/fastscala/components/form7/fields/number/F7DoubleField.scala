@@ -1,5 +1,6 @@
-package com.fastscala.components.form7.fields.text
+package com.fastscala.components.form7.fields.number
 
+import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
 import com.fastscala.components.form7.mixins.*
 import com.fastscala.components.form7.renderers.*
 
@@ -7,7 +8,7 @@ import java.util.regex.Pattern
 
 
 class F7DoubleField()(implicit renderer: TextF7FieldRenderer)
-  extends F7TextFieldBase[Double]
+  extends F7ValueEncodedAsStringFieldBase[Double]
     with F7FieldWithPrefix
     with F7FieldWithSuffix
     with F7FieldWithMin

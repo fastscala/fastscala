@@ -1,4 +1,4 @@
-package com.fastscala.components.form7.fields
+package com.fastscala.components.form7.fields.checkbox
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*

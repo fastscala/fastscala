@@ -65,13 +65,13 @@ trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
   def postSave()(implicit fsc: FSContext): Js = JS.void
 
   def onSaveServerSide()(implicit fsc: FSContext): Js = {
-    if (fsc != fsc.page.rootFSContext) onSaveServerSide()(fsc.page.rootFSContext)
+    if (fsc != fsc.page.rootFSContext) onSaveServerSide()(using fsc.page.rootFSContext)
     else {
       val hasErrors = rootField.enabledFields.exists({ case field: ValidatableF6Field => field.hasErrors_?() case _ => false })
       implicit val renderHints: Seq[RenderHint] = formRenderHits() :+ OnSaveRerender
       if (hasErrors) {
         rootField.onEvent(FailedSave) &
-          rootField.reRender()(this, fsc, renderHints :+ ShowValidationsHint :+ FailedSaveStateHint)
+          rootField.reRender()(using this, fsc, renderHints :+ ShowValidationsHint :+ FailedSaveStateHint)
       } else {
         savePipeline()
       }

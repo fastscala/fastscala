@@ -1,12 +1,13 @@
 package com.fastscala.components.form7.fields.text
 
 import com.fastscala.components.form7.F7Field
+import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
 import com.fastscala.components.form7.renderers.*
 
 import scala.xml.NodeSeq
 
 
-class F7StringField()(implicit renderer: TextF7FieldRenderer) extends F7TextFieldBase[String] {
+class F7StringField()(implicit renderer: TextF7FieldRenderer) extends F7ValueEncodedAsStringFieldBase[String] {
 
   override def defaultValue: String = ""
 

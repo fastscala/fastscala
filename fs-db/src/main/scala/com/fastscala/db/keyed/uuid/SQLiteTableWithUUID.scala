@@ -17,7 +17,7 @@ trait SQLiteTableWithUUID[R <: SQLiteRowWithUUID[R]] extends SQLiteTable[R] with
 
   override def fieldTypeToSQLType(
                                    field: java.lang.reflect.Field,
-                                   clas: Class[_],
+                                   clas: Class[?],
                                    value: => Any,
                                    columnConstrains: Set[String] = Set("not null")
                                  ): String =

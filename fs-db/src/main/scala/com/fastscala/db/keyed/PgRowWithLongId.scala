@@ -2,13 +2,12 @@ package com.fastscala.db.keyed
 
 import com.fastscala.db.{Row, RowWithId, RowWithIdBase}
 import scalikejdbc.*
+import scalikejdbc.interpolation.SQLSyntax
 
-trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
+trait PgRowWithLongId[R <: PgRowWithLongId[R]](var id: java.lang.Long = null) extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>
 
   def table: PgTableWithLongId[R]
-
-  var id: java.lang.Long = _
 
   override def key: java.lang.Long = id
 
@@ -41,6 +40,11 @@ trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase wit
     DB.localTx({ implicit session =>
       table.updateSQL(this, sqls" where id = $id").execute()
     })
+  }
+
+  def upsert(): R = {
+    DB.localTx({ implicit session => table.upsertSQL(this).execute() })
+    this
   }
 
   def update(upd: R => Unit): R = {

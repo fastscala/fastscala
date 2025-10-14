@@ -1,11 +1,11 @@
 package com.fastscala.db.cache
 
-import com.fastscala.db.keyed.{PgTableWithLongId, RowWithLongId}
+import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
 import com.fastscala.db.observable.ObservableRow
 
 class Student(
                val name: String
-             ) extends RowWithLongId[Student] with ObservableRow[java.lang.Long, Student] {
+             ) extends PgRowWithLongId[Student] with ObservableRow[java.lang.Long, Student] {
   override def table: PgTableWithLongId[Student] = Student
 }
 
@@ -15,7 +15,7 @@ object Student extends PgTableWithLongId[Student] {
 
 class Course(
               val name: String
-            ) extends RowWithLongId[Course] with ObservableRow[java.lang.Long, Course] {
+            ) extends PgRowWithLongId[Course] with ObservableRow[java.lang.Long, Course] {
   override def table: PgTableWithLongId[Course] = Course
 
   override def toString: String = name
@@ -28,7 +28,7 @@ object Course extends PgTableWithLongId[Course] {
 class Student2Course(
                       val studentId: Long,
                       val courseId: Long
-                    ) extends RowWithLongId[Student2Course] with ObservableRow[java.lang.Long, Student2Course] {
+                    ) extends PgRowWithLongId[Student2Course] with ObservableRow[java.lang.Long, Student2Course] {
 
   def this(student: Student, course: Course) = this(student.id, course.id)
 

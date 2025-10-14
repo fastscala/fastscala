@@ -8,7 +8,7 @@ import java.util.UUID
 
 trait RowWithUuidIdBase extends RowWithIdBase {
 
-  def table: TableWithUUIDBase[_]
+  def table: TableWithUUIDBase[?]
 
   var uuid: Option[UUID] = None
 

@@ -114,9 +114,9 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
           case id =>
             ids2Option.get(id).map(value => {
               currentValue = value
-              form.onEvent(ChangedField(this)(hints))(form, fsc)
+              form.onEvent(ChangedField(this)(using hints))(using form, fsc)
             }).getOrElse(JS.void) &
-              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(form, fsc, hints) else JS.void)
+              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(using form, fsc, hints) else JS.void)
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),
@@ -127,7 +127,7 @@ abstract class F6SelectFieldBase[T]()(implicit renderer: SelectF6FieldRenderer) 
               id={elemId}
             >{optionsRendered}</select>),
           errorsAtRenderTime.headOption.map(_._2)
-        )(hints)
+        )(using hints)
       }
     }
   }
@@ -209,8 +209,8 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
         val onchangeJs = fsc.callback(JS.selectedValues(JS.elementById(elemId)), {
           case ids =>
             currentValue = ids.split(",").filter(_.trim != "").toSet[String].map(id => ids2Option(id))
-            form.onEvent(ChangedField(this)(hints)) &
-              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(form, fsc, hints) & JS.focus(elemId) else JS.void)
+            form.onEvent(ChangedField(this)(using hints)) &
+              (if (hints.contains(ShowValidationsHint) || errorsAtRenderTime.nonEmpty || errors().nonEmpty) reRender()(using form, fsc, hints) & JS.focus(elemId) else JS.void)
         }).cmd
         renderer.render(this)(
           label.map(label => <label for={elemId}>{label}</label>),
@@ -223,7 +223,7 @@ abstract class F6MultiSelectFieldBase[T]()(implicit renderer: MultiSelectF6Field
               id={elemId}
             >{optionsRendered}</select>),
           errorsAtRenderTime.headOption.map(_._2)
-        )(hints)
+        )(using hints)
       }
     }
   }

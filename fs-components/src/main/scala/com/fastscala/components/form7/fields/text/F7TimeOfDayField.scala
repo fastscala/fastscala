@@ -1,6 +1,7 @@
 package com.fastscala.components.form7.fields.text
 
 import com.fastscala.components.form7.F7Field
+import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
 import com.fastscala.components.form7.mixins.*
 import com.fastscala.components.form7.renderers.*
 import org.joda.time.DateTime
@@ -13,7 +14,7 @@ import scala.xml.NodeSeq
 
 
 class F7TimeOfDayField()(implicit renderer: TextF7FieldRenderer)
-  extends F7TextFieldBase[Option[Int]]
+  extends F7ValueEncodedAsStringFieldBase[Option[Int]]
     with F7FieldWithPrefix
     with F7FieldWithSuffix
     with F7FieldWithMin

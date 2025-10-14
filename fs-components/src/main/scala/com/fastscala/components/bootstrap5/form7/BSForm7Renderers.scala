@@ -38,11 +38,11 @@ abstract class BSForm7Renderers()(implicit checkboxAlignment: CheckboxAlignment.
       <option selected={if (selected) "true" else null} value={value}>{label}</option>
   }
 
-  implicit val checkboxFieldRenderer: CheckboxF7FieldRenderer = new BSCheckboxF7FieldRendererImpl()(checkboxAlignment, checkboxStyle, checkboxSide) {
+  implicit val checkboxFieldRenderer: CheckboxF7FieldRenderer = new BSCheckboxF7FieldRendererImpl()(using checkboxAlignment, checkboxStyle, checkboxSide) {
     def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 
-  implicit val radioFieldRenderer: RadioF7FieldRenderer = new BSRadioF7FieldRendererImpl()(checkboxAlignment, checkboxStyle, checkboxSide) {
+  implicit val radioFieldRenderer: RadioF7FieldRenderer = new BSRadioF7FieldRendererImpl()(using checkboxAlignment, checkboxStyle, checkboxSide) {
     def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 

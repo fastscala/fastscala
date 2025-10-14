@@ -44,7 +44,7 @@ object Main {
       override def write(last: Boolean, byteBuffer: ByteBuffer, callback: Callback): Unit = ???
     }, new Callback {
 
-    })(new Request {
+    })(using new Request {
       override def getId: String = ???
 
       override def getComponents: Components = ???

@@ -44,7 +44,7 @@ trait TableBase {
 
   def fieldTypeToSQLType(
                           field: java.lang.reflect.Field,
-                          clas: Class[_],
+                          clas: Class[?],
                           value: => Any,
                           columnConstrains: Set[String] = Set("not null")
                         ): String = clas.getName match {
@@ -94,7 +94,7 @@ trait TableBase {
     case _ => throw new Exception(s"Unexpected field class ${clas.getSimpleName} for field ${field.getName}")
   }
 
-  def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: Any, nullable: Boolean = false): Unit = try {
+  def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[?], instance: Any, nullable: Boolean = false): Unit = try {
     valueType.getName match {
 
       case "java.lang.String" | "string" if nullable => field.set(instance, rs.stringOpt(idx))
@@ -253,7 +253,7 @@ trait TableBase {
 
   def insertFields: List[Field]
 
-  def select(rest: SQLSyntax): List[Any]
+  def select(where: SQLSyntax, rest: SQLSyntax): List[Any]
 
   def delete(rest: SQLSyntax): Long
 

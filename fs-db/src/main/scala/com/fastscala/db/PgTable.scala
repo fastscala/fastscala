@@ -12,7 +12,7 @@ trait PgTableWithUUIDSupport[R] extends Table[R] {
 
   override def fieldTypeToSQLType(
                                    field: java.lang.reflect.Field,
-                                   clas: Class[_],
+                                   clas: Class[?],
                                    value: => Any,
                                    columnConstrains: Set[String] = Set("not null")
                                  ): String = clas.getName match {
@@ -32,7 +32,7 @@ trait PgTableWithUUIDSupport[R] extends Table[R] {
     case _ => super.valueToLiteral(value)
   }
 
-  override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: Any, nullable: Boolean = false): Unit = valueType.getName match {
+  override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[?], instance: Any, nullable: Boolean = false): Unit = valueType.getName match {
     case "java.util.UUID" if nullable => field.set(instance, rs.stringOpt(idx).map(UUID.fromString))
     case "java.util.UUID" => field.set(instance, UUID.fromString(rs.string(idx)))
 
@@ -44,7 +44,7 @@ trait PgTableWithJsonSupport[R] extends Table[R] {
 
   override def fieldTypeToSQLType(
                                    field: java.lang.reflect.Field,
-                                   clas: Class[_],
+                                   clas: Class[?],
                                    value: => Any,
                                    columnConstrains: Set[String] = Set("not null")
                                  ): String = clas.getName match {
@@ -64,7 +64,7 @@ trait PgTableWithJsonSupport[R] extends Table[R] {
     case _ => super.valueToLiteral(value)
   }
 
-  override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[_], instance: Any, nullable: Boolean = false): Unit = valueType.getName match {
+  override def setValue(rs: WrappedResultSet, idx: Int, field: java.lang.reflect.Field, valueType: Class[?], instance: Any, nullable: Boolean = false): Unit = valueType.getName match {
     case "io.circe.Json" if nullable => field.set(instance, rs.stringOpt(idx).map(str => io.circe.parser.parse(str).right.get))
     case "io.circe.Json" => field.set(instance, io.circe.parser.parse(rs.string(idx)).right.get)
 

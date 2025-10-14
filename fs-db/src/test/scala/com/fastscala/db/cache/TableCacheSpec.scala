@@ -2,7 +2,7 @@ package com.fastscala.db.cache
 
 import com.fastscala.db.caching.{DBCompositeObserver, TableCache}
 import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.{PgTableWithLongId, RowWithLongId}
+import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
 import com.fastscala.db.observable.ObservableRow
 import com.fastscala.db.{PostgresDB, TestEntity2}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -10,7 +10,7 @@ import scalikejdbc._
 
 class Country(
                val name: String
-             ) extends RowWithLongId[Country] with ObservableRow[java.lang.Long, Country] {
+             ) extends PgRowWithLongId[Country] with ObservableRow[java.lang.Long, Country] {
 
   override def table: PgTableWithLongId[Country] = Country
 }

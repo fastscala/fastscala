@@ -3,14 +3,14 @@ package com.fastscala.db.cache
 import com.fastscala.db.PostgresDB
 import com.fastscala.db.caching.{DBCompositeObserver, One2ManyCache, TableCache}
 import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.{PgTableWithLongId, RowWithLongId}
+import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
 import com.fastscala.db.observable.ObservableRow
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc._
 
 class Teacher(
                val name: String
-             ) extends RowWithLongId[Teacher] with ObservableRow[java.lang.Long, Teacher] {
+             ) extends PgRowWithLongId[Teacher] with ObservableRow[java.lang.Long, Teacher] {
   override def table: PgTableWithLongId[Teacher] = Teacher
 }
 
@@ -21,7 +21,7 @@ object Teacher extends PgTableWithLongId[Teacher] {
 class Class(
              val name: String
              , var teacherId: Long
-           ) extends RowWithLongId[Class] with ObservableRow[java.lang.Long, Class] {
+           ) extends PgRowWithLongId[Class] with ObservableRow[java.lang.Long, Class] {
   override def table: PgTableWithLongId[Class] = Class
 
   override def toString: String = name

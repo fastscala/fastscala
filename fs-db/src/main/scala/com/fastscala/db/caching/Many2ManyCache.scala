@@ -9,87 +9,14 @@ import scalikejdbc.scalikejdbcSQLInterpolationImplicitDef
 import java.util.UUID
 import scala.collection.mutable.ListBuffer
 
-class Many2ManyCache[
-  K,
-  L <: Row[L] with ObservableRowBase with RowWithId[K, L],
-  J <: Row[J] with ObservableRowBase with RowWithId[K, J],
-  R <: Row[R] with ObservableRowBase with RowWithId[K, R]
-](
-   val cacheL: TableCache[K, L],
-   val cacheJ: TableCache[K, J],
-   val cacheR: TableCache[K, R],
-   val getLeft: J => K,
-   val getRight: J => K,
-   val filterLeftOnJoinTable: Seq[K] => SQLSyntax,
-   val filterRightOnJoinTable: Seq[K] => SQLSyntax,
-   val left2Right: collection.mutable.Map[L, ListBuffer[R]] = collection.mutable.Map[L, ListBuffer[R]](),
-   val right2Left: collection.mutable.Map[R, ListBuffer[L]] = collection.mutable.Map[R, ListBuffer[L]]()
- ) extends DBObserver {
-
-  override def observingTables: Seq[Table[_]] = Seq[Table[_]](cacheL.table, cacheJ.table, cacheR.table)
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
-
-  def deleteX(left: L, right: R)(implicit obs: DBObserver): Unit = getRightForLeft(left).find(_ == right).foreach(_.deleteX()(obs))
-
-  def deleteX(left: K, right: K)(implicit obs: DBObserver): Unit = getRightForLeftIds(left).find(_.key == right).foreach(_.deleteX()(obs))
-
-  def getRightForLeft(left: L*): Seq[R] = getRightForLeftIds(left.map(_.key): _*)
-
-  def getRightForLeftIds(left: K*): Seq[R] = {
-    val right = cacheJ.select(sqls"where ${filterLeftOnJoinTable(left)}").map(j => cacheR.getForIdX(getRight(j)))
-    cacheR.getForIdsX(right.map(_.key): _*)
-  }
-
-  def getJoinForLeftIds(left: K*): Seq[J] = cacheJ.select(sqls"where ${filterLeftOnJoinTable(left)}")
-
-  def getJoinForLeft(left: L*): Seq[J] = getJoinForLeftIds(left.map(_.key): _*)
-
-  def getLeftForRight(right: R*): Seq[L] = getLeftForRightIds(right.map(_.key): _*)
-
-  def getLeftForRightIds(right: K*): Seq[L] = {
-    val left = cacheJ.select(sqls"where ${filterRightOnJoinTable(right)}").map(j => cacheL.getForIdX(getLeft(j)))
-    cacheL.getForIdsX(left.map(_.key): _*)
-  }
-
-  def getJoinForRightId(right: K): Seq[J] = cacheJ.select(sqls"where ${filterRightOnJoinTable(Seq(right))}")
-
-  def getJoinForRight(right: R): Seq[J] = getJoinForRightId(right.key)
-
-  def getJoinRow(left: L, right: R): Option[J] =
-    cacheJ.select(sqls"where ${filterLeftOnJoinTable(Seq(left.key))} and ${filterRightOnJoinTable(Seq(right.key))}").headOption
-
-  override def preSave(table: TableBase, row: RowBase): Unit = ()
-
-  override def postSave(table: TableBase, row: RowBase): Unit = (table, row) match {
-    case (`cacheL`, row: L) =>
-    case (`cacheJ`, row: J) =>
-    case (`cacheR`, row: R) =>
-    case _ =>
-  }
-
-  override def preDelete(table: TableBase, row: RowBase): Unit = (table, row) match {
-    case (`cacheL`, row: L) =>
-      val relevantOnTheRight: ListBuffer[R] = left2Right.getOrElse(row, ListBuffer[R]())
-      left2Right -= row
-      relevantOnTheRight.foreach(r => right2Left(r) -= row)
-    case (`cacheJ`, row: J) =>
-      val leftId = getLeft(row)
-      val left = cacheL.getForIdX(leftId)
-      val relevantOnTheRight: ListBuffer[R] = left2Right.getOrElse(left, ListBuffer[R]())
-      left2Right -= left
-      relevantOnTheRight.foreach(r => right2Left(r) -= left)
-      val rightId = getRight(row)
-      val right = cacheR.getForIdX(rightId)
-      val relevantOnTheLeft: ListBuffer[L] = right2Left.getOrElse(right, ListBuffer[L]())
-      right2Left -= right
-      relevantOnTheLeft.foreach(l => left2Right(l) -= right)
-    case (`cacheR`, row: R) =>
-      val relevantOnTheLeft: ListBuffer[L] = right2Left.getOrElse(row, ListBuffer[L]())
-      right2Left -= row
-      relevantOnTheLeft.foreach(l => left2Right(l) -= row)
-    case _ =>
-  }
-
-  override def postDelete(table: TableBase, row: RowBase): Unit = ()
-}
+class Many2ManyCache[K, L <: Row[L] & ObservableRowBase & RowWithId[K, L], J <: Row[J] & ObservableRowBase & RowWithId[K, J], R <: Row[R] & ObservableRowBase & RowWithId[K, R]](
+  cacheL: TableCache[K, L],
+  cacheJ: TableCache[K, J],
+  cacheR: TableCache[K, R],
+  getLeft: J => K,
+  getRight: J => K,
+  filterLeftOnJoinTable: Seq[K] => SQLSyntax,
+  filterRightOnJoinTable: Seq[K] => SQLSyntax,
+  left2Right: collection.mutable.Map[L, ListBuffer[R]] = collection.mutable.Map[L, ListBuffer[R]](),
+  right2Left: collection.mutable.Map[R, ListBuffer[L]] = collection.mutable.Map[R, ListBuffer[L]]()
+) extends Many2ManyDiffKeysCache[K, K, K, L, J, R](cacheL = cacheL, cacheJ = cacheJ, cacheR = cacheR, getLeft = getLeft, getRight = getRight, filterLeftOnJoinTable = filterLeftOnJoinTable, filterRightOnJoinTable = filterRightOnJoinTable, left2Right = left2Right, right2Left = right2Left)

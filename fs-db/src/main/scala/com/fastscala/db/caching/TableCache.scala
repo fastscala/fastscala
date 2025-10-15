@@ -50,9 +50,9 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
 
   def selectAll(): List[R] = all
 
-  def select(where: SQLSyntax): List[R] = processLoadedRows(table.select(where))
+  def select(where: SQLSyntax): List[R] = processLoadedRows(table.select(List(where, whereCond).filter(_ != SQLSyntax.empty).reduceOption[SQLSyntax]((l, r) => SQLSyntax.joinWithAnd(l, r)).getOrElse(SQLSyntax.empty)))
 
-  def select(where: SQLSyntax, rest: SQLSyntax): List[R] = processLoadedRows(table.select(where, rest))
+  def select(where: SQLSyntax, rest: SQLSyntax): List[R] = processLoadedRows(table.select(List(where, whereCond).filter(_ != SQLSyntax.empty).reduceOption[SQLSyntax]((l, r) => SQLSyntax.joinWithAnd(l, r)).getOrElse(SQLSyntax.empty), rest))
 
   def apply(key: K): R = getForIdX(key)
 

@@ -252,7 +252,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
   def renderTable()(implicit fsc: FSContext, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer): Elem = {
 
     implicit lazy val tableHeadRerenderer: TableHeadRerenderer = TableHeadRerenderer(
-      JS.rerenderableP[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
+      JS.rerenderablePWithJs[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
         implicit rerenderer =>
           implicit fsc => { case (tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer) =>
             implicit val _tableHeadRerenderer = tableHeadRerenderer
@@ -266,7 +266,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
     )
 
     implicit lazy val tableBodyRerenderer: TableBodyRerenderer = TableBodyRerenderer(
-      JS.rerenderableP[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
+      JS.rerenderablePWithJs[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
         implicit rerenderer =>
           implicit fsc => { case (tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer) =>
             implicit val _tableHeadRerenderer = tableHeadRerenderer
@@ -280,7 +280,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
     )
 
     implicit lazy val tableFootRerenderer: TableFootRerenderer = TableFootRerenderer(
-      JS.rerenderableP[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
+      JS.rerenderablePWithJs[(TableHeadRerenderer, TableBodyRerenderer, TableFootRerenderer)](
         implicit rerenderer =>
           implicit fsc => { case (tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer) =>
             implicit val _tableHeadRerenderer = tableHeadRerenderer
@@ -308,7 +308,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
       tableHeadRerenderer: TableHeadRerenderer,
       tableBodyRerenderer: TableBodyRerenderer,
       tableFootRerenderer: TableFootRerenderer
-  ): Elem = {
+  ): (Elem, Js) = {
     <thead></thead>.apply {
       val rerenderer: Rerenderer = JS.rerenderable(
         rerenderer =>
@@ -323,7 +323,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
       renderTableHeadTRPrepend() ++
         rerenderer.render() ++
         renderTableHeadTRAppend()
-    }.pipe(transformTableHeadElem)
+    }.pipe(transformTableHeadElem) -> Js.Void
   }
 
   def renderTableHeadTRPrepend()(implicit
@@ -384,7 +384,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
       tableHeadRerenderer: TableHeadRerenderer,
       tableBodyRerenderer: TableBodyRerenderer,
       tableFootRerenderer: TableFootRerenderer
-  ): Elem = {
+  ): (Elem, Js) = {
     <tbody></tbody>.apply {
       rowsWithIds.zipWithIndex.map({ case ((rowId, row), rowIdx) =>
         implicit val _row: R = row
@@ -404,7 +404,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
           rerenderer.render() ++
           renderTableBodyTrAppend()
       }).mkNS
-    }.pipe(transformTableBodyElem)
+    }.pipe(transformTableBodyElem) -> Js.Void
   }
 
   def renderTableBodyTrPrepend()(implicit
@@ -475,7 +475,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
       tableHeadRerenderer: TableHeadRerenderer,
       tableBodyRerenderer: TableBodyRerenderer,
       tableFootRerenderer: TableFootRerenderer
-  ): Elem = {
+  ): (Elem, Js) = {
     <tfoot></tfoot>.apply {
       val rerenderer: Rerenderer = JS.rerenderable(
         rerenderer =>
@@ -490,7 +490,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable {
       renderTableFootTRPrepend() ++
         rerenderer.render() ++
         renderTableFootTRAppend()
-    }.pipe(transformTableFootElem)
+    }.pipe(transformTableFootElem) -> Js.Void
   }
 
   def renderTableFootTRPrepend()(implicit

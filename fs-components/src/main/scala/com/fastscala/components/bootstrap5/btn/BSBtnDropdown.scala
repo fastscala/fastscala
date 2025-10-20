@@ -11,13 +11,13 @@ object BSBtnDropdown {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
-  def apply(btn: BSBtn, rightAlignedMenu: Boolean = false)(btns: BSBtn*)(implicit fsc: FSContext): Elem = {
-    custom(btn, rightAlignedMenu)(btns.map(btn => btn.btnLink.withClass("dropdown-item"))*)
+  def apply(btn: BSBtn, rightAlignedMenu: Boolean = false, btnClass: String = "dropdown-toggle")(btns: BSBtn*)(implicit fsc: FSContext): Elem = {
+    custom(btn, rightAlignedMenu, btnClass)(btns.map(btn => btn.btnLink.withClass("dropdown-item"))*)
   }
 
-  def custom(btn: BSBtn, rightAlignedMenu: Boolean = false)(elems: Elem*)(implicit fsc: FSContext): Elem = {
+  def custom(btn: BSBtn, rightAlignedMenu: Boolean = false, btnClass: String = "dropdown-toggle")(elems: Elem*)(implicit fsc: FSContext): Elem = {
     div.withClass("btn-group").apply {
-      btn.btn.withType("button").withClass("dropdown-toggle")
+      btn.btn.withType("button").withClass(btnClass)
         .withAttr("data-bs-toggle" -> "dropdown")
         .withAttr("aria-expanded" -> "false") ++
         ul.withClass("dropdown-menu").withClassIf(rightAlignedMenu, "dropdown-menu-end").apply {

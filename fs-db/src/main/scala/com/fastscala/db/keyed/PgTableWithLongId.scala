@@ -40,7 +40,7 @@ trait PgTableWithLongId[R <: PgRowWithLongId[R]] extends PgTable[R] with TableWi
     if (field.getName == "id") "bigserial primary key not null"
     else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
 
-  def getForIds(id: java.lang.Long*): List[R] = select(sqls"""id = $id""")
+  def getForIds(ids: java.lang.Long*): List[R] = select(SQLSyntax.createUnsafely("""id = ANY(?)""", Seq(ids.toArray[java.lang.Long])))
 
   def getForIdOpt(key: java.lang.Long): Option[R] = select(sqls"""id = $key""").headOption
 }

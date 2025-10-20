@@ -62,45 +62,47 @@ trait Table[R] extends TableBase {
 
   def deleteSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = sql"""delete from "$tableNameSQLSyntax" $where"""
 
-  def selectAll(): List[R] = select(SQLSyntax.empty)
+  def selectAll(): List[R] = DB.readOnly({ implicit session => _selectAll() })
 
-  def select(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty): List[R] = {
-    DB.readOnly({ implicit session =>
-      val query = selectFromSQL.where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
-      try {
-        sql"${query}".map(fromWrappedResultSet).list()
-      } catch {
-        case ex: PSQLException =>
-          logger.error(s"Error on query $query", ex)
-          throw ex
-      }
-    })
-  }
+  def _selectAll()(implicit session: DBSession): List[R] = _select(SQLSyntax.empty)
 
-  def count(where: SQLSyntax = SQLSyntax.empty): Long = {
-    DB.readOnly({ implicit session =>
-      val query = sqls"""select count(*) from "$tableNameSQLSyntax"""".where(Some(where).filter(_ != SQLSyntax.empty))
-      try {
-        sql"${query}".map(fromWrappedResultSet).map(_.long(1)).list().head
-      } catch {
-        case ex: PSQLException =>
-          logger.error(s"Error on query $query", ex)
-          throw ex
-      }
-    })
-  }
+  def select(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty): List[R] = DB.readOnly({ implicit session => _select(where, rest) })
 
-  def delete(rest: SQLSyntax): Long = {
-    DB.localTx({ implicit session =>
-      val query = deleteFrom.append(rest)
-      sql"${query}".map(fromWrappedResultSet).executeUpdate().longValue()
-    })
-  }
-
-  def listFromQuery(query: SQLSyntax): List[R] = {
-    DB.readOnly({ implicit session =>
+  def _select(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty)(implicit session: DBSession): List[R] = {
+    val query = selectFromSQL.where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
+    try {
       sql"${query}".map(fromWrappedResultSet).list()
-    })
+    } catch {
+      case ex: PSQLException =>
+        logger.error(s"Error on query $query", ex)
+        throw ex
+    }
+  }
+
+  def count(where: SQLSyntax = SQLSyntax.empty): Long = DB.readOnly({ implicit session => _count(where) })
+
+  def _count(where: SQLSyntax = SQLSyntax.empty)(implicit session: DBSession): Long = {
+    val query = sqls"""select count(*) from "$tableNameSQLSyntax"""".where(Some(where).filter(_ != SQLSyntax.empty))
+    try {
+      sql"${query}".map(fromWrappedResultSet).map(_.long(1)).list().head
+    } catch {
+      case ex: PSQLException =>
+        logger.error(s"Error on query $query", ex)
+        throw ex
+    }
+  }
+
+  def delete(rest: SQLSyntax): Long = DB.localTx({ implicit session => _delete(rest) })
+
+  def _delete(rest: SQLSyntax)(implicit session: DBSession): Long = {
+    val query = deleteFrom.append(rest)
+    sql"${query}".map(fromWrappedResultSet).executeUpdate().longValue()
+  }
+
+  def listFromQuery(query: SQLSyntax): List[R] = DB.readOnly({ implicit session => _listFromQuery(query) })
+
+  def _listFromQuery(query: SQLSyntax)(implicit session: DBSession): List[R] = {
+    sql"${query}".map(fromWrappedResultSet).list()
   }
 
   override def fromWrappedResultSet(rs: WrappedResultSet): R = super.fromWrappedResultSet(rs).asInstanceOf[R]

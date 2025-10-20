@@ -1,6 +1,8 @@
 package com.fastscala.db
 
-import scalikejdbc.{scalikejdbcSQLInterpolationImplicitDef, sqls}
+import org.postgresql.util.PSQLException
+import scalikejdbc.interpolation.SQLSyntax
+import scalikejdbc.{DB, scalikejdbcSQLInterpolationImplicitDef, sqls}
 
 trait TableWithId[R, K] extends Table[R] {
 

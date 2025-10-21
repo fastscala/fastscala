@@ -142,8 +142,10 @@ class FSPage(
          |    xhr.open("POST", "/${session.fsSystem.FSPrefix}/cb/"+pageId+"/"+funcId+"?time=" + new Date().getTime() + (ignoreErrors ? "&ignore_errors=true" : ""), async);
          |    xhr.setRequestHeader("Content-type", "text/plain;charset=utf-8");
          |    if (expectReturn) {
-         |      xhr.onload = function() { try {eval(this.responseText);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
+         |      xhr.onload = function() { try {${session.fsSystem.callbackClientSideAfter}; eval(this.responseText);} catch(err) { ${session.fsSystem.callbackClientSideOnError}; console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
          |    }
+         |    xhr.ontimeout = (e) => { ${session.fsSystem.callbackClientSideOnTimeout} };
+         |    ${session.fsSystem.callbackClientSideBefore}
          |    xhr.send(arg);
          |  },
          |  keepAlive: function(pageId) {

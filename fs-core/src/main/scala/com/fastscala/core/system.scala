@@ -318,6 +318,14 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
     else JS.confirm(s"Page has expired, please reload", JS.reload())
   }
 
+  def callbackClientSideBefore(implicit fsc: FSContext): Js = Js.Void
+  
+  def callbackClientSideAfter(implicit fsc: FSContext): Js = Js.Void
+  
+  def callbackClientSideOnError(implicit fsc: FSContext): Js = Js.Void
+  
+  def callbackClientSideOnTimeout(implicit fsc: FSContext): Js = Js.Void
+  
   def transformCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
 
   def transformFileUploadCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js

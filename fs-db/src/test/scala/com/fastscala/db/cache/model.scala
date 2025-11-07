@@ -7,6 +7,8 @@ class Student(
                val name: String
              ) extends PgRowWithLongId[Student] with ObservableRow[java.lang.Long, Student] {
   override def table: PgTableWithLongId[Student] = Student
+
+  override def toString: String = s"Student(id=$id,name=$name)"
 }
 
 object Student extends PgTableWithLongId[Student] {
@@ -18,7 +20,7 @@ class Course(
             ) extends PgRowWithLongId[Course] with ObservableRow[java.lang.Long, Course] {
   override def table: PgTableWithLongId[Course] = Course
 
-  override def toString: String = name
+  override def toString: String = s"Course(id=$id,name=$name)"
 }
 
 object Course extends PgTableWithLongId[Course] {

@@ -49,9 +49,9 @@ class One2ManySpec extends AnyFlatSpec with PostgresDB {
   val bob = new Teacher("Bob")
   val charlie = new Teacher("Charlie")
   "Create data" should "succeed" in {
-    alice.saveX()
-    bob.saveX()
-    charlie.saveX()
+    alice.save()
+    bob.save()
+    charlie.save()
   }
   "Cache" should "store mappings when creating rows in 'Many' table" in {
     implicit val cache = new DBCache()

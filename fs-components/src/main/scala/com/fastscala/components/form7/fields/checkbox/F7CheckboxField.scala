@@ -50,7 +50,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer)
         JS.setChecked(elemId, currentValue)
     )
 
-  def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     if (!enabled) renderer.renderDisabled(this)
     else {
       val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil

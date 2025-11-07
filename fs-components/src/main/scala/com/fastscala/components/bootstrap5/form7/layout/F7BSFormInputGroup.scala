@@ -19,7 +19,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*) extends F7ContainerFieldBase
 
   override def children: Seq[(String, F7Field)] = groupChildren.map("" -> _)
 
-  override def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     currentlyEnabled = enabled
     if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
     else {

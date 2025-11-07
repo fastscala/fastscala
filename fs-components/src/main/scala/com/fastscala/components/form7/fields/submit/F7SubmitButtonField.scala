@@ -1,4 +1,4 @@
-package com.fastscala.components.form7.fields
+package com.fastscala.components.form7.fields.submit
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
@@ -40,7 +40,7 @@ class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = i
     })
   }).getOrElse(Js.Void).printBeforeExec
 
-  override def render()(implicit form: Form7, fsc: FSContext): Elem =
+  override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem =
     if (!enabled) <div style="display:none;" id={aroundId}></div>
     else {
       renderer.render(this)({

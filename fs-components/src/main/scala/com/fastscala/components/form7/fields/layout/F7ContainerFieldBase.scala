@@ -17,7 +17,7 @@ abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidations 
 
   var currentlyEnabled = enabled
 
-  override def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     currentlyEnabled = enabled
     if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
     else {

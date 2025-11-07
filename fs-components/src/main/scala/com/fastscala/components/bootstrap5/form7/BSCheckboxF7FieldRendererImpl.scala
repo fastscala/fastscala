@@ -3,6 +3,7 @@ package com.fastscala.components.bootstrap5.form7
 import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.components.form7.mixins.StandardF7Field
 import com.fastscala.components.form7.renderers.CheckboxF7FieldRenderer
+import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
@@ -13,7 +14,7 @@ abstract class BSCheckboxF7FieldRendererImpl()(
   checkboxAlignment: CheckboxAlignment.Value,
   checkboxStyle: CheckboxStyle.Value,
   checkboxSide: CheckboxSide.Value,
-) extends CheckboxF7FieldRenderer with BSStandardF7FieldRendererImpl {
+) extends CheckboxF7FieldRenderer with BSStandardF7FieldRendererImpl with Mutable {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -51,12 +52,12 @@ abstract class BSCheckboxF7FieldRendererImpl()(
             invalidFeedback.map(invalidFeedback => "aria-describedby" -> invalidFeedback.getIdOpt.getOrElse(field.invalidFeedbackId)).toSeq
           }) ++
             label.map(help => "aria-labelledby" -> help.getIdOpt.getOrElse(field.helpId))*
-        ) ++
-          label.map(_.form_check_label.withFor(field.elemId)).getOrElse(Empty) ++
-          invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.elemId).withIdIfNotSet(field.invalidFeedbackId) ++
-          validFeedback.getOrElse(div.visually_hidden).valid_feedback.withIdIfNotSet(field.validFeedbackId) ++
-          help.getOrElse(div.visually_hidden).form_text.withIdIfNotSet(field.helpId)
+        ).pipe(onInputElemTransforms) ++
+          label.map(_.form_check_label.withFor(field.elemId).pipe(onLabelTransforms)).getOrElse(Empty) ++
+          invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.elemId).withIdIfNotSet(field.invalidFeedbackId).pipe(onInvalidFeedbackTransforms) ++
+          validFeedback.getOrElse(div.visually_hidden).valid_feedback.withIdIfNotSet(field.validFeedbackId).pipe(onValidFeedbackTransforms) ++
+          help.getOrElse(div.visually_hidden).form_text.withIdIfNotSet(field.helpId).pipe(onHelpTransforms)
           : NodeSeq)
-      }
+      }.pipe(onAroundDivTransforms)
   }
 }

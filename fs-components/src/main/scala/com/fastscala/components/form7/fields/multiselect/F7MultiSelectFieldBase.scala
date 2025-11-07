@@ -67,7 +67,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
         }).getOrElse(JS.void)
     )
 
-  def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     if (!enabled) renderer.renderDisabled(this)
     else {
       val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil

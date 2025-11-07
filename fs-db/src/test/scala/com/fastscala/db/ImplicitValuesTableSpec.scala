@@ -17,7 +17,7 @@ class ImplicitValuesTestEntity(var name: String)(implicit val departmentId: Depa
 }
 
 object ImplicitValuesTestEntity extends PgTable[ImplicitValuesTestEntity] {
-  override def createSampleRow(): ImplicitValuesTestEntity = new ImplicitValuesTestEntity("John Doe")(DepartmentId(1234))
+  override def createSampleRow(): ImplicitValuesTestEntity = new ImplicitValuesTestEntity("John Doe")(using DepartmentId(1234))
 }
 
 trait ImplicitValuesSpecBase extends AnyFlatSpec {
@@ -29,7 +29,7 @@ trait ImplicitValuesSpecBase extends AnyFlatSpec {
   }
   "Insert row" should "succeed" in {
     DB.localTx({ implicit session =>
-      new ImplicitValuesTestEntity("Johnny")(DepartmentId(3210)).insert()
+      new ImplicitValuesTestEntity("Johnny")(using DepartmentId(3210)).insert()
     })
   }
   "Read light row" should "succeed" in {

@@ -62,7 +62,7 @@ abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF
         }).getOrElse(JS.void)
     )
 
-  def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     if (!enabled) renderer.renderDisabled(this)
     else {
       val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil

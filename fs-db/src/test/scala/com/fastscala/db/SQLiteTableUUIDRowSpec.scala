@@ -89,7 +89,7 @@ class SQLiteTableUUIDRowSpec extends AnyFlatSpec with SQLiteDB {
       new TestEntity5().save()
       val uuids = TestEntity5.selectAll().map(_.uuid.get)
 
-      assert(TestEntity5.getForIds(uuids: _*).size == 3)
+      assert(TestEntity5.getForIds(uuids*).size == 3)
     })
   }
   "Delete table" should "succeed" in {

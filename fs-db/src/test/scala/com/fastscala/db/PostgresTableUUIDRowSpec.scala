@@ -88,7 +88,7 @@ class PostgresTableUUIDRowSpec extends AnyFlatSpec with PostgresDB {
       new TestEntity4().save()
       val uuids = TestEntity4.selectAll().map(_.uuid.get)
 
-      assert(TestEntity4.getForIds(uuids: _*).size == 3)
+      assert(TestEntity4.getForIds(uuids*).size == 3)
     })
   }
   "Delete table" should "succeed" in {

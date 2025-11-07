@@ -24,7 +24,7 @@ class F7HtmlField(
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): Try[Js] =
     Failure(new Exception("Cannot update F7HtmlField without re-rendering"))
 
-  override def render()(implicit form: Form7, fsc: FSContext): Elem =
+  override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem =
     if (!enabled) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{gen}</div>
 

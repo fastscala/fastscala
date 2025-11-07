@@ -2,6 +2,7 @@ package com.fastscala.components.form7
 
 import com.fastscala.components.form7.formmixins.{F7FormWithInitialState, F7FormWithValidationStrategy}
 import com.fastscala.components.form7.mixins.FocusableF7Field
+import com.fastscala.components.form7.renderers.F7FormRenderer
 import com.fastscala.components.utils.ElemWithRandomId
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -13,11 +14,6 @@ import org.slf4j.LoggerFactory
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
-
-trait F7FormRenderer {
-
-  def render(form: Elem): NodeSeq
-}
 
 abstract class DefaultForm7()(implicit val formRenderer: F7FormRenderer) extends Form7
 
@@ -76,7 +72,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   def render()(implicit fsc: FSContext): Elem = {
     initForm()
-    val rendered = rootField.render()
+    val rendered = formRenderer.render(rootField.render())
     if (postRenderSetupJs() != JS.void) {
       rendered.withAppendedToContents(JS.inScriptTag(postRenderSetupJs().onDOMContentLoaded))
     } else {

@@ -33,16 +33,16 @@ class JoinTableCacheSpec extends AnyFlatSpec with PostgresDB {
   val english = new Course("English")
 
   "Create data" should "succeed" in {
-    alice.saveX()
-    bob.saveX()
-    charlie.saveX()
-    math.saveX()
-    english.saveX()
+    alice.save()
+    bob.save()
+    charlie.save()
+    math.save()
+    english.save()
 
-    new Student2Course(alice, math).saveX()
-    new Student2Course(bob, math).saveX()
-    new Student2Course(bob, english).saveX()
-    new Student2Course(charlie, english).saveX()
+    new Student2Course(alice, math).save()
+    new Student2Course(bob, math).save()
+    new Student2Course(bob, english).save()
+    new Student2Course(charlie, english).save()
   }
   "Cache" should "get the correct rows" in {
     implicit val cache = new DBCache()

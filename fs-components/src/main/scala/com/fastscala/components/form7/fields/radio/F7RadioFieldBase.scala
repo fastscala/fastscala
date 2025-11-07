@@ -94,7 +94,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
       }).getOrElse(Success(superJs))
     )
 
-  def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     if (!enabled) renderer.renderDisabled(this)
     else {
       val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil

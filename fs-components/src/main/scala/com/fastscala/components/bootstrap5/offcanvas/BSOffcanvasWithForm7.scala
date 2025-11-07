@@ -1,6 +1,7 @@
 package com.fastscala.components.bootstrap5.offcanvas
 
-import com.fastscala.components.form7.{DefaultForm7, F7FormRenderer}
+import com.fastscala.components.form7.DefaultForm7
+import com.fastscala.components.form7.renderers.F7FormRenderer
 import com.fastscala.core.FSContext
 
 import scala.xml.NodeSeq

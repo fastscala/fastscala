@@ -12,7 +12,7 @@ import scala.util.{Failure, Success}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRenderer)
-    extends StandardOneInputElemF7Field[T]
+  extends StandardOneInputElemF7Field[T]
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
     with F7Field
@@ -66,7 +66,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
       }).getOrElse(Success(superJs))
     })
 
-  def render()(implicit form: Form7, fsc: FSContext): Elem = {
+  protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     if (!enabled) renderer.renderDisabled(this)
     else {
       val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
@@ -105,11 +105,14 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
 
       renderer.render(this)(
         inputElem = processInputElem(<select
-              id={id.getOrElse(null)}
-              onchange={onchangeJs}
-            >{optionsRendered}</select>),
+        id={id.getOrElse(null)}
+        onchange={onchangeJs}>
+          {optionsRendered}
+        </select>),
         label = _label(),
-        invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+        invalidFeedback = errorsToShow.headOption.map(error => <div>
+          {error._2}
+        </div>),
         validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
         help = help
       )

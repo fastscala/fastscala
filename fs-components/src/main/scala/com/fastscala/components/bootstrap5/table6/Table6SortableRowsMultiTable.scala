@@ -54,9 +54,14 @@ trait Table6SortableRowsMultiTable extends Table6Base with Table6RowsWithId {
                             |  ${sortableRowsHandle.map(sortableRowsHandle => s"""handle: ${JS.asJsStr(sortableRowsHandle)},""").getOrElse("")}
                             |  ${sortableRowsConnectWith.map(sortableRowsConnectWith => s"""connectWith: ${JS.asJsStr(sortableRowsConnectWith)},""").getOrElse("")}
                             |  update: function(event, ui) {
+                            |    console.log(event);
+                            |    console.log(ui);
+                            |    window.myui = ui;
                             |    var idx = ui.item.index();
                             |    var rowId = ui.item.attr('row-id');
-                            |    $callback
+                            |    if (${JS.elementById(tableId)}.contains(ui.item[0])) {
+                            |      $callback
+                            |    }
                             |  },
                             |  helper: function(e, ui) {
                             |    ui.children().each(function() {

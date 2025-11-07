@@ -132,6 +132,14 @@ class FSPage(
     session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacks.size)
   }
 
+  def callbackClientSideBefore(implicit fsc: FSContext): Js = session.fsSystem.callbackClientSideBefore
+
+  def callbackClientSideAfter(implicit fsc: FSContext): Js = session.fsSystem.callbackClientSideAfter
+
+  def callbackClientSideOnError(implicit fsc: FSContext): Js = session.fsSystem.callbackClientSideOnError
+
+  def callbackClientSideOnTimeout(implicit fsc: FSContext): Js = session.fsSystem.callbackClientSideOnTimeout
+
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = {
     JS {
       s"""window._fs = {
@@ -142,10 +150,10 @@ class FSPage(
          |    xhr.open("POST", "/${session.fsSystem.FSPrefix}/cb/"+pageId+"/"+funcId+"?time=" + new Date().getTime() + (ignoreErrors ? "&ignore_errors=true" : ""), async);
          |    xhr.setRequestHeader("Content-type", "text/plain;charset=utf-8");
          |    if (expectReturn) {
-         |      xhr.onload = function() { try {${session.fsSystem.callbackClientSideAfter}; eval(this.responseText);} catch(err) { ${session.fsSystem.callbackClientSideOnError}; console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
+         |      xhr.onload = function() { try {$callbackClientSideAfter; eval(this.responseText);} catch(err) { $callbackClientSideOnError; console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
          |    }
-         |    xhr.ontimeout = (e) => { ${session.fsSystem.callbackClientSideOnTimeout} };
-         |    ${session.fsSystem.callbackClientSideBefore}
+         |    xhr.ontimeout = (e) => { $callbackClientSideOnTimeout };
+         |    $callbackClientSideBefore
          |    xhr.send(arg);
          |  },
          |  keepAlive: function(pageId) {

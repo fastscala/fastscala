@@ -17,7 +17,6 @@ import scala.xml.{Elem, NodeSeq}
 trait F7Field
   extends F7FieldWithDependencies
     with F7FieldWithState
-    with F7FieldWithEnabled
     with ElemWithId
     with F7FieldWithId {
 
@@ -35,9 +34,16 @@ trait F7Field
   
   def updateFieldWithoutReRenderingOrFallbackToRerender()(implicit form: Form7, fsc: FSContext): Js = updateFieldWithoutReRendering().getOrElse(reRender())
 
+  def renderedFieldWithCurrentState(): Unit = ()
+
   val aroundId: String = IdGen.id
 
-  def render()(implicit form: Form7, fsc: FSContext): Elem
+  final def render()(implicit form: Form7, fsc: FSContext): Elem = {
+    renderedFieldWithCurrentState()
+    renderImpl()
+  }
+
+  protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem
 
   def postRenderSetupJs()(implicit fsc: FSContext): Js = JS.void
 

@@ -1,11 +1,12 @@
 package com.fastscala.db.cache
 
 import com.fastscala.db.PostgresDB
-import com.fastscala.db.caching.{DBCompositeObserver, JoinTableCache, Many2ManyCache, One2ManyCache, TableCache}
+import com.fastscala.db.caching.*
 import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
+import com.fastscala.db.keyed.{PgRowWithLongId, PgTableWithLongId}
 import com.fastscala.db.observable.ObservableRow
 import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers.*
 import scalikejdbc.*
 
 import java.util.UUID
@@ -35,24 +36,53 @@ class Many2ManySpec extends AnyFlatSpec with PostgresDB {
   val english = new Course("English")
 
   "Create data" should "succeed" in {
-    alice.saveX()
-    bob.saveX()
-    charlie.saveX()
-    math.saveX()
-    english.saveX()
+    alice.save()
+    bob.save()
+    charlie.save()
+    math.save()
+    english.save()
 
-    new Student2Course(alice, math).saveX()
-    new Student2Course(bob, math).saveX()
-    new Student2Course(bob, english).saveX()
-    new Student2Course(charlie, english).saveX()
+    new Student2Course(alice, math).save()
+    new Student2Course(bob, math).save()
+    new Student2Course(bob, english).save()
+    new Student2Course(charlie, english).save()
   }
   "Cache" should "get the correct rows" in {
     implicit val cache = new DBCache()
 
-    assert(cache.student2Course.getLeftForRight(math).toSet == Set(alice, bob))
-    assert(cache.student2Course.getRightForLeft(bob).toSet == Set(math, english))
-    assert(cache.student2Course.getLeftForRight(math, english).toSet == Set(alice, bob, charlie))
-    assert(cache.student2Course.getRightForLeft(alice, bob, charlie).toSet == Set(math, english))
+    cache.student2Course.getLeftForRight(math).toSet shouldEqual Set(alice, bob)
+    cache.student2Course.getRightForLeft(bob).toSet shouldEqual Set(math, english)
+    cache.student2Course.getLeftForRight(math, english).toSet shouldEqual Set(alice, bob, charlie)
+    cache.student2Course.getRightForLeft(alice, bob, charlie).toSet shouldEqual Set(math, english)
+  }
+  "Cache" should "work after deleting a row" in {
+    implicit val cache = new DBCache()
+
+    // Force hydrate cache:
+    cache.student2Course.getLeftForRight(math, english)
+    cache.student2Course.getRightForLeft(alice, bob, charlie)
+
+    val alice2Math = cache.student2Course.getJoinForLeftAndRight(alice, math)
+    alice2Math.isDefined shouldEqual true
+    alice2Math.foreach(_.deleteX())
+
+    cache.student2Course.getLeftForRight(math).toSet shouldEqual Set(bob)
+    cache.student2Course.getRightForLeft(bob).toSet shouldEqual Set(math, english)
+    cache.student2Course.getLeftForRight(math, english).toSet shouldEqual Set(bob, charlie)
+  }
+  "Cache" should "work after creating a row" in {
+    implicit val cache = new DBCache()
+
+    // Force hydrate cache:
+    cache.student2Course.getLeftForRight(math, english)
+    cache.student2Course.getRightForLeft(alice, bob, charlie)
+
+    new Student2Course(alice, math).saveX()
+
+    cache.student2Course.getLeftForRight(math).toSet shouldEqual Set(alice, bob)
+    cache.student2Course.getRightForLeft(bob).toSet shouldEqual Set(math, english)
+    cache.student2Course.getLeftForRight(math, english).toSet shouldEqual Set(alice, bob, charlie)
+    cache.student2Course.getRightForLeft(alice, bob, charlie).toSet shouldEqual Set(math, english)
   }
 
   "Delete tables" should "succeed" in {

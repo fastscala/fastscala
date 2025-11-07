@@ -8,7 +8,7 @@ import scalikejdbc._
 class TestEntity7(
                    var config: Json = TestEntity7.testJson
                  ) extends PgRowWithLongId[TestEntity7] {
-  override def table: PgTableWithLongId[TestEntity7] with PgTableWithJsonSupport[TestEntity7] = TestEntity7
+  override def table: PgTableWithLongId[TestEntity7] & PgTableWithJsonSupport[TestEntity7] = TestEntity7
 }
 
 object TestEntity7 extends PgTableWithLongId[TestEntity7] with PgTableWithJsonSupport[TestEntity7] {

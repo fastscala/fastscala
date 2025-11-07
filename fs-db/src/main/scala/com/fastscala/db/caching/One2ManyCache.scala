@@ -28,6 +28,16 @@ class One2ManyCache[
 
   override def observingTables: Seq[Table[?]] = Seq[Table[?]](cacheOne.table, cacheMany.table)
 
+  def loadAll(): Unit = {
+    cacheOne.selectAll()
+    cacheMany.selectAll().foreach(many => {
+      cacheOne.getForIdOptX(getOneId(many)).foreach(one => {
+        one2Many.getOrElseUpdate(one, ListBuffer()) += many
+        many2One(many) = one
+      })
+    })
+  }
+
   val logger = LoggerFactory.getLogger(getClass.getName)
 
   def getOne(many: M): Option[O] = cacheOne.getForIdOptX(getOneId(many))

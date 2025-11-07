@@ -21,7 +21,7 @@ class F7HtmlSurroundField[T <: F7Field](
     with F7FieldWithDisabled
     with F7FieldWithEnabled {
 
-  override def render()(implicit form: Form7, fsc: FSContext): Elem =
+  override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem =
     if (!enabled) <div style="display:none;" id={aroundId}></div>
     else <div id={aroundId}>{surround(field.render())}</div>
 

@@ -28,7 +28,7 @@ class One2ManyCache[
 
   override def observingTables: Seq[Table[?]] = Seq[Table[?]](cacheOne.table, cacheMany.table)
 
-  def loadAll(): Unit = {
+  def hydrateFully(): Unit = {
     cacheOne.selectAll()
     cacheMany.selectAll().foreach(many => {
       cacheOne.getForIdOptX(getOneId(many)).foreach(one => {

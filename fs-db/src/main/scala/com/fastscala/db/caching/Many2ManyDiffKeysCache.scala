@@ -30,7 +30,7 @@ class Many2ManyDiffKeysCache[KL, KJ, KR, L <: Row[L] & ObservableRowBase & RowWi
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
-  def loadAll(): Unit = cacheJ.selectAll().foreach(joinElem => {
+  def hydrateFully(): Unit = cacheJ.selectAll().foreach(joinElem => {
     left2Join.getOrElseUpdate(getLeft(joinElem), scala.collection.mutable.Set()) += joinElem
     right2Join.getOrElseUpdate(getRight(joinElem), scala.collection.mutable.Set()) += joinElem
   })
@@ -78,10 +78,10 @@ class Many2ManyDiffKeysCache[KL, KJ, KR, L <: Row[L] & ObservableRowBase & RowWi
     joinWithTheRightElement <- right2Join.get(right.key)
     intersection = joinWithTheLeftElement & joinWithTheRightElement
     if intersection.nonEmpty
-    _ = if (intersection.size > 1) {
-      val query = s"""select * from ${cacheJ.table.tableName} where ${filterLeftOnJoinTable(Seq(left.key)).value} and ${filterRightOnJoinTable(Seq(right.key)).value};""".replaceFirst("\\?", s"'${left.key}'").replaceFirst("\\?", s"'${right.key}'")
-      logger.warn(s"More than one row for $left => $right: ${intersection.mkString(", ")}! Query:\n$query")
-    }
+//    _ = if (intersection.size > 1) {
+//      val query = s"""select * from ${cacheJ.table.tableName} where ${filterLeftOnJoinTable(Seq(left.key)).value} and ${filterRightOnJoinTable(Seq(right.key)).value};""".replaceFirst("\\?", s"'${left.key}'").replaceFirst("\\?", s"'${right.key}'")
+//      logger.warn(s"More than one row for $left => $right: ${intersection.mkString(", ")}! Query:\n$query")
+//    }
     //    _ = assert(intersection.size == 1)
   } yield intersection.head).orElse {
     cacheJ.select(sqls"${filterLeftOnJoinTable(Seq(left.key))} and ${filterRightOnJoinTable(Seq(right.key))}").headOption

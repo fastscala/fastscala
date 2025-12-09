@@ -55,7 +55,7 @@ class JoinTableCacheSpec extends AnyFlatSpec with PostgresDB {
   "Cache" should "get the correct rows when join table is in memory" in {
     implicit val cache = new DBCache()
 
-    cache.student2CourseCache.loadAllEntries()
+    cache.student2CourseCache.hydrateFully()
 
     assert(cache.student2CourseCache.getLeftForRight(math).toSet == Set(alice, bob))
     assert(cache.student2CourseCache.getRightForLeft(bob).toSet == Set(math, english))
@@ -73,7 +73,7 @@ class JoinTableCacheSpec extends AnyFlatSpec with PostgresDB {
   "Cache" should "delete correctly when join table is in memory" in {
     implicit val cache = new DBCache()
 
-    cache.student2CourseCache.loadAllEntries()
+    cache.student2CourseCache.hydrateFully()
 
     cache.student2CourseCache.deleteX(bob, english)
     assert(cache.student2CourseCache.getRightForLeft(bob).toSet == Set(math))

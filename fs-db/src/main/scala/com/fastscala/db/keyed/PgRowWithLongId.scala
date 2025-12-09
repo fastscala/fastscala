@@ -62,10 +62,10 @@ trait PgRowWithLongId[R <: PgRowWithLongId[R]](var id: java.lang.Long = null) ex
     })
   }
 
-  override def insert(): Unit = {
-    if (isPersisted_?) throw new Exception(s"Row already inserted with id $id")
-    super.insert()
-  }
+//  override def insert(): Unit = {
+//    if (isPersisted_?) throw new Exception(s"Row already inserted with id $id")
+//    super.insert()
+//  }
 
   override def hashCode(): Int = id.hashCode() * 41
 

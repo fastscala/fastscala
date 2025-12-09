@@ -14,7 +14,11 @@ trait PgTableWithLongId[R <: PgRowWithLongId[R]] extends PgTable[R] with TableWi
     ins
   }
 
-  def upsertSQL(row: R, rest: SQLSyntax= SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
+  override def selectIdFromSQL: SQLSyntax = sqls"""select uuid from $tableNameSQLSyntaxQuoted"""
+
+  def idFromWrappedResultSet(rs: WrappedResultSet): java.lang.Long = rs.long("id")
+
+  def upsertSQL(row: R, rest: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val columns: SQLSyntax = SQLSyntax.createUnsafely(upsertFields.map(field => {
       field.setAccessible(true)
       fieldName(field)
@@ -29,7 +33,7 @@ trait PgTableWithLongId[R <: PgRowWithLongId[R]] extends PgTable[R] with TableWi
       sqls"""$fName = EXCLUDED.$fName"""
     }), sqls",")
 
-    sql"""insert into "$tableNameSQLSyntax" $columns VALUES ($values) ON CONFLICT (id) DO UPDATE SET $setters;"""
+    sql"""insert into $tableNameSQLSyntaxQuoted $columns VALUES ($values) ON CONFLICT (id) DO UPDATE SET $setters;"""
   }
 
   override def insertFields: List[Field] = fieldsList.filter(_.getName != "id")

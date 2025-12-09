@@ -146,21 +146,21 @@ case class BSBtn(
 
   def toLink: Js = changeToStyleWithClasses("btn btn-link")
 
-  def toOutlineDanger: Js = changeToStyleWithClasses("btn btn-outline-danger")
+  def toOutlineDanger: Js = changeToStyleWithClasses("btn btn-outline btn-outline-danger")
 
-  def toOutlineDark: Js = changeToStyleWithClasses("btn btn-outline-dark")
+  def toOutlineDark: Js = changeToStyleWithClasses("btn btn-outline btn-outline-dark")
 
-  def toOutlineInfo: Js = changeToStyleWithClasses("btn btn-outline-info")
+  def toOutlineInfo: Js = changeToStyleWithClasses("btn btn-outline btn-outline-info")
 
-  def toOutlineLight: Js = changeToStyleWithClasses("btn btn-outline-light")
+  def toOutlineLight: Js = changeToStyleWithClasses("btn btn-outline btn-outline-light")
 
-  def toOutlinePrimary: Js = changeToStyleWithClasses("btn btn-outline-primary")
+  def toOutlinePrimary: Js = changeToStyleWithClasses("btn btn-outline btn-outline-primary")
 
-  def toOutlineSecondary: Js = changeToStyleWithClasses("btn btn-outline-secondary")
+  def toOutlineSecondary: Js = changeToStyleWithClasses("btn btn-outline btn-outline-secondary")
 
-  def toOutlineSuccess: Js = changeToStyleWithClasses("btn btn-outline-success")
+  def toOutlineSuccess: Js = changeToStyleWithClasses("btn btn-outline btn-outline-success")
 
-  def toOutlineWarning: Js = changeToStyleWithClasses("btn btn-outline-warning")
+  def toOutlineWarning: Js = changeToStyleWithClasses("btn btn-outline btn-outline-warning")
 
   def changeToStyleWithClasses(classes: String): Js = JS.fromString(s"$$('#$id').removeClass('${styleClasses.mkString(" ")}').addClass('$classes');")
 
@@ -182,6 +182,7 @@ case class BSBtn(
     , "btn-outline-secondary"
     , "btn-outline-success"
     , "btn-outline-warning"
+    , "btn-outline"
     , "btn"
   )
 
@@ -219,21 +220,21 @@ case class BSBtn(
 
   def BtnLink: BSBtn = addClass("btn btn-link")
 
-  def BtnOutlineDanger: BSBtn = addClass("btn btn-outline-danger")
+  def BtnOutlineDanger: BSBtn = addClass("btn btn-outline btn-outline-danger")
 
-  def BtnOutlineDark: BSBtn = addClass("btn btn-outline-dark")
+  def BtnOutlineDark: BSBtn = addClass("btn btn-outline btn-outline-dark")
 
-  def BtnOutlineInfo: BSBtn = addClass("btn btn-outline-info")
+  def BtnOutlineInfo: BSBtn = addClass("btn btn-outline btn-outline-info")
 
-  def BtnOutlineLight: BSBtn = addClass("btn btn-outline-light")
+  def BtnOutlineLight: BSBtn = addClass("btn btn-outline btn-outline-light")
 
-  def BtnOutlinePrimary: BSBtn = addClass("btn btn-outline-primary")
+  def BtnOutlinePrimary: BSBtn = addClass("btn btn-outline btn-outline-primary")
 
-  def BtnOutlineSecondary: BSBtn = addClass("btn btn-outline-secondary")
+  def BtnOutlineSecondary: BSBtn = addClass("btn btn-outline btn-outline-secondary")
 
-  def BtnOutlineSuccess: BSBtn = addClass("btn btn-outline-success")
+  def BtnOutlineSuccess: BSBtn = addClass("btn btn-outline btn-outline-success")
 
-  def BtnOutlineWarning: BSBtn = addClass("btn btn-outline-warning")
+  def BtnOutlineWarning: BSBtn = addClass("btn btn-outline btn-outline-warning")
 
   // ================================== RENDERING ==================================
 

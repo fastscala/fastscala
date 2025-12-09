@@ -62,6 +62,7 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
     onHidden = fsc.callback(() => rerender())
   )(modal =>
     implicit fsc => {
+      import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
       allColumns.map(col => {
         ImmediateInputFields.checkbox(
           () => currentSelectedCols().contains(col),
@@ -74,7 +75,7 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
               JS.void
           },
           colLabel(col)
-        )
+        ).mb_2
       }).mkNS
     }
   )

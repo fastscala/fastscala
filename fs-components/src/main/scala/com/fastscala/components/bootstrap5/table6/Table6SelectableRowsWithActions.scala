@@ -8,7 +8,9 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.rerenderers.{Rerenderer, RerendererP}
 
-trait Table6SelectableRowsWithActions extends Table6SelectableRows with Table6StdColsHelper {
+trait Table6SelectableRowsWithActions extends Table6SelectableRowsBase with Table6StdColsHelper {
+
+  def selectedVisibleRows: Set[R]
 
   def actionsForRows(rows: Set[R]): Seq[BSBtn] = Nil
 
@@ -21,14 +23,14 @@ trait Table6SelectableRowsWithActions extends Table6SelectableRows with Table6St
 
   lazy val actionsDropdownBtnRenderer: Rerenderer = JS.rerenderable(rerenderer => implicit fsc => {
     BSBtnDropdown(actionsBtnToIncludeInTopDropdown)(
-      actionsForRows(selectedVisibleRows)*
+      actionsForRows(selectedVisibleRows) *
     )
   }, debugLabel = Some("actions_dropdown_btn"))
 
   lazy val ColActionsDefault = ColNsFullTd(actionsBtnToIncludeInRowDropdown.content.toString(), implicit fsc => {
     case (rowsWithIds, columnsWithIds, tableWrapperRenderer, tableRenderer, tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer, trRerenderer, tdRerenderer, col, colIdx, colId, row, rowIdx, rowId) =>
       val contents = BSBtnDropdown(actionsBtnToIncludeInRowDropdown)(
-        actionsForRows(Set(row))*
+        actionsForRows(Set(row)) *
       )
       <td class="py-1">{contents}</td>
   })

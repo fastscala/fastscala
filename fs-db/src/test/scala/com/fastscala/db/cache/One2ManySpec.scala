@@ -36,7 +36,7 @@ class One2ManySpec extends AnyFlatSpec with PostgresDB {
   class DBCache extends DBCompositeObserver {
     val teacher = new TableCache[java.lang.Long, Teacher](Teacher)
     val clas = new TableCache[java.lang.Long, Class](Class)
-    val class2Teacher = new One2ManyCache[java.lang.Long, Teacher, Class](teacher, clas, _.teacherId, id => sqls"where teacher_id = $id")
+    val class2Teacher = new One2ManyCache[java.lang.Long, Teacher, Class](teacher, clas, _.teacherId, id => sqls"teacher_id = $id")
   }
 
   "Create tables" should "succeed" in {

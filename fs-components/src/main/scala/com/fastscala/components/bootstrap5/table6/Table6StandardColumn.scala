@@ -11,54 +11,54 @@ trait Table6StandardColumns extends Table6ColsRenderable with Table6ColsLabeled 
   type C = Table6StandardColumn[R]
 
   override def renderTableHeadTrTh()(implicit
-      fsc: FSContext,
-      rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
-      tableWrapperRenderer: TableWrapperRerenderer,
-      tableRenderer: TableRerenderer,
-      tableHeadRerenderer: TableHeadRerenderer,
-      tableBodyRerenderer: TableBodyRerenderer,
-      tableFootRerenderer: TableFootRerenderer,
-      trRerenderer: TrRerenderer,
-      thRerenderer: ThRerenderer,
-      col: C,
-      colIdx: TableColIdx,
-      colId: TableColId
+                                     fsc: FSContext,
+                                     rowsWithIds: Seq[(String, R)],
+                                     columnsWithIds: Seq[(String, C)],
+                                     tableWrapperRenderer: TableWrapperRerenderer,
+                                     tableRenderer: TableRerenderer,
+                                     tableHeadRerenderer: TableHeadRerenderer,
+                                     tableBodyRerenderer: TableBodyRerenderer,
+                                     tableFootRerenderer: TableFootRerenderer,
+                                     trRerenderer: TrRerenderer,
+                                     thRerenderer: ThRerenderer,
+                                     col: C,
+                                     colIdx: TableColIdx,
+                                     colId: TableColId
   ): Elem = col.renderTheadTrTh()
 
   override def renderTableBodyTrTd()(implicit
-      fsc: FSContext,
-      rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
-      tableWrapperRenderer: TableWrapperRerenderer,
-      tableRenderer: TableRerenderer,
-      tableHeadRerenderer: TableHeadRerenderer,
-      tableBodyRerenderer: TableBodyRerenderer,
-      tableFootRerenderer: TableFootRerenderer,
-      trRerenderer: TrRerenderer,
-      tdRerenderer: TdRerenderer,
-      col: C,
-      colIdx: TableColIdx,
-      colId: TableColId,
-      row: R,
-      rowIdx: TableRowIdx,
-      rowId: TableRowId
+                                     fsc: FSContext,
+                                     rowsWithIds: Seq[(String, R)],
+                                     columnsWithIds: Seq[(String, C)],
+                                     tableWrapperRenderer: TableWrapperRerenderer,
+                                     tableRenderer: TableRerenderer,
+                                     tableHeadRerenderer: TableHeadRerenderer,
+                                     tableBodyRerenderer: TableBodyRerenderer,
+                                     tableFootRerenderer: TableFootRerenderer,
+                                     trRerenderer: TrRerenderer,
+                                     tdRerenderer: TdRerenderer,
+                                     col: C,
+                                     colIdx: TableColIdx,
+                                     colId: TableColId,
+                                     row: R,
+                                     rowIdx: TableRowIdx,
+                                     rowId: TableRowId
   ): Elem = col.renderTbodyTrTd()
 
   override def renderTableFootTrTh()(implicit
-      fsc: FSContext,
-      rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
-      tableWrapperRenderer: TableWrapperRerenderer,
-      tableRenderer: TableRerenderer,
-      tableHeadRerenderer: TableHeadRerenderer,
-      tableBodyRerenderer: TableBodyRerenderer,
-      tableFootRerenderer: TableFootRerenderer,
-      trRerenderer: TrRerenderer,
-      thRerenderer: ThRerenderer,
-      col: C,
-      colIdx: TableColIdx,
-      colId: TableColId
+                                     fsc: FSContext,
+                                     rowsWithIds: Seq[(String, R)],
+                                     columnsWithIds: Seq[(String, C)],
+                                     tableWrapperRenderer: TableWrapperRerenderer,
+                                     tableRenderer: TableRerenderer,
+                                     tableHeadRerenderer: TableHeadRerenderer,
+                                     tableBodyRerenderer: TableBodyRerenderer,
+                                     tableFootRerenderer: TableFootRerenderer,
+                                     trRerenderer: TrRerenderer,
+                                     thRerenderer: ThRerenderer,
+                                     col: C,
+                                     colIdx: TableColIdx,
+                                     colId: TableColId
   ): Elem = col.renderTfootTrTh()
 
   override def colLabel(col: C): String = col.label
@@ -78,58 +78,58 @@ trait Table6StandardColumn[R] extends ClassEnrichableMutable {
   def label: String
 
   def renderTheadTrTh()(implicit
-      fsc: FSContext,
-      rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
-      tableWrapperRenderer: TableWrapperRerenderer,
-      tableRenderer: TableRerenderer,
-      tableHeadRerenderer: TableHeadRerenderer,
-      tableBodyRerenderer: TableBodyRerenderer,
-      tableFootRerenderer: TableFootRerenderer,
-      trRerenderer: TrRerenderer,
-      thRerenderer: ThRerenderer,
-      col: C,
-      colIdx: TableColIdx,
-      colId: TableColId
+                        fsc: FSContext,
+                        rowsWithIds: Seq[(String, R)],
+                        columnsWithIds: Seq[(String, C)],
+                        tableWrapperRenderer: TableWrapperRerenderer,
+                        tableRenderer: TableRerenderer,
+                        tableHeadRerenderer: TableHeadRerenderer,
+                        tableBodyRerenderer: TableBodyRerenderer,
+                        tableFootRerenderer: TableFootRerenderer,
+                        trRerenderer: TrRerenderer,
+                        thRerenderer: ThRerenderer,
+                        col: C,
+                        colIdx: TableColIdx,
+                        colId: TableColId
   ): Elem
 
   def renderTbodyTrTd()(implicit
-      fsc: FSContext,
-      rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
-      tableWrapperRenderer: TableWrapperRerenderer,
-      tableRenderer: TableRerenderer,
-      tableHeadRerenderer: TableHeadRerenderer,
-      tableBodyRerenderer: TableBodyRerenderer,
-      tableFootRerenderer: TableFootRerenderer,
-      trRerenderer: TrRerenderer,
-      tdRerenderer: TdRerenderer,
-      col: C,
-      colIdx: TableColIdx,
-      colId: TableColId,
-      row: R,
-      rowIdx: TableRowIdx,
-      rowId: TableRowId
+                        fsc: FSContext,
+                        rowsWithIds: Seq[(String, R)],
+                        columnsWithIds: Seq[(String, C)],
+                        tableWrapperRenderer: TableWrapperRerenderer,
+                        tableRenderer: TableRerenderer,
+                        tableHeadRerenderer: TableHeadRerenderer,
+                        tableBodyRerenderer: TableBodyRerenderer,
+                        tableFootRerenderer: TableFootRerenderer,
+                        trRerenderer: TrRerenderer,
+                        tdRerenderer: TdRerenderer,
+                        col: C,
+                        colIdx: TableColIdx,
+                        colId: TableColId,
+                        row: R,
+                        rowIdx: TableRowIdx,
+                        rowId: TableRowId
   ): Elem
 
   def renderTfootTrTh()(implicit
-      fsc: FSContext,
-      rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
-      tableWrapperRenderer: TableWrapperRerenderer,
-      tableRenderer: TableRerenderer,
-      tableHeadRerenderer: TableHeadRerenderer,
-      tableBodyRerenderer: TableBodyRerenderer,
-      tableFootRerenderer: TableFootRerenderer,
-      trRerenderer: TrRerenderer,
-      thRerenderer: ThRerenderer,
-      col: C,
-      colIdx: TableColIdx,
-      colId: TableColId
+                        fsc: FSContext,
+                        rowsWithIds: Seq[(String, R)],
+                        columnsWithIds: Seq[(String, C)],
+                        tableWrapperRenderer: TableWrapperRerenderer,
+                        tableRenderer: TableRerenderer,
+                        tableHeadRerenderer: TableHeadRerenderer,
+                        tableBodyRerenderer: TableBodyRerenderer,
+                        tableFootRerenderer: TableFootRerenderer,
+                        trRerenderer: TrRerenderer,
+                        thRerenderer: ThRerenderer,
+                        col: C,
+                        colIdx: TableColIdx,
+                        colId: TableColId
   ): Elem
 }
 
-trait Table6StdColsHelper extends Table6Base {
+trait Table6StdColsHelper {
 
   type R
   type C = Table6StandardColumn[R]
@@ -139,55 +139,61 @@ trait Table6StdColsHelper extends Table6Base {
     override def label: String = title
 
     override def renderTheadTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{title}</th>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {title}
+    </th>
 
     override def renderTbodyTrTd()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        tdRerenderer: TdRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId,
-        row: R,
-        rowIdx: TableRowIdx,
-        rowId: TableRowId
-    ): Elem = <td class={additionalClasses}>{render(row)}</td>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   tdRerenderer: TdRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId,
+                                   row: R,
+                                   rowIdx: TableRowIdx,
+                                   rowId: TableRowId
+    ): Elem = <td class={additionalClasses}>
+      {render(row)}
+    </td>
 
     override def renderTfootTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{renderFoot(rowsWithIds.map(_._2))}</th>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {renderFoot(rowsWithIds.map(_._2))}
+    </th>
   }
 
   def ColNs(title: String, render: FSContext => R => NodeSeq, renderFoot: FSContext => Seq[R] => NodeSeq = _ => _ => NodeSeq.Empty) = new Table6StandardColumn[R] {
@@ -195,129 +201,137 @@ trait Table6StdColsHelper extends Table6Base {
     override def label: String = title
 
     override def renderTheadTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{title}</th>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {title}
+    </th>
 
     override def renderTbodyTrTd()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        tdRerenderer: TdRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId,
-        row: R,
-        rowIdx: TableRowIdx,
-        rowId: TableRowId
-    ): Elem = <td class={additionalClasses}>{render(fsc)(row)}</td>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   tdRerenderer: TdRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId,
+                                   row: R,
+                                   rowIdx: TableRowIdx,
+                                   rowId: TableRowId
+    ): Elem = <td class={additionalClasses}>
+      {render(fsc)(row)}
+    </td>
 
     override def renderTfootTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{renderFoot(fsc)(rowsWithIds.map(_._2))}</th>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {renderFoot(fsc)(rowsWithIds.map(_._2))}
+    </th>
   }
 
   def ColNsFull(
-      title: String,
-      render: FSContext => (
-          Seq[(String, R)],
-          Seq[(String, C)],
-          TableWrapperRerenderer,
-          TableRerenderer,
-          TableHeadRerenderer,
-          TableBodyRerenderer,
-          TableFootRerenderer,
-          TrRerenderer,
-          TdRerenderer,
-          C,
-          TableColIdx,
-          TableColId,
-          R,
-          TableRowIdx,
-          TableRowId
-      ) => NodeSeq,
-      renderFoot: FSContext => (
-          Seq[(String, R)],
-          Seq[(String, C)],
-          TableWrapperRerenderer,
-          TableRerenderer,
-          TableHeadRerenderer,
-          TableBodyRerenderer,
-          TableFootRerenderer,
-          TrRerenderer,
-          ThRerenderer,
-          C,
-          TableColIdx,
-          TableColId
-      ) => NodeSeq = _ => (_, _, _, _, _, _, _, _, _, _, _, _) => NodeSeq.Empty
-  ) = new Table6StandardColumn[R] {
+                 title: String,
+                 render: FSContext => (
+                   Seq[(String, R)],
+                     Seq[(String, C)],
+                     TableWrapperRerenderer,
+                     TableRerenderer,
+                     TableHeadRerenderer,
+                     TableBodyRerenderer,
+                     TableFootRerenderer,
+                     TrRerenderer,
+                     TdRerenderer,
+                     C,
+                     TableColIdx,
+                     TableColId,
+                     R,
+                     TableRowIdx,
+                     TableRowId
+                   ) => NodeSeq,
+                 renderFoot: FSContext => (
+                   Seq[(String, R)],
+                     Seq[(String, C)],
+                     TableWrapperRerenderer,
+                     TableRerenderer,
+                     TableHeadRerenderer,
+                     TableBodyRerenderer,
+                     TableFootRerenderer,
+                     TrRerenderer,
+                     ThRerenderer,
+                     C,
+                     TableColIdx,
+                     TableColId
+                   ) => NodeSeq = _ => (_, _, _, _, _, _, _, _, _, _, _, _) => NodeSeq.Empty
+               ) = new Table6StandardColumn[R] {
 
     override def label: String = title
 
     override def renderTheadTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{title}</th>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {title}
+    </th>
 
     override def renderTbodyTrTd()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        tdRerenderer: TdRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId,
-        row: R,
-        rowIdx: TableRowIdx,
-        rowId: TableRowId
-    ): Elem = <td class={additionalClasses}>{
-      render(fsc)(
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   tdRerenderer: TdRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId,
+                                   row: R,
+                                   rowIdx: TableRowIdx,
+                                   rowId: TableRowId
+    ): Elem = <td class={additionalClasses}>
+      {render(fsc)(
         rowsWithIds,
         columnsWithIds,
         tableWrapperRenderer,
@@ -333,25 +347,25 @@ trait Table6StdColsHelper extends Table6Base {
         row,
         rowIdx,
         rowId
-      )
-    }</td>
+      )}
+    </td>
 
     override def renderTfootTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{
-      renderFoot(fsc)(
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {renderFoot(fsc)(
         rowsWithIds,
         columnsWithIds,
         tableWrapperRenderer,
@@ -364,80 +378,82 @@ trait Table6StdColsHelper extends Table6Base {
         col,
         colIdx,
         colId
-      )
-    }</th>
+      )}
+    </th>
   }
 
   def ColNsFullTd(
-      title: String,
-      render: FSContext => (
-          Seq[(String, R)],
-          Seq[(String, C)],
-          TableWrapperRerenderer,
-          TableRerenderer,
-          TableHeadRerenderer,
-          TableBodyRerenderer,
-          TableFootRerenderer,
-          TrRerenderer,
-          TdRerenderer,
-          C,
-          TableColIdx,
-          TableColId,
-          R,
-          TableRowIdx,
-          TableRowId
-      ) => Elem,
-      renderFoot: FSContext => (
-          Seq[(String, R)],
-          Seq[(String, C)],
-          TableWrapperRerenderer,
-          TableRerenderer,
-          TableHeadRerenderer,
-          TableBodyRerenderer,
-          TableFootRerenderer,
-          TrRerenderer,
-          ThRerenderer,
-          C,
-          TableColIdx,
-          TableColId
-      ) => Elem = _ => (_, _, _, _, _, _, _, _, _, _, _, _) => <th></th>
-  ) = new Table6StandardColumn[R] {
+                   title: String,
+                   render: FSContext => (
+                     Seq[(String, R)],
+                       Seq[(String, C)],
+                       TableWrapperRerenderer,
+                       TableRerenderer,
+                       TableHeadRerenderer,
+                       TableBodyRerenderer,
+                       TableFootRerenderer,
+                       TrRerenderer,
+                       TdRerenderer,
+                       C,
+                       TableColIdx,
+                       TableColId,
+                       R,
+                       TableRowIdx,
+                       TableRowId
+                     ) => Elem,
+                   renderFoot: FSContext => (
+                     Seq[(String, R)],
+                       Seq[(String, C)],
+                       TableWrapperRerenderer,
+                       TableRerenderer,
+                       TableHeadRerenderer,
+                       TableBodyRerenderer,
+                       TableFootRerenderer,
+                       TrRerenderer,
+                       ThRerenderer,
+                       C,
+                       TableColIdx,
+                       TableColId
+                     ) => Elem = _ => (_, _, _, _, _, _, _, _, _, _, _, _) => <th></th>
+                 ) = new Table6StandardColumn[R] {
 
     override def label: String = title
 
     override def renderTheadTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
-    ): Elem = <th>{title}</th>
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
+    ): Elem = <th>
+      {title}
+    </th>
 
     override def renderTbodyTrTd()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        tdRerenderer: TdRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId,
-        row: R,
-        rowIdx: TableRowIdx,
-        rowId: TableRowId
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   tdRerenderer: TdRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId,
+                                   row: R,
+                                   rowIdx: TableRowIdx,
+                                   rowId: TableRowId
     ): Elem = render(fsc)(
       rowsWithIds,
       columnsWithIds,
@@ -457,19 +473,19 @@ trait Table6StdColsHelper extends Table6Base {
     ).withClass(additionalClasses)
 
     override def renderTfootTrTh()(implicit
-        fsc: FSContext,
-        rowsWithIds: Seq[(String, R)],
-        columnsWithIds: Seq[(String, C)],
-        tableWrapperRenderer: TableWrapperRerenderer,
-        tableRenderer: TableRerenderer,
-        tableHeadRerenderer: TableHeadRerenderer,
-        tableBodyRerenderer: TableBodyRerenderer,
-        tableFootRerenderer: TableFootRerenderer,
-        trRerenderer: TrRerenderer,
-        thRerenderer: ThRerenderer,
-        col: C,
-        colIdx: TableColIdx,
-        colId: TableColId
+                                   fsc: FSContext,
+                                   rowsWithIds: Seq[(String, R)],
+                                   columnsWithIds: Seq[(String, C)],
+                                   tableWrapperRenderer: TableWrapperRerenderer,
+                                   tableRenderer: TableRerenderer,
+                                   tableHeadRerenderer: TableHeadRerenderer,
+                                   tableBodyRerenderer: TableBodyRerenderer,
+                                   tableFootRerenderer: TableFootRerenderer,
+                                   trRerenderer: TrRerenderer,
+                                   thRerenderer: ThRerenderer,
+                                   col: C,
+                                   colIdx: TableColIdx,
+                                   colId: TableColId
     ): Elem = renderFoot(fsc)(
       rowsWithIds,
       columnsWithIds,

@@ -221,6 +221,8 @@ trait JsUtils {
 
   def removeAttr(id: String, name: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").removeAttribute(${this.asJsStr(name)})""")
 
+  def forEachQuerySelector(selector: String, func: JsFunc1): Js = JS(s"""document.querySelectorAll(${this.asJsStr(selector)}).forEach($func)""")
+
   def addClass(id: String, clas: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").classList.add(${clas.split(" +").map(clas => this.asJsStr(clas)).mkString(", ")})""")
 
   def addClassToElemsMatchingSelector(selector: String, clas: String): Js = JS(s"""document.querySelectorAll(${this.asJsStr(selector)}).forEach(el=>el.classList.add(${clas.split(" +").map(clas => this.asJsStr(clas)).mkString(", ")}))""")

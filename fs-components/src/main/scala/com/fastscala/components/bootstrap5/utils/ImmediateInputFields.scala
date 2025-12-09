@@ -3,9 +3,9 @@ package com.fastscala.components.bootstrap5.utils
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.js.JsOps.RichJs
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
@@ -18,22 +18,24 @@ object ImmediateInputFields {
                 classes: String = "",
                 name: String = "",
                 tabindex: Option[Int] = None,
-                onSubmitClientSide: Js => Js = _ => JS.void
+                onSubmitClientSide: Js => Js = _ => JS.void,
+                additionalAttrs: List[(String, String)] = Nil
               )(implicit fsc: FSContext): Elem = {
     val inputId = "input" + fsc.session.nextID()
     val submit = JS.withVarStmt("value", JS.checkboxIsChecked(inputId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, v => set(v.toBoolean))
     }).cmd
+    val input = <input class={"form-check-input " + classes}
+                       type="checkbox"
+                       checked={if (get()) "checked" else null}
+                       id={inputId}
+                       name={name}
+                       tabindex={tabindex.map(_ + "").getOrElse(null)}
+                       onchange={submit}/>.withAttrs(additionalAttrs *)
     <div class="form-check form-check-custom form-check-solid">
-      <input class={"form-check-input " + classes}
-             type="checkbox"
-             checked={if (get()) "checked" else null}
-             id={inputId}
-             name={name}
-             tabindex={tabindex.map(_ + "").getOrElse(null)}
-             onchange={submit}
-      />
-      <label class="form-check-label" for={inputId}>{label}</label>
+      {input}<label class="form-check-label" for={inputId}>
+      {label}
+    </label>
     </div>
   }
 
@@ -69,14 +71,12 @@ object ImmediateInputFields {
     val onblur = if (btn.isEmpty) submit else null
 
     val inputNS = <input id={inputId} type={`type`} value={initialValue} onblur={onblur} onkeypress={onkeypress} class={classes} style={style} autocomplete="autocomplete"
-       placeholder={if (placeholder == "") null else placeholder}
-       name={if (name == "") null else name}
-      />
+                         placeholder={if (placeholder == "") null else placeholder}
+                         name={if (name == "") null else name}/>
 
     btn.map(btn => {
       <div class="input-group ">
-        {inputNS}
-        {btn.addClass("input-group-text").onclick(JS(submit)).btn}
+        {inputNS}{btn.addClass("input-group-text").onclick(JS(submit)).btn}
       </div>
     }).getOrElse(inputNS)
   }
@@ -113,9 +113,8 @@ object ImmediateInputFields {
     }).cmd
 
     val inputNS = <input min={min.toString} max={max.toString} id={inputId} type={`type`} value={initialValue.toString} class={classes} style={style}
-       name={if (name == "") null else name}
-        onchange={submit}
-      />
+                         name={if (name == "") null else name}
+                         onchange={submit}/>
     inputNS
   }
 
@@ -136,12 +135,14 @@ object ImmediateInputFields {
     }).cmd
 
     <select id={elemId} class={classes} style={style} onchange={submit}>
-      {
-      values.zipWithIndex.map({
-        case (value, idx) if value == get() => <option value={idx.toString} selected="selected">{toString(value)}</option>
-        case (value, idx) => <option value={idx.toString}>{toString(value)}</option>
-      })
-      }
+      {values.zipWithIndex.map({
+      case (value, idx) if value == get() => <option value={idx.toString} selected="selected">
+        {toString(value)}
+      </option>
+      case (value, idx) => <option value={idx.toString}>
+        {toString(value)}
+      </option>
+    })}
     </select>
   }
 
@@ -162,11 +163,12 @@ object ImmediateInputFields {
     }).cmd
 
     val inputNS = <textarea
-      id={inputId} onblur={submit} class={classes} style={style}
-        placeholder={if (placeholder == "") null else placeholder}
-        name={if (name == "") null else name}
-        rows={rows + ""}
-      >{get()}</textarea>
+    id={inputId} onblur={submit} class={classes} style={style}
+    placeholder={if (placeholder == "") null else placeholder}
+    name={if (name == "") null else name}
+    rows={rows + ""}>
+      {get()}
+    </textarea>
 
     inputNS
   }

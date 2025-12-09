@@ -1,9 +1,9 @@
 package com.fastscala.components.chartjs
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.js.JS
-import com.fastscala.utils.IdGen
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.js.{JS, printBeforeExec}
+import com.fastscala.utils.IdGen
 import io.circe.generic.semiauto
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
@@ -36,7 +36,7 @@ case class ChartJs(
     import io.circe.syntax.*
 
     JS(
-      s"""const ctx = document.getElementById('$canvasId'); new Chart(${this.asJson.deepDropNullValues.noSpaces}); """
+      s"""const ctx = document.getElementById('$canvasId'); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces}); """
     )
   }
 
@@ -45,6 +45,6 @@ case class ChartJs(
   def renderedOn(elem: Elem): NodeSeq = {
     val id = elem.getIdOpt.getOrElse(IdGen.id("chart_js_canvas"))
     val finalElem = elem.withId(id)
-    finalElem ++ JS.inScriptTag(installInCanvas(id).onDOMContentLoaded)
+    finalElem ++ JS.inScriptTag(installInCanvas(id).onDOMContentLoaded.printBeforeExec)
   }
 }

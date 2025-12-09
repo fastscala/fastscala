@@ -2,11 +2,11 @@ package com.fastscala.db.cache
 
 import com.fastscala.db.caching.{DBCompositeObserver, TableCache}
 import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
+import com.fastscala.db.keyed.{PgRowWithLongId, PgTableWithLongId}
 import com.fastscala.db.observable.ObservableRow
 import com.fastscala.db.{PostgresDB, TestEntity2}
 import org.scalatest.flatspec.AnyFlatSpec
-import scalikejdbc._
+import scalikejdbc.*
 
 class Country(
                val name: String
@@ -42,6 +42,20 @@ class TableCacheSpec extends AnyFlatSpec with PostgresDB {
     assert(cache.country.entries.contains(saved.id))
     saved.deleteX()
     assert(!cache.country.entries.contains(saved.id))
+  }
+  "Cache" should "load missing rows on select" in {
+    DB.localTx({ implicit session =>
+      Country.__truncateSQL.execute()
+    })
+    Countries.all.map(new Country(_)).foreach(_.save())
+
+    implicit val cache = new DBCache()
+
+    val one = cache.country.select(sqls"""name = ${"Abkhazia"}""")
+    assert(one.head.name == "Abkhazia")
+
+    val loaded = cache.country.select(sqls"""name ilike ${"Y%"}""")
+    assert(loaded.head.name == "Yemen")
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>

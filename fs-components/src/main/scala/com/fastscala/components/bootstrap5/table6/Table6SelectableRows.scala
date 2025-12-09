@@ -9,7 +9,7 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-trait Table6SelectableRows extends Table6Base with Table6ColsLabeled with Table6StandardColumns {
+trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabeled with Table6StandardColumns {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -44,8 +44,6 @@ trait Table6SelectableRows extends Table6Base with Table6ColsLabeled with Table6
       )
   }
 
-  def onSelectedRowsChange()(implicit fsc: FSContext): Js = JS.void
-
   def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").ajax(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     allSelectedRowsEvenIfNotVisible ++= rows(rowsHints())
@@ -61,7 +59,7 @@ trait Table6SelectableRows extends Table6Base with Table6ColsLabeled with Table6
 
   def onRowSelectionChanged(trRerenderer: TrRerenderer)(implicit fsc: FSContext): Js = trRerenderer.rerenderer.rerender()
 
-  val ColSelectRow = new Table6StandardColumn[R] {
+  val ColSelectRow: Table6StandardColumn[R] = new Table6StandardColumn[R] {
 
     override def label: String = ""
 

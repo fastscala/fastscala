@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
 class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table: TableWithId[R, K], val whereCond: SQLSyntax = SQLSyntax.empty, var status: CacheStatus.Value = CacheStatus.NONE_LOADED, val entries: collection.mutable.Map[K, R] = collection.mutable.Map[K, R]())
-    extends DBObserver
+  extends DBObserver
     with TableCacheLike[K, R] {
 
   def loadAllEntriesAfterNFailedLookups: Int = 1
@@ -23,7 +23,7 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
 
   def isFullyInMemory = status == CacheStatus.ALL_LOADED
 
-  def loadAllEntries(): Unit = {
+  def hydrateFully(): Unit = {
     if (status != CacheStatus.ALL_LOADED) {
       Utils.time({
         val allEntries = table.select(whereCond)
@@ -36,7 +36,7 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
   }
 
   def all: List[R] = {
-    loadAllEntries()
+    hydrateFully()
     entries.values.toList
   }
 
@@ -50,9 +50,22 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
 
   def selectAll(): List[R] = all
 
-  def select(where: SQLSyntax): List[R] = processLoadedRows(table.select(List(where, whereCond).filter(_ != SQLSyntax.empty).reduceOption[SQLSyntax]((l, r) => SQLSyntax.joinWithAnd(l, r)).getOrElse(SQLSyntax.empty)))
+  def select(where: SQLSyntax): List[R] = select(where, SQLSyntax.empty)
 
-  def select(where: SQLSyntax, rest: SQLSyntax): List[R] = processLoadedRows(table.select(List(where, whereCond).filter(_ != SQLSyntax.empty).reduceOption[SQLSyntax]((l, r) => SQLSyntax.joinWithAnd(l, r)).getOrElse(SQLSyntax.empty), rest))
+  def select(where: SQLSyntax, rest: SQLSyntax): List[R] = {
+    val finalWhere = List(where, whereCond).filter(_ != SQLSyntax.empty).reduceOption[SQLSyntax]((l, r) => SQLSyntax.joinWithAnd(l, r)).getOrElse(SQLSyntax.empty)
+    if (status == CacheStatus.NONE_LOADED) {
+      processLoadedRows(table.select(finalWhere, rest))
+    } else {
+      // Load only where necessary:
+      val relevantIds = table.selectIds(finalWhere, rest).toSet
+      val missingIds = relevantIds -- entries.keySet
+      if (missingIds.nonEmpty) {
+        getForIdsX(missingIds.toSeq *)
+      }
+      getForIdsX(relevantIds.toSeq *)
+    }
+  }
 
   def apply(key: K): R = getForIdX(key)
 
@@ -69,26 +82,26 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
         // logger.trace(s"${table.tableName}.getForIdOptX($uuid): CACHE HIT")
         Some(value)
       case None if status == CacheStatus.ALL_LOADED =>
-        logger.debug(s"${table.tableName}.getForIdOptX($key): CACHE MISS (all loaded)")
+        // logger.debug(s"${table.tableName}.getForIdOptX($key): CACHE MISS (all loaded)")
         None
       case None if entries.size + 1 >= loadAllEntriesAfterNFailedLookups =>
-        logger.trace(s"${table.tableName}.getForIdOptX($key): CACHE MISS (getting all from db, after ${entries.size + 1} cache misses)")
-        loadAllEntries()
+        // logger.trace(s"${table.tableName}.getForIdOptX($key): CACHE MISS (getting all from db, after ${entries.size + 1} cache misses)")
+        hydrateFully()
         getForIdOptX(key)
       case None =>
-        logger.trace(s"${table.tableName}.getForIdOptX($key): CACHE MISS (getting from db...)")
+        // logger.trace(s"${table.tableName}.getForIdOptX($key): CACHE MISS (getting from db...)")
         Utils.time(table.getForIdOpt(key))(ms => {
-          logger.trace(s"${table.tableName}.getForIdOptX($key): LOADED FROM DB in ${ms}ms")
+          // logger.trace(s"${table.tableName}.getForIdOptX($key): LOADED FROM DB in ${ms}ms")
         }) match {
           case Some(value) =>
             entries += value.key -> value
             if (status == CacheStatus.NONE_LOADED) {
               status = CacheStatus.SOME_LOADED
-              logger.trace(s"${table.tableName} cache status: $status")
+              //              logger.trace(s"${table.tableName} cache status: $status")
             }
             Some(value)
           case None =>
-            logger.trace(s"${table.tableName}.getForIdOptX($key): NOT FOUND (in db)")
+            //            logger.trace(s"${table.tableName}.getForIdOptX($key): NOT FOUND (in db)")
             None
         }
     }
@@ -96,8 +109,8 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
 
   def getForIdsX(ids: K*): List[R] = {
     entries.keySet.intersect(ids.toSet).map(entries) ++ (ids.toSet.diff(entries.keySet).toList match {
-      case Nil        => Seq()
-      case missingIds => table.getForIds(missingIds*)
+      case Nil => Seq()
+      case missingIds => table.getForIds(missingIds *)
     })
   }.toList
 

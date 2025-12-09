@@ -1,5 +1,7 @@
 package com.fastscala.db
 
+import com.fastscala.db.annotations.ForeignKey
+import com.fastscala.db.util.doubleQuoted
 import com.google.common.base.CaseFormat
 import org.apache.commons.text.StringEscapeUtils
 import org.slf4j.LoggerFactory
@@ -7,6 +9,7 @@ import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
 import java.time.format.DateTimeFormatter
+import scala.util.chaining.scalaUtilChainingOps
 
 // This is just for testing. Consider using cats.effect.IOApp instead of calling
 // unsafe methods directly.
@@ -40,7 +43,11 @@ trait TableBase {
 
   def tableNameSQLSyntax = SQLSyntax.createUnsafely(tableName)
 
-  def fieldName(field: java.lang.reflect.Field) = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, field.getName)
+  def tableNameSQLSyntaxQuoted = tableNameSQLSyntax.doubleQuoted
+
+  def fieldName(field: java.lang.reflect.Field): String = fieldName(field.getName)
+
+  def fieldName(name: String): String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name)
 
   def fieldTypeToSQLType(
                           field: java.lang.reflect.Field,
@@ -151,6 +158,28 @@ trait TableBase {
       throw new Exception(s"Exception setting value of field ${fieldName(field)} of type ${valueType.getName}", ex)
   }
 
+  def __createConstrainsDropIfExistsSQL: List[SQL[Nothing, NoExtractor]] = {
+    (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
+      cons.getParameters.flatMap(param => {
+        param.getDeclaredAnnotations.collect({
+          case fk: ForeignKey => param.getName -> fk
+        })
+      })
+    }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
+      f.getDeclaredAnnotations.collect({
+        case fk: ForeignKey => f.getName -> fk
+      })
+    })).toList.map({
+      case (name, fk) =>
+        val fkName = SQLSyntax.createUnsafely("fk_" + fieldName(name)).doubleQuoted
+        val column = SQLSyntax.createUnsafely(fieldName(name)).doubleQuoted
+        val referencesTable = SQLSyntax.createUnsafely(fk.refTbl()).doubleQuoted
+        val referencesColumn = SQLSyntax.createUnsafely(fk.refCol()).doubleQuoted
+        sql"""ALTER TABLE $tableNameSQLSyntaxQuoted DROP CONSTRAINT IF EXISTS $fkName;
+             |ALTER TABLE $tableNameSQLSyntaxQuoted ADD CONSTRAINT $fkName FOREIGN KEY ($column) REFERENCES $referencesTable ($referencesColumn);""".stripMargin
+    })
+  }
+
   def __createTableSQL: List[SQL[Nothing, NoExtractor]] = {
     val columns: String = fieldsList.map(field => {
       field.setAccessible(true)
@@ -191,7 +220,7 @@ trait TableBase {
   }
 
   def __dropTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""DROP TABLE IF EXISTS ${s"\"$tableName\""}""")
-  
+
   def __dropAndCreateTableSQL: List[SQL[Nothing, NoExtractor]] = __dropTableSQL :: __createTableSQL
 
   def __truncateSQL: SQL[Nothing, NoExtractor] = SQL(s"""truncate ${s"\"$tableName\""}""")
@@ -261,9 +290,9 @@ trait TableBase {
 
   def selectSQL: SQLSyntax = sqls"""select ${SQLSyntax.createUnsafely(fieldsList.map(fieldName).map('"' + _ + '"').mkString(", "))}"""
 
-  def selectFromSQL: SQLSyntax = sqls"""$selectSQL from "$tableNameSQLSyntax""""
+  def selectFromSQL: SQLSyntax = sqls"""$selectSQL from $tableNameSQLSyntaxQuoted"""
 
-  def deleteFrom: SQLSyntax = sqls"""delete from "$tableNameSQLSyntax""""
+  def deleteFrom: SQLSyntax = sqls"""delete from $tableNameSQLSyntaxQuoted"""
 
   def fromWrappedResultSet(rs: WrappedResultSet): Any = {
     val instance = createEmptyRowInternal()

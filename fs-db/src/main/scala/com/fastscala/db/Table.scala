@@ -48,7 +48,7 @@ trait Table[R] extends TableBase {
       valueToFragment(field, field.get(row))
     })
 
-    sql"""insert into "$tableNameSQLSyntax" $columns VALUES ($values) $rest"""
+    sql"""insert into $tableNameSQLSyntaxQuoted $columns VALUES ($values) $rest"""
   }
 
   def updateSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
@@ -57,10 +57,10 @@ trait Table[R] extends TableBase {
       sqls""""${SQLSyntax.createUnsafely(fieldName(field))}" = """ + valueToFragment(field, field.get(row))
     }).reduceOption(_ + sqls", " + _).getOrElse(SQLSyntax.empty)
 
-    sql"""update "$tableNameSQLSyntax" set $values $where"""
+    sql"""update $tableNameSQLSyntaxQuoted set $values $where"""
   }
 
-  def deleteSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = sql"""delete from "$tableNameSQLSyntax" $where"""
+  def deleteSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = sql"""delete from $tableNameSQLSyntaxQuoted $where"""
 
   def selectAll(): List[R] = DB.readOnly({ implicit session => _selectAll() })
 
@@ -82,7 +82,7 @@ trait Table[R] extends TableBase {
   def count(where: SQLSyntax = SQLSyntax.empty): Long = DB.readOnly({ implicit session => _count(where) })
 
   def _count(where: SQLSyntax = SQLSyntax.empty)(implicit session: DBSession): Long = {
-    val query = sqls"""select count(*) from "$tableNameSQLSyntax"""".where(Some(where).filter(_ != SQLSyntax.empty))
+    val query = sqls"""select count(*) from $tableNameSQLSyntaxQuoted""".where(Some(where).filter(_ != SQLSyntax.empty))
     try {
       sql"${query}".map(fromWrappedResultSet).map(_.long(1)).list().head
     } catch {

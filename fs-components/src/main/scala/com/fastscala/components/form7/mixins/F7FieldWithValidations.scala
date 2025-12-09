@@ -20,6 +20,10 @@ trait F7FieldWithValidations extends F7Field {
     _validations += (() => if (!valid_?(this)) Some(error(this)) else None)
   }
 
+  def addValidation(errorOpt: this.type => Option[NodeSeq]): this.type = mutate {
+    _validations += (() => errorOpt(this))
+  }
+
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
     _validations.flatMap({
       case validation => validation()

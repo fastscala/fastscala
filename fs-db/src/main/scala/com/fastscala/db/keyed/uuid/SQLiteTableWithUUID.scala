@@ -2,6 +2,7 @@ package com.fastscala.db
 
 import com.fastscala.db.keyed.uuid.{SQLiteRowWithUUID, TableWithUUIDBase}
 import scalikejdbc.*
+import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
 

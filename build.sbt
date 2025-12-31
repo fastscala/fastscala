@@ -82,11 +82,12 @@ lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(name := "fs-scala-xml", version := "0.0.1", organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
+  .settings(commonSettings, name := "fs-scala-xml", version := "0.0.1", organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
   .settings(
+    commonSettings,
     name := "fs-db",
     version := Version,
     organization := "com.fastscala",

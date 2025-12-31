@@ -2,7 +2,7 @@ import sbt.Keys.*
 import sbt.{url, *}
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val Version = "0.0.28"
+val Version = "0.0.29"
 
 resolvers += Resolver.mavenLocal
 
@@ -12,7 +12,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
 ThisBuild / version := Version
-ThisBuild / scalaVersion := "3.7.3"
+ThisBuild / scalaVersion := "3.7.4"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
@@ -66,7 +66,8 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "org.apache.commons" % "commons-text" % "1.12.0",
       "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
-      "it.unimi.dsi" % "dsiutils" % "2.7.3"
+      "it.unimi.dsi" % "dsiutils" % "2.7.3",
+      "commons-io" % "commons-io" % "2.21.0",
     )
   )
 
@@ -81,26 +82,23 @@ lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(
-    commonSettings,
-    name := "fs-scala-xml", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
+  .settings(name := "fs-scala-xml", version := "0.0.1", organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
   .settings(
-    commonSettings,
     name := "fs-db",
     version := Version,
     organization := "com.fastscala",
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.14.10",
-      "io.circe" %% "circe-generic" % "0.14.10",
-      "io.circe" %% "circe-parser" % "0.14.10",
-      "org.postgresql" % "postgresql" % "42.7.5",
-      "org.xerial" % "sqlite-jdbc" % "3.48.0.0",
-      "org.scalikejdbc" %% "scalikejdbc" % "4.3.2",
-      "com.google.guava" % "guava" % "33.4.0-jre",
-      "commons-codec" % "commons-codec" % "1.17.2",
+      "io.circe" %% "circe-core" % "0.14.15",
+      "io.circe" %% "circe-generic" % "0.14.15",
+      "io.circe" %% "circe-parser" % "0.14.15",
+      "org.postgresql" % "postgresql" % "42.7.8",
+      "org.xerial" % "sqlite-jdbc" % "3.51.0.0",
+      "org.scalikejdbc" %% "scalikejdbc" % "4.3.5",
+      "com.google.guava" % "guava" % "33.5.0-jre",
+      "commons-codec" % "commons-codec" % "1.20.0",
       "org.scalatest" %% "scalatest" % "3.2.19" % Test
     ),
     Test / parallelExecution := false

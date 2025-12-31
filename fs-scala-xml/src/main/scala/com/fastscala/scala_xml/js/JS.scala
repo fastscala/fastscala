@@ -89,12 +89,27 @@ class JsXmlUtils extends JsUtils {
     }</script>
   }
 
+  def inScriptTagModule(js: Js): Elem = {
+    <script type="module">{
+      scala.xml.Unparsed(
+        """
+// <![CDATA[
+""" + js +
+          """
+// ]]>
+"""
+      )
+    }</script>
+  }
+
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
 }
 
 extension (js: Js) {
 
   def inScriptTag: Elem = JS.inScriptTag(js)
+  
+  def inScriptTagModule: Elem = JS.inScriptTagModule(js)
 
   def printBeforeExec: Js = {
     println("> " + js.cmd)

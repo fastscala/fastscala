@@ -17,6 +17,7 @@ import org.eclipse.jetty.websocket.api.Callback.Completable
 import org.eclipse.jetty.websocket.api.Session
 import org.slf4j.LoggerFactory
 
+import java.io.OutputStream
 import java.net.URLEncoder
 import java.nio.file.{Files, Path}
 import java.util.Collections
@@ -28,14 +29,14 @@ object FSContext {
 }
 
 class FSContext(
-  val session: FSSession,
-  val page: FSPage,
-  val parentFSContext: Option[FSContext] = None,
-  val onPageUnload: () => Js = () => JS.void,
-  var keepAliveAt: Long = System.currentTimeMillis(),
-  val debugLbl: Option[String] = None,
-  var deletedAt: Option[Long] = None
-) extends FSHasSession {
+                 val session: FSSession,
+                 val page: FSPage,
+                 val parentFSContext: Option[FSContext] = None,
+                 val onPageUnload: () => Js = () => JS.void,
+                 var keepAliveAt: Long = System.currentTimeMillis(),
+                 val debugLbl: Option[String] = None,
+                 var deletedAt: Option[Long] = None
+               ) extends FSHasSession {
 
   def deleteOlderThan(ts: Long): Unit = {
     if (keepAliveAt < ts) delete()
@@ -183,14 +184,23 @@ class FSContext(
   def createAndRedirectToAnonymousPageJS(render: FSContext => String, name: String) =
     fsc.callback(() => JS.redirectTo(anonymousPageURL(render, name)))
 
-  def fileDownloadAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
-    fileDownload(fileName, Files.probeContentType(Path.of(fileName)), download)
+  def fileDownloadByteArrayAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
+    fileDownloadByteArray(fileName, Files.probeContentType(Path.of(fileName)), download)
 
-  def fileDownload(fileName: String, contentType: String, download: () => Array[Byte]): String = {
+  def fileDownloadStreamingAutodetectContentType(fileName: String, stream: OutputStream => Unit): String =
+    fileDownload(fileName, Files.probeContentType(Path.of(fileName)), Right(stream))
+
+  def fileDownloadByteArray(fileName: String, contentType: String, download: () => Array[Byte]): String =
+    fileDownload(fileName, contentType, Left(download))
+
+  def fileDownloadStreaming(fileName: String, contentType: String, stream: OutputStream => Unit): String =
+    fileDownload(fileName, contentType, Right(stream))
+
+  private def fileDownload(fileName: String, contentType: String, content: Either[() => Array[Byte], OutputStream => Unit]): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
     functionsFileDownloadGenerated += funcId
-    page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, download)
+    page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, content)
     session.fsSystem.stats.event(StatEvent.CREATE_FILE_DOWNLOAD, additionalFields = Seq("file_name" -> fileName, "content_type" -> contentType))
     session.fsSystem.stats.fileDownloadCallabacksTotal.inc()
     session.fsSystem.stats.currentFileDownloadCallbacks.inc()

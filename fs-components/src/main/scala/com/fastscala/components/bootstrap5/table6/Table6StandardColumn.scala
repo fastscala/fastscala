@@ -4,6 +4,7 @@ import com.fastscala.components.bootstrap5.helpers.BSHelpers.RichElemBootstrapCl
 import com.fastscala.components.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.core.FSContext
 
+import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
 trait Table6StandardColumns extends Table6ColsRenderable with Table6ColsLabeled with Table6StdColsHelper {

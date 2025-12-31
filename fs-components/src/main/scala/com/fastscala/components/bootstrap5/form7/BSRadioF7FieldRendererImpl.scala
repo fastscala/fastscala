@@ -66,7 +66,7 @@ abstract class BSRadioF7FieldRendererImpl()(
       val validFeedbackId = validFeedback.flatMap(_.getIdOpt).getOrElse(field.validFeedbackId)
       val helpId = help.flatMap(_.getIdOpt).getOrElse(field.helpId)
 
-      label.map(_.withIdIfNotSet(labelId).form_label.pipe(onLabelTransforms)).getOrElse(Empty) ++
+      label.map(_.withIdIfNotSet(labelId).form_label.pipe(onLabelTransforms).me_2).getOrElse(Empty) ++
         inputElemsAndLabels.map({
           case (inputElem, label) =>
             form_check

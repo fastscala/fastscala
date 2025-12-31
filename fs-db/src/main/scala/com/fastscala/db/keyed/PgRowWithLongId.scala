@@ -1,10 +1,11 @@
 package com.fastscala.db.keyed
 
+import com.fastscala.db.annotations.PrimaryKey
 import com.fastscala.db.{Row, RowWithId, RowWithIdBase}
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
-trait PgRowWithLongId[R <: PgRowWithLongId[R]](var id: java.lang.Long = null) extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
+trait PgRowWithLongId[R <: PgRowWithLongId[R]](@PrimaryKey var id: java.lang.Long = null) extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>
 
   def table: PgTableWithLongId[R]
@@ -62,10 +63,10 @@ trait PgRowWithLongId[R <: PgRowWithLongId[R]](var id: java.lang.Long = null) ex
     })
   }
 
-//  override def insert(): Unit = {
-//    if (isPersisted_?) throw new Exception(s"Row already inserted with id $id")
-//    super.insert()
-//  }
+  //  override def insert(): Unit = {
+  //    if (isPersisted_?) throw new Exception(s"Row already inserted with id $id")
+  //    super.insert()
+  //  }
 
   override def hashCode(): Int = id.hashCode() * 41
 

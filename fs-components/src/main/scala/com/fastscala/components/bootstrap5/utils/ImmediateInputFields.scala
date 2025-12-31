@@ -2,7 +2,7 @@ package com.fastscala.components.bootstrap5.utils
 
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.js.JsOps.RichJs
+import com.fastscala.js.JsHelper.RichJs
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
@@ -15,24 +15,25 @@ object ImmediateInputFields {
                 get: () => Boolean,
                 set: Boolean => Js,
                 label: String,
-                classes: String = "",
+                inputClasses: String = "",
                 name: String = "",
                 tabindex: Option[Int] = None,
                 onSubmitClientSide: Js => Js = _ => JS.void,
-                additionalAttrs: List[(String, String)] = Nil
+                additionalAttrs: List[(String, String)] = Nil,
+                containerClasses: String = ""
               )(implicit fsc: FSContext): Elem = {
     val inputId = "input" + fsc.session.nextID()
     val submit = JS.withVarStmt("value", JS.checkboxIsChecked(inputId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, v => set(v.toBoolean))
     }).cmd
-    val input = <input class={"form-check-input " + classes}
+    val input = <input class={"form-check-input " + inputClasses}
                        type="checkbox"
                        checked={if (get()) "checked" else null}
                        id={inputId}
                        name={name}
                        tabindex={tabindex.map(_ + "").getOrElse(null)}
                        onchange={submit}/>.withAttrs(additionalAttrs *)
-    <div class="form-check form-check-custom form-check-solid">
+    <div class={"form-check form-check-custom form-check-solid " + containerClasses}>
       {input}<label class="form-check-label" for={inputId}>
       {label}
     </label>
@@ -82,10 +83,11 @@ object ImmediateInputFields {
   }
 
   def range(
-             get: () => Int,
-             set: Int => Js,
-             min: Int,
-             max: Int,
+             get: () => Double,
+             set: Double => Js,
+             min: Double,
+             max: Double,
+             step: Option[Double] = None,
              classes: String = "",
              style: String = "",
              name: String = "",
@@ -107,12 +109,12 @@ object ImmediateInputFields {
            |window.timeout$inputId = window.setTimeout(function () { """.stripMargin + JS._if(
           if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(JS(s"window.currentValue$inputId"), JS.asJsStr(initialValue.toString))
           else JS._true,
-          _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.toInt))
+          _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.toDouble))
         ).cmd + s"}, $timeBeforeChangeMs);"
       )
     }).cmd
 
-    val inputNS = <input min={min.toString} max={max.toString} id={inputId} type={`type`} value={initialValue.toString} class={classes} style={style}
+    val inputNS = <input min={min.toString} max={max.toString} step={step.map(_.toString).getOrElse(null)} id={inputId} type={`type`} value={initialValue.toString} class={classes} style={style}
                          name={if (name == "") null else name}
                          onchange={submit}/>
     inputNS

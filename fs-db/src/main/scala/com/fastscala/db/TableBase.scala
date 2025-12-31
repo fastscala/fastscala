@@ -1,6 +1,6 @@
 package com.fastscala.db
 
-import com.fastscala.db.annotations.ForeignKey
+import com.fastscala.db.annotations.{ForeignKey, PrimaryKey}
 import com.fastscala.db.util.doubleQuoted
 import com.google.common.base.CaseFormat
 import org.apache.commons.text.StringEscapeUtils
@@ -158,25 +158,61 @@ trait TableBase {
       throw new Exception(s"Exception setting value of field ${fieldName(field)} of type ${valueType.getName}", ex)
   }
 
-  def __createConstrainsDropIfExistsSQL: List[SQL[Nothing, NoExtractor]] = {
-    (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
-      cons.getParameters.flatMap(param => {
-        param.getDeclaredAnnotations.collect({
-          case fk: ForeignKey => param.getName -> fk
-        })
+  private case class FK(fkName: SQLSyntax, column: SQLSyntax, referencesTable: SQLSyntax, referencesColumn: SQLSyntax, onUpdate: SQLSyntax, onDelete: SQLSyntax)
+
+  private def foreignKeys: List[FK] = (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
+    cons.getParameters.flatMap(param => {
+      param.getDeclaredAnnotations.collect({
+        case fk: ForeignKey => param.getName -> fk
       })
-    }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
-      f.getDeclaredAnnotations.collect({
-        case fk: ForeignKey => f.getName -> fk
+    })
+  }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
+    f.getDeclaredAnnotations.collect({
+      case fk: ForeignKey => f.getName -> fk
+    })
+  })).toList.map({
+    case (name, fk) =>
+      val fkName = SQLSyntax.createUnsafely("fk_" + fieldName(name)).doubleQuoted
+      val column = SQLSyntax.createUnsafely(fieldName(name)).doubleQuoted
+      val referencesTable = SQLSyntax.createUnsafely(fk.refTbl()).doubleQuoted
+      val referencesColumn = SQLSyntax.createUnsafely(fk.refCol()).doubleQuoted
+      val onUpdate = SQLSyntax.createUnsafely(fk.onUpdate().Sql)
+      val onDelete = SQLSyntax.createUnsafely(fk.onDelete().Sql)
+      FK(fkName, column, referencesTable, referencesColumn, onUpdate, onDelete)
+  })
+
+  private def primaryKeys: List[(String, PrimaryKey)] = (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
+    cons.getParameters.flatMap(param => {
+      param.getDeclaredAnnotations.collect({
+        case pk: PrimaryKey => param.getName -> pk
       })
-    })).toList.map({
-      case (name, fk) =>
-        val fkName = SQLSyntax.createUnsafely("fk_" + fieldName(name)).doubleQuoted
+    })
+  }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
+    f.getDeclaredAnnotations.collect({
+      case pk: PrimaryKey => f.getName -> pk
+    })
+  })).toList
+
+  def __dropForeignKeyConstrainsSQL: List[SQL[Nothing, NoExtractor]] = {
+    foreignKeys.map({
+      case FK(fkName, column, referencesTable, referencesColumn, onUpdate, onDelete) =>
+        sql"""ALTER TABLE $tableNameSQLSyntaxQuoted DROP CONSTRAINT IF EXISTS $fkName;"""
+    })
+  }
+
+  def __createForeignKeyConstrainsSQL: List[SQL[Nothing, NoExtractor]] = {
+    foreignKeys.map({
+      case FK(fkName, column, referencesTable, referencesColumn, onUpdate, onDelete) =>
+        sql"""ALTER TABLE $tableNameSQLSyntaxQuoted ADD CONSTRAINT $fkName FOREIGN KEY ($column) REFERENCES $referencesTable ($referencesColumn) ON UPDATE $onUpdate ON DELETE $onDelete;"""
+    })
+  }
+
+  def __createPrimaryKeyConstrainsSQL: List[SQL[Nothing, NoExtractor]] = {
+    primaryKeys.map({
+      case (name, _) =>
+        val pkeyName = SQLSyntax.createUnsafely(tableName + "_pkey").doubleQuoted
         val column = SQLSyntax.createUnsafely(fieldName(name)).doubleQuoted
-        val referencesTable = SQLSyntax.createUnsafely(fk.refTbl()).doubleQuoted
-        val referencesColumn = SQLSyntax.createUnsafely(fk.refCol()).doubleQuoted
-        sql"""ALTER TABLE $tableNameSQLSyntaxQuoted DROP CONSTRAINT IF EXISTS $fkName;
-             |ALTER TABLE $tableNameSQLSyntaxQuoted ADD CONSTRAINT $fkName FOREIGN KEY ($column) REFERENCES $referencesTable ($referencesColumn);""".stripMargin
+        sql"""ALTER TABLE $tableNameSQLSyntaxQuoted ADD CONSTRAINT $pkeyName PRIMARY KEY ($column);""".tap(println)
     })
   }
 
@@ -228,6 +264,28 @@ trait TableBase {
   def __renameColumn(from: String, to: String): SQL[Nothing, NoExtractor] = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} RENAME COLUMN ${SQLSyntax.createUnsafely(s"\"$from\"")} TO ${SQLSyntax.createUnsafely(s"\"$to\"")}"""
 
   def __truncateTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""drop table ${s"\"$tableName\""};""")
+
+  def valueBatchPlaceholder(field: Field, value: Any): String = "?"
+
+  def valueToBatchObject(field: Field, value: Any): Object = value match {
+    case null => null
+    case None => null
+    case Some(value) => valueToBatchObject(field, value)
+    case v: Int => java.lang.Integer(v)
+    case v: Double => java.lang.Double(v)
+    case v: Boolean => java.lang.Boolean(v)
+    case v: Char => java.lang.Character(v)
+    case v: Short => java.lang.Short(v)
+    case v: Float => java.lang.Float(v)
+    case v: Long => java.lang.Long(v)
+    case v: String => java.lang.String(v)
+    case v: Array[Byte] => v
+    case v: Enumeration#Value => java.lang.Integer(v.id)
+    case v: java.time.LocalDate => v
+    case v: java.time.LocalTime => v
+    case v: java.time.LocalDateTime => v
+    case v: java.time.OffsetDateTime => v
+  }
 
   def valueToFragment(field: Field, value: Any): SQLSyntax = value match {
     case null => sqls"null"
@@ -284,7 +342,7 @@ trait TableBase {
 
   def select(where: SQLSyntax, rest: SQLSyntax): List[Any]
 
-  def delete(rest: SQLSyntax): Long
+  def delete(where: SQLSyntax, rest: SQLSyntax): Long
 
   def listFromQuery(query: SQLSyntax): List[Any]
 
@@ -292,7 +350,7 @@ trait TableBase {
 
   def selectFromSQL: SQLSyntax = sqls"""$selectSQL from $tableNameSQLSyntaxQuoted"""
 
-  def deleteFrom: SQLSyntax = sqls"""delete from $tableNameSQLSyntaxQuoted"""
+  def deleteFromSQL: SQLSyntax = sqls"""delete from $tableNameSQLSyntaxQuoted"""
 
   def fromWrappedResultSet(rs: WrappedResultSet): Any = {
     val instance = createEmptyRowInternal()

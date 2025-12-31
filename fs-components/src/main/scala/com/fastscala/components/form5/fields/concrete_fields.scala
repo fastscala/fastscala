@@ -1698,7 +1698,7 @@ class F5FileUploadField(
         val previewRenderer = JS.rerenderable(rerenderer => implicit fsc => renderPreview(currentValue)(using fsc))
         val actionUrl = fsc.fileUploadActionUrl({
           case Seq(uploadedFile: FSUploadedFile, _ *) =>
-            currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))
+            currentValue = Some((uploadedFile.submittedFileName, uploadedFile.bytes()))
             previewRenderer.rerender() &
               form.onEvent(ChangedField(this)) &
               (if (hints.contains(ShowValidationsHint)) reRender() else JS.void) &

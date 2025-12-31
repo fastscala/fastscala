@@ -45,6 +45,6 @@ case class ChartJs(
   def renderedOn(elem: Elem): NodeSeq = {
     val id = elem.getIdOpt.getOrElse(IdGen.id("chart_js_canvas"))
     val finalElem = elem.withId(id)
-    finalElem ++ JS.inScriptTag(installInCanvas(id).onDOMContentLoaded.printBeforeExec)
+    finalElem ++ JS.inScriptTag(installInCanvas(id).onDOMContentLoaded)
   }
 }

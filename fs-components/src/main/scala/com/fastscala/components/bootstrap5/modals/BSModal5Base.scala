@@ -20,7 +20,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
   val modalId = IdGen.id("modal")
   val modalContentId = IdGen.id("modal-content")
 
-  def modalSize: BSModal5Size.Value = BSModal5Size.NORMAL
+  def modalSize: BSModal5Size.Value = BSModal5Size.Normal
 
   var modalClasses = ""
 
@@ -29,9 +29,9 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
     this
   }
 
-  def transformModalElem(elem: Elem): Elem = elem.modal.fade.withId(modalId).withClass(modalSize.toString)
+  def transformModalElem(elem: Elem): Elem = elem.modal.fade.withId(modalId)
 
-  def transformModalDialogElem(elem: Elem): Elem = elem.modal_dialog
+  def transformModalDialogElem(elem: Elem): Elem = elem.modal_dialog.withClass(modalSize.toString)
 
   def transformModalContentElem(elem: Elem): Elem = elem.modal_content.withId(modalContentId)
 

@@ -1,5 +1,7 @@
 package com.fastscala.js
 
+import Js as JS
+
 import com.fastscala.core.FSContext
 import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
@@ -8,9 +10,8 @@ import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.Response
 import org.eclipse.jetty.util.BufferUtil
 
+import java.security.SecureRandom
 import java.util.Date
-
-import Js as JS
 
 trait Js {
 
@@ -24,6 +25,8 @@ trait Js {
     case (js, Js.Void) => js
     case (js1, js2) => RawJs(js1.cmd + ";" + js2.cmd)
   }
+
+  def isVoid = cmd.trim == ""
 
   def onDOMContentLoaded: Js = JS {
     s"""(function () {
@@ -76,7 +79,9 @@ case class RawJs(js: String) extends Js {
   override def cmd: String = js
 }
 
-object JsOps {
+object JsHelper {
+
+  val secureRandom = new SecureRandom()
 
   implicit class RichJs(val js: Js) extends AnyVal {
 
@@ -101,13 +106,20 @@ object JsOps {
     def `_||`(other: Js): Js = JS(s"${js.cmd} || ${other.cmd}")
 
     def `_=`(other: Js): Js = JS(s"${js.cmd} = ${other.cmd};")
+
+    def `_===null`: Js = JS(s"${js.cmd} === null")
+
+    def asVar(code: Js => Js): Js = {
+      val name = "v_" + "%04X".formatted(secureRandom.nextInt())
+      JS(s"var $name = (${js.cmd}); " + code(Js(name)))
+    }
   }
 
 }
 
 trait JsUtils {
 
-  import JsOps.*
+  import JsHelper.*
 
   def apply(s: String): Js = RawJs(s)
 
@@ -216,6 +228,8 @@ trait JsUtils {
   def select(id: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").select();""")
 
   def blur(id: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").blur();""")
+
+  def getAttr(id: String, name: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").getAttribute(${this.asJsStr(name)})""")
 
   def setAttr(id: String)(name: String, value: String): Js = JS(s"""document.getElementById("${escapeStr(id)}").setAttribute(${this.asJsStr(name)}, ${this.asJsStr(value)})""")
 

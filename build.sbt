@@ -2,7 +2,7 @@ import sbt.Keys.*
 import sbt.{url, *}
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val Version = "0.0.27"
+val Version = "0.0.28"
 
 resolvers += Resolver.mavenLocal
 

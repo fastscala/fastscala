@@ -41,12 +41,14 @@ object FileUpload {
           JS.void,
           {
             case Vector(fileName, fileType, contentsEncoded) =>
+              val bytes = Base64.getDecoder().decode(contentsEncoded.asString.get)
               processUpload(
                 Seq(new FSUploadedFile(
                   fileName.asString.get,
                   fileName.asString.get,
                   fileType.asString.get,
-                  Base64.getDecoder().decode(contentsEncoded.asString.get)
+                  () => bytes,
+                  () => new ByteArrayInputStream(bytes)
                 ))
               )
           },
@@ -95,13 +97,13 @@ object FileUpload {
 
     callback(uploadedFiles.flatMap(uploadedFile => {
       if (uploadedFile.name.trim.toLowerCase.endsWith(".zip")) {
-        val zipFile = new ZipInputStream(new ByteArrayInputStream(uploadedFile.content))
+        val zipFile = new ZipInputStream(new ByteArrayInputStream(uploadedFile.bytes()))
 
         Iterator.continually(zipFile.getNextEntry).takeWhile(_ != null).map(entry => {
           (entry.getName, Iterator.continually(zipFile.read()).takeWhile(_ >= 0).map(_.toByte).toArray[Byte])
         }).toList
       } else {
-        List((uploadedFile.name, uploadedFile.content))
+        List((uploadedFile.name, uploadedFile.bytes()))
       }
     }).toList)
     , labelOpt = labelOpt

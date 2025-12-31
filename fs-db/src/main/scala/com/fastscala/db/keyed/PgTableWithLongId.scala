@@ -14,8 +14,8 @@ trait PgTableWithLongId[R <: PgRowWithLongId[R]] extends PgTable[R] with TableWi
     ins
   }
 
-  override def selectIdFromSQL: SQLSyntax = sqls"""select uuid from $tableNameSQLSyntaxQuoted"""
-
+  def idSQL: SQLSyntax = sqls"""id"""
+  
   def idFromWrappedResultSet(rs: WrappedResultSet): java.lang.Long = rs.long("id")
 
   def upsertSQL(row: R, rest: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {

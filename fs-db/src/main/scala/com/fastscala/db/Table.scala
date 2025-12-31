@@ -51,6 +51,25 @@ trait Table[R] extends TableBase {
     sql"""insert into $tableNameSQLSyntaxQuoted $columns VALUES ($values) $rest"""
   }
 
+//  def insertMultipleSQL(rows: Seq[R], rest: SQLSyntax = SQLSyntax.empty): SQLBatch = {
+//    val columns: SQLSyntax = SQLSyntax.createUnsafely(upsertFields.map(field => {
+//      field.setAccessible(true)
+//      fieldName(field)
+//    }).map('"' + _ + '"').mkString("(", ",", ")"))
+//
+//    val values: Seq[List[Object]] = rows.map(row => upsertFields.map(field => {
+//      field.setAccessible(true)
+//      valueToBatchObject(field, field.get(row))
+//    }))
+//
+//    println(s"columns: $columns")
+//    val placeholders = SQLSyntax.createUnsafely(upsertFields.map(f => valueBatchPlaceholder(f, f.get(sampleRow))).mkString(","))
+//    println(s"placeholders: $placeholders")
+//    sql"""insert into $tableNameSQLSyntaxQuoted $columns VALUES ($placeholders) $rest""".batchAndReturnGeneratedKey(
+//      values *
+//    )
+//  }
+
   def updateSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val values: SQLSyntax = updateFields.map(field => {
       field.setAccessible(true)
@@ -92,10 +111,10 @@ trait Table[R] extends TableBase {
     }
   }
 
-  def delete(rest: SQLSyntax): Long = DB.localTx({ implicit session => _delete(rest) })
+  def delete(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty): Long = DB.localTx({ implicit session => _delete(where, rest) })
 
-  def _delete(rest: SQLSyntax)(implicit session: DBSession): Long = {
-    val query = deleteFrom.append(rest)
+  def _delete(where: SQLSyntax, rest: SQLSyntax = SQLSyntax.empty)(implicit session: DBSession): Long = {
+    val query = deleteFromSQL.where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
     sql"${query}".map(fromWrappedResultSet).executeUpdate().longValue()
   }
 

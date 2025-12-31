@@ -17,6 +17,7 @@ import org.eclipse.jetty.websocket.api.Callback.Completable
 import org.eclipse.jetty.websocket.api.Session
 import org.slf4j.LoggerFactory
 
+import java.io.{InputStream, OutputStream}
 import java.net.URLEncoder
 import java.nio.file.{Files, Path}
 import java.util.Collections
@@ -47,8 +48,8 @@ class FSFileUpload(val id: String, val func: Seq[FSUploadedFile] => Js, var keep
   }
 }
 
-class FSFileDownload(val id: String, val contentType: String, val func: () => Array[Byte], var keepAliveAt: Long = System.currentTimeMillis(), val debugLbl: Option[String] = None)(implicit
-  val fsc: FSContext
+class FSFileDownload(val id: String, val contentType: String, val content: Either[() => Array[Byte], OutputStream => Unit], var keepAliveAt: Long = System.currentTimeMillis(), val debugLbl: Option[String] = None)(implicit
+                                                                                                                                                                                                                     val fsc: FSContext
 ) {
 
   def allKeepAlivesIterable: Iterable[Long] = Iterable(keepAliveAt)
@@ -59,8 +60,8 @@ class FSFileDownload(val id: String, val contentType: String, val func: () => Ar
   }
 }
 
-class FSUploadedFile(val name: String, val submittedFileName: String, val contentType: String, val content: Array[Byte])
+class FSUploadedFile(val name: String, val submittedFileName: String, val contentType: String, val bytes: () => Array[Byte], val inputStream: () => InputStream)
 
 object FSUploadedFile {
-  def unapply(file: FSUploadedFile): Option[(String, String, String, Array[Byte])] = Some((file.name, file.submittedFileName, file.contentType, file.content))
+  def unapply(file: FSUploadedFile): Option[(String, String, String, Array[Byte])] = Some((file.name, file.submittedFileName, file.contentType, file.bytes()))
 }

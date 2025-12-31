@@ -13,7 +13,7 @@ trait Table6SelectableRowsBase extends Table6Base {
 
   def allSelectedRowsEvenIfNotVisible: collection.mutable.Set[R]
 
-  def selectedVisibleRows: Set[R]
+  def selectedVisibleRows: Seq[R]
 
   def onSelectedRowsChange()(implicit fsc: FSContext): Js = JS.void
 

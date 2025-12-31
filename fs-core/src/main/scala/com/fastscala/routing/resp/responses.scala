@@ -1,11 +1,14 @@
 package com.fastscala.routing.resp
 
+import org.apache.commons.io.IOUtils
 import com.fastscala.js.Js
 import org.eclipse.jetty.http.{HttpCookie, HttpHeader, MimeTypes}
+import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.Response as JettyServerResponse
 import org.eclipse.jetty.util.{BufferUtil, Callback}
 
 import java.nio.file.{Files, Path}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 
 
 trait Response {
@@ -79,6 +82,25 @@ trait BinaryResponse extends Response {
   }
 }
 
+trait OutputStreamResponse extends Response {
+  def stream(os: OutputStream): Unit
+
+  def contentType: String
+
+  override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+    super.respond(response, callback)
+    val responseHeaders = response.getHeaders
+    responseHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
+    val baos = new ByteArrayOutputStream()
+    val os = Content.Sink.asOutputStream(response)
+    stream(baos)
+    IOUtils.copy(new ByteArrayInputStream(baos.toByteArray), os)
+    os.flush()
+    os.close()
+    true
+  }
+}
+
 trait RedirectResponse extends TextResponse {
 
   def redirectTo: String
@@ -132,6 +154,25 @@ object Ok {
     override def contentType: String = Files.probeContentType(Path.of(fileName))
 
     override def status: HttpStatus = HttpStatuses.OK
+  }
+
+  def outputStreamAutoDetectContentType(streamOutput: OutputStream => Unit, fileName: String) = new OutputStreamResponse {
+    override def stream(os: OutputStream): Unit = streamOutput(os)
+
+    override def contentType: String = Files.probeContentType(Path.of(fileName))
+
+    override def status: HttpStatus = HttpStatuses.OK
+  }
+
+  def outputStreamWithContentType(streamOutput: OutputStream => Unit, contentType: String) = {
+    val _contentType = contentType
+    new OutputStreamResponse {
+      override def stream(os: OutputStream): Unit = streamOutput(os)
+
+      override def contentType: String = _contentType
+
+      override def status: HttpStatus = HttpStatuses.OK
+    }
   }
 
   def binaryWithContentType(bytes: Array[Byte], contentType: String) = {

@@ -18,10 +18,6 @@ trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends PgTable[R] with TableWithUU
     ins
   }
 
-  override def fieldTypeToSQLType(field: java.lang.reflect.Field, clas: Class[?], value: => Any, columnConstrains: Set[String] = Set("not null")): String =
-    if (field.getName == "uuid") super.fieldTypeToSQLType(field, clas, value, columnConstrains + "primary key")
-    else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
-
   def getForIdOpt(key: UUID): Option[R] = getForIds(key).headOption
 
   def getForId(key: UUID): R = getForIdOpt(key).getOrElse(throw new Exception(s"Element with id ${key} not found in table $tableName"))

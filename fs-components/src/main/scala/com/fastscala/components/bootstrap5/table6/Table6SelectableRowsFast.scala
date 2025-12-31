@@ -15,8 +15,8 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
 
   lazy val allSelectedRowsEvenIfNotVisible = collection.mutable.Set[R]()
 
-  def selectedVisibleRows: Set[R] = rows(rowsHints()).toSet intersect allSelectedRowsEvenIfNotVisible.toSet
-
+  def selectedVisibleRows: Seq[R] = rows(rowsHints()).filter(row => allSelectedRowsEvenIfNotVisible.contains(row))
+  
   def selectedRowClass: String
 
   override def transformTableBodyTrElem(elem: Elem)(implicit

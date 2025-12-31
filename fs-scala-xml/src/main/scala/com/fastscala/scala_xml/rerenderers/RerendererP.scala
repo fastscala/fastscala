@@ -10,6 +10,8 @@ import scala.xml.Elem
 
 class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => (Elem, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None) {
 
+  private var transforms: Elem => Elem = identity[Elem]
+
   var aroundId: Option[String] = None
 
   def getOrGenerateAroundId: String = aroundId.getOrElse({
@@ -26,7 +28,7 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => (Elem, Js),
 
   def render(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: Elem, setupJs: Js) = renderImpl(param)
-    rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
+    if (setupJs.isVoid) rendered else rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
   }
 
   def renderedWithSetupJs(param: P)(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
@@ -43,20 +45,8 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => (Elem, Js),
 
   def replaceContentsBy(elem: Elem): Js = JS.setContents(getOrGenerateAroundId, elem)
 
-//  def map(f: Elem => Elem) = {
-//    val out = this
-//    new RerendererP[P](null, None, None) {
-//      override def render(param: P)(implicit fsc: FSContext): Elem = f(out.render(param))
-//
-//      override def rerender(param: P) = JS
-//        .replace(
-//          out.aroundId,
-//          (f(out.render(param)(out.rootRenderContext.getOrElse(throw new Exception("Missing context - did you call render() first?")))))
-//        ) // & Js(s"""$$("#$aroundId").fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100)""")
-//
-//      override def replaceBy(elem: Elem): Js = out.replaceBy(elem)
-//
-//      override def replaceContentsBy(elem: Elem): Js = out.replaceContentsBy(elem)
-//    }
-//  }
+  def map(f: Elem => Elem): this.type = {
+    transforms = transforms andThen f
+    this
+  }
 }

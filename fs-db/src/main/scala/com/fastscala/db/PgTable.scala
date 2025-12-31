@@ -22,6 +22,16 @@ trait PgTableWithUUIDSupport[R] extends Table[R] {
     case _ => super.fieldTypeToSQLType(field, clas, value, columnConstrains)
   }
 
+  override def valueBatchPlaceholder(field: Field, value: Any): String = value match {
+    case v: java.util.UUID => "?::UUID"
+    case _ => super.valueBatchPlaceholder(field, value)
+  }
+
+  override def valueToBatchObject(field: Field, value: Any): Object = value match {
+    case v: java.util.UUID => v.toString
+    case _ => super.valueToBatchObject(field, value)
+  }
+
   override def valueToFragment(field: Field, value: Any): SQLSyntax = value match {
     case v: java.util.UUID => sqls"${v.toString}::UUID"
     case _ => super.valueToFragment(field, value)

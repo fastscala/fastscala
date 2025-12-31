@@ -11,23 +11,31 @@ import scala.xml.{Elem, NodeSeq}
 
 class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P => (NodeSeq, Js), idOpt: Option[String] = None, debugLabel: Option[String] = None) {
 
-  val outterElem: Elem = <div></div>
+  private var transforms: NodeSeq => NodeSeq = identity[NodeSeq]
 
-  val aroundId = idOpt.getOrElse(IdGen.id("around"))
+  val outerElem: Elem = <div></div>
+
+  val aroundId: String = idOpt.getOrElse(IdGen.id("around"))
 
   private def renderImpl(param: P)(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: NodeSeq, setupJs: Js) = renderFunc(this)(fsc)(param)
-    val renderedWithId: Elem = outterElem.withIdIfNotSet(aroundId).withContents(rendered)
+    val renderedWithTransforms = transforms(rendered)
+    val renderedWithId: Elem = outerElem.withIdIfNotSet(aroundId).withContents(renderedWithTransforms)
     (RerendererDebugStatusState().render(renderedWithId), setupJs)
   }
 
   def render(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: Elem, setupJs: Js) = renderImpl(param)
-    rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
+    if (setupJs.isVoid) rendered else rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
   }
 
   def rerender(param: P)(implicit fsc: FSContext): Js = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val (rendered: Elem, setupJs: Js) = renderImpl(param)
     RerendererDebugStatusState().rerender(aroundId, JS.replace(aroundId, rendered) & setupJs)
+  }
+
+  def map(f: NodeSeq => NodeSeq): this.type = {
+    transforms = transforms andThen f
+    this
   }
 }

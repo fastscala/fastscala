@@ -188,30 +188,31 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
                       handleFileUploadCallbackException(failure)
                     case None =>
                       stats.fileUploadCallbacksInProcessing.inc()
-                      fSFileUpload.func(
-                        parts.asScala.map(part =>
-                          try {
+                      parts.asScala.map(part =>
+                        try {
+                          fSFileUpload.func(
                             new FSUploadedFile(
                               name = part.getName,
                               submittedFileName = part.getFileName,
                               contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
-                              content = Content.Source.asByteBuffer(part.getContentSource).array
-                            )
-                          } catch {
-                            case ex: Throwable =>
-                              handleFileUploadCallbackException(ex)
-                              throw ex
+                              bytes = () => Content.Source.asByteBuffer(part.getContentSource).array,
+                              inputStream = () => Content.Source.asInputStream(part.getContentSource)
+                            ) :: Nil
+                          )
+                        } catch {
+                          case ex: Throwable =>
+                            handleFileUploadCallbackException(ex)
+                            throw ex
+                        } finally {
+                          stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
+                          stats.fileUploadCallbacksInProcessing.dec()
+                          try {
+                            part.close()
                           } finally {
-                            stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
-                            stats.fileUploadCallbacksInProcessing.dec()
-                            try {
-                              part.close()
-                            } finally {
-                              part.delete()
-                            }
+                            part.delete()
                           }
-                        ).toSeq
-                      )
+                        }
+                      ).reduceOption(_ & _).getOrElse(Js.Void)
                   }
                   Ok.js(rslt).respond(response, callback)
                 })
@@ -235,8 +236,13 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
 
               try {
                 stats.fileDownloadCallbacksInProcessing.inc()
-                val bytes = fSFileDownload.func()
-                Ok.binaryWithContentType(bytes, fSFileDownload.contentType)
+                fSFileDownload.content match {
+                  case Left(array) =>
+                    val bytes = array()
+                    Ok.binaryWithContentType(bytes, fSFileDownload.contentType)
+                  case Right(outputStream) =>
+                    Ok.outputStreamWithContentType(outputStream, fSFileDownload.contentType)
+                }
               } catch {
                 case ex: Exception => handleFileDownloadCallbackException(ex)
               } finally {
@@ -319,13 +325,13 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
   }
 
   def callbackClientSideBefore(implicit fsc: FSContext): Js = Js.Void
-  
+
   def callbackClientSideAfter(implicit fsc: FSContext): Js = Js.Void
-  
+
   def callbackClientSideOnError(implicit fsc: FSContext): Js = Js.Void
-  
+
   def callbackClientSideOnTimeout(implicit fsc: FSContext): Js = Js.Void
-  
+
   def transformCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
 
   def transformFileUploadCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
@@ -358,7 +364,7 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
     // Delete pages:
     pagesToDelete.groupBy(_.session).foreach({
       case (session, toDelete) if !sessionsToDelete.contains(session) => session.deletePages(toDelete)
-      case _                                                          =>
+      case _ =>
     })
 
     stats.gcTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))

@@ -1,6 +1,7 @@
 package com.fastscala.db.keyed.uuid
 
 import com.fastscala.db.RowWithIdBase
+import com.fastscala.db.annotations.PrimaryKey
 import scalikejdbc.*
 
 import java.nio.ByteBuffer
@@ -10,6 +11,7 @@ trait RowWithUuidIdBase extends RowWithIdBase {
 
   def table: TableWithUUIDBase[?]
 
+  @PrimaryKey
   var uuid: Option[UUID] = None
 
   def id: UUID = {

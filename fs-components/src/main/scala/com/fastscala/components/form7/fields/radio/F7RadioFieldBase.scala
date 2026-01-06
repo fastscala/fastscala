@@ -50,7 +50,9 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
     }
   }
 
-  override def saveToString(): Option[String] = Some(_option2Id(currentValue, options)).filter(_ != "")
+  override def saveToString(): Option[String] = if (currentValue == defaultValue) None else {
+    Some(_option2Id(currentValue, options)).filter(_ != "")
+  }
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 

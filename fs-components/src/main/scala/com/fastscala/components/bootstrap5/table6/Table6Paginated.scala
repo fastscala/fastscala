@@ -8,7 +8,7 @@ import com.fastscala.utils.Lazy
 
 import scala.xml.{Elem, NodeSeq}
 
-trait Table6Paginated extends Table6SeqDataSource {
+trait Table6Paginated extends Table6Base {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -26,7 +26,9 @@ trait Table6Paginated extends Table6SeqDataSource {
 
   lazy val currentPage = Lazy(defaultCurrentPage)
 
-  def maxPages: Int = (seqRowsSource.size - 1) / currentPageSize()
+  def knownTotalNumberOfRows: Option[Int] = None
+
+  def maxPages: Int = knownTotalNumberOfRows.map(n => (n - 1) / currentPageSize()).getOrElse(currentPage() + 10)
 
   override def rowsHints(): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
     offset = currentPage() * currentPageSize()

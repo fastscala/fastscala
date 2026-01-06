@@ -5,9 +5,11 @@ import com.fastscala.db.{Row, RowWithId, RowWithIdBase}
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
-trait PgRowWithLongId[R <: PgRowWithLongId[R]](@PrimaryKey var id: java.lang.Long = null) extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
+trait PgRowWithLongId[R <: PgRowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>
 
+  @PrimaryKey var id: java.lang.Long = null
+  
   def table: PgTableWithLongId[R]
 
   override def key: java.lang.Long = id

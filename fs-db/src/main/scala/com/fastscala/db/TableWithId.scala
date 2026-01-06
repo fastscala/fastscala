@@ -5,9 +5,12 @@ import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc.{DB, DBSession, SQLBatch, SQLLargeBatch, WrappedResultSet, scalikejdbcSQLInterpolationImplicitDef, sqls}
 
-trait TableWithId[R, K] extends Table[R] {
+object TableWithId {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
+}
+
+trait TableWithId[R, K] extends Table[R] {
 
   def getForIdOpt(key: K): Option[R]
 
@@ -27,7 +30,7 @@ trait TableWithId[R, K] extends Table[R] {
       sql"${query}".map(idFromWrappedResultSet).list()
     } catch {
       case ex: PSQLException =>
-        logger.error(s"Error on query $query", ex)
+        TableWithId.logger.error(s"Error on query $query", ex)
         throw ex
     }
   }

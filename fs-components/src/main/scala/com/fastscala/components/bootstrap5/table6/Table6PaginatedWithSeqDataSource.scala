@@ -8,7 +8,7 @@ import com.fastscala.utils.Lazy
 
 import scala.xml.{Elem, NodeSeq}
 
-trait Table6PaginatedWithSeqDataSource extends Table6SeqDataSource {
+trait Table6PaginatedWithSeqDataSource extends Table6Paginated with Table6SeqDataSource {
 
   def knownTotalNumberOfRows: Option[Int] = Some(seqRowsSource.size)
 }

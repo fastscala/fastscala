@@ -31,7 +31,7 @@ class FSAnonymousPage(
                        val createdAt: Long = System.currentTimeMillis(),
                        var keepAliveAt: Long = System.currentTimeMillis(),
                        var debugLbl: Option[String] = None
-                     ) extends FSHasSession {
+                     ) extends FSSessionLike {
 
   def renderAsString()(implicit fsc: FSContext): String = render(fsc)
 

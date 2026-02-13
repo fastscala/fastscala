@@ -28,7 +28,7 @@ trait Table5SelectableCols extends Table5Base with Table5ColsLabeled {
   def colLabel(col: C): String
 
   def renderSelectColsButton()(implicit fsc: FSContext): Elem =
-    BSBtn().BtnPrimary.lbl("Columns").ajax(implicit fsc => openColumnSelectionModal()).btn
+    BSBtn().BtnPrimary.lbl("Columns").callback(implicit fsc => openColumnSelectionModal()).btn
 
   def openColumnSelectionModal()(implicit fsc: FSContext): Js = BSModal5.verySimple(
     "Select Columns",

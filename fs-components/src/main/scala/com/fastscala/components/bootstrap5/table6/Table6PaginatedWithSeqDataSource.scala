@@ -10,5 +10,5 @@ import scala.xml.{Elem, NodeSeq}
 
 trait Table6PaginatedWithSeqDataSource extends Table6Paginated with Table6SeqDataSource {
 
-  override def knownTotalNumberOfRows: Option[Int] = Some(seqRowsSource.size)
+  override def knownTotalNumberOfRows(): Option[Int] = Some(seqRowsSource.size)
 }

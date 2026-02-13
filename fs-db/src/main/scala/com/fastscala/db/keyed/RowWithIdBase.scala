@@ -1,5 +1,6 @@
-package com.fastscala.db
+package com.fastscala.db.keyed
 
+import com.fastscala.db.RowBase
 import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc.sqls
 

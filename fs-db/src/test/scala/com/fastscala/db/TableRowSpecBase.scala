@@ -1,7 +1,7 @@
 package com.fastscala.db
 
 import org.scalatest.flatspec.AnyFlatSpec
-import scalikejdbc._
+import scalikejdbc.*
 
 class TestEntity3(
                    var myInt: Int = 123,
@@ -12,15 +12,16 @@ class TestEntity3(
                    var myString: String = "hello",
                    var myBoolean: Boolean = true,
                    var myChar: Char = 'X',
+                   var myBigDecimal: BigDecimal = 1.23,
                  ) extends Row[TestEntity3] {
-  override def table: PgTable[TestEntity3] = TestEntity3
+  override def table: Table[TestEntity3] = TestEntity3
 }
 
-object TestEntity3 extends PgTable[TestEntity3] {
+object TestEntity3 extends Table[TestEntity3] {
   override def createSampleRow(): TestEntity3 = new TestEntity3
 }
 
-trait TableRowSpecBase extends AnyFlatSpec {
+class TableRowSpecBase extends AnyFlatSpec with PostgresDB {
 
   def runTests(): Unit = {
     "Create table" should "succeed" in {
@@ -46,6 +47,7 @@ trait TableRowSpecBase extends AnyFlatSpec {
         assert(example.myString == single.myString)
         assert(example.myBoolean == single.myBoolean)
         assert(example.myChar == single.myChar)
+        assert(example.myBigDecimal == single.myBigDecimal)
       })
     }
     "Delete table" should "succeed" in {
@@ -55,7 +57,3 @@ trait TableRowSpecBase extends AnyFlatSpec {
     }
   }
 }
-
-class SQLiteTableRowSpec extends TableRowSpecBase with SQLiteDB
-
-class PostgresTableRowSpec extends TableRowSpecBase with PostgresDB

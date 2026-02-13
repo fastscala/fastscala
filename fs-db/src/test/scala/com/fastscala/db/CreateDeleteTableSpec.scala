@@ -13,14 +13,14 @@ class TestEntity2(
                    var myShort: Short = 777,
                    var myChar: Char = 'X',
                  ) extends Row[TestEntity2] {
-  override def table: PgTable[TestEntity2] = TestEntity2
+  override def table: Table[TestEntity2] = TestEntity2
 }
 
-object TestEntity2 extends PgTable[TestEntity2] {
+object TestEntity2 extends Table[TestEntity2] {
   override def createSampleRow(): TestEntity2 = new TestEntity2
 }
 
-trait CreateTableSpecBase extends AnyFlatSpec {
+class CreateTableSpecBase extends AnyFlatSpec with PostgresDB{
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
@@ -33,7 +33,3 @@ trait CreateTableSpecBase extends AnyFlatSpec {
     })
   }
 }
-
-class SQLiteCreateTableSpec extends CreateTableSpecBase with SQLiteDB
-
-class PostgresCreateTableSpec extends CreateTableSpecBase with PostgresDB

@@ -1,6 +1,6 @@
 package com.fastscala.db.observable
 
-import com.fastscala.db.{RowWithId, RowWithIdBase}
+import com.fastscala.db.keyed.{RowWithId, RowWithIdBase}
 
 trait ObservableRow[K, R <: ObservableRow[K, R]] extends RowWithId[K, R] with ObservableRowBase with RowWithIdBase {
   self: R =>

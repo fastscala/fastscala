@@ -3,7 +3,7 @@ package com.fastscala.db.cache
 import com.fastscala.db.PostgresDB
 import com.fastscala.db.caching.*
 import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
+import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongId}
 import com.fastscala.db.observable.ObservableRow
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc.*

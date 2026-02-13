@@ -6,14 +6,14 @@ import com.fastscala.core.FSContext
 import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.js.{JS, inScriptTag}
 import io.circe.Decoder
 import io.circe.generic.semiauto
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-trait Table6SortableRowsMultiTable extends Table6Base with Table6RowsWithId {
+trait Table6SortableRowsMultiTable extends Table6Base with Table6RowsRetrievableById {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -29,49 +29,53 @@ trait Table6SortableRowsMultiTable extends Table6Base with Table6RowsWithId {
 
   implicit val jsonDecoder: Decoder[RowSorted] = semiauto.deriveDecoder[RowSorted]
 
-  override def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem = {
+  override def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int], tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem = {
     val transformed = super.transformTableBodyTrElem(elem)
     if (isSortableRow(row)) transformed.addClass("sortable-row").withAttr("row-id", getIdForRow(row)) else transformed
   }
 
   def sortableRowsMinDistancePx = 15
 
-  override def renderTableBody()(implicit fsc: FSContext, rowsWithIds: Seq[(String, R)], columnsWithIds: Seq[(String, C)], tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): (Elem, Js) =
-    super.renderTableBody() match {
-      case (elem, js) => {
-        val callback = fsc.callbackJSONDecoded[RowSorted](
-          Js("""{"newIdx": idx, "rowId": rowId}"""),
-          { case RowSorted(newIdx, rowId) =>
-            getRowForId(rowId) match {
-              case Some(row) => sortedRow(row, newIdx)
-              case None      => throw new Exception(s"Invalid id for row ${rowId}")
-            }
-          }
-        ).cmd
-        elem -> (js & Js(s"""$$(${JS.asJsStr("#" + tbodyId)}).sortable({
-                            |  items: 'tr.sortable-row',
-                            |  distance: $sortableRowsMinDistancePx,
-                            |  ${sortableRowsHandle.map(sortableRowsHandle => s"""handle: ${JS.asJsStr(sortableRowsHandle)},""").getOrElse("")}
-                            |  ${sortableRowsConnectWith.map(sortableRowsConnectWith => s"""connectWith: ${JS.asJsStr(sortableRowsConnectWith)},""").getOrElse("")}
-                            |  update: function(event, ui) {
-                            |    console.log(event);
-                            |    console.log(ui);
-                            |    window.myui = ui;
-                            |    var idx = ui.item.index();
-                            |    var rowId = ui.item.attr('row-id');
-                            |    if (${JS.elementById(tableId)}.contains(ui.item[0])) {
-                            |      $callback
-                            |    }
-                            |  },
-                            |  helper: function(e, ui) {
-                            |    ui.children().each(function() {
-                            |      $$(this).width($$(this).width());
-                            |    });
-                            |    return ui;
-                            |  }
-                            |})
-                            |""".stripMargin))
+  override def renderTableBody()(implicit fsc: FSContext, columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], knownTotalNumberOfRows: Option[Int], tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): Elem = {
+    val elem = super.renderTableBody()
+
+    val callback = fsc.callbackJSONDecoded[RowSorted](
+      Js("""{"newIdx": idx, "rowId": rowId}"""),
+      { case RowSorted(newIdx, rowId) =>
+        getRowForId(rowId) match {
+          case Some(row) => sortedRow(row, newIdx)
+          case None => throw new Exception(s"Invalid id for row ${rowId}")
+        }
       }
-    }
+    ).cmd
+
+    elem.withAppendedToContents(
+      Js(
+        s"""$$(${JS.asJsStr("#" + tbodyId)}).sortable({
+           |  items: 'tr.sortable-row',
+           |  distance: $sortableRowsMinDistancePx,
+           |  ${sortableRowsHandle.map(sortableRowsHandle => s"""handle: ${JS.asJsStr(sortableRowsHandle)},""").getOrElse("")}
+           |  ${sortableRowsConnectWith.map(sortableRowsConnectWith => s"""connectWith: ${JS.asJsStr(sortableRowsConnectWith)},""").getOrElse("")}
+           |  update: function(event, ui) {
+           |    console.log(event);
+           |    console.log(ui);
+           |    window.myui = ui;
+           |    var idx = ui.item.index();
+           |    var rowId = ui.item.attr('row-id');
+           |    if (${JS.elementById(tableId)}.contains(ui.item[0])) {
+           |      $callback
+           |    }
+           |  },
+           |  helper: function(e, ui) {
+           |    ui.children().each(function() {
+           |      $$(this).width($$(this).width());
+           |    });
+           |    return ui;
+           |  }
+           |})
+           |""".stripMargin
+      ).inScriptTag
+    )
+  }
 
 }

@@ -30,14 +30,14 @@ trait Table5SelectableRows extends Table5Base with Table5ColsLabeled {
 
   def onSelectedRowsChange()(implicit fsc: FSContext): Js = JS.void
 
-  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").ajax(implicit fsc => {
+  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     allSelectedRowsEvenIfNotVisible ++= rows(rowsHints())
     onSelectedRowsChange() &
       rerenderTableAround()
   })
 
-  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").ajax(implicit fsc => {
+  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     onSelectedRowsChange() &
       rerenderTableAround()

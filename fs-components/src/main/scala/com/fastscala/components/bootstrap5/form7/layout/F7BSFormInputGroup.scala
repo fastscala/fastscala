@@ -1,8 +1,9 @@
 package com.fastscala.components.bootstrap5.form7.layout
 
 import com.fastscala.components.bootstrap5.form7.mixins.F7FieldWithInputGroupSize
+import com.fastscala.components.bootstrap5.form7.renderers.BSFormInputGroupF7FieldRenderer
 import com.fastscala.components.form7.*
-import com.fastscala.components.form7.fields.F7HtmlField
+import com.fastscala.components.form7.fields.html.F7HtmlField
 import com.fastscala.components.form7.fields.layout.F7ContainerFieldBase
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -11,7 +12,9 @@ import com.fastscala.scala_xml.js.JS
 
 import scala.xml.{Elem, Node, NodeSeq}
 
-class F7BSFormInputGroup()(groupChildren: F7Field*) extends F7ContainerFieldBase with F7FieldWithInputGroupSize {
+case class F7BSFormInputGroupRenderedChild(field: F7Field, inputField: Elem, nodesBefore: Seq[Node], nodesAfter: Seq[Node])
+
+class F7BSFormInputGroup()(groupChildren: F7Field*)(implicit renderer: BSFormInputGroupF7FieldRenderer) extends F7ContainerFieldBase with F7FieldWithInputGroupSize {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -26,16 +29,16 @@ class F7BSFormInputGroup()(groupChildren: F7Field*) extends F7ContainerFieldBase
       val showErrors = shouldShowValidation_? && groupChildren.exists(_.validate().nonEmpty)
       showingValidation = showErrors
 
-      val renderedChildren: Seq[(F7Field, Elem, Seq[Node], Seq[Node])] = groupChildren.map(f => {
+      val renderedChildren: Seq[F7BSFormInputGroupRenderedChild] = groupChildren.map(f => {
         val rendered = f.render()
         val inputIdx: Option[Int] = Some(rendered.child.indexWhere({
           case elem: Elem if Set("input", "textarea", "select").contains(elem.label) => true
-          case _                                                                     => false
+          case _ => false
         })).filter(_ != -1)
         val (beforeInput: Seq[Node], inputAndAfter: Seq[Node]) = inputIdx.map(inputElemIdx => {
           rendered.child.splitAt(inputElemIdx)
         }).getOrElse((Nil, Nil))
-        (
+        F7BSFormInputGroupRenderedChild(
           f,
           rendered,
           beforeInput ++ inputAndAfter.collect({
@@ -43,38 +46,35 @@ class F7BSFormInputGroup()(groupChildren: F7Field*) extends F7ContainerFieldBase
           }),
           inputAndAfter.drop(1).filter({
             case elem: Elem if elem.getClassAttr.contains("form-check-label") => false
-            case _                                                            => true
+            case _ => true
           })
         )
       })
-      div.withId(aroundId).mb_3.apply {
-        (renderedChildren.map(_._3).flatten.map(adaptNodes) ++
-          input_group.withId(elemId)
-            .withClassIf(showErrors, is_invalid.getClassAttr)
-            .withClass(inputGroupSize.`class`)
-            .apply(renderedChildren.map({
-              case (field: F7HtmlField, rendered, _, _) =>
-                rendered.child.map({
-                  case elem: Elem if elem.label == "span" || elem.label == "label" => elem.input_group_text
-                  case elem                                                        => elem
-                })
-              case (field, rendered, _, _) =>
-                rendered.child.collect({
-                  case elem: Elem if elem.label == "textarea"                                                                    => Seq(elem)
-                  case elem: Elem if elem.label == "select"                                                                      => Seq(elem)
-                  case elem: Elem if elem.label == "input" && Set("radio", "checkbox").contains(elem.attr("type").getOrElse("")) => Seq(input_group_text.apply(elem.mt_0))
-                  case elem: Elem if elem.label == "input"                                                                       => Seq(elem)
-                  case _                                                                                                         => Seq()
-                }).flatten
-            }).flatten*) ++
-          renderedChildren.map(_._4).flatten.map(adaptNodes): NodeSeq)
-      }
+      val nodesBeforeInputGroup = renderedChildren.map(_.nodesBefore).flatten.map(adaptNodes)
+      val elemsInsideInputGroup = renderedChildren.map({
+        case F7BSFormInputGroupRenderedChild(field: F7HtmlField, rendered, _, _) =>
+          rendered.child.map({
+            case elem: Elem if elem.label == "span" || elem.label == "label" => elem.input_group_text
+            case elem => elem
+          })
+        case F7BSFormInputGroupRenderedChild(field, rendered, _, _) =>
+          rendered.child.collect({
+            case elem: Elem if elem.label == "textarea" => Seq(elem)
+            case elem: Elem if elem.label == "select" => Seq(elem)
+            case elem: Elem if elem.label == "input" && Set("radio", "checkbox").contains(elem.attr("type").getOrElse("")) => Seq(input_group_text.apply(elem.mt_0))
+            case elem: Elem if elem.label == "input" => Seq(elem)
+            case _ => Seq[Elem]()
+          }).flatten
+      }).flatten
+      val nodesAfterInputGroup = renderedChildren.map(_._4).flatten.map(adaptNodes)
+
+      renderer.render(this)(nodesBeforeInputGroup, elemsInsideInputGroup, nodesAfterInputGroup, inputGroupSize, showErrors)
     }
   }
 
   def adaptNodes(node: Node): Node = node match {
     case elem: Elem if elem.getClassAttr.contains("form-check-label") => elem.removeClass("form-check-label").addClass("form-label")
-    case other                                                        => other
+    case other => other
   }
 
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] =

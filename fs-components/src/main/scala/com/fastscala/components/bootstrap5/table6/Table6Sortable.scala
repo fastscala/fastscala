@@ -20,7 +20,7 @@ trait Table6Sortable extends Table6Base with Table6StandardColumns {
   lazy val currentSortAsc: Lazy[Boolean] = Lazy(currentSortCol().map(defaultSortAsc).getOrElse(true))
 
   override def rowsHints(): Seq[RowsHint] = super.rowsHints() ++ currentSortCol().map(col => {
-    SortingRowsHint[C](col, currentSortAsc())
+    SortingRowsHint(col, currentSortAsc())
   }).toList
 
   def clickedClientSide()(
@@ -28,6 +28,7 @@ trait Table6Sortable extends Table6Base with Table6StandardColumns {
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,
@@ -55,6 +56,7 @@ trait Table6Sortable extends Table6Base with Table6StandardColumns {
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,

@@ -10,36 +10,10 @@ import com.fastscala.utils.IdGen
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-class ContentRerenderer(
-                         renderFunc: ContentRerenderer => FSContext => (NodeSeq, Js),
-                         idOpt: Option[String] = None,
-                         debugLabel: Option[String] = None,
-                       ) {
-  private var transforms: NodeSeq => NodeSeq = identity[NodeSeq]
+class ContentRerenderer(renderFunc: ContentRerenderer => FSContext => NodeSeq, idOpt: Option[String] = None, debugLabel: Option[String] = None)
+  extends ContentRerendererP[Unit](rerenderer => fsc => _ => renderFunc(rerenderer.asInstanceOf[ContentRerenderer])(fsc), idOpt, debugLabel) {
 
-  val outerElem: Elem = <div></div>
+  def render()(implicit fsc: FSContext): Elem = super.render(())
 
-  val aroundId = idOpt.getOrElse(IdGen.id("around"))
-
-  private def renderImpl()(implicit fsc: FSContext): (Elem, Js) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
-    val (rendered: NodeSeq, setupJs: Js) = renderFunc(this)(fsc)
-    val renderedWithTransforms = transforms(rendered)
-    val renderedWithId: Elem = outerElem.withIdIfNotSet(aroundId).withContents(renderedWithTransforms)
-    (RerendererDebugStatusState().render(renderedWithId), setupJs)
-  }
-
-  def render()(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
-    val (rendered: Elem, setupJs: Js) = renderImpl()
-    if (setupJs.isVoid) rendered else rendered.withAppendedToContents(setupJs.onDOMContentLoaded.inScriptTag)
-  }
-
-  def rerender()(implicit fsc: FSContext) = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
-    val (rendered: Elem, setupJs: Js) = renderImpl()
-    RerendererDebugStatusState().rerender(aroundId, JS.replace(aroundId, render()) & setupJs)
-  }
-
-  def map(f: NodeSeq => NodeSeq): this.type = {
-    transforms = transforms andThen f
-    this
-  }
+  def rerender()(implicit fsc: FSPageLike) = super.rerender(())
 }

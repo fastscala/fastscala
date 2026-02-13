@@ -28,8 +28,8 @@ trait F7FieldWithEnabled extends F7Field {
 
   protected var currentRenderedAsEnabled = Option.empty[Boolean]
 
-  override def renderedFieldWithCurrentState(): Unit = {
-    super.renderedFieldWithCurrentState()
+  override def preRender(): Unit = {
+    super.preRender()
     currentRenderedAsEnabled = Some(enabled)
   }
 

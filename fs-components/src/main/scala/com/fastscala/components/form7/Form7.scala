@@ -35,7 +35,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   def onChangedState(from: Form7State.Value, to: Form7State.Value)(using fsc: FSContext): Js = onEvent(ChangedFormState(from, to))(using this, fsc)
 
   /** NOTE: Implementation should usually be a val or lazy val! don't re-instantiate the fields every time this method is called!
-    */
+   */
   def rootField: F7Field
 
   def initForm()(implicit fsc: FSContext): Unit = ()
@@ -54,9 +54,8 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
       case ChangedField(_) =>
         val previousState = state()
         state() = Form7State.Modified
-        val onChangedStateJs = onChangedState(previousState, state())
-        if (submitOnChangedField) onChangedStateJs & submitFormServerSide()
-        else onChangedStateJs
+        (if (previousState != Form7State.Modified) onChangedState(previousState, state()) else Js.Void) &
+          (if (submitOnChangedField) submitFormServerSide() else Js.Void)
       case _ => Js.Void
     }) &
       rootField.onEvent(event)
@@ -81,7 +80,7 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   }
 
   /** Used to run JS to initialize the form after it is rendered or re-rendered.
-    */
+   */
   def postRenderSetupJs()(implicit fsc: FSContext): Js = rootField.fieldAndChildreenMatchingPredicate(_.enabled).map(_.postRenderSetupJs()).reduceOption(_ & _).getOrElse(JS.void)
 
   def reRender()(implicit fsc: FSContext): Js = {
@@ -99,9 +98,11 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   def submitFormClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => submitFormServerSide())
 
   def onSubmitIgnoredFormAlreadySaved()(implicit fsc: FSContext): Js = Js.Void
-  
+
+  def ignoreSubmitIfFormIsAlreadySaved: Boolean = true
+
   def submitFormServerSide()(implicit fsc: FSContext): Js = {
-    if (state() == Form7State.Saved) {
+    if (ignoreSubmitIfFormIsAlreadySaved && state() == Form7State.Saved) {
       logger.info("Ignoring form submit since form is in saved state")
       onSubmitIgnoredFormAlreadySaved()
     } else if (fsc != fsc.page.rootFSContext) submitFormServerSide()(using fsc.page.rootFSContext)
@@ -112,21 +113,21 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
         enabledFields.map(_.preValidation()).reduceOption(_ & _).getOrElse(JS.void) &
         enabledFields.collect(_.validate()).flatten.pipe(errors => {
           (if (errors.nonEmpty) {
-             val previousState = state()
-             state() = Form7State.ValidationFailed
-             onChangedState(previousState, state())
-           } else Js.Void)
-          &
+            val previousState = state()
+            state() = Form7State.ValidationFailed
+            onChangedState(previousState, state())
+          } else Js.Void)
+            &
             onEvent(PostValidate)(using this, fsc) &
             enabledFields.map(_.postValidation(errors)).reduceOption(_ & _).getOrElse(JS.void) &
             postValidateForm(errors) &
             (if (errors.isEmpty) {
-               savePipeline(enabledFields) & {
-                 val previousState = state()
-                 state() = Form7State.Saved
-                 onChangedState(previousState, state())
-               }
-             } else JS.void)
+              savePipeline(enabledFields) & {
+                val previousState = state()
+                state() = Form7State.Saved
+                onChangedState(previousState, state())
+              }
+            } else JS.void)
         })
     }
   }

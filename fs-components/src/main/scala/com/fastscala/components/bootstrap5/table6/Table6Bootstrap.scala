@@ -62,7 +62,7 @@ trait Table6BootrapStyling extends Table6Base {
 
   def tableBorderStyle: Option[Table6BootrapBorderStyles.Value] = None
 
-  override def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String =
+  override def tableClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String =
     super.tableClasses() + " table " +
       (if (tableDark) " table-dark " else "") +
       (if (tableStriped) " table-striped " else "") +
@@ -72,10 +72,10 @@ trait Table6BootrapStyling extends Table6Base {
       (if (tableBorderless) " table-borderless " else "") +
       (if (tableSmall) " table-sm " else "")
 
-  override def tableHeadClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String =
+  override def tableHeadClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String =
     super.tableHeadClasses() +
       tableHeadStyle.map(" " + _ + " ").getOrElse("")
 
-  override def transformTableElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem =
+  override def transformTableElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): Elem =
     super.transformTableElem(elem).pipe(elem => tableResponsive.map(size => elem.addClass(size.toString)).getOrElse(elem))
 }

@@ -1,6 +1,7 @@
 package com.fastscala.db.caching
 
 import com.fastscala.db.*
+import com.fastscala.db.keyed.{RowWithId, TableWithId}
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
 import com.fastscala.db.util.Utils
 import org.postgresql.util.PSQLException
@@ -31,13 +32,14 @@ class JoinTableCache[
    val entriesWithRight: collection.mutable.Map[K, collection.mutable.Set[J]] = collection.mutable.Map[K, collection.mutable.Set[J]]()
  ) extends TableCache[K, J](table, whereCond, status, entries) {
 
-  def getRightForLeft(left: L*): Seq[R] = getRightForLeftIds(left.map(_.key)*)
+  def getRightForLeft(left: L*): Seq[R] = getRightForLeftIds(left.map(_.key) *)
 
   def getRightForLeftIds(left: K*): Seq[R] = cacheR.getForIdsX(
-    (if (isFullyInMemory) left.flatMap(entriesWithLeft.getOrElse(_, Seq())).distinct else processLoadedRows(select(sqls"${leftIdsInSqlClause(left)}"))).map(getRightId) *
+    (if (isFullyInMemory) left.flatMap(entriesWithLeft.getOrElse(_, Seq())).distinct else 
+      processLoadedRows(select(sqls"${leftIdsInSqlClause(left)}"))).map(getRightId) *
   )
 
-  def getLeftForRight(right: R*): Seq[L] = getLeftForRightIds(right.map(_.key)*)
+  def getLeftForRight(right: R*): Seq[L] = getLeftForRightIds(right.map(_.key) *)
 
   def getLeftForRightIds(right: K*): Seq[L] = cacheL.getForIdsX(
     (if (isFullyInMemory) right.flatMap(entriesWithRight.getOrElse(_, Seq())).distinct else processLoadedRows(select(sqls"${rightIdsInSqlClause(right)}"))).map(getLeftId) *
@@ -47,13 +49,16 @@ class JoinTableCache[
     if (isFullyInMemory) left.flatMap(entriesWithLeft.getOrElse(_, Seq())).distinct
     else processLoadedRows(select(sqls"${leftIdsInSqlClause(left)}"))
 
-  def getJoinForLeft(left: L*): Seq[J] = getJoinForLeftIds(left.map(_.key)*)
+  def getJoinForLeft(left: L*): Seq[J] = getJoinForLeftIds(left.map(_.key) *)
 
   def getJoinForRightIds(right: K*): Seq[J] =
     if (isFullyInMemory) right.flatMap(entriesWithRight.getOrElse(_, Seq())).distinct
     else processLoadedRows(select(sqls"${rightIdsInSqlClause(right)}"))
 
-  def getJoinForRight(right: J): Seq[J] = getJoinForRightIds(right.key)
+  def getJoinForRight(right: R*): Seq[J] = getJoinForRightIds(right.map(_.key) *)
+
+  def getJoinForLeftAndRight(left: L, right: R): Option[J] = 
+    processLoadedRows(select(sqls"${leftIdsInSqlClause(Seq(left.key))} and ${rightIdsInSqlClause(Seq(right.key))}")).headOption
 
   def deleteX(left: L, right: R)(implicit obs: DBObserver): Unit = deleteX(left.key, right.key)
 
@@ -62,7 +67,7 @@ class JoinTableCache[
     else processLoadedRows(select(sqls"${leftIdsInSqlClause(List(left))} and ${rightIdsInSqlClause(List(right))}")).foreach(_.deleteX())
   }
 
-  override def processLoadedRows(rows: List[J]): List[J] = super.processLoadedRows(rows).map(row => {
+  override def processLoadedRows(rows: Seq[J]): Seq[J] = super.processLoadedRows(rows).map(row => {
     entriesWithLeft.getOrElseUpdate(getLeftId(row), collection.mutable.Set[J]()) += row
     entriesWithRight.getOrElseUpdate(getRightId(row), collection.mutable.Set[J]()) += row
     row

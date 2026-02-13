@@ -36,7 +36,7 @@ class FSContext(
                  var keepAliveAt: Long = System.currentTimeMillis(),
                  val debugLbl: Option[String] = None,
                  var deletedAt: Option[Long] = None
-               ) extends FSHasSession {
+               ) extends FSPageLike {
 
   def deleteOlderThan(ts: Long): Unit = {
     if (keepAliveAt < ts) delete()
@@ -159,14 +159,13 @@ class FSContext(
     session.fsSystem.gc()
     val funcId = session.nextID()
     functionsGenerated += funcId
-    page.callbacks += funcId -> new FSFunc(funcId, str => func(str) & session.fsSystem.afterCallBackJs.map(_(this)).getOrElse(JS.void))
+    page.callbacks += funcId -> new FSFunc(funcId, str => func(str))
     session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
     session.fsSystem.stats.callbacksTotal.inc()
     session.fsSystem.stats.currentCallbacks.inc()
 
     JS.fromString(
-      session.fsSystem.beforeCallBackJs.map(js => s"""(function() {${js.cmd}})();""").getOrElse("") +
-        s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${JS.asJsStr(page.id).cmd},${JS.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn,$env);"
+      s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${JS.asJsStr(page.id).cmd},${JS.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn,$env);"
     )
   }
 

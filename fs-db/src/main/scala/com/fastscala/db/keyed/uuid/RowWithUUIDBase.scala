@@ -1,13 +1,13 @@
 package com.fastscala.db.keyed.uuid
 
-import com.fastscala.db.RowWithIdBase
 import com.fastscala.db.annotations.PrimaryKey
+import com.fastscala.db.keyed.RowWithIdBase
 import scalikejdbc.*
 
 import java.nio.ByteBuffer
 import java.util.UUID
 
-trait RowWithUuidIdBase extends RowWithIdBase {
+trait RowWithUUIDBase extends RowWithIdBase {
 
   def table: TableWithUUIDBase[?]
 

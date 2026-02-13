@@ -25,6 +25,7 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
                                            fsc: FSContext,
                                            columns: Seq[(String, C)],
                                            rows: Seq[(String, R)],
+                                           knownTotalNumberOfRows: Option[Int],
                                            tableBodyRerenderer: TableBodyRerenderer,
                                            trRerenderer: TrRerenderer,
                                            col: C,
@@ -44,14 +45,14 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
       )
   }
 
-  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").ajax(implicit fsc => {
+  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     allSelectedRowsEvenIfNotVisible ++= rows(rowsHints())
     onSelectedRowsChange() &
       rerender()
   })
 
-  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").ajax(implicit fsc => {
+  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     onSelectedRowsChange() &
       rerender()
@@ -68,6 +69,7 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,
@@ -84,7 +86,8 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
       implicit
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
-      columnsWithIds: Seq[(String, C)],
+      columnsWithIds: Seq[(String, C)], 
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,
@@ -117,6 +120,7 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,

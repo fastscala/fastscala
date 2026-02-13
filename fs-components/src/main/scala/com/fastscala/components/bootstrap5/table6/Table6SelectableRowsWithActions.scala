@@ -12,15 +12,19 @@ trait Table6SelectableRowsWithActions extends Table6SelectableRowsBase with Tabl
 
   def actionsForRows(rows: Seq[R]): Seq[BSBtn] = Nil
 
-  def actionsBtnToIncludeInTopDropdown: BSBtn = BSBtn().BtnPrimary.lbl("Actions")
+  def actionsBtnLabel = "Actions"
 
-  def actionsBtnToIncludeInRowDropdown: BSBtn = BSBtn().BtnPrimary.lbl("Actions").sm
+  def actionsBtnToIncludeInTopDropdownRightAlignedMenu: Boolean = true
+
+  def actionsBtnToIncludeInTopDropdown: BSBtn = BSBtn().BtnPrimary.lbl(actionsBtnLabel)
+
+  def actionsBtnToIncludeInRowDropdown: BSBtn = BSBtn().BtnPrimary.lbl(actionsBtnLabel).sm.withStyle(";padding: 2px 7px;")
 
   override def onSelectedRowsChange()(implicit fsc: FSContext): Js = super.onSelectedRowsChange() &
     actionsDropdownBtnRenderer.rerender()
 
   lazy val actionsDropdownBtnRenderer: Rerenderer = JS.rerenderable(rerenderer => implicit fsc => {
-    BSBtnDropdown(actionsBtnToIncludeInTopDropdown)(
+    BSBtnDropdown(actionsBtnToIncludeInTopDropdown, rightAlignedMenu = actionsBtnToIncludeInTopDropdownRightAlignedMenu)(
       actionsForRows(selectedVisibleRows) *
     )
   }, debugLabel = Some("actions_dropdown_btn"))

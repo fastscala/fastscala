@@ -124,6 +124,6 @@ trait Table5StdColsHelper {
       <th>{title}</th>
 
     override def renderTD()(implicit tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TRRerenderer, tdRerenderer: TDRerenderer, value: R, rowIdx: TableRowIdx, colIdx: TableColIdx, rows: Seq[(String, R)], fsc: FSContext): Elem =
-      render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows).withClass(additionalClasses)
+      render(fsc)(tableBodyRerenderer, trRerenderer, tdRerenderer, value, rowIdx, colIdx, rows).addClass(additionalClasses)
   }
 }

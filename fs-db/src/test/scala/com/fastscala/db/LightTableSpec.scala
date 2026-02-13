@@ -13,10 +13,10 @@ class LightTableTestEntity(
                             var myBoolean: Boolean = true,
                             var myChar: Char = 'X',
                           ) extends Row[LightTableTestEntity] {
-  override def table: PgTable[LightTableTestEntity] = LightTableTestEntity
+  override def table: Table[LightTableTestEntity] = LightTableTestEntity
 }
 
-object LightTableTestEntity extends PgTable[LightTableTestEntity] {
+object LightTableTestEntity extends Table[LightTableTestEntity] {
   override def createSampleRow(): LightTableTestEntity = new LightTableTestEntity
 }
 
@@ -24,17 +24,17 @@ class LightTableTestLightEntity(
                                  var myInt: Int = 123,
                                  var myChar: Char = 'X'
                                ) extends Row[LightTableTestLightEntity] {
-  override def table: PgTable[LightTableTestLightEntity] = LightTableTestLightEntity
+  override def table: Table[LightTableTestLightEntity] = LightTableTestLightEntity
 }
 
-object LightTableTestLightEntity extends PgTable[LightTableTestLightEntity] {
+object LightTableTestLightEntity extends Table[LightTableTestLightEntity] {
 
   override def tableName: String = LightTableTestEntity.tableName
 
   override def createSampleRow(): LightTableTestLightEntity = new LightTableTestLightEntity
 }
 
-trait LightTableSpecBase extends AnyFlatSpec {
+class LightTableSpecBase extends AnyFlatSpec with PostgresDB {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
@@ -62,6 +62,3 @@ trait LightTableSpecBase extends AnyFlatSpec {
   }
 }
 
-class SQLiteLightTableSpec extends LightTableSpecBase with SQLiteDB
-
-class PostgresLightTableSpec extends LightTableSpecBase with PostgresDB

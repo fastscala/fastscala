@@ -1,16 +1,17 @@
-package com.fastscala.db.keyed
+package com.fastscala.db.keyed.numeric
 
+import com.fastscala.db.Row
 import com.fastscala.db.annotations.PrimaryKey
-import com.fastscala.db.{Row, RowWithId, RowWithIdBase}
+import com.fastscala.db.keyed.{RowWithId, RowWithIdBase}
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
-trait PgRowWithLongId[R <: PgRowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
+trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>
 
   @PrimaryKey var id: java.lang.Long = null
-  
-  def table: PgTableWithLongId[R]
+
+  def table: TableWithLongId[R]
 
   override def key: java.lang.Long = id
 

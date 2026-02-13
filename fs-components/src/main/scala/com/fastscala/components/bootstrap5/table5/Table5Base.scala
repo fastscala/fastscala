@@ -24,7 +24,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
 
   var additionalTableClasses = ""
 
-  var onTableTransforms: Elem => Elem = _.withClass(additionalTableClasses)
+  var onTableTransforms: Elem => Elem = _.addClass(additionalTableClasses)
   var onTableHeadTransforms: Elem => Elem = identity[Elem]
   var onTableHeadTRTransforms: Elem => Elem = identity[Elem]
   var onTableHeadTRTHTransforms: Elem => Elem = identity[Elem]
@@ -126,11 +126,11 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     renderTable()
   }, idOpt = Some(tableId.id), debugLabel = Some("table")))
 
-  def transformTableElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableTransforms(elem).withClass(tableClasses()).withStyle(tableStyle())
+  def transformTableElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableTransforms(elem).addClass(tableClasses()).withStyle(tableStyle())
 
-  def transformTableHeadElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableHeadTransforms(elem).withClass(tableHeadClasses()).withStyle(tableHeadStyle())
+  def transformTableHeadElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableHeadTransforms(elem).addClass(tableHeadClasses()).withStyle(tableHeadStyle())
 
-  def transformTableBodyElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableBodyTransforms(elem).withClass(tableBodyClasses()).withStyle(tableBodyStyle())
+  def transformTableBodyElem(elem: Elem)(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): Elem = onTableBodyTransforms(elem).addClass(tableBodyClasses()).withStyle(tableBodyStyle())
 
   def transformTableHeadTRElem(elem: Elem)(
     implicit
@@ -138,7 +138,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     , rowsWithIds: Seq[(String, R)]
     , columns: Seq[(String, C)]
     , fsc: FSContext
-  ): Elem = onTableHeadTRTransforms(elem).withClass(tableHeadTRClasses()).withStyle(tableHeadTRStyle())
+  ): Elem = onTableHeadTRTransforms(elem).addClass(tableHeadTRClasses()).withStyle(tableHeadTRStyle())
 
   def transformTRElem(elem: Elem)(
     implicit
@@ -149,7 +149,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): Elem = onTableBodyTRTransforms(elem).withClass(tableBodyTRClasses()).withStyle(tableBodyTRStyle())
+  ): Elem = onTableBodyTRTransforms(elem).addClass(tableBodyTRClasses()).withStyle(tableBodyTRStyle())
 
   def transformTableHeadTRTHElem(elem: Elem)(
     implicit
@@ -158,7 +158,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): Elem = onTableHeadTRTHTransforms(elem).withClass(tableHeadTRTHClasses()).withStyle(tableHeadTRTHStyle())
+  ): Elem = onTableHeadTRTHTransforms(elem).addClass(tableHeadTRTHClasses()).withStyle(tableHeadTRTHStyle())
 
   def transformTRTDElem(elem: Elem)(
     implicit
@@ -170,7 +170,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     columns: Seq[(String, C)],
     rows: Seq[(String, R)],
     fsc: FSContext
-  ): Elem = onTableBodyTRTDTransforms(elem).withClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle())
+  ): Elem = onTableBodyTRTDTransforms(elem).addClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle())
 
   def rerenderTable()(implicit fsc: FSContext): Js = tableRenderer.rerenderer.rerender()
 

@@ -9,20 +9,23 @@ import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsLabeled with Table6StandardColumns with Table6RowsWithId {
+trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsLabeled with Table6StandardColumns with Table6RowsWithStableId {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   lazy val allSelectedRowsEvenIfNotVisible = collection.mutable.Set[R]()
 
-  def selectedVisibleRows: Seq[R] = rows(rowsHints()).filter(row => allSelectedRowsEvenIfNotVisible.contains(row))
-  
+  def selectedVisibleRows: Seq[R] =
+    if (allSelectedRowsEvenIfNotVisible.nonEmpty) rows(rowsHints()).filter(row => allSelectedRowsEvenIfNotVisible.contains(row))
+    else Nil
+
   def selectedRowClass: String
 
   override def transformTableBodyTrElem(elem: Elem)(implicit
                                                     fsc: FSContext,
                                                     columns: Seq[(String, C)],
                                                     rows: Seq[(String, R)],
+                                                    knownTotalNumberOfRows: Option[Int],
                                                     tableBodyRerenderer: TableBodyRerenderer,
                                                     trRerenderer: TrRerenderer,
                                                     row: R,
@@ -36,6 +39,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
                                            fsc: FSContext,
                                            columns: Seq[(String, C)],
                                            rows: Seq[(String, R)],
+                                           knownTotalNumberOfRows: Option[Int],
                                            tableBodyRerenderer: TableBodyRerenderer,
                                            trRerenderer: TrRerenderer,
                                            col: C,
@@ -54,7 +58,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
       )
   }
 
-  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").ajax(implicit fsc => {
+  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     allSelectedRowsEvenIfNotVisible ++= rows(rowsHints())
     onSelectedRowsChange() &
@@ -64,7 +68,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
       JS.forEachQuerySelector(allSelectedRowsEvenIfNotVisible.map(r => "#" + idForRow(r, -1) + s" input[select-row-for-table=\"${tableId}\"]").mkString(", "), JsFunc1(js => Js(s"$js.checked = true")))
   })
 
-  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").ajax(implicit fsc => {
+  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     onSelectedRowsChange() &
       JS.removeClassFromElemsMatchingSelector(s"#$tbodyId tr", selectedRowClass) &
@@ -76,6 +80,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
     fsc: FSContext,
     rowsWithIds: Seq[(String, R)],
     columnsWithIds: Seq[(String, C)],
+    knownTotalNumberOfRows: Option[Int],
     tableWrapperRenderer: TableWrapperRerenderer,
     tableRenderer: TableRerenderer,
     tableHeadRerenderer: TableHeadRerenderer,
@@ -100,6 +105,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,
@@ -117,6 +123,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,
@@ -157,6 +164,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
       fsc: FSContext,
       rowsWithIds: Seq[(String, R)],
       columnsWithIds: Seq[(String, C)],
+      knownTotalNumberOfRows: Option[Int],
       tableWrapperRenderer: TableWrapperRerenderer,
       tableRenderer: TableRerenderer,
       tableHeadRerenderer: TableHeadRerenderer,

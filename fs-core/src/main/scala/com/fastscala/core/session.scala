@@ -27,8 +27,20 @@ object FSSession {
   val logger = LoggerFactory.getLogger(getClass.getName)
 }
 
-trait FSHasSession {
+object FSSessionLike {
+  given Conversion[FSSessionLike, FSSession] = _.session
+}
+
+trait FSSessionLike {
   def session: FSSession
+}
+
+object FSPageLike {
+  given Conversion[FSPageLike, FSPage] = _.page
+}
+
+trait FSPageLike extends FSSessionLike {
+  def page: FSPage
 }
 
 class FSSession(
@@ -38,7 +50,7 @@ class FSSession(
                  val createdAt: Long = System.currentTimeMillis(),
                  var keepAliveAt: Long = System.currentTimeMillis(),
                  val debugLbl: Option[String] = None
-               ) extends FSHasSession {
+               ) extends FSSessionLike {
 
   val config = ConfigFactory.load()
 

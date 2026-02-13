@@ -13,14 +13,14 @@ object Department {
 }
 
 class ImplicitValuesTestEntity(var name: String)(implicit val departmentId: DepartmentId) extends Row[ImplicitValuesTestEntity] {
-  override def table: PgTable[ImplicitValuesTestEntity] = ImplicitValuesTestEntity
+  override def table: Table[ImplicitValuesTestEntity] = ImplicitValuesTestEntity
 }
 
-object ImplicitValuesTestEntity extends PgTable[ImplicitValuesTestEntity] {
+object ImplicitValuesTestEntity extends Table[ImplicitValuesTestEntity] {
   override def createSampleRow(): ImplicitValuesTestEntity = new ImplicitValuesTestEntity("John Doe")(using DepartmentId(1234))
 }
 
-trait ImplicitValuesSpecBase extends AnyFlatSpec {
+class ImplicitValuesSpecBase extends AnyFlatSpec with PostgresDB {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>
@@ -46,7 +46,3 @@ trait ImplicitValuesSpecBase extends AnyFlatSpec {
     })
   }
 }
-
-class SQLiteImplicitValuesSpec extends ImplicitValuesSpecBase with SQLiteDB
-
-class PostgresImplicitValuesSpec extends ImplicitValuesSpecBase with PostgresDB

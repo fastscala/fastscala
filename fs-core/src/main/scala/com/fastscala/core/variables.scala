@@ -26,24 +26,24 @@ import scala.util.chaining.scalaUtilChainingOps
 
 abstract class FSSessionVar[T](default: => T) {
 
-  def apply()(implicit hasSession: FSHasSession): T = hasSession.session.getDataOpt(this).getOrElse({
+  def apply()(implicit hasSession: FSPageLike): T = hasSession.session.getDataOpt(this).getOrElse({
     hasSession.session.setData(this, default)
     apply()
   })
 
-  def update(value: T)(implicit hasSession: FSHasSession): Unit = hasSession.session.setData(this, value)
+  def update(value: T)(implicit hasSession: FSPageLike): Unit = hasSession.session.setData(this, value)
 }
 
 abstract class FSSessionVarOpt[T]() {
 
-  def apply()(implicit hasSession: FSHasSession): Option[T] = hasSession.session.getDataOpt[T](this)
+  def apply()(implicit hasSession: FSSessionLike): Option[T] = hasSession.session.getDataOpt[T](this)
 
-  def update(value: T)(implicit hasSession: FSHasSession): Unit = hasSession.session.setData(this, value)
+  def update(value: T)(implicit hasSession: FSSessionLike): Unit = hasSession.session.setData(this, value)
 
-  def setOrClear(valueOpt: Option[T])(implicit hasSession: FSHasSession): Unit = valueOpt match {
+  def setOrClear(valueOpt: Option[T])(implicit hasSession: FSSessionLike): Unit = valueOpt match {
     case Some(value) => update(value)
     case None        => clear()
   }
 
-  def clear()(implicit hasSession: FSHasSession): Unit = hasSession.session.clear(this)
+  def clear()(implicit hasSession: FSSessionLike): Unit = hasSession.session.clear(this)
 }

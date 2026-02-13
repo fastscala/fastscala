@@ -14,7 +14,7 @@ trait Table6SeqSortableDataSource extends Table6SeqDataSource with Table6Sortabl
     seqRowsSource
       .pipe(rows => {
         hints
-          .collectFirst({ case hint: SortingRowsHint[C] => hint })
+          .collectFirst({ case hint: SortingRowsHint => hint })
           .collect({
             case SortingRowsHint(sortCol: C, ascending) if rowsSorter.isDefinedAt(sortCol) =>
               val sorted = rowsSorter.apply(sortCol)(rows)

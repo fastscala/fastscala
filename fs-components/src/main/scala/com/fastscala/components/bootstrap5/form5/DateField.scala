@@ -27,10 +27,10 @@ trait DateFieldOptRenderer {
     div.withId(field.aroundId).apply {
       val showErrors = hints.contains(ShowValidationsHint)
       labelOpt.map(_.form_label.withFor(field.elemId)).getOrElse(Empty) ++
-        input_group.withId(field.elemId).withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr) {
-          yearSelectElem.withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr) ++
-            monthSelectElem.withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr) ++
-            daySelectElem.withClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
+        input_group.withId(field.elemId).addClassIf(showErrors && error.isDefined, is_invalid.getClassAttr) {
+          yearSelectElem.addClassIf(showErrors && error.isDefined, is_invalid.getClassAttr) ++
+            monthSelectElem.addClassIf(showErrors && error.isDefined, is_invalid.getClassAttr) ++
+            daySelectElem.addClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
         } ++
         error.filter(_ => showErrors).map(error => invalid_feedback.apply(error)).getOrElse(Empty)
     }

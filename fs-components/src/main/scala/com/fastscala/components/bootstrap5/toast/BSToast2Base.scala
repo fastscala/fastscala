@@ -240,7 +240,7 @@ abstract class BSToast2Base
 
   def append2DOM()(implicit fsc: FSContext): Js = {
     val finalToastContainer = toastContainerTransforms(toastContainer)
-    Js(s"""if (document.body.querySelector("#${finalToastContainer.getId}") == null) {${JS.append2Body(finalToastContainer)}}""") &
+    Js(s"""if (document.body.querySelector("#${finalToastContainer.getId}") == null) {${JS.append2BodyWithScriptExtraction(finalToastContainer)}}""") &
       JS.append2(toastContainer.getId, renderToast())
   }
 

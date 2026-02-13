@@ -30,7 +30,7 @@ object BSModal5 {
 
       override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some(modalFooterButton.lbl(closeBtnText).onclick(hideAndRemoveAndDeleteContext()).btn)
     }
-    modal.installAndShow() & modal.onHidden(onHidden)
+    modal.installAndShow() & modal.addEventListenerOnHidden(onHidden)
   }
 
   def okCancel(
@@ -50,8 +50,8 @@ object BSModal5 {
       override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = contents(this)(fsc)
 
       override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] =
-        Some(BSBtn().BtnSecondary.lbl(cancelBtnText).ajax(onCancel(this)).btn ++ BSBtn().BtnPrimary.lbl(okBtnText).ajax(onOk(this)).btn.ms_2)
+        Some(BSBtn().BtnSecondary.lbl(cancelBtnText).callback(onCancel(this)).btn ++ BSBtn().BtnPrimary.lbl(okBtnText).callback(onOk(this)).btn.ms_2)
     }
-    modal.installAndShow() & modal.onHidden(onHidden)
+    modal.installAndShow() & modal.addEventListenerOnHidden(onHidden)
   }
 }

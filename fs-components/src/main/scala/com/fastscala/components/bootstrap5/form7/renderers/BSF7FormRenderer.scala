@@ -1,4 +1,4 @@
-package com.fastscala.components.bootstrap5.form7
+package com.fastscala.components.bootstrap5.form7.renderers
 
 import com.fastscala.components.form7.mixins.StandardF7Field
 import com.fastscala.components.form7.renderers.{F7FormRenderer, StandardOneInputElemF7FieldRenderer}
@@ -8,7 +8,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-class BSF7FormRendererImpl extends F7FormRenderer with Mutable {
+class BSF7FormRenderer extends F7FormRenderer with Mutable {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 

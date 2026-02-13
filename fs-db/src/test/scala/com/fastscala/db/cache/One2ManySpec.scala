@@ -3,31 +3,31 @@ package com.fastscala.db.cache
 import com.fastscala.db.PostgresDB
 import com.fastscala.db.caching.{DBCompositeObserver, One2ManyCache, TableCache}
 import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.{PgTableWithLongId, PgRowWithLongId}
+import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongId}
 import com.fastscala.db.observable.ObservableRow
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc._
 
 class Teacher(
                val name: String
-             ) extends PgRowWithLongId[Teacher] with ObservableRow[java.lang.Long, Teacher] {
-  override def table: PgTableWithLongId[Teacher] = Teacher
+             ) extends RowWithLongId[Teacher] with ObservableRow[java.lang.Long, Teacher] {
+  override def table: TableWithLongId[Teacher] = Teacher
 }
 
-object Teacher extends PgTableWithLongId[Teacher] {
+object Teacher extends TableWithLongId[Teacher] {
   override def createSampleRow(): Teacher = new Teacher("")
 }
 
 class Class(
              val name: String
              , var teacherId: Long
-           ) extends PgRowWithLongId[Class] with ObservableRow[java.lang.Long, Class] {
-  override def table: PgTableWithLongId[Class] = Class
+           ) extends RowWithLongId[Class] with ObservableRow[java.lang.Long, Class] {
+  override def table: TableWithLongId[Class] = Class
 
   override def toString: String = name
 }
 
-object Class extends PgTableWithLongId[Class] {
+object Class extends TableWithLongId[Class] {
   override def createSampleRow(): Class = new Class("", 0)
 }
 

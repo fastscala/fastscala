@@ -1,17 +1,19 @@
 package com.fastscala.db.caching
 
 import com.fastscala.db.*
+import com.fastscala.db.keyed.{RowWithId, TableWithId}
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
 import com.fastscala.db.util.Utils
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
+import scalikejdbc.WrappedResultSet
 import scalikejdbc.interpolation.SQLSyntax
 
 class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table: TableWithId[R, K], val whereCond: SQLSyntax = SQLSyntax.empty, var status: CacheStatus.Value = CacheStatus.NONE_LOADED, val entries: collection.mutable.Map[K, R] = collection.mutable.Map[K, R]())
   extends DBObserver
     with TableCacheLike[K, R] {
 
-  def loadAllEntriesAfterNFailedLookups: Int = 1
+  def loadAllEntriesAfterNFailedLookups: Int = 5
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 
@@ -22,6 +24,11 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
   def valuesLoadedInCache: Seq[R] = entries.values.toSeq
 
   def isFullyInMemory = status == CacheStatus.ALL_LOADED
+
+  def hydrate(rows: Seq[R]): Unit = {
+    processLoadedRows(rows)
+    status = CacheStatus.SOME_LOADED
+  }
 
   def hydrateFully(): Unit = {
     if (status != CacheStatus.ALL_LOADED) {
@@ -35,11 +42,6 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
     }
   }
 
-  def all: List[R] = {
-    hydrateFully()
-    entries.values.toList
-  }
-
   def count(): Long = {
     if (status != CacheStatus.ALL_LOADED) {
       table.count(whereCond)
@@ -48,22 +50,33 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
     }
   }
 
-  def selectAll(): List[R] = all
+  def selectAll(): List[R] = {
+    hydrateFully()
+    entries.values.toList
+  }
 
-  def select(where: SQLSyntax): List[R] = select(where, SQLSyntax.empty)
+  def select(where: SQLSyntax): Seq[R] = select(where, SQLSyntax.empty)
 
-  def select(where: SQLSyntax, rest: SQLSyntax): List[R] = {
+  def select[C1](where: SQLSyntax, c1Sql: SQLSyntax, c1Parse: WrappedResultSet => C1): Seq[(R, C1)] =
+    select(where, SQLSyntax.empty, List((c1Sql, c1Parse))).map({ case (row, List(c1)) => (row, c1.asInstanceOf[C1]) })
+
+  def select(where: SQLSyntax, rest: SQLSyntax): Seq[R] = select(where, rest, Nil).map(_._1)
+
+  def select(where: SQLSyntax, rest: SQLSyntax, additionalCols: List[(SQLSyntax, WrappedResultSet => Any)]): Seq[(R, List[Any])] = {
     val finalWhere = List(where, whereCond).filter(_ != SQLSyntax.empty).reduceOption[SQLSyntax]((l, r) => SQLSyntax.joinWithAnd(l, r)).getOrElse(SQLSyntax.empty)
-    if (status == CacheStatus.NONE_LOADED) {
-      processLoadedRows(table.select(finalWhere, rest))
+    if (status == CacheStatus.NONE_LOADED || additionalCols.nonEmpty) {
+      val rows = table.selectWithAdditionalCols(finalWhere, additionalCols, rest)
+      processLoadedRows(rows.map(_._1)).zip(rows.map(_._2))
     } else {
       // Load only where necessary:
-      val relevantIds = table.selectIds(finalWhere, rest).toSet
+      val relevantIdsOrdered = table.selectIds(finalWhere, rest)
+      val relevantIds = relevantIdsOrdered.toSet
       val missingIds = relevantIds -- entries.keySet
       if (missingIds.nonEmpty) {
         getForIdsX(missingIds.toSeq *)
       }
-      getForIdsX(relevantIds.toSeq *)
+      val relevantIds2Idx = relevantIdsOrdered.zipWithIndex.toMap
+      getForIdsX(relevantIds.toSeq *).sortBy(elem => relevantIds2Idx(elem.key)).map(_ -> Nil)
     }
   }
 
@@ -94,7 +107,7 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
           // logger.trace(s"${table.tableName}.getForIdOptX($key): LOADED FROM DB in ${ms}ms")
         }) match {
           case Some(value) =>
-            entries += value.key -> value
+            processLoadedRows(List(value))
             if (status == CacheStatus.NONE_LOADED) {
               status = CacheStatus.SOME_LOADED
               //              logger.trace(s"${table.tableName} cache status: $status")
@@ -108,22 +121,23 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
   }
 
   def getForIdsX(ids: K*): List[R] = {
-    entries.keySet.intersect(ids.toSet).map(entries) ++ (ids.toSet.diff(entries.keySet).toList match {
+    val idsSet = ids.toSet
+    entries.keySet.intersect(idsSet).map(entries) ++ (idsSet.diff(entries.keySet).toList match {
       case Nil => Seq()
-      case missingIds => table.getForIds(missingIds *)
+      case missingIds => processLoadedRows(table.getForIds(missingIds *))
     })
   }.toList
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()
 
-  def processLoadedRows(rows: List[R]): List[R] = rows.map(row =>
+  def processLoadedRows(rows: Seq[R]): Seq[R] = rows.map(row =>
     entries.get(row.key) match {
       case Some(existing) =>
+        // Update existing row:
         existing.copyFrom(row)
         existing
       case None =>
         entries += (row.key -> row)
-        processLoadedRows(List(row))
         row
     }
   )

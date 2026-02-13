@@ -1,14 +1,17 @@
 package com.fastscala.db.keyed.uuid
 
-import com.fastscala.db.{PgTableWithUUID, Row, RowWithId}
+import com.fastscala.db.keyed.RowWithId
+import com.fastscala.db.{TableWithUuidId, Row}
+import org.postgresql.util.PSQLException
 import scalikejdbc.*
+import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
 
-trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUuidIdBase with RowWithId[UUID, R] {
+trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase with RowWithId[UUID, R] {
   self: R =>
 
-  def table: PgTableWithUUID[R]
+  def table: TableWithUuidId[R]
 
   def key: UUID = uuid.getOrElse(null)
 
@@ -42,7 +45,18 @@ trait PgRowWithUUID[R <: PgRowWithUUID[R]] extends Row[R] with RowWithUuidIdBase
 
   def reload(): R = {
     uuid match {
-      case Some(uuid) => table.getForIdOpt(uuid).get
+      case Some(uuid) =>
+        copyFrom(table.getForIdOpt(uuid).get)
+        this
+      case None => this
+    }
+  }
+
+  def _reload()(implicit session: DBSession): R = {
+    uuid match {
+      case Some(uuid) =>
+        copyFrom(table._getForIds(uuid).head)
+        this
       case None => this
     }
   }

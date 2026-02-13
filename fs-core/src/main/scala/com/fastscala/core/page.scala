@@ -26,6 +26,8 @@ import scala.util.chaining.scalaUtilChainingOps
 
 object FSPage {
   val logger = LoggerFactory.getLogger(getClass.getName)
+
+  implicit def fromFSContext(fsc: FSContext): FSPage = fsc.page
 }
 
 /** Your own page implementation (should be a subclass)
@@ -51,7 +53,9 @@ class FSPage(
               var wsQueue: List[Js] = Nil,
               var wsLock: AnyRef = new AnyRef,
               val debugLbl: Option[String] = None
-            ) extends FSHasSession {
+            ) extends FSPageLike  {
+
+  override def page: FSPage = this
 
   def periodicKeepAliveEnabled: Boolean = session.fsSystem.config.getBoolean("com.fastscala.core.periodic-page-keep-alive.enabled")
 
@@ -91,6 +95,17 @@ class FSPage(
     if (!key2FSContext.contains(contextFor)) throw new Exception(s"Trying to get context for $contextFor, but wasn't found")
     if (key2FSContext(contextFor).deleted) throw new Exception(s"Trying to get context for $contextFor, but it was deleted")
     f(key2FSContext(contextFor))
+  }
+
+  def inContextClearedFor[T](contextFor: AnyRef)(f: FSContext => T): T = {
+    if (!key2FSContext.contains(contextFor)) throw new Exception(s"Trying to get context for $contextFor, but wasn't found")
+    val oldContext = key2FSContext(contextFor)
+    val newContext = new FSContext(session, this, oldContext.parentFSContext, debugLbl = oldContext.debugLbl)
+    key2FSContext(contextFor) = newContext
+    oldContext.delete()
+    logger.trace(s"Created context, previously cleared, ${newContext.fullPath} ($newContext)")
+    oldContext.parentFSContext.foreach(_.children += newContext)
+    f(newContext)
   }
 
   def inContextForOption[T](contextFor: AnyRef)(f: FSContext => T): Option[T] = {

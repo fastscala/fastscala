@@ -20,7 +20,7 @@ class F7DoubleOptField()(implicit renderer: TextF7FieldRenderer)
 
   override def defaultValue: Option[Double] = None
 
-  def toString(value: Option[Double]): String = value.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
+  def toString(value: Option[Double]): String = value.map(value => prefix + " " + value + " " + suffix).map(_.trim).getOrElse("")
 
   def fromString(str: String): Either[String, Option[Double]] = {
     if (str.trim == "") {

@@ -44,7 +44,7 @@ trait BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
     onOffcanvasBodyTransforms = onOffcanvasBodyTransforms.pipe(onOffcanvasBodyTransforms => elem => f(onOffcanvasBodyTransforms(elem)))
   }
 
-  def transformOffcanvasElem(elem: Elem): Elem = onOffcanvasTransforms(elem.offcanvas.withClass(position.clas).withId(offcanvasId).withAttr("tabindex" -> "-1"))
+  def transformOffcanvasElem(elem: Elem): Elem = onOffcanvasTransforms(elem.offcanvas.addClass(position.clas).withId(offcanvasId).withAttr("tabindex" -> "-1"))
 
   def transformOffcanvasHeaderElem(elem: Elem): Elem = onOffcanvasHeaderTransforms(elem.offcanvas_header)
 
@@ -56,7 +56,7 @@ trait BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
 
   lazy val offcanvasBodyRenderer: Rerenderer = JS.rerenderable(_ => implicit fsc => renderOffcanvasBody(), debugLabel = Some("offcanvas-body"))
 
-  def append2DOM()(implicit fsc: FSContext): Js = JS.append2Body(offcanvasRenderer.render())
+  def append2DOM()(implicit fsc: FSContext): Js = JS.append2BodyWithScriptExtraction(offcanvasRenderer.render())
 
   var offcanvasInstalled: Option[String] = None
 
@@ -155,7 +155,7 @@ trait BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
 
   def renderOffcanvas()(implicit fsc: FSContext): Elem = {
     transformOffcanvasElem {
-      div.withClass(offcanvasClasses).apply {
+      div.addClass(offcanvasClasses).apply {
         offcanvasHeaderRenderer.render() ++
           offcanvasBodyRenderer.render()
       }

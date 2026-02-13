@@ -38,20 +38,20 @@ trait Table5Paginated extends Table5SeqDataSource {
       .filter(_ >= 0)
 
   def renderPagesButtons()(implicit fsc: FSContext): Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
-    BSBtn().BtnLight.lbl("«").ajax(implicit fsc => {
+    BSBtn().BtnLight.lbl("«").callback(implicit fsc => {
       currentPage() = math.max(0, currentPage() - 1)
       rerenderTableAround()
     }).btn ++
       visiblePages().map(page => {
         (if (currentPage() == page) BSBtn().BtnPrimary else BSBtn().BtnLight)
           .lbl((page + 1).toString)
-          .ajax(implicit fsc => {
+          .callback(implicit fsc => {
             currentPage() = page
             rerenderTableAround()
           })
           .btn
       }).mkNS ++
-      BSBtn().BtnLight.lbl("»").ajax(implicit fsc => {
+      BSBtn().BtnLight.lbl("»").callback(implicit fsc => {
         currentPage() = math.min(maxPages, currentPage() + 1)
         rerenderTableAround()
       }).btn

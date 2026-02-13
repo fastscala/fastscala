@@ -24,7 +24,7 @@ object BSBtnToogle {
       var current = get()
       JS.rerenderable(rerenderer => implicit fsc => {
         btn.lbl(if (current) trueLbl else falseLbl)
-          .ajax(implicit fsc => {
+          .callback(implicit fsc => {
             current = !current
             set(current) & rerenderer.rerender()
           }).pipe(if (current) trueTransform else falseTransform).btn

@@ -1,20 +1,21 @@
 package com.fastscala.db
 
-import com.fastscala.db.keyed.uuid.{PgRowWithUUID, TableWithUUIDBase}
+import com.fastscala.db.keyed.uuid.{RowWithUUID, TableWithUUIDBase}
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
 
-trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends PgTable[R] with TableWithUUIDBase[R] {
 
-  protected lazy val PlaceholderUUID = PgTableWithUUID.PlaceholderUUID
+trait TableWithUuidId[R <: RowWithUUID[R]] extends Table[R] with TableWithUUIDBase[R] {
 
-  protected lazy val PlaceholderOptionalUUID = Some(PgTableWithUUID.PlaceholderUUID)
+  protected lazy val PlaceholderUUID = TableWithUuidId.PlaceholderUUID
+
+  protected lazy val PlaceholderOptionalUUID = Some(TableWithUuidId.PlaceholderUUID)
 
   override def createSampleRowInternal(): R = {
     val ins = super.createSampleRowInternal()
-    if (ins.uuid.isEmpty) ins.uuid = Some(PgTableWithUUID.PlaceholderUUID)
+    if (ins.uuid.isEmpty) ins.uuid = Some(TableWithUuidId.PlaceholderUUID)
     ins
   }
 
@@ -23,6 +24,8 @@ trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends PgTable[R] with TableWithUU
   def getForId(key: UUID): R = getForIdOpt(key).getOrElse(throw new Exception(s"Element with id ${key} not found in table $tableName"))
 
   def getForIds(uuid: UUID*): List[R] = select(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String])))
+  
+  def _getForIds(uuid: UUID*)(implicit session: DBSession): List[R] = _selectWithAdditionalCols(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String]))).map(_._1)
 
   def deleteAll(rows: Seq[R]): Long = {
     delete(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(rows.flatMap(_.uuid.map(_.toString)).toArray[String])))
@@ -33,7 +36,7 @@ trait PgTableWithUUID[R <: PgRowWithUUID[R]] extends PgTable[R] with TableWithUU
   }
 }
 
-object PgTableWithUUID {
+object TableWithUuidId {
 
   val PlaceholderUUID = UUID.fromString("11111111-1111-1111-1111-111111111111")
 }

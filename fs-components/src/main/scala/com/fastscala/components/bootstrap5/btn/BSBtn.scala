@@ -15,7 +15,7 @@ object BSBtn {
 
   def apply(): BSBtn = new BSBtn("", NodeSeq.Empty)
 
-  implicit def evidence(implicit fsc: FSContext): BSBtn => Elem = _.btn
+  implicit def evidence(btn: BSBtn): FSContext => Elem = implicit fsc => btn.btn
 }
 
 case class BSBtn(
@@ -62,32 +62,33 @@ case class BSBtn(
 
   def icn(i: BsIcn.type => BsIcn.BsIcn): BSBtn = icn(i(BsIcn).icn)
 
-  def icn(i: Elem): BSBtn = copy(content = i ++ showIf(content != NodeSeq.Empty)(<span> </span> ++ content))
+  def icn(i: Elem): BSBtn = copy(content = content ++ i)
 
   def lbl(s: String): BSBtn = copy(content = showIf(content != NodeSeq.Empty)(content ++ <span> </span>) ++ scala.xml.Text(s))
 
   def ns(ns: NodeSeq): BSBtn = copy(content = ns)
 
-  def onclick(jsCmd: Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & jsCmd))
-
-  def ajax(jsCmd: FSContext => Js): BSBtn = callback(jsCmd)
+  def onclick(js: Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & js))
+  
+  def onclick(js: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & js(fsc)))
 
   def callback(func: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc))))
 
-  def ajaxOnce(jsCmd: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = callbackRunOnce(jsCmd)
+  def ajaxOnce(func: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = callbackRunOnce(func)
 
   def callbackRunOnce(func: FSContext => Js, onFurtherAttemptsJs: Option[Js] = None): BSBtn = {
     val used = new AtomicBoolean(false)
-    ajax(fsc => {
+    callback(fsc => {
       if (!used.getAndSet(true)) func(fsc)
       else onFurtherAttemptsJs.getOrElse(JS.void)
     })
   }
 
-  def ajaxConfirm(question: String, jsCmd: FSContext => Js): BSBtn = callbackWithConfirm(question, jsCmd)
+  def callbackConfirm(question: String, func: FSContext => Js): BSBtn =
+    copy(onclickOpt = Some(fsc => JS.confirm(question, onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc)))))
 
-  def callbackWithConfirm(question: String, jsCmd: FSContext => Js): BSBtn =
-    copy(onclickOpt = Some(fsc => JS.confirm(question, onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => jsCmd(fsc)))))
+  def callbackConfirm(question: () => String, func: FSContext => Js): BSBtn =
+    copy(onclickOpt = Some(fsc => fsc.callback(() => JS.confirm(question(), onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc))))))
 
   def href(s: String): BSBtn = copy(hrefOpt = Some(s))
 
@@ -114,10 +115,10 @@ case class BSBtn(
     val finalBtn = if (idOpt.isDefined) this else this.id(IdGen.id)
 
     def generate: Elem =
-      if (get) selected(finalBtn).ajax(implicit fsc => {
+      if (get) selected(finalBtn).callback(implicit fsc => {
         set(false) & JS.replace(finalBtn.idOpt.get, generate)
       }).btn
-      else unselected(finalBtn).ajax(implicit fsc => {
+      else unselected(finalBtn).callback(implicit fsc => {
         set(true) & JS.replace(finalBtn.idOpt.get, generate)
       }).btn
 

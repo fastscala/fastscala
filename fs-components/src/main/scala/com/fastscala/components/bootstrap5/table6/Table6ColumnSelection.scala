@@ -18,9 +18,9 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   var onDropdownBtnTransforms: Elem => Elem = identity[Elem]
 
-  def dropdownBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
+  def dropdownBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
 
-  def dropdownBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
+  def dropdownBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
 
   def onDropdownBtnWrapper(f: Elem => Elem): this.type = mutate {
     onDropdownBtnTransforms = onDropdownBtnTransforms.pipe(onDropdownBtnTransforms => elem => f(onDropdownBtnTransforms(elem)))
@@ -28,20 +28,20 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   var onDropdownIndividualBtnTransforms: Elem => Elem = identity[Elem]
 
-  def dropdownIndividualBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
+  def dropdownIndividualBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
 
-  def dropdownIndividualBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)]): String = ""
+  def dropdownIndividualBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
 
   def onDropdownIndividualBtnWrapper(f: Elem => Elem): this.type = mutate {
     onDropdownIndividualBtnTransforms = onDropdownIndividualBtnTransforms.pipe(onDropdownIndividualBtnTransforms => elem => f(onDropdownIndividualBtnTransforms(elem)))
   }
 
-  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns.filter(columnStartsVisible)*))
+  lazy val currentSelectedCols: Lazy[collection.mutable.Set[C]] = Lazy(collection.mutable.Set(allColumns.filter(columnStartsVisible) *))
 
   def allColumns: Seq[C]
 
-  val initiallyVisibleColumns: Set[C] 
-  
+  val initiallyVisibleColumns: Set[C]
+
   def columnStartsVisible(c: C): Boolean = initiallyVisibleColumns.contains(c)
 
   def columns(): Seq[C] = {
@@ -54,7 +54,7 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
   def colLabel(col: C): String
 
   def renderColumnSelectionButton()(implicit fsc: FSContext): Elem =
-    BSBtn().BtnPrimary.lbl("Columns").ajax(implicit fsc => openColumnSelectionModal()).btn
+    BSBtn().BtnPrimary.lbl("Columns").callback(implicit fsc => openColumnSelectionModal()).btn
 
   def openColumnSelectionModal()(implicit fsc: FSContext): Js = BSModal5.verySimple(
     "Select Columns",
@@ -103,6 +103,6 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
             colLabel(col)
           )).withStyle("padding-top: 1px; padding-bottom: 1px;").btnLink
         )
-      )*
+      ) *
     ))
 }

@@ -46,15 +46,15 @@ trait ScalaXmlElemUtils extends Any {
 
   def addClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
 
-  def withClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
+  def withClass(`class`: String): Elem = attributeTransform("class", _ => `class`)
+
+  def addClassIf(bool: Boolean, `class`: String): Elem = if (bool) addClass(`class`) else elem
 
   def removeClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("").replaceAll("(?i)" + Pattern.quote(`class`), ""))
 
   def addOnClick(js: String): Elem = attributeTransform("onclick", _.getOrElse("") + ";" + js)
 
   def addOnClick(js: Js): Elem = addOnClick(js.cmd)
-
-  def withClassIf(bool: Boolean, `class`: String): Elem = if (bool) addClass(`class`) else elem
 
   def withAttrIf(bool: Boolean, kv: (String, String)): Elem = if (bool) withAttr(kv) else elem
 
@@ -87,6 +87,8 @@ trait ScalaXmlElemUtils extends Any {
   def withHref(href: String): Elem = attributeTransform("href", _ => href)
 
   def withRoleButton: Elem = withRole("button")
+  
+  def withRoleAlert: Elem = withRole("alert")
 
   def withId(id: String): Elem = attributeTransform("id", _ => id)
 

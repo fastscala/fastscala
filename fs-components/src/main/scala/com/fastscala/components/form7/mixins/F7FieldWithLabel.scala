@@ -13,9 +13,17 @@ trait F7FieldWithLabel extends Mutable {
   def label(v: Option[Elem]): this.type = mutate {
     _label = () => v
   }
+  
+  def labelElemOptF(v: () => Option[Elem]): this.type = mutate {
+    _label = () => v()
+  }
 
   def label(v: Elem): this.type = mutate {
     _label = () => Some(v)
+  }
+  
+  def labelElemF(v: () => Elem): this.type = mutate {
+    _label = () => Some(v())
   }
 
   def label(v: String): this.type = mutate {

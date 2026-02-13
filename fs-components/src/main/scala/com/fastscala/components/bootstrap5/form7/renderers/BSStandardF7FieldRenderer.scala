@@ -1,5 +1,6 @@
-package com.fastscala.components.bootstrap5.form7
+package com.fastscala.components.bootstrap5.form7.renderers
 
+import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
 import com.fastscala.components.form7.mixins.StandardF7Field
 import com.fastscala.components.form7.renderers.StandardOneInputElemF7FieldRenderer
 import com.fastscala.components.utils.Mutable
@@ -8,40 +9,9 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-trait BSStandardF7FieldRendererImpl extends StandardOneInputElemF7FieldRenderer with Mutable {
+trait BSStandardF7FieldRenderer extends StandardOneInputElemF7FieldRenderer with BSStandardF7ModifiableFieldRenderer {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
-
-  protected var onAroundDivTransforms: Elem => Elem = identity[Elem]
-  protected var onLabelTransforms: Elem => Elem = identity[Elem]
-  protected var onInputElemTransforms: Elem => Elem = identity[Elem]
-  protected var onInvalidFeedbackTransforms: Elem => Elem = identity[Elem]
-  protected var onValidFeedbackTransforms: Elem => Elem = identity[Elem]
-  protected var onHelpTransforms: Elem => Elem = identity[Elem]
-
-  def onAroundDiv(f: Elem => Elem): this.type = mutate {
-    onAroundDivTransforms = onAroundDivTransforms andThen f
-  }
-
-  def onLabel(f: Elem => Elem): this.type = mutate {
-    onLabelTransforms = onLabelTransforms andThen f
-  }
-
-  def onInputElem(f: Elem => Elem): this.type = mutate {
-    onInputElemTransforms = onInputElemTransforms andThen f
-  }
-
-  def onInvalidFeedback(f: Elem => Elem): this.type = mutate {
-    onInvalidFeedbackTransforms = onInvalidFeedbackTransforms andThen f
-  }
-
-  def onValidFeedback(f: Elem => Elem): this.type = mutate {
-    onValidFeedbackTransforms = onValidFeedbackTransforms andThen f
-  }
-
-  def onHelp(f: Elem => Elem): this.type = mutate {
-    onHelpTransforms = onHelpTransforms andThen f
-  }
 
   override def render(
                        field: StandardF7Field,

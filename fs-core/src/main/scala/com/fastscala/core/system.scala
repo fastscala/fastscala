@@ -24,7 +24,7 @@ import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 import scala.util.chaining.scalaUtilChainingOps
 
 
-class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Option[FSContext => Js] = None, val appName: String = "app", val stats: FSStats = new FSStats())
+class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
   extends RoutingHandlerNoSessionHelper {
 
   val config = ConfigFactory.load()
@@ -140,7 +140,7 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
                     try {
                       stats.callbacksInProcessing.inc()
                       if (logger.isTraceEnabled) logger.trace(s"Running callback on thread ${Thread.currentThread()}...")
-                      val rslt = transformCallbackResponse(fsFunc.func(arg), fsFunc, page)
+                      val rslt = executeCallback(arg)
                       if (logger.isTraceEnabled) logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
                       rslt
                     } catch {
@@ -190,7 +190,7 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
                       stats.fileUploadCallbacksInProcessing.inc()
                       parts.asScala.map(part =>
                         try {
-                          fSFileUpload.func(
+                          executeFileUpload(
                             new FSUploadedFile(
                               name = part.getName,
                               submittedFileName = part.getFileName,
@@ -271,9 +271,12 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }
   }
+  def executeKeepAlive()(implicit page: FSPage): Js = Js.Void
 
-  def transformCallbackResponse(resp: Js, fsFunc: FSFunc, page: FSPage): Js = resp
-
+  def executeCallback(arg: String)(implicit func: FSFunc): Js = func.func(arg)
+  
+  def executeFileUpload(files: Seq[FSUploadedFile])(implicit fileUpload: FSFileUpload): Js = fileUpload.func(files)
+  
   def onKeepAliveNotFound(missing: Missing.Value, sessionId: Option[String], pageId: String, session: Option[FSSession], page: Option[FSPage])(implicit req: Request): Js = {
     missing.updateStats()
     JS.void
@@ -331,10 +334,6 @@ class FSSystem(val beforeCallBackJs: Option[Js] = None, val afterCallBackJs: Opt
   def callbackClientSideOnError(implicit fsc: FSContext): Js = Js.Void
 
   def callbackClientSideOnTimeout(implicit fsc: FSContext): Js = Js.Void
-
-  def transformCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
-
-  def transformFileUploadCallbackResponse(js: Js)(implicit fsc: FSContext): Js = js
 
   def gc(): Unit = synchronized {
     val minFreeSpacePercent = config.getDouble("com.fastscala.core.gc.run-when-less-than-mem-free-percent")

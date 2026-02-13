@@ -1,8 +1,9 @@
 package com.fastscala.db.caching
 
-import com.fastscala.db.keyed.uuid.RowWithUuidIdBase
+import com.fastscala.db.keyed.{RowWithId, TableWithId}
+import com.fastscala.db.keyed.uuid.RowWithUUIDBase
 import com.fastscala.db.observable.ObservableRowBase
-import com.fastscala.db.{Row, RowWithId, TableWithId}
+import com.fastscala.db.Row
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
@@ -14,7 +15,7 @@ class TableSubCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](
                                                                                  var status: CacheStatus.Value = CacheStatus.NONE_LOADED
                                                                                ) extends TableCacheLike[K, R] {
 
-  override def all: Seq[R] = {
+  override def selectAll(): Seq[R] = {
     if (status != CacheStatus.ALL_LOADED) {
       status = CacheStatus.ALL_LOADED
       cache.select(loadSubsetSQL)
@@ -23,11 +24,11 @@ class TableSubCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](
     }
   }
 
-  override def select(rest: SQLSyntax): List[R] = cache.select(rest)
+  override def select(rest: SQLSyntax): Seq[R] = cache.select(rest)
 
   override def getForIdX(id: K): R = cache.getForIdX(id)
 
   override def getForIdOptX(id: K): Option[R] = cache.getForIdOptX(id)
 
-  override def getForIdsX(ids: K*): List[R] = cache.getForIdsX(ids*)
+  override def getForIdsX(ids: K*): Seq[R] = cache.getForIdsX(ids*)
 }

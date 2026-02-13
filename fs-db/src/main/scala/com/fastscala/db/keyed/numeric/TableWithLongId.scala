@@ -1,12 +1,14 @@
-package com.fastscala.db.keyed
+package com.fastscala.db.keyed.numeric
 
-import com.fastscala.db.{PgTable, TableWithId}
+import com.fastscala.db.Table
+import com.fastscala.db.keyed.TableWithId
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
+import java.lang
 import java.lang.reflect.Field
 
-trait PgTableWithLongId[R <: PgRowWithLongId[R]] extends PgTable[R] with TableWithId[R, java.lang.Long] {
+trait TableWithLongId[R <: RowWithLongId[R]] extends Table[R] with TableWithId[R, java.lang.Long] {
 
   override def createSampleRowInternal(): R = {
     val ins = super.createSampleRowInternal()
@@ -15,8 +17,13 @@ trait PgTableWithLongId[R <: PgRowWithLongId[R]] extends PgTable[R] with TableWi
   }
 
   def idSQL: SQLSyntax = sqls"""id"""
-  
-  def idFromWrappedResultSet(rs: WrappedResultSet): java.lang.Long = rs.long("id")
+
+  def idFromWrappedResultSetOpt(rs: WrappedResultSet, prefix: Option[String] = None): Option[java.lang.Long] = {
+    val value: java.lang.Long = rs.nullableLong(prefix.map(_ + "_").getOrElse("") + "id")
+    if (value == null) None else Some[java.lang.Long](value)
+  }
+
+  override def idFromWrappedResultSet(rs: WrappedResultSet, prefix: Option[String] = None): java.lang.Long = idFromWrappedResultSetOpt(rs, prefix).get
 
   def upsertSQL(row: R, rest: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val columns: SQLSyntax = SQLSyntax.createUnsafely(upsertFields.map(field => {

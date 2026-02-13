@@ -15,7 +15,10 @@ object ImmediateInputFields {
                 get: () => Boolean,
                 set: Boolean => Js,
                 label: String,
-                inputClasses: String = "",
+                inputClass: String = "form-check-input",
+                inputStyle: String = "",
+                labelClass: String = "form-check-label",
+                labelStyle: String = "",
                 name: String = "",
                 tabindex: Option[Int] = None,
                 onSubmitClientSide: Js => Js = _ => JS.void,
@@ -26,7 +29,8 @@ object ImmediateInputFields {
     val submit = JS.withVarStmt("value", JS.checkboxIsChecked(inputId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, v => set(v.toBoolean))
     }).cmd
-    val input = <input class={"form-check-input " + inputClasses}
+    val input = <input class={inputClass}
+                       style={inputStyle}
                        type="checkbox"
                        checked={if (get()) "checked" else null}
                        id={inputId}
@@ -34,9 +38,7 @@ object ImmediateInputFields {
                        tabindex={tabindex.map(_ + "").getOrElse(null)}
                        onchange={submit}/>.withAttrs(additionalAttrs *)
     <div class={"form-check form-check-custom form-check-solid " + containerClasses}>
-      {input}<label class="form-check-label" for={inputId}>
-      {label}
-    </label>
+      {input}<label class={labelClass} style={labelStyle} for={inputId}>{label}</label>
     </div>
   }
 

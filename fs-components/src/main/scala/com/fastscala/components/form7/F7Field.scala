@@ -34,12 +34,12 @@ trait F7Field
   
   def updateFieldWithoutReRenderingOrFallbackToRerender()(implicit form: Form7, fsc: FSContext): Js = updateFieldWithoutReRendering().getOrElse(reRender())
 
-  def renderedFieldWithCurrentState(): Unit = ()
+  def preRender(): Unit = ()
 
   val aroundId: String = IdGen.id
 
   final def render()(implicit form: Form7, fsc: FSContext): Elem = {
-    renderedFieldWithCurrentState()
+    preRender()
     renderImpl()
   }
 

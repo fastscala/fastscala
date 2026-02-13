@@ -1,4 +1,6 @@
-package com.fastscala.db
+package com.fastscala.db.keyed
+
+import com.fastscala.db.Row
 
 trait RowWithId[K, R <: RowWithId[K, R]] extends RowWithIdBase with Row[R] {
   self: R =>

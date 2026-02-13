@@ -14,7 +14,7 @@ import java.util.UUID
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-abstract class Table6Base extends Table6ColsRenderable with Mutable {
+abstract class Table6Base extends Table6ColsRenderable with Mutable with Table6LangPack {
 
   type R
   type C

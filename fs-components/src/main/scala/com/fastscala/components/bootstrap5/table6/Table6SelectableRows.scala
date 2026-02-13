@@ -45,14 +45,14 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
       )
   }
 
-  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Select All").callback(implicit fsc => {
+  def selectAllVisibleRowsBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(i18n_selectAll).callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     allSelectedRowsEvenIfNotVisible ++= rows(rowsHints())
     onSelectedRowsChange() &
       rerender()
   })
 
-  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(s"Clear Selection").callback(implicit fsc => {
+  def clearRowSelectionBtn: BSBtn = BSBtn().BtnOutlinePrimary.lbl(i18n_clearSelection).callback(implicit fsc => {
     allSelectedRowsEvenIfNotVisible.clear()
     onSelectedRowsChange() &
       rerender()

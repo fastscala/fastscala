@@ -2,7 +2,7 @@ package com.fastscala.components.form7.renderers
 
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.mixins.StandardF7Field
+import com.fastscala.components.form7.mixins.ValidatableF7Field
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
@@ -10,7 +10,7 @@ import scala.xml.{Elem, NodeSeq}
 trait StandardOneInputElemF7FieldRenderer extends StandardF7FieldRenderer {
 
   def render(
-              field: StandardF7Field,
+              field: ValidatableF7Field,
             )(
               inputElem: Elem,
               label: Option[Elem],
@@ -20,7 +20,7 @@ trait StandardOneInputElemF7FieldRenderer extends StandardF7FieldRenderer {
             ): Elem
 
   def showOrUpdateValidation(
-                              field: StandardF7Field
+                              field: ValidatableF7Field
                             )(ns: NodeSeq): Js =
     JS.setContents(field.invalidFeedbackId, ns) &
       JS.removeClass(field.invalidFeedbackId, "visually-hidden") &
@@ -30,7 +30,7 @@ trait StandardOneInputElemF7FieldRenderer extends StandardF7FieldRenderer {
       JS.setAttr(field.elemId)("aria-describedby", field.invalidFeedbackId)
 
   def hideValidation(
-                      field: StandardF7Field
+                      field: ValidatableF7Field
                     )(): Js =
     JS.addClass(field.invalidFeedbackId, "visually-hidden") &
       JS.removeClass(field.elemId, "is-invalid") &

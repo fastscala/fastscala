@@ -89,11 +89,11 @@ trait Table[R] extends TableBase {
 
   def select(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty): List[R] = DB.readOnly({ implicit session => _selectWithAdditionalCols(where, rest, Nil).map(_._1) })
 
-  def selectWithAdditionalCols(where: SQLSyntax, additionalCols: List[(SQLSyntax, WrappedResultSet => Any)], rest: SQLSyntax= SQLSyntax.empty): List[(R, List[Any])] = DB.readOnly({ implicit session => _selectWithAdditionalCols(where, rest, additionalCols) })
+  def selectWithAdditionalCols(where: SQLSyntax, additionalCols: List[(SQLSyntax, WrappedResultSet => Any)], rest: SQLSyntax = SQLSyntax.empty): List[(R, List[Any])] = DB.readOnly({ implicit session => _selectWithAdditionalCols(where, rest, additionalCols) })
 
   def _selectWithAdditionalCols(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty, additionalCols: List[(SQLSyntax, WrappedResultSet => Any)] = Nil)(implicit session: DBSession): List[(R, List[Any])] = {
     val colsSql = additionalCols match {
-      case Nil => selectSQL(None)
+      case Nil            => selectSQL(None)
       case additionalCols => SQLSyntax.join(selectSQL(None) :: additionalCols.map(_._1), sqls",")
     }
     val query =
@@ -131,6 +131,7 @@ trait Table[R] extends TableBase {
   def listFromQuery(query: SQLSyntax): List[R] = DB.readOnly({ implicit session => _listFromQuery(query) })
 
   def _listFromQuery(query: SQLSyntax)(implicit session: DBSession): List[R] = {
+    println("STATEMENT: " + sql"${query}".statement)
     sql"${query}".map(rs => fromWrappedResultSet(rs, None)).list()
   }
 

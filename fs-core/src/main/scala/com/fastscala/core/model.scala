@@ -60,7 +60,9 @@ class FSFileDownload(val id: String, val contentType: String, val content: Eithe
   }
 }
 
-class FSUploadedFile(val name: String, val submittedFileName: String, val contentType: String, val bytes: () => Array[Byte], val inputStream: () => InputStream)
+class FSUploadedFile(val name: String, val submittedFileName: String, val contentType: String, val bytes: () => Array[Byte], val inputStream: () => InputStream) {
+  override def toString: String = s"FSUploadedFile(name: $name, submittedFileName: $submittedFileName, contentType: $contentType)"
+}
 
 object FSUploadedFile {
   def unapply(file: FSUploadedFile): Option[(String, String, String, Array[Byte])] = Some((file.name, file.submittedFileName, file.contentType, file.bytes()))

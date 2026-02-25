@@ -10,11 +10,11 @@ import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
 
 import scala.util.chaining.scalaUtilChainingOps
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer)
-    extends StandardF7Field
+    extends ValidatableF7Field
     with StringSerializableF7Field
     with FocusableF7Field
     with F7FieldWithOptions[T]
@@ -58,31 +58,15 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): Js = _disabled().pipe(shouldBeDisabled => {
-    if (shouldBeDisabled != currentlyDisabled) {
-      currentlyDisabled = shouldBeDisabled
-      if (currentlyReadOnly) {
-        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
-      } else {
-        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
-      }
-    } else {
-      JS.void
-    }
-  })
+  override def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_disabled.updateIfChanged({
+    case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
+    case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
+  }, Js.Void))
 
-  override def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): Js = _readOnly().pipe(shouldBeReadOnly => {
-    if (shouldBeReadOnly != currentlyReadOnly) {
-      currentlyReadOnly = shouldBeReadOnly
-      if (currentlyReadOnly) {
-        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
-      } else {
-        JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
-      }
-    } else {
-      JS.void
-    }
-  })
+  override def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
+    case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
+    case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
+  }, Js.Void))
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().flatMap(superJs =>

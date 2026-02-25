@@ -11,7 +11,7 @@ import com.fastscala.scala_xml.js.JS
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7FieldRenderer)
-    extends StandardOneInputElemF7Field[Set[T]]
+  extends StandardOneInputElemF7Field[Set[T]]
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
     with F7Field
@@ -49,23 +49,21 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(
-      _ &
-        currentRenderedOptions.flatMap({
-          case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
-            this.currentRenderedValue = Some(currentValue)
-            val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
-            Some(JS {
-              s"""var element = document.getElementById('${elemId}');
-               |var selected = [${selectedIndexes.mkString(",")}];
-               |for (var i = 0; i < element.options.length; i++) {
-               |    element.options[i].selected = selected.includes(i);
-               |}""".stripMargin
-            })
-          case _ => Some(JS.void)
-        }).getOrElse(JS.void)
-    )
+  def updateOptionsWithoutReRenderering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(
+    currentRenderedOptions.flatMap({
+      case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
+        this.currentRenderedValue = Some(currentValue)
+        val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
+        Some(JS {
+          s"""var element = document.getElementById('${elemId}');
+             |var selected = [${selectedIndexes.mkString(",")}];
+             |for (var i = 0; i < element.options.length; i++) {
+             |    element.options[i].selected = selected.includes(i);
+             |}""".stripMargin
+        })
+      case _ => Some(JS.void)
+    }).getOrElse(JS.void)
+  )
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     if (!enabled) renderer.renderDisabled(this)

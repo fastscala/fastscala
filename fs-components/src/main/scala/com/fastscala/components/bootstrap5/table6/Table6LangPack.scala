@@ -13,4 +13,6 @@ trait Table6LangPack {
   def i18n_selectAll = "Select All"
 
   def i18n_actions = "Actions"
+  
+  def i18n_tableSizeInfo(from: Int, to: Int, pageSize: Int, total: Option[Int]): Option[String] = total.map(total => s"Showing $pageSize of $total")
 }

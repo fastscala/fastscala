@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import scala.util.Try
 import scala.util.chaining.scalaUtilChainingOps
@@ -417,14 +418,19 @@ trait TableBase {
     case v: Float => SQLSyntax.createUnsafely(v + "::real")
     case v: Long => SQLSyntax.createUnsafely(v + "::bigint")
     case v: String => SQLSyntax.createUnsafely("'" + org.postgresql.core.Utils.escapeLiteral(null, v, true) + "'" + "::text")
-    case v: Array[Byte] => ???
+    case v: Array[Byte] if v.isEmpty => SQLSyntax.createUnsafely("'{}'")
+    case v: Array[Byte] =>
+      println("v.size: " + v.size)
+      println("v: " + v.mkString(", "))
+      ???
     case v: Enumeration#Value => valueToLiteral(v.id)
-    case v: java.time.LocalDate => SQLSyntax.createUnsafely("'" + v.format(DateTimeFormatter.ISO_LOCAL_DATE) + "'")
-    case v: java.time.LocalTime => SQLSyntax.createUnsafely(v.format(DateTimeFormatter.ISO_LOCAL_TIME))
-    case v: java.time.LocalDateTime => SQLSyntax.createUnsafely(v.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
-    case v: java.time.OffsetDateTime => ???
-    case v: java.time.Instant => ???
+    case v: java.time.LocalDate => sqls"${v.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+    case v: java.time.LocalTime => sqls"${v.format(DateTimeFormatter.ISO_LOCAL_TIME)}"
+    case v: java.time.LocalDateTime => sqls"${v.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}"
+    case v: java.time.OffsetDateTime => sqls"${v.toString}"
+    case v: java.time.Instant => sqls"${v.atOffset(ZoneOffset.UTC).toString}"
     case v: io.circe.Json => SQLSyntax.createUnsafely(s"'${v.noSpaces}'::json")
+    case v: UUID => SQLSyntax.createUnsafely(s"'$v'::UUID")
   }
 
 }

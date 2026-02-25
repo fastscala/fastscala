@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import java.net.URLEncoder
 import java.nio.file.{Files, Path}
 import java.util.Collections
+import scala.collection.convert.ImplicitConversions.`iterator asScala`
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 import scala.util.chaining.scalaUtilChainingOps
 

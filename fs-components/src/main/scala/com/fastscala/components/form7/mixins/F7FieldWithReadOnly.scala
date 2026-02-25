@@ -3,15 +3,16 @@ package com.fastscala.components.form7.mixins
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.{Form7, RenderHint}
+import com.fastscala.components.form7.{F7FieldMixinStatus, Form7, RenderHint}
+import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 
-trait F7FieldWithReadOnly extends F7FieldInputFieldMixin {
-  var _readOnly: () => Boolean = () => false
+trait F7FieldWithReadOnly extends F7FieldInputFieldMixin with Mutable {
+  var _readOnly: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
 
   def readOnly: Boolean = _readOnly()
 
@@ -20,33 +21,27 @@ trait F7FieldWithReadOnly extends F7FieldInputFieldMixin {
   def isNotReadOnly: this.type = readOnly(false)
 
   def readOnly(v: Boolean): this.type = mutate {
-    _readOnly = () => v
+    _readOnly() = () => v
   }
 
   def readOnly(f: () => Boolean): this.type = mutate {
-    _readOnly = f
+    _readOnly() = f
   }
-
-  var currentlyReadOnly: Boolean = false
 
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    currentlyReadOnly = readOnly
-    if (currentlyReadOnly) input.withAttr("readonly", "true") else input
+    if (_readOnly()) input.withAttr("readonly", "true") else input
   }
 
-  def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): Js = _readOnly().pipe(shouldBeReadOnly => {
-    if (shouldBeReadOnly != currentlyReadOnly) {
-      currentlyReadOnly = shouldBeReadOnly
-      if (currentlyReadOnly) {
-        JS.setAttr(elemId)("readonly", "true")
-      } else {
-        JS.removeAttr(elemId, "readonly")
-      }
-    } else {
-      JS.void
-    }
-  })
+  override def preRender(): Unit = {
+    super.preRender()
+    _readOnly.setRendered()
+  }
+
+  def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
+    case (_, true) => JS.setAttr(elemId)("readonly", "readonly")
+    case (_, false) => JS.removeAttr(elemId, "readonly")
+  }, Js.Void))
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(_ & updateFieldReadOnlyStatus())
+    super.updateFieldWithoutReRendering().flatMap(js => updateFieldReadOnlyStatus().map(js & _))
 }

@@ -3,15 +3,16 @@ package com.fastscala.components.form7.mixins
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.{Form7, RenderHint}
+import com.fastscala.components.form7.{F7FieldMixinStatus, Form7, RenderHint}
+import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 
-trait F7FieldWithDisabled extends F7FieldInputFieldMixin {
-  var _disabled: () => Boolean = () => false
+trait F7FieldWithDisabled extends F7FieldInputFieldMixin with Mutable {
+  var _disabled: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
 
   def disabled: Boolean = _disabled()
 
@@ -20,33 +21,27 @@ trait F7FieldWithDisabled extends F7FieldInputFieldMixin {
   def isNotDisabled: this.type = disabled(false)
 
   def disabled(v: Boolean): this.type = mutate {
-    _disabled = () => v
+    _disabled() = () => v
   }
 
   def disabled(f: () => Boolean): this.type = mutate({
-    _disabled = f
+    _disabled() = f
   })
 
-  var currentlyDisabled: Boolean = false
-
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    currentlyDisabled = _disabled()
-    if (currentlyDisabled) input.withAttr("disabled", "disabled") else input
+  override def preRender(): Unit = {
+    super.preRender()
+    _disabled.setRendered()
   }
 
-  def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): Js = _disabled().pipe(shouldBeDisabled => {
-    if (shouldBeDisabled != currentlyDisabled) {
-      currentlyDisabled = shouldBeDisabled
-      if (currentlyDisabled) {
-        JS.setAttr(elemId)("disabled", "disabled")
-      } else {
-        JS.removeAttr(elemId, "disabled")
-      }
-    } else {
-      JS.void
-    }
-  })
+  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+    if (_disabled()) input.withAttr("disabled", "disabled") else input
+  }
+
+  def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_disabled.updateIfChanged({
+    case (_, true) => JS.setAttr(elemId)("disabled", "disabled")
+    case (_, false) => JS.removeAttr(elemId, "disabled")
+  }, Js.Void))
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(_ & updateFieldDisabledStatus())
+    super.updateFieldWithoutReRendering().flatMap(js => updateFieldDisabledStatus().map(js & _))
 }

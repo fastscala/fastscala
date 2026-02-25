@@ -1,6 +1,6 @@
 package com.fastscala.components.form7.renderers
 
-import com.fastscala.components.form7.mixins.StandardF7Field
+import com.fastscala.components.form7.mixins.ValidatableF7Field
 
 import scala.xml.Elem
 
@@ -9,7 +9,7 @@ trait StandardF7FieldRenderer {
 
   def defaultRequiredFieldLabel: String
 
-  implicit class RichField(field: StandardF7Field) {
+  implicit class RichField(field: ValidatableF7Field) {
     def labelId = field.elemId + "-label"
 
     def invalidFeedbackId = field.elemId + "-invalid-feedback"
@@ -19,7 +19,7 @@ trait StandardF7FieldRenderer {
     def helpId = field.elemId + "-help"
   }
 
-  def renderDisabled(field: StandardF7Field): Elem = <div style="display:none;" id={field.aroundId}></div>
+  def renderDisabled(field: ValidatableF7Field): Elem = <div style="display:none;" id={field.aroundId}></div>
 }
 
 

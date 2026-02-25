@@ -4,6 +4,7 @@ import com.fastscala.components.form7.{F7Field, F7FieldMixinStatus, Form7}
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
 
@@ -22,9 +23,9 @@ trait F7FieldWithLabel extends F7Field with Mutable {
     _labelId = () => v
   }
 
-  var _label: F7FieldMixinStatus[Option[Elem]] = F7FieldMixinStatus(None)
+  private val _label: F7FieldMixinStatus[Option[Elem]] = F7FieldMixinStatus(None)
 
-  def label: Option[Elem] = _label()
+  def label: Option[Elem] = _label().map(_.withId(labelId))
 
   def label(v: Option[Elem]): this.type = mutate {
     _label() = () => v

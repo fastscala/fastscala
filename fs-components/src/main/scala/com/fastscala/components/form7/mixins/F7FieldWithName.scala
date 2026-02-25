@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithName extends F7FieldInputFieldMixin with Mutable {
-  var _name: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
+  private val _name: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
 
   def name(): Option[String] = _name()
 

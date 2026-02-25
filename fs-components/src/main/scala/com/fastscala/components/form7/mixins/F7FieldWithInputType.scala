@@ -13,7 +13,7 @@ import scala.xml.Elem
 trait F7FieldWithInputType extends F7FieldInputFieldMixin with Mutable {
   def _inputTypeDefault: String = "text"
 
-  var _inputType: F7FieldMixinStatus[String] = F7FieldMixinStatus(_inputTypeDefault)
+  private val _inputType: F7FieldMixinStatus[String] = F7FieldMixinStatus(_inputTypeDefault)
 
   def inputType: String = _inputType()
 

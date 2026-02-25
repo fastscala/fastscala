@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithRequired extends F7FieldInputFieldMixin with Mutable {
-  var _required: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
+  private val _required: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
 
   def required: Boolean = _required()
 

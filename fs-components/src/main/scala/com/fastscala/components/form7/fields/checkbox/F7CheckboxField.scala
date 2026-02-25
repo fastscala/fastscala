@@ -85,7 +85,7 @@ class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer)
                       onchange={onchangeJs}
                       checked={if (currentRenderedValue.get) "true" else null}
             ></input>),
-        label = _label(),
+        label = this.label,
         invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
         validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
         help = help

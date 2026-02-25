@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithDisabled extends F7FieldInputFieldMixin with Mutable {
-  var _disabled: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
+  private val _disabled: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
 
   def disabled: Boolean = _disabled()
 
@@ -37,11 +37,11 @@ trait F7FieldWithDisabled extends F7FieldInputFieldMixin with Mutable {
     if (_disabled()) input.withAttr("disabled", "disabled") else input
   }
 
-  def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_disabled.updateIfChanged({
+  def updateFieldDisabledStatus(_disabled: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_disabled.updateIfChanged({
     case (_, true) => JS.setAttr(elemId)("disabled", "disabled")
     case (_, false) => JS.removeAttr(elemId, "disabled")
   }, Js.Void))
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().flatMap(js => updateFieldDisabledStatus().map(js & _))
+    super.updateFieldWithoutReRendering().flatMap(js => updateFieldDisabledStatus(_disabled).map(js & _))
 }

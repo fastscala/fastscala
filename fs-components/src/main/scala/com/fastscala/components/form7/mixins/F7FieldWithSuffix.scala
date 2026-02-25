@@ -8,7 +8,7 @@ import com.fastscala.js.Js
 
 trait F7FieldWithSuffix extends F7Field with Mutable {
 
-  var _suffix: F7FieldMixinStatus[String] = F7FieldMixinStatus("")
+  private val _suffix: F7FieldMixinStatus[String] = F7FieldMixinStatus("")
 
   def suffix: String = _suffix()
 

@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithMax extends F7FieldInputFieldMixin with Mutable {
-  var _max: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
+  private val _max: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
 
   def max: Option[String] = _max()
 

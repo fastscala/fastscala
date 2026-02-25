@@ -105,7 +105,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
               onblur={onchangeJs}
               onchange={onchangeJs}
             >{optionsRendered}</select>),
-        label = _label(),
+        label = this.label,
         invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
         validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
         help = help

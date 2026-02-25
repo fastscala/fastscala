@@ -94,7 +94,7 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
               }
             ).cmd
           }>{this.toString(currentRenderedValue.get)}</textarea>),
-        label = _label(),
+        label = this.label,
         invalidFeedback = errorsToShow.headOption.map(error => <div>
           {error._2}
         </div>),

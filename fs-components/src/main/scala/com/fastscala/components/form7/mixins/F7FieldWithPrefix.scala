@@ -8,7 +8,7 @@ import com.fastscala.js.Js
 
 trait F7FieldWithPrefix extends F7Field with Mutable {
 
-  var _prefix: F7FieldMixinStatus[String] = F7FieldMixinStatus("")
+  private val _prefix: F7FieldMixinStatus[String] = F7FieldMixinStatus("")
 
   def prefix: String = _prefix()
 

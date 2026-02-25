@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin with Mutable {
-  var _additionalAttrs: F7FieldMixinStatus[Seq[(String, String)]] = F7FieldMixinStatus(Nil)
+  private val _additionalAttrs: F7FieldMixinStatus[Seq[(String, String)]] = F7FieldMixinStatus(Nil)
 
   def additionalAttrs: Seq[(String, String)] = _additionalAttrs()
 

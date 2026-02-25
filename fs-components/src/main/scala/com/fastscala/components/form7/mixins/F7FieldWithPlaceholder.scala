@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithPlaceholder extends F7FieldInputFieldMixin with Mutable {
-  var _placeholder: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
+  private val _placeholder: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
 
   def placeholder: Option[String] = _placeholder()
 

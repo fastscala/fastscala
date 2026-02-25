@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithStep extends F7FieldInputFieldMixin with Mutable {
-  var _step: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
+  private val _step: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
 
   def step(): Option[Int] = _step()
 

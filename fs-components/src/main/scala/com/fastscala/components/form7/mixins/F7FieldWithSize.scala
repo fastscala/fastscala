@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithSize extends F7FieldInputFieldMixin with Mutable {
-  var _size: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
+  private val _size: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
 
   def size(): Option[Int] = _size()
 

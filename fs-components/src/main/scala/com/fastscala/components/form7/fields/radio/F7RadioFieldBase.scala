@@ -58,12 +58,12 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldDisabledStatus()(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_disabled.updateIfChanged({
+  override def updateFieldDisabledStatus(_disabled: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_disabled.updateIfChanged({
     case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
     case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
   }, Js.Void))
 
-  override def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
+  override def updateFieldReadOnlyStatus(_readOnly: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
     case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
     case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
   }, Js.Void))
@@ -114,7 +114,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
 
       renderer.render(this)(
         inputElemsAndLabels = radioToggles,
-        label = _label(),
+        label = this.label,
         invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
         validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
         help = help

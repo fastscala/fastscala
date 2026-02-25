@@ -10,7 +10,7 @@ import scala.util.{Failure, Try}
 
 trait F7FieldWithEnabled extends F7Field with Mutable {
 
-  var _enabled: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(true)
+  private val _enabled: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(true)
 
   def enabled: Boolean = _enabled()
 

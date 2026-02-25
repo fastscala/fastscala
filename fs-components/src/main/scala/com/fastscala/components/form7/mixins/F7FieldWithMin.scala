@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithMin extends F7FieldInputFieldMixin with Mutable {
-  var _min: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
+  private val _min: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
 
   def min: Option[String] = _min()
 

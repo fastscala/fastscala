@@ -100,7 +100,7 @@ abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF
               onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${sync(true)}}"}
               value={this.toString(currentRenderedValue.get)}
             />),
-        label = _label(),
+        label = this.label,
         invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
         validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
         help = help

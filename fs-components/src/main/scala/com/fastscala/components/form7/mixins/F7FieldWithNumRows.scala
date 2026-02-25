@@ -9,7 +9,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithNumRows extends F7FieldInputFieldMixin with Mutable {
-  var _rows: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
+  private val _rows: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
 
   def rows: Option[Int] = _rows()
 

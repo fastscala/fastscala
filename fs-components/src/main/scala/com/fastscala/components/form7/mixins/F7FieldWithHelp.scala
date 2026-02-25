@@ -23,9 +23,9 @@ trait F7FieldWithHelp extends F7Field with Mutable {
     _helpId = () => v
   }
 
-  var _help: F7FieldMixinStatus[Option[Elem]] = F7FieldMixinStatus(None)
+  private val _help: F7FieldMixinStatus[Option[Elem]] = F7FieldMixinStatus(None)
 
-  def help: Option[Elem] = _help()
+  def help: Option[Elem] = _help().map(_.withId(helpId))
 
   def help(v: Option[Elem]): this.type = mutate {
     _help() = () => v

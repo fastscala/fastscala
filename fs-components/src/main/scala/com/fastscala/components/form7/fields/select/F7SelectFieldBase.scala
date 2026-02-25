@@ -111,7 +111,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRender
         onchange={onchangeJs}>
           {optionsRendered}
         </select>),
-        label = _label(),
+        label = this.label,
         invalidFeedback = errorsToShow.headOption.map(error => <div>
           {error._2}
         </div>),

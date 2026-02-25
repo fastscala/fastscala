@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 
 trait F7FieldWithReadOnly extends F7FieldInputFieldMixin with Mutable {
-  var _readOnly: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
+  private val _readOnly: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
 
   def readOnly: Boolean = _readOnly()
 
@@ -37,11 +37,11 @@ trait F7FieldWithReadOnly extends F7FieldInputFieldMixin with Mutable {
     _readOnly.setRendered()
   }
 
-  def updateFieldReadOnlyStatus()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
+  def updateFieldReadOnlyStatus(_readOnly: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
     case (_, true) => JS.setAttr(elemId)("readonly", "readonly")
     case (_, false) => JS.removeAttr(elemId, "readonly")
   }, Js.Void))
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().flatMap(js => updateFieldReadOnlyStatus().map(js & _))
+    super.updateFieldWithoutReRendering().flatMap(js => updateFieldReadOnlyStatus(_readOnly).map(js & _))
 }

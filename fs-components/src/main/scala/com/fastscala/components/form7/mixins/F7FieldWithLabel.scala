@@ -53,16 +53,11 @@ trait F7FieldWithLabel extends F7Field with Mutable {
 
   override def toString: String = label.map(_.toString).getOrElse(super.toString)
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _label.setRendered()
-  }
-
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().flatMap(js => _label.updateIfChanged({
+    super.updateFieldWithoutReRendering().flatMap(otherUpdatesJs => _label.updateIfChanged({
       case (None, _) => scala.util.Failure(new Exception("Need to rerender"))
-      case (Some(_), None) => scala.util.Success(js & JS.removeId(labelId))
-      case (Some(_), Some(elem)) => scala.util.Success(js & JS.replace(labelId, elem.withId(labelId)))
-    }, Success(Js.Void)))
+      case (Some(_), None) => scala.util.Success(otherUpdatesJs & JS.removeId(labelId))
+      case (Some(_), Some(elem)) => scala.util.Success(otherUpdatesJs & JS.replace(labelId, elem.withId(labelId)))
+    }, Success(otherUpdatesJs)))
 }

@@ -26,13 +26,8 @@ trait F7FieldWithEnabled extends F7Field with Mutable {
     _enabled() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _enabled.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): Try[Js] = {
-    if (_enabled.hasChanged) Failure(new Exception("Enabled status changed"))
+    if (_enabled.renderedAs != Some(true) || _enabled.hasChanged) Failure(new Exception("Enabled status changed"))
     else super.updateFieldWithoutReRendering()
   }
 }

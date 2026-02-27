@@ -32,11 +32,6 @@ trait F7FieldWithMaxlength extends F7FieldInputFieldMixin with Mutable {
     _maxlength().map(maxlength => input.withAttr("maxlength", maxlength.toString)).getOrElse(input)
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _maxlength.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _maxlength.updateIfChanged({
       case (old, None) => JS.removeAttr(elemId, "maxlength")

@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer)
-    extends ValidatableF7Field
+  extends ValidatableF7Field
     with StringSerializableF7Field
     with FocusableF7Field
     with F7FieldWithOptions[T]
@@ -68,58 +68,47 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer
     case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
   }, Js.Void))
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().flatMap(superJs =>
-      currentRenderedOptions.map({
-        // The value rendered on the client side is different from the one on the server side:
-        case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
-          this.currentRenderedValue = Some(currentValue)
-          option2Id.get(currentValue).map(optionId => Success(superJs & JS.setChecked(optionId, true)))
-            .getOrElse(Failure(new Exception("CurrentValue is not one of the rendered values")))
-        case _ => Success(superJs)
-      }).getOrElse(Success(superJs))
-    )
+  override def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): Try[Js] = (for {
+    (renderedOptions, ids2Option, option2Id) <- currentRenderedOptions
+    optionId <- option2Id.get(currentValue)
+  } yield JS.setChecked(optionId, true)).map(Success(_)).getOrElse(Failure(new Exception("Needs rerender")))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
-    if (!enabled) renderer.renderDisabled(this)
-    else {
-      val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
-      showingValidation = errorsToShow.nonEmpty
+    val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
+    showingValidation = errorsToShow.nonEmpty
 
-      val renderedOptions: Seq[T] = options
-      val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
-      val option2Id: Map[T, String] = ids2Option.map(_.swap)
+    val renderedOptions: Seq[T] = options
+    val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
+    val option2Id: Map[T, String] = ids2Option.map(_.swap)
 
-      if (!renderedOptions.contains(currentValue)) currentValue = defaultValue
+    if (!renderedOptions.contains(currentValue)) currentValue = defaultValue
 
-      currentRenderedValue = Some(currentValue)
-      currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
+    currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
 
-      val radioToggles: Seq[(Elem, Some[Elem])] = renderedOptions.map(opt => {
-        val onchange = fsc.callback(() => {
-          currentRenderedValue = Some(opt)
-          if (currentValue != opt) {
-            setFilled()
-            currentValue = opt
-            form.onEvent(ChangedField(this))
-          } else {
-            JS.void
-          }
-        }).cmd
-        (
-          processInputElem(<input id={option2Id(opt)} checked={if (currentValue == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>),
-          Some(<label>{_option2NodeSeq(opt)}</label>)
-        )
-      })
-
-      renderer.render(this)(
-        inputElemsAndLabels = radioToggles,
-        label = this.label,
-        invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
-        validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
-        help = help
+    val radioToggles: Seq[(Elem, Some[Elem])] = renderedOptions.map(opt => {
+      val onchange = fsc.callback(() => {
+        if (currentValue != opt) {
+          setFilled()
+          currentValue = opt
+          _renderedValue.setRendered()
+          form.onEvent(ChangedField(this))
+        } else {
+          JS.void
+        }
+      }).cmd
+      (
+        processInputElem(<input id={option2Id(opt)} checked={if (currentValue == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>),
+        Some(<label>{_option2NodeSeq(opt)}</label>)
       )
-    }
+    })
+
+    renderer.render(this)(
+      inputElemsAndLabels = radioToggles,
+      label = this.label,
+      invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+      validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
+      help = help
+    )
   }
 
   override def showOrUpdateValidation(ns: NodeSeq): Js = renderer.showOrUpdateValidation(this)(ns)

@@ -1,10 +1,10 @@
-package com.fastscala.components.form7.fields.select
+package com.fastscala.components.form7.utils
 
 import com.fastscala.components.form7.fields.multiselect.F7MultiSelectField
 import com.fastscala.components.form7.fields.select.*
 import com.fastscala.components.form7.renderers.{MultiSelectF7FieldRenderer, SelectF7FieldRenderer}
 
-object F7EnumField {
+object F7FieldForEnum {
 
   def NonNullable[T <: Enumeration](`enum`: T)(implicit renderer: SelectF7FieldRenderer): F7SelectField[`enum`.Value] =
     new F7SelectField[`enum`.Value](`enum`.values.toList)

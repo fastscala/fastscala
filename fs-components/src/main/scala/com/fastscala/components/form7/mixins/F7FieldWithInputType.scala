@@ -29,11 +29,6 @@ trait F7FieldWithInputType extends F7FieldInputFieldMixin with Mutable {
     input.withAttr("type", _inputType())
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _inputType.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _inputType.updateIfChanged({
       case (old, cur) => JS.setAttr(elemId)("type", cur)

@@ -31,7 +31,8 @@ class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P 
 
   def rerender(param: P)(implicit page: FSPageLike): Js = page.inContextClearedFor(this) { implicit fsc =>
     val rendered: Elem = renderImpl(param)
-    RerendererDebugStatusState().rerender(aroundId, JS.replaceWithScriptExtraction(aroundId, rendered))
+    val renderedWithId: Elem = rendered.withId(aroundId)
+    RerendererDebugStatusState().rerender(aroundId, JS.replaceWithScriptExtraction(aroundId, renderedWithId))
   }
 
   def map(f: NodeSeq => NodeSeq): this.type = {

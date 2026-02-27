@@ -8,10 +8,11 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 
+import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRenderer)
-    extends StandardOneInputElemF7Field[T]
+  extends StandardOneInputElemF7Field[T]
     with F7Field
     with StringSerializableF7Field
     with FocusableF7Field
@@ -53,25 +54,15 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(
-      _ &
-        currentRenderedValue.filter(_ != currentValue).map(currentRenderedValue => {
-          this.currentRenderedValue = Some(currentValue)
-          JS.setElementValue(elemId, this.toString(currentValue))
-        }).getOrElse(JS.void)
-    )
+
+  override def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): Try[Js] =
+    Success(JS.setElementValue(elemId, this.toString(currentValue)))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
-    if (!enabled) renderer.renderDisabled(this)
-    else {
-      val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
-      showingValidation = errorsToShow.nonEmpty
-
-      currentRenderedValue = Some(currentValue)
-
-      renderer.render(this)(
-        inputElem = processInputElem(<textarea
+    val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
+    showingValidation = errorsToShow.nonEmpty
+    renderer.render(this)(
+      inputElem = processInputElem(<textarea
           type="text"
           id={id.getOrElse(null)}
           onblur={
@@ -81,9 +72,9 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
                 fromString(str) match {
                   case Right(value) =>
                     setFilled()
-                    currentRenderedValue = Some(value)
                     if (currentValue != value) {
                       currentValue = value
+                      _renderedValue.setRendered()
                       form.onEvent(ChangedField(this))
                     } else {
                       JS.void
@@ -93,14 +84,13 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
                 }
               }
             ).cmd
-          }>{this.toString(currentRenderedValue.get)}</textarea>),
-        label = this.label,
-        invalidFeedback = errorsToShow.headOption.map(error => <div>
+          }>{this.toString(currentValue)}</textarea>),
+      label = this.label,
+      invalidFeedback = errorsToShow.headOption.map(error => <div>
           {error._2}
         </div>),
-        validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
-        help = help
-      )
-    }
+      validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
+      help = help
+    )
   }
 }

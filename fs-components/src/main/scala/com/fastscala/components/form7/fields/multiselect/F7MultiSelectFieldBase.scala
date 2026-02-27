@@ -8,6 +8,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 
+import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7FieldRenderer)
@@ -49,67 +50,60 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: MultiSelectF7F
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  def updateOptionsWithoutReRenderering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(
-    currentRenderedOptions.flatMap({
-      case (renderedOptions, ids2Option, option2Id) if !currentRenderedValue.exists(_ == currentValue) =>
-        this.currentRenderedValue = Some(currentValue)
-        val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
-        Some(JS {
-          s"""var element = document.getElementById('${elemId}');
-             |var selected = [${selectedIndexes.mkString(",")}];
-             |for (var i = 0; i < element.options.length; i++) {
-             |    element.options[i].selected = selected.includes(i);
-             |}""".stripMargin
-        })
-      case _ => Some(JS.void)
-    }).getOrElse(JS.void)
-  )
+  override def updateFieldValueWithoutReRendering(previous: Set[T], current: Set[T])(implicit form: Form7, fsc: FSContext): Try[Js] = (for {
+    (renderedOptions, ids2Option, option2Id) <- currentRenderedOptions
+  } yield {
+    val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
+    JS {
+      s"""var element = document.getElementById('${elemId}');
+         |var selected = [${selectedIndexes.mkString(",")}];
+         |for (var i = 0; i < element.options.length; i++) {
+         |    element.options[i].selected = selected.includes(i);
+         |}""".stripMargin
+    }
+  }).map(Success(_)).getOrElse(Failure(new Exception("Needs rerendering")))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
-    if (!enabled) renderer.renderDisabled(this)
-    else {
-      val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
-      showingValidation = errorsToShow.nonEmpty
+    val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
+    showingValidation = errorsToShow.nonEmpty
 
-      val renderedOptions: Seq[T] = options
-      val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
-      val option2Id: Map[T, String] = ids2Option.map(_.swap)
-      currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
+    val renderedOptions: Seq[T] = options
+    val ids2Option: Map[String, T] = renderedOptions.map(opt => fsc.session.nextID() -> opt).toMap
+    val option2Id: Map[T, String] = ids2Option.map(_.swap)
+    currentRenderedOptions = Some((renderedOptions, ids2Option, option2Id))
 
-      currentValue = currentValue.filter(renderedOptions.contains(_))
+    currentValue = currentValue.filter(renderedOptions.contains(_))
 
-      currentRenderedValue = Some(currentValue)
-      val optionsRendered = renderedOptions.map(opt => {
-        renderer.renderOption(currentValue.contains(opt), option2Id(opt), _option2NodeSeq(opt))
-      })
+    val optionsRendered = renderedOptions.map(opt => {
+      renderer.renderOption(currentValue.contains(opt), option2Id(opt), _option2NodeSeq(opt))
+    })
 
-      val onchangeJs = fsc.callback(
-        JS.selectedValues(JS.elementById(elemId)),
-        ids => {
-          val value = ids.split(",").filter(_.trim != "").toSet[String].map(id => ids2Option(id))
-          if (currentValue != value) {
-            setFilled()
-            currentRenderedValue = Some(value)
-            currentValue = value
-            form.onEvent(ChangedField(this))
-          } else {
-            JS.void
-          }
+    val onchangeJs = fsc.callback(
+      JS.selectedValues(JS.elementById(elemId)),
+      ids => {
+        val value = ids.split(",").filter(_.trim != "").toSet[String].map(id => ids2Option(id))
+        if (currentValue != value) {
+          setFilled()
+          currentValue = value
+          _renderedValue.setRendered()
+          form.onEvent(ChangedField(this))
+        } else {
+          JS.void
         }
-      ).cmd
+      }
+    ).cmd
 
-      renderer.render(this)(
-        inputElem = processInputElem(<select
+    renderer.render(this)(
+      inputElem = processInputElem(<select
               id={id.getOrElse(null)}
               multiple="multiple"
               onblur={onchangeJs}
               onchange={onchangeJs}
             >{optionsRendered}</select>),
-        label = this.label,
-        invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
-        validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
-        help = help
-      )
-    }
+      label = this.label,
+      invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+      validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
+      help = help
+    )
   }
 }

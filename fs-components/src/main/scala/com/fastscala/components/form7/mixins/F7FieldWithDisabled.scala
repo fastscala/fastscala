@@ -28,11 +28,6 @@ trait F7FieldWithDisabled extends F7FieldInputFieldMixin with Mutable {
     _disabled() = f
   })
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _disabled.setRendered()
-  }
-
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
     if (_disabled()) input.withAttr("disabled", "disabled") else input
   }

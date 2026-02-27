@@ -20,11 +20,6 @@ trait F7FieldWithPrefix extends F7Field with Mutable {
     _prefix() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _prefix.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     if (_prefix.hasChanged) scala.util.Failure(new Exception("Need to rerender"))
     else super.updateFieldWithoutReRendering()

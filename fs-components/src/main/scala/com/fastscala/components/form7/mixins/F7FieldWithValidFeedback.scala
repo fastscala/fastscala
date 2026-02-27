@@ -43,17 +43,12 @@ trait F7FieldWithValidFeedback extends F7FieldInputFieldMixin with Mutable {
     _validFeedback() = () => Some(<div>{f()}</div>)
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _validFeedback.setRendered()
-  }
-
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().flatMap(js => _validFeedback.updateIfChanged({
+    super.updateFieldWithoutReRendering().flatMap(otherUpdatesJs => _validFeedback.updateIfChanged({
       case (None, _) => scala.util.Failure(new Exception("Need to rerender"))
-      case (Some(_), None) => scala.util.Success(js & JS.removeId(validFeedbackId))
-      case (Some(_), Some(elem)) => scala.util.Success(js & JS.replace(validFeedbackId, elem.withId(validFeedbackId)))
-    }, Success(Js.Void)))
+      case (Some(_), None) => scala.util.Success(otherUpdatesJs & JS.removeId(validFeedbackId))
+      case (Some(_), Some(elem)) => scala.util.Success(otherUpdatesJs & JS.replace(validFeedbackId, elem.withId(validFeedbackId)))
+    }, Success(otherUpdatesJs)))
 }

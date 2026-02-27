@@ -20,13 +20,15 @@ class F7FieldMixinStatus[T] private(
 
   def setRendered(): Unit = renderedAs = Some(valueFunc())
 
+  def clearRender(): Unit = renderedAs = None
+  
   def hasChanged: Boolean = renderedAs.exists(_ != valueFunc())
 
-  def updateIfChanged[R](update: (T, T) => R, dflt: R): R =
+  def updateIfChanged[R](update: (T, T) => R, onNoChanges: R): R =
     if (hasChanged) {
       val old = renderedAs.get
       val updated = valueFunc()
       renderedAs = Some(updated)
       update(old, updated)
-    } else dflt
+    } else onNoChanges
 }

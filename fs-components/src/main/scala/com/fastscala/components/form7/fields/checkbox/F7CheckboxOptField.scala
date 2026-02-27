@@ -8,10 +8,11 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 
+import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 class F7CheckboxOptField()(implicit val renderer: CheckboxF7FieldRenderer)
-    extends StandardOneInputElemF7Field[Option[Boolean]]
+  extends StandardOneInputElemF7Field[Option[Boolean]]
     with F7Field
     with StringSerializableF7Field
     with FocusableF7Field
@@ -61,43 +62,35 @@ class F7CheckboxOptField()(implicit val renderer: CheckboxF7FieldRenderer)
     JS.setIndeterminate(elemId)
   } else JS.void
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(
-      _ &
-        JS.setCheckboxTo(elemId, currentValue)
-    )
+  override def updateFieldValueWithoutReRendering(previous: Option[Boolean], current: Option[Boolean])(implicit form: Form7, fsc: FSContext): Try[Js] =
+    Success(JS.setCheckboxTo(elemId, currentValue))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
-    if (!enabled) renderer.renderDisabled(this)
-    else {
-      val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
-      showingValidation = errorsToShow.nonEmpty
+    val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
+    showingValidation = errorsToShow.nonEmpty
 
-      val onchangeJs = fsc.callback(() => {
-        setFilled()
-        currentValue match {
-          case Some(false) if switchingToUndefinedAllowed  => currentValue = None
-          case Some(false) if !switchingToUndefinedAllowed => currentValue = Some(true)
-          case None                                        => currentValue = Some(true)
-          case Some(true)                                  => currentValue = Some(false)
-        }
-        currentRenderedValue = Some(currentValue)
-        form.onEvent(ChangedField(this)) & reRender()
-      }).cmd
+    val onchangeJs = fsc.callback(() => {
+      setFilled()
+      currentValue match {
+        case Some(false) if switchingToUndefinedAllowed => currentValue = None
+        case Some(false) if !switchingToUndefinedAllowed => currentValue = Some(true)
+        case None => currentValue = Some(true)
+        case Some(true) => currentValue = Some(false)
+      }
+      _renderedValue.setRendered()
+      form.onEvent(ChangedField(this)) & reRender()
+    }).cmd
 
-      currentRenderedValue = Some(currentValue)
-
-      renderer.render(this)(
-        inputElem = processInputElem(<input type="checkbox"
+    renderer.render(this)(
+      inputElem = processInputElem(<input type="checkbox"
                    id={id.getOrElse(null)}
                    onchange={onchangeJs}
-                   checked={if (currentRenderedValue.get == Some(true)) "true" else null}
+                   checked={if (currentValue == Some(true)) "true" else null}
             ></input>),
-        label = this.label,
-        invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
-        validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
-        help = help
-      )
-    }
+      label = this.label,
+      invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+      validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
+      help = help
+    )
   }
 }

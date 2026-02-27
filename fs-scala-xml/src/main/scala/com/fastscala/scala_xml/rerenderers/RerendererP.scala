@@ -30,7 +30,8 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
 
   def rerender(param: P)(implicit page: FSPageLike) = page.inContextClearedFor(this) { implicit fsc =>
     val rendered: Elem = renderImpl(param)
-    RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replaceWithScriptExtraction(getOrGenerateAroundId, rendered))
+    val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
+    RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replaceWithScriptExtraction(getOrGenerateAroundId, renderedWithId))
   }
 
   def replaceBy(elem: Elem): Js = JS.replaceWithScriptExtraction(getOrGenerateAroundId, elem.withId(getOrGenerateAroundId))

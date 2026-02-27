@@ -28,11 +28,6 @@ trait F7FieldWithRequired extends F7FieldInputFieldMixin with Mutable {
     _required() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _required.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _required.updateIfChanged({
       case (_, true) => JS.setAttr(elemId)("required", "true")

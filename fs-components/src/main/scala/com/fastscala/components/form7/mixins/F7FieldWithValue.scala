@@ -1,20 +1,24 @@
 package com.fastscala.components.form7.mixins
 
+import com.fastscala.components.form7.{F7Field, Form7}
 import com.fastscala.components.utils.Mutable
+import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.Lazy
 
+import scala.util.Success
 
-trait F7FieldWithValue[T] extends Mutable {
+
+trait F7FieldWithValue[T] extends F7Field {
 
   def defaultValue: T
 
   /**
    * This is the value that is currently visible on the client side.
    */
-  protected var currentRenderedValue: Option[T] = None
+  protected val _renderedValue = F7FieldMixinStatus(() => currentValue)
 
   /**
    * The current value of the field. Because this can be changed on the server side it may yet to be updated on the client side. currentRenderedValue should hold what is currently rendered on the client side.
@@ -68,4 +72,12 @@ trait F7FieldWithValue[T] extends Mutable {
       JS.void
     }
   }
+
+  def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): scala.util.Try[Js]
+
+  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
+    super.updateFieldWithoutReRendering().flatMap(otherUpdatesJs => _renderedValue.updateIfChanged({
+      case (previous, current) => updateFieldValueWithoutReRendering(previous, current).map(otherUpdatesJs & _)
+    }, onNoChanges = Success(otherUpdatesJs)))
+
 }

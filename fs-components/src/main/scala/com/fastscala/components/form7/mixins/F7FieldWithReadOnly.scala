@@ -32,11 +32,6 @@ trait F7FieldWithReadOnly extends F7FieldInputFieldMixin with Mutable {
     if (_readOnly()) input.withAttr("readonly", "true") else input
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _readOnly.setRendered()
-  }
-
   def updateFieldReadOnlyStatus(_readOnly: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
     case (_, true) => JS.setAttr(elemId)("readonly", "readonly")
     case (_, false) => JS.removeAttr(elemId, "readonly")

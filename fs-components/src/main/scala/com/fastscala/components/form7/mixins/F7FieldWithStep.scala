@@ -28,11 +28,6 @@ trait F7FieldWithStep extends F7FieldInputFieldMixin with Mutable {
     _step() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _step.setRendered()
-  }
-
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
     _step().map(step => input.withAttr("step", step.toString)).getOrElse(input)
   }

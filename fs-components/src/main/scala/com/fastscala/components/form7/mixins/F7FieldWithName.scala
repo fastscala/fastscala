@@ -32,11 +32,6 @@ trait F7FieldWithName extends F7FieldInputFieldMixin with Mutable {
     _name().map(name => input.withAttr("name", name)).getOrElse(input)
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _name.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _name.updateIfChanged({
       case (old, None) => JS.removeAttr(elemId, "name")

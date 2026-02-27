@@ -32,11 +32,6 @@ trait F7FieldWithPlaceholder extends F7FieldInputFieldMixin with Mutable {
     _placeholder().map(placeholder => input.withAttr("placeholder", placeholder)).getOrElse(input)
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _placeholder.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _placeholder.updateIfChanged({
       case (old, None) => JS.removeAttr(elemId, "placeholder")

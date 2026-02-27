@@ -28,11 +28,6 @@ trait F7FieldWithTabIndex extends F7FieldInputFieldMixin with Mutable {
     _tabIndex() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _tabIndex.setRendered()
-  }
-
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
     _tabIndex().map(tabIndex => input.withAttr("tabindex", tabIndex.toString)).getOrElse(input)
   }

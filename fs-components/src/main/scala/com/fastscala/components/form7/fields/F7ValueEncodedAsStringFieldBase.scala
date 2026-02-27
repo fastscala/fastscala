@@ -8,10 +8,11 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 
+import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
-    extends StandardOneInputElemF7Field[T]
+  extends StandardOneInputElemF7Field[T]
     with StringSerializableF7Field
     with FocusableF7Field
     with F7FieldWithDisabled
@@ -53,59 +54,48 @@ abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF
 
   def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
 
-  override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(
-      _ &
-        currentRenderedValue.filter(_ != currentValue).map(currentRenderedValue => {
-          this.currentRenderedValue = Some(currentValue)
-          JS.setElementValue(elemId, this.toString(currentValue))
-        }).getOrElse(JS.void)
-    )
+  override def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): Try[Js] =
+    Success(JS.setElementValue(elemId, this.toString(currentValue)))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
-    if (!enabled) renderer.renderDisabled(this)
-    else {
-      val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
-      showingValidation = errorsToShow.nonEmpty
+    val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
+    showingValidation = errorsToShow.nonEmpty
 
-      currentRenderedValue = Some(currentValue)
-
-      def sync(suggestSubmit: Boolean) = fsc.callback(
-        JS.elementValueById(elemId),
-        str => {
-          fromString(str) match {
-            case Right(value) =>
-              setFilled()
-              currentRenderedValue = Some(value)
-              (if (currentValue != value) {
-                 currentValue = value
-                 form.onEvent(ChangedField(this))
-               } else {
-                 JS.void
-               })
-              &
-                (if (suggestSubmit) form.onEvent(SuggestSubmit(this)) else Js.Void)
-            case Left(error) =>
+    def sync(suggestSubmit: Boolean) = fsc.callback(
+      JS.elementValueById(elemId),
+      str => {
+        fromString(str) match {
+          case Right(value) =>
+            setFilled()
+            (if (currentValue != value) {
+              currentValue = value
+              _renderedValue.setRendered()
+              form.onEvent(ChangedField(this))
+            } else {
               JS.void
-          }
+            })
+              &
+              (if (suggestSubmit) form.onEvent(SuggestSubmit(this)) else Js.Void)
+          case Left(error) =>
+            JS.void
         }
-      ).cmd
+      }
+    ).cmd
 
-      renderer.render(this)(
-        inputElem = processInputElem(<input
+    renderer.render(this)(
+      inputElem = processInputElem(<input
               id={id.getOrElse(null)}
               type={inputType}
               onblur={sync(false)}
               onchange={if (syncToServerOnChange) sync(false) else null}
               onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${sync(true)}}"}
-              value={this.toString(currentRenderedValue.get)}
+              value={this.toString(currentValue)}
             />),
-        label = this.label,
-        invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
-        validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
-        help = help
-      )
-    }
+      label = this.label,
+      invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+      validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
+      help = help
+    )
   }
 
   def inputTypeEmail = super.inputType("email")

@@ -32,11 +32,6 @@ trait F7FieldWithMin extends F7FieldInputFieldMixin with Mutable {
     _min().map(min => input.withAttr("min", min)).getOrElse(input)
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _min.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _min.updateIfChanged({
       case (old, None) => JS.removeAttr(elemId, "min")

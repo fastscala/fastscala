@@ -24,11 +24,6 @@ trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin with Mutable {
     _additionalAttrs() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _additionalAttrs.setRendered()
-  }
-
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
     input.withAttrs(_additionalAttrs() *)
   }

@@ -28,11 +28,6 @@ trait F7FieldWithSize extends F7FieldInputFieldMixin with Mutable {
     _size() = f
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _size.setRendered()
-  }
-
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
     _size().map(size => input.withAttr("size", size.toString)).getOrElse(input)
   }

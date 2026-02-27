@@ -18,8 +18,6 @@ trait StandardF7FieldRenderer {
 
     def helpId = field.elemId + "-help"
   }
-
-  def renderDisabled(field: ValidatableF7Field): Elem = <div style="display:none;" id={field.aroundId}></div>
 }
 
 

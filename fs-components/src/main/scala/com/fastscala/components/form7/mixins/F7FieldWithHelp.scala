@@ -47,15 +47,10 @@ trait F7FieldWithHelp extends F7Field with Mutable {
     _help() = () => Some(f(this))
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _help.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().flatMap(js => _help.updateIfChanged({
+    super.updateFieldWithoutReRendering().flatMap(otherUpdatesJs => _help.updateIfChanged({
       case (None, _) => scala.util.Failure(new Exception("Need to rerender"))
-      case (Some(_), None) => scala.util.Success(js & JS.removeId(helpId))
-      case (Some(_), Some(elem)) => scala.util.Success(js & JS.replace(helpId, elem.withId(helpId)))
-    }, Success(Js.Void)))
+      case (Some(_), None) => scala.util.Success(otherUpdatesJs & JS.removeId(helpId))
+      case (Some(_), Some(elem)) => scala.util.Success(otherUpdatesJs & JS.replace(helpId, elem.withId(helpId)))
+    }, Success(otherUpdatesJs)))
 }

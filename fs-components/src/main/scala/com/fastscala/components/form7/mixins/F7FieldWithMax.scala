@@ -32,11 +32,6 @@ trait F7FieldWithMax extends F7FieldInputFieldMixin with Mutable {
     _max().map(max => input.withAttr("max", max)).getOrElse(input)
   }
 
-  override def preRender(): Unit = {
-    super.preRender()
-    _max.setRendered()
-  }
-
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _max.updateIfChanged({
       case (old, None) => JS.removeAttr(elemId, "max")

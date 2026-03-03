@@ -26,7 +26,7 @@ trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase with 
   }
 
   def save(): R = {
-    DB.localTx({ implicit session => saveSQL().update() })
+    DB.localTx({ implicit session => save(session) })
     this
   }
 

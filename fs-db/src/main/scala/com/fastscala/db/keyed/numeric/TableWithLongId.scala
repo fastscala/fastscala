@@ -53,7 +53,5 @@ trait TableWithLongId[R <: RowWithLongId[R]] extends Table[R] with TableWithId[R
 
   def getForIds(ids: java.lang.Long*): List[R] = select(SQLSyntax.createUnsafely("""id = ANY(?)""", Seq(ids.toArray[java.lang.Long])))
 
-  def getForIds(ids: Long*): List[R] = getForIds(ids.map(_: java.lang.Long) *)
-
   def getForIdOpt(key: java.lang.Long): Option[R] = select(sqls"""id = $key""").headOption
 }

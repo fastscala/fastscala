@@ -1,10 +1,10 @@
 package com.fastscala.db.cache
 
 import com.fastscala.db.caching.{DBCompositeObserver, TableCache}
-import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongId}
+import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongIdSeqBacked}
 import com.fastscala.db.observable.ObservableRow
-import com.fastscala.db.{PostgresDB, TestEntity2}
+import com.fastscala.db.testdata.Countries
+import com.fastscala.db.{PostgresDB}
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc.*
 
@@ -12,10 +12,10 @@ class Country(
                val name: String
              ) extends RowWithLongId[Country] with ObservableRow[java.lang.Long, Country] {
 
-  override def table: TableWithLongId[Country] = Country
+  override def table: TableWithLongIdSeqBacked[Country] = Country
 }
 
-object Country extends TableWithLongId[Country] {
+object Country extends TableWithLongIdSeqBacked[Country] {
   override def createSampleRow(): Country = new Country("")
 }
 
@@ -59,7 +59,7 @@ class TableCacheSpec extends AnyFlatSpec with PostgresDB {
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      Country.__dropTableSQL.execute()
+      Country.__dropTableSQL.foreach(_.execute())
     })
   }
 }

@@ -10,11 +10,15 @@ trait TableWithLongIdSeqBacked[R <: RowWithLongId[R]] extends TableWithLongId[R]
 
   override def insertFields: List[Field] = (super.insertFields ::: fieldsList.filter(_.getName == "id")).distinct
 
-  override def valueToFragment(field: Field, value: Any): SQLSyntax = if (field.getName == "id") {
-    SQLSyntax.createUnsafely(s"nextval('$sequenceIdName')")
-  } else super.valueToFragment(field, value)
+  override def valueToFragment(field: Field, value: Any): SQLSyntax =
+    if (field.getName == "id") SQLSyntax.createUnsafely(s"nextval('$sequenceIdName')")
+    else super.valueToFragment(field, value)
 
   override def __createTableSQL: List[SQL[Nothing, NoExtractor]] =
     SQL(s"CREATE SEQUENCE IF NOT EXISTS \"$sequenceIdName\";") ::
       super.__createTableSQL
+
+  override def __dropTableSQL: List[SQL[Nothing, NoExtractor]] =
+    SQL(s"""DROP SEQUENCE IF EXISTS $sequenceIdName;""") ::
+      super.__dropTableSQL
 }

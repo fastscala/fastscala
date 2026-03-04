@@ -57,7 +57,7 @@ class LightTableSpecBase extends AnyFlatSpec with PostgresDB {
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      LightTableTestEntity.__dropTableSQL.execute()
+      LightTableTestEntity.__dropTableSQL.foreach(_.execute())
     })
   }
 }

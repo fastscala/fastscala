@@ -42,7 +42,7 @@ class ImplicitValuesSpecBase extends AnyFlatSpec with PostgresDB {
   }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
-      ImplicitValuesTestEntity.__dropTableSQL.execute()
+      ImplicitValuesTestEntity.__dropTableSQL.foreach(_.execute())
     })
   }
 }

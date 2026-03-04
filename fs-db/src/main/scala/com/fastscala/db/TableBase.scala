@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.lang.reflect.Field
+import java.nio.charset.StandardCharsets
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import scala.util.Try
@@ -116,12 +117,12 @@ trait TableBase {
       __createForeignKeyConstrainsSQL
 
   def __createTableOnlySQL: List[SQL[Nothing, NoExtractor]] = {
-    val columns: String = fieldsList.map(field => {
+    val columns: List[SQLSyntax] = fieldsList.map(field => {
       field.setAccessible(true)
-      s""""${fieldName(field)}" ${fieldTypeToSQLType(field, field.getType, field.get(sampleRow))}"""
-    }).mkString("(", ",", ")")
+      SQLSyntax.createUnsafely(s""""${fieldName(field)}" ${fieldTypeToSQLType(field, field.getType, field.get(sampleRow))}""")
+    })
 
-    List(SQL(s"""CREATE TABLE IF NOT EXISTS ${s"\"$tableName\""} $columns"""))
+    List(sql"""CREATE TABLE IF NOT EXISTS $tableNameSQLSyntaxQuoted ($columns)""")
   }
 
   def __dropColumnWithName(colName: String): List[SQL[Nothing, NoExtractor]] = {
@@ -154,15 +155,13 @@ trait TableBase {
     })
   }
 
-  def __dropTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""DROP TABLE IF EXISTS ${s"\"$tableName\""}""")
+  def __dropTableSQL: List[SQL[Nothing, NoExtractor]] = List(sql"""DROP TABLE IF EXISTS $tableNameSQLSyntaxQuoted;""")
 
-  def __dropAndCreateTableSQL: List[SQL[Nothing, NoExtractor]] = __dropTableSQL :: __createTableSQL
+  def __dropAndCreateTableSQL: List[SQL[Nothing, NoExtractor]] = __dropTableSQL ::: __createTableSQL
 
-  def __truncateSQL: SQL[Nothing, NoExtractor] = SQL(s"""truncate ${s"\"$tableName\""}""")
+  def __truncateSQL: SQL[Nothing, NoExtractor] = sql"""truncate $tableNameSQLSyntaxQuoted;"""
 
   def __renameColumn(from: String, to: String): SQL[Nothing, NoExtractor] = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} RENAME COLUMN ${SQLSyntax.createUnsafely(s"\"$from\"")} TO ${SQLSyntax.createUnsafely(s"\"$to\"")}"""
-
-  def __truncateTableSQL: SQL[Nothing, NoExtractor] = SQL(s"""drop table ${s"\"$tableName\""};""")
 
   protected def enumSampleToValue(sample: AnyRef, id: Int): AnyRef = sample match {
     case enumValue: scala.Enumeration#Value =>
@@ -268,6 +267,7 @@ trait TableBase {
     case "java.time.OffsetDateTime" => "timestamp with time zone" + columnConstrains.mkString(" ", " ", "")
 
     case "java.time.Instant" => "timestamptz" + columnConstrains.mkString(" ", " ", "")
+    case "java.sql.Timestamp" => "timestamptz" + columnConstrains.mkString(" ", " ", "")
 
     case _ => throw new Exception(s"Unexpected field class ${clas.getSimpleName} for field ${field.getName}")
   }
@@ -334,6 +334,9 @@ trait TableBase {
       case "java.time.Instant" if nullable => field.set(instance, rs.timestampOpt(fieldName(field, prefix)).map(_.toInstant))
       case "java.time.Instant" => field.set(instance, rs.timestamp(fieldName(field, prefix)).toInstant)
 
+      case "java.sql.Timestamp" if nullable => field.set(instance, rs.timestampOpt(fieldName(field, prefix)))
+      case "java.sql.Timestamp" => field.set(instance, rs.timestamp(fieldName(field, prefix)))
+
       case "java.util.UUID" if nullable => field.set(instance, rs.stringOpt(fieldName(field, prefix)).map(UUID.fromString))
       case "java.util.UUID" => field.set(instance, UUID.fromString(rs.string(fieldName(field, prefix))))
 
@@ -376,6 +379,7 @@ trait TableBase {
     case v: java.time.LocalDateTime => v
     case v: java.time.OffsetDateTime => v
     case v: java.time.Instant => v
+    case v: java.sql.Timestamp => v
     case v: java.util.UUID => v.toString
   }
 
@@ -386,6 +390,7 @@ trait TableBase {
     case Array() => sqls"''::bytea"
     case v: Int => sqls"$v"
     case v: Double => sqls"$v"
+    case v: java.math.BigDecimal => sqls"$v"
     case v: scala.math.BigDecimal => sqls"$v"
     case v: Boolean => sqls"$v"
     case v: Char => sqls"$v"
@@ -400,6 +405,7 @@ trait TableBase {
     case v: java.time.LocalDateTime => sqls"$v"
     case v: java.time.OffsetDateTime => sqls"$v"
     case v: java.time.Instant => sqls"$v"
+    case v: java.sql.Timestamp => sqls"$v"
     case v: java.util.UUID => SQLSyntax.createUnsafely(s"'${v.toString}'::UUID")
     case v: io.circe.Json => sqls"${v.noSpaces}::json"
   }
@@ -411,27 +417,37 @@ trait TableBase {
     case Array() => SQLSyntax.createUnsafely("''::bytea")
     case v: Int => SQLSyntax.createUnsafely(v + "::integer")
     case v: Double => SQLSyntax.createUnsafely(v + "::double precision")
+    case v: java.math.BigDecimal => SQLSyntax.createUnsafely(v.toString() + "::numeric")
     case v: scala.math.BigDecimal => SQLSyntax.createUnsafely(v.toString() + "::numeric")
     case v: Boolean => SQLSyntax.createUnsafely(v.toString + "::boolean")
-    case v: Char => SQLSyntax.createUnsafely(v + "::char")
-    case v: Short => SQLSyntax.createUnsafely(v + "::integer")
-    case v: Float => SQLSyntax.createUnsafely(v + "::real")
-    case v: Long => SQLSyntax.createUnsafely(v + "::bigint")
+    case v: Char => SQLSyntax.createUnsafely(s"'$v'::char")
+    case v: Short => SQLSyntax.createUnsafely(s"$v::integer")
+    case v: Float => SQLSyntax.createUnsafely(s"$v::real")
+    case v: Long => SQLSyntax.createUnsafely(s"$v::bigint")
     case v: String => SQLSyntax.createUnsafely("'" + org.postgresql.core.Utils.escapeLiteral(null, v, true) + "'" + "::text")
     case v: Array[Byte] if v.isEmpty => SQLSyntax.createUnsafely("'{}'")
-    case v: Array[Byte] =>
-      println("v.size: " + v.size)
-      println("v: " + v.mkString(", "))
-      ???
+    case v: Array[Byte] => SQLSyntax.createUnsafely(s"'\\x${bytesToHex(v)}'::bytea")
     case v: Enumeration#Value => valueToLiteral(v.id)
-    case v: java.time.LocalDate => sqls"${v.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
-    case v: java.time.LocalTime => sqls"${v.format(DateTimeFormatter.ISO_LOCAL_TIME)}"
-    case v: java.time.LocalDateTime => sqls"${v.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}"
-    case v: java.time.OffsetDateTime => sqls"${v.toString}"
-    case v: java.time.Instant => sqls"${v.atOffset(ZoneOffset.UTC).toString}"
+    case v: java.time.LocalDate => SQLSyntax.createUnsafely(s"'${v.format(DateTimeFormatter.ISO_LOCAL_DATE)}'")
+    case v: java.time.LocalTime => SQLSyntax.createUnsafely(s"'${v.format(DateTimeFormatter.ISO_LOCAL_TIME)}'")
+    case v: java.time.LocalDateTime => SQLSyntax.createUnsafely(s"'${v.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}'")
+    case v: java.time.OffsetDateTime => SQLSyntax.createUnsafely(s"'${v.toString}'")
+    case v: java.time.Instant => SQLSyntax.createUnsafely(s"'${v.atOffset(ZoneOffset.UTC).toString}'")
+    case v: java.sql.Timestamp => SQLSyntax.createUnsafely(s"'${v.toString}'")
     case v: io.circe.Json => SQLSyntax.createUnsafely(s"'${v.noSpaces}'::json")
     case v: UUID => SQLSyntax.createUnsafely(s"'$v'::UUID")
   }
 
+  private val HEX_ARRAY = "0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII)
+
+  def bytesToHex(bytes: Array[Byte]): String = {
+    val hexChars = new Array[Byte](bytes.length * 2)
+    for (j <- 0 until bytes.length) {
+      val v = bytes(j) & 0xFF
+      hexChars(j * 2) = HEX_ARRAY(v >>> 4)
+      hexChars(j * 2 + 1) = HEX_ARRAY(v & 0x0F)
+    }
+    new String(hexChars, StandardCharsets.UTF_8)
+  }
 }
 

@@ -1,4 +1,4 @@
-package com.fastscala.db.data
+package com.fastscala.db.testdata
 
 object Countries {
 

@@ -47,9 +47,9 @@ trait TableWithLongId[R <: RowWithLongId[R]] extends Table[R] with TableWithId[R
 
   override def updateFields: List[Field] = fieldsList.filter(_.getName != "id")
 
-  override def fieldTypeToSQLType(field: java.lang.reflect.Field, clas: Class[?], value: => Any, columnConstrains: Set[String] = Set("not null")): String =
-    if (field.getName == "id") "bigserial primary key not null"
-    else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
+//  override def fieldTypeToSQLType(field: java.lang.reflect.Field, clas: Class[?], value: => Any, columnConstrains: Set[String] = Set("not null")): String =
+//    if (field.getName == "id") "bigserial primary key not null"
+//    else super.fieldTypeToSQLType(field, clas, value, columnConstrains)
 
   def getForIds(ids: java.lang.Long*): List[R] = select(SQLSyntax.createUnsafely("""id = ANY(?)""", Seq(ids.toArray[java.lang.Long])))
 

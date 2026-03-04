@@ -2,8 +2,8 @@ package com.fastscala.db.cache
 
 import com.fastscala.db.PostgresDB
 import com.fastscala.db.caching.{DBCompositeObserver, One2ManyCache, TableCache}
-import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongId}
+import com.fastscala.db.testdata.Countries
+import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongIdSeqBacked}
 import com.fastscala.db.observable.ObservableRow
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc._
@@ -11,10 +11,10 @@ import scalikejdbc._
 class Teacher(
                val name: String
              ) extends RowWithLongId[Teacher] with ObservableRow[java.lang.Long, Teacher] {
-  override def table: TableWithLongId[Teacher] = Teacher
+  override def table: TableWithLongIdSeqBacked[Teacher] = Teacher
 }
 
-object Teacher extends TableWithLongId[Teacher] {
+object Teacher extends TableWithLongIdSeqBacked[Teacher] {
   override def createSampleRow(): Teacher = new Teacher("")
 }
 
@@ -22,12 +22,12 @@ class Class(
              val name: String
              , var teacherId: Long
            ) extends RowWithLongId[Class] with ObservableRow[java.lang.Long, Class] {
-  override def table: TableWithLongId[Class] = Class
+  override def table: TableWithLongIdSeqBacked[Class] = Class
 
   override def toString: String = name
 }
 
-object Class extends TableWithLongId[Class] {
+object Class extends TableWithLongIdSeqBacked[Class] {
   override def createSampleRow(): Class = new Class("", 0)
 }
 
@@ -79,8 +79,8 @@ class One2ManySpec extends AnyFlatSpec with PostgresDB {
   }
   "Delete tables" should "succeed" in {
     DB.localTx({ implicit session =>
-      Teacher.__dropTableSQL.execute()
-      Class.__dropTableSQL.execute()
+      Teacher.__dropTableSQL.foreach(_.execute())
+      Class.__dropTableSQL.foreach(_.execute())
     })
   }
 }

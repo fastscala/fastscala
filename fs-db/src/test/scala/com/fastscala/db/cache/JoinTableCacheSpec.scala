@@ -2,8 +2,8 @@ package com.fastscala.db.cache
 
 import com.fastscala.db.PostgresDB
 import com.fastscala.db.caching.*
-import com.fastscala.db.data.Countries
-import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongId}
+import com.fastscala.db.testdata.Countries
+import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongIdSeqBacked}
 import com.fastscala.db.observable.ObservableRow
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc.*
@@ -82,9 +82,9 @@ class JoinTableCacheSpec extends AnyFlatSpec with PostgresDB {
 
   "Delete tables" should "succeed" in {
     DB.localTx({ implicit session =>
-      Student.__dropTableSQL.execute()
-      Course.__dropTableSQL.execute()
-      Student2Course.__dropTableSQL.execute()
+      Student.__dropTableSQL.foreach(_.execute())
+      Course.__dropTableSQL.foreach(_.execute())
+      Student2Course.__dropTableSQL.foreach(_.execute())
     })
   }
 }

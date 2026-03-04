@@ -3,7 +3,7 @@ package com.fastscala.db
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc.*
 
-class TestEntity3(
+class DataTypesBasicSpecTable(
                    var myInt: Int = 123,
                    var myLong: Long = 321,
                    var myDouble: Double = 1.234,
@@ -13,12 +13,12 @@ class TestEntity3(
                    var myBoolean: Boolean = true,
                    var myChar: Char = 'X',
                    var myBigDecimal: BigDecimal = 1.23,
-                 ) extends Row[TestEntity3] {
-  override def table: Table[TestEntity3] = TestEntity3
+                 ) extends Row[DataTypesBasicSpecTable] {
+  override def table: Table[DataTypesBasicSpecTable] = DataTypesBasicSpecTable
 }
 
-object TestEntity3 extends Table[TestEntity3] {
-  override def createSampleRow(): TestEntity3 = new TestEntity3
+object DataTypesBasicSpecTable extends Table[DataTypesBasicSpecTable] {
+  override def createSampleRow(): DataTypesBasicSpecTable = new DataTypesBasicSpecTable
 }
 
 class TableRowSpecBase extends AnyFlatSpec with PostgresDB {
@@ -26,18 +26,18 @@ class TableRowSpecBase extends AnyFlatSpec with PostgresDB {
   def runTests(): Unit = {
     "Create table" should "succeed" in {
       DB.localTx({ implicit session =>
-        TestEntity3.__createTableSQL.foreach(_.execute())
+        DataTypesBasicSpecTable.__createTableSQL.foreach(_.execute())
       })
     }
     "Insert row" should "succeed" in {
       DB.localTx({ implicit session =>
-        new TestEntity3().insert()
+        new DataTypesBasicSpecTable().insert()
       })
     }
     "Read row" should "succeed" in {
       DB.localTx({ implicit session =>
-        val example = new TestEntity3()
-        val single = TestEntity3.selectAll().head
+        val example = new DataTypesBasicSpecTable()
+        val single = DataTypesBasicSpecTable.selectAll().head
 
         assert(example.myInt == single.myInt)
         assert(example.myLong == single.myLong)
@@ -52,7 +52,7 @@ class TableRowSpecBase extends AnyFlatSpec with PostgresDB {
     }
     "Delete table" should "succeed" in {
       DB.localTx({ implicit session =>
-        TestEntity3.__dropTableSQL.execute()
+        DataTypesBasicSpecTable.__dropTableSQL.foreach(_.execute())
       })
     }
   }

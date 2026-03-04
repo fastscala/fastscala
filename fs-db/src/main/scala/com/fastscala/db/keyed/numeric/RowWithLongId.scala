@@ -32,13 +32,13 @@ trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase wit
     this
   }
 
-  def duplicate(): R = {
-    DB.localTx({ implicit session =>
-      id = null
-      id = table.insertSQL(this).updateAndReturnGeneratedKey("id").apply()
-    })
-    this
-  }
+  def duplicate(): R = DB.localTx({ implicit session =>
+    val oldId = id
+    id = null
+    val newId = table.insertSQL(this).updateAndReturnGeneratedKey("id").apply()
+    id = oldId
+    table.getForIdOpt(newId).get
+  })
 
   def update(): Unit = {
     DB.localTx({ implicit session =>

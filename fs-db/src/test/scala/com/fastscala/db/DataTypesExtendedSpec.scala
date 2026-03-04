@@ -61,7 +61,7 @@ object DataTypesExtendedSpecTable extends Table[DataTypesExtendedSpecTable] {
   override def createSampleRow(): DataTypesExtendedSpecTable = new DataTypesExtendedSpecTable()
 }
 
-class DataTypesExtendedSpec extends AnyFlatSpec with PostgresDB {
+class DataTypesExtendedSpec extends AnyFlatSpec with DBConn {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>

@@ -12,5 +12,5 @@ import java.lang.annotation.Target;
   ElementType.PARAMETER,
   ElementType.LOCAL_VARIABLE
 })
-public @interface PrimaryKey {
+public @interface NotAColumn {
 }

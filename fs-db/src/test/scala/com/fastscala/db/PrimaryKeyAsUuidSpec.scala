@@ -15,7 +15,7 @@ object PrimaryKeyBeingUuidSpecTable extends TableWithUuidId[PrimaryKeyBeingUuidS
   override def createSampleRow(): PrimaryKeyBeingUuidSpecTable = new PrimaryKeyBeingUuidSpecTable()
 }
 
-class PrimaryKeyBeingUuidSpec extends AnyFlatSpec with PostgresDB {
+class PrimaryKeyBeingUuidSpec extends AnyFlatSpec with DBConn {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>

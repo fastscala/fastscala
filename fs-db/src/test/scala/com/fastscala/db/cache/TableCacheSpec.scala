@@ -4,7 +4,7 @@ import com.fastscala.db.caching.{DBCompositeObserver, TableCache}
 import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongIdSeqBacked}
 import com.fastscala.db.observable.ObservableRow
 import com.fastscala.db.testdata.Countries
-import com.fastscala.db.{PostgresDB}
+import com.fastscala.db.DBConn
 import org.scalatest.flatspec.AnyFlatSpec
 import scalikejdbc.*
 
@@ -19,7 +19,7 @@ object Country extends TableWithLongIdSeqBacked[Country] {
   override def createSampleRow(): Country = new Country("")
 }
 
-class TableCacheSpec extends AnyFlatSpec with PostgresDB {
+class TableCacheSpec extends AnyFlatSpec with DBConn {
 
   class DBCache extends DBCompositeObserver {
     val country = new TableCache[java.lang.Long, Country](Country)

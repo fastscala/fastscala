@@ -1,6 +1,6 @@
 package com.fastscala.db.cache
 
-import com.fastscala.db.PostgresDB
+import com.fastscala.db.DBConn
 import com.fastscala.db.caching.{DBCompositeObserver, One2ManyCache, TableCache}
 import com.fastscala.db.testdata.Countries
 import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongIdSeqBacked}
@@ -31,7 +31,7 @@ object Class extends TableWithLongIdSeqBacked[Class] {
   override def createSampleRow(): Class = new Class("", 0)
 }
 
-class One2ManySpec extends AnyFlatSpec with PostgresDB {
+class One2ManySpec extends AnyFlatSpec with DBConn {
 
   class DBCache extends DBCompositeObserver {
     val teacher = new TableCache[java.lang.Long, Teacher](Teacher)

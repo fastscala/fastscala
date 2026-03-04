@@ -35,7 +35,7 @@ trait TableBase {
 
   def sampleRow: Any
 
-  val transientAnnotations = Set("java.beans.Transient", "scala.transient")
+  val transientAnnotations = Set("java.beans.Transient", "scala.transient", "com.fastscala.db.annotations.NotAColumn")
 
   val fieldsList: List[Field] = sampleRow.getClass.getDeclaredFields.iterator.filter({
     case field =>

@@ -1,6 +1,6 @@
 package com.fastscala.db.cache
 
-import com.fastscala.db.PostgresDB
+import com.fastscala.db.DBConn
 import com.fastscala.db.caching.*
 import com.fastscala.db.testdata.Countries
 import com.fastscala.db.keyed.numeric.{RowWithLongId, TableWithLongIdSeqBacked}
@@ -10,7 +10,7 @@ import scalikejdbc.*
 
 import java.util.UUID
 
-class JoinTableCacheSpec extends AnyFlatSpec with PostgresDB {
+class JoinTableCacheSpec extends AnyFlatSpec with DBConn {
 
   class DBCache extends DBCompositeObserver {
     val student = new TableCache[java.lang.Long, Student](Student)

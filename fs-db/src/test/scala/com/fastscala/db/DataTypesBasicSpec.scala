@@ -21,7 +21,7 @@ object DataTypesBasicSpecTable extends Table[DataTypesBasicSpecTable] {
   override def createSampleRow(): DataTypesBasicSpecTable = new DataTypesBasicSpecTable
 }
 
-class TableRowSpecBase extends AnyFlatSpec with PostgresDB {
+class TableRowSpecBase extends AnyFlatSpec with DBConn {
 
   def runTests(): Unit = {
     "Create table" should "succeed" in {

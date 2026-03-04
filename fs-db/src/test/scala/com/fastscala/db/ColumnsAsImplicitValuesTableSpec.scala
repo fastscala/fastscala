@@ -20,7 +20,7 @@ object ImplicitValuesTestEntity extends Table[ImplicitValuesTestEntity] {
   override def createSampleRow(): ImplicitValuesTestEntity = new ImplicitValuesTestEntity("John Doe")(using DepartmentId(1234))
 }
 
-class ImplicitValuesSpecBase extends AnyFlatSpec with PostgresDB {
+class ImplicitValuesSpecBase extends AnyFlatSpec with DBConn {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>

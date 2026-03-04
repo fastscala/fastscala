@@ -15,7 +15,7 @@ object PrimaryKeyAsLongSeqBackedSpecTable extends TableWithLongIdSeqBacked[Prima
   override def createSampleRow(): PrimaryKeyAsLongSeqBackedSpecTable = new PrimaryKeyAsLongSeqBackedSpecTable()
 }
 
-class PrimaryKeyAsLongSeqBackedSpec extends AnyFlatSpec with PostgresDB {
+class PrimaryKeyAsLongSeqBackedSpec extends AnyFlatSpec with DBConn {
 
   "Create table" should "succeed" in {
     DB.localTx({ implicit session =>

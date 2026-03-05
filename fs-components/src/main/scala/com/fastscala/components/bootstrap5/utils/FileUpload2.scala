@@ -27,7 +27,8 @@ object FileUpload2 {
              multiple: Boolean = false,
              clipboardUpload: Boolean = false,
              acceptTypes: Option[String] = None,
-             inputClasses: String = "form-control"
+             inputClasses: String = "form-control",
+             uploadTimeoutMillis: Long = 600000
            )(implicit fsc: FSContext): NodeSeq = {
     import com.fastscala.core.circe.CirceSupport.*
 
@@ -103,12 +104,13 @@ object FileUpload2 {
                |        var progressBar = document.getElementById(${JS.asJsStr(progressBarId)});
                |        progressBar.style.display = "block";
                |        progressBar.style.width = percent + '%';
-               |        // progressBar.innerHTML = percent + '%';
+               |        progressBar.innerHTML = percent + '%';
                |    }
                |});
+               |request.onload = function() { try {eval(this.responseText);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + this.responseText); } };
                |
                |request.open('post', ${JS.asJsStr(actionUrl)});
-               |request.timeout = 600000;
+               |request.timeout = $uploadTimeoutMillis;
                |request.send(formdata);
                |""".stripMargin
           )).btn

@@ -47,7 +47,8 @@ class DataTypesExtendedSpecTable(
                                   var instant: Instant = Instant.ofEpochSecond(111111L),
                                   var timestamp: Timestamp = Timestamp.valueOf("2011-11-11 11:11:11"),
                                   //
-                                  var json: Json = DataTypesExtendedSpecTable.testJson
+                                  var json: Json = DataTypesExtendedSpecTable.testJson,
+                                  var dayOfWeek: DayOfWeek = DayOfWeek.WEDNESDAY
                                 ) extends Row[DataTypesExtendedSpecTable] {
   override def table: Table[DataTypesExtendedSpecTable] = DataTypesExtendedSpecTable
 }
@@ -111,6 +112,7 @@ class DataTypesExtendedSpec extends AnyFlatSpec with DBConn {
       assert(sampleRow.instant == single.instant)
       assert(sampleRow.timestamp == single.timestamp)
       assert(sampleRow.json == single.json)
+      assert(sampleRow.dayOfWeek == DayOfWeek.WEDNESDAY)
     })
   }
   "Truncate" should "succeed" in {
@@ -156,6 +158,7 @@ class DataTypesExtendedSpec extends AnyFlatSpec with DBConn {
       assert(sampleRow.instant == single.instant)
       assert(sampleRow.timestamp == single.timestamp)
       assert(sampleRow.json == single.json)
+      assert(sampleRow.dayOfWeek == single.dayOfWeek)
     })
   }
   "Delete table" should "succeed" in {

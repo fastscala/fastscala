@@ -28,7 +28,7 @@ trait TableWithLongId[R <: RowWithLongId[R]] extends Table[R] with TableWithId[R
   def upsertSQL(row: R, rest: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val columns: SQLSyntax = SQLSyntax.createUnsafely(upsertFields.map(field => {
       field.setAccessible(true)
-      fieldName(field)
+      columnNameForField(field)
     }).map('"' + _ + '"').mkString("(", ",", ")"))
 
     val values: List[SQLSyntax] = upsertFields.map(field => {
@@ -36,7 +36,7 @@ trait TableWithLongId[R <: RowWithLongId[R]] extends Table[R] with TableWithId[R
       valueToFragment(field, field.get(row))
     })
     val setters = SQLSyntax.join(insertFields.map(field => {
-      val fName = SQLSyntax.createUnsafely(fieldName(field))
+      val fName = SQLSyntax.createUnsafely(columnNameForField(field))
       sqls"""$fName = EXCLUDED.$fName"""
     }), sqls",")
 

@@ -42,7 +42,7 @@ trait Table[R] extends TableBase {
   def insertSQL(row: R, rest: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val columns: SQLSyntax = SQLSyntax.createUnsafely(insertFields.map(field => {
       field.setAccessible(true)
-      fieldName(field)
+      columnNameForField(field)
     }).map('"' + _ + '"').mkString("(", ",", ")"))
 
     val values: List[SQLSyntax] = insertFields.map(field => {
@@ -75,7 +75,7 @@ trait Table[R] extends TableBase {
   def updateSQL(row: R, where: SQLSyntax = SQLSyntax.empty): SQL[Nothing, NoExtractor] = {
     val values: SQLSyntax = updateFields.map(field => {
       field.setAccessible(true)
-      sqls""""${SQLSyntax.createUnsafely(fieldName(field))}" = """ + valueToFragment(field, field.get(row))
+      sqls""""${SQLSyntax.createUnsafely(columnNameForField(field))}" = """ + valueToFragment(field, field.get(row))
     }).reduceOption(_ + sqls", " + _).getOrElse(SQLSyntax.empty)
 
     sql"""update $tableNameSQLSyntaxQuoted set $values $where"""

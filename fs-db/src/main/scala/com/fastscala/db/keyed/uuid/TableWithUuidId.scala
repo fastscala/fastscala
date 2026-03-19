@@ -9,9 +9,13 @@ import java.util.UUID
 
 trait TableWithUuidId[R <: RowWithUUID[R]] extends Table[R] with TableWithUUIDBase[R] {
 
-  protected lazy val PlaceholderUUID = TableWithUuidId.PlaceholderUUID
+  lazy val PlaceholderUUID = TableWithUuidId.PlaceholderUUID
 
-  protected lazy val PlaceholderOptionalUUID = Some(TableWithUuidId.PlaceholderUUID)
+  lazy val PlaceholderOptionalUUID = Some(TableWithUuidId.PlaceholderUUID)
+  
+  lazy val PlaceholderTimestamp = java.sql.Timestamp(0L)
+  
+  lazy val PlaceholderOptionalTimestamp = Some(java.sql.Timestamp(0L))
 
   override def createSampleRowInternal(): R = {
     val ins = super.createSampleRowInternal()
@@ -24,7 +28,7 @@ trait TableWithUuidId[R <: RowWithUUID[R]] extends Table[R] with TableWithUUIDBa
   def getForId(key: UUID): R = getForIdOpt(key).getOrElse(throw new Exception(s"Element with id ${key} not found in table $tableName"))
 
   def getForIds(uuid: UUID*): List[R] = select(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String])))
-  
+
   def _getForIds(uuid: UUID*)(implicit session: DBSession): List[R] = _selectWithAdditionalCols(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String]))).map(_._1)
 
   def deleteAll(rows: Seq[R]): Long = {
@@ -38,5 +42,5 @@ trait TableWithUuidId[R <: RowWithUUID[R]] extends Table[R] with TableWithUUIDBa
 
 object TableWithUuidId {
 
-  val PlaceholderUUID = UUID.fromString("11111111-1111-1111-1111-111111111111")
+  val PlaceholderUUID = UUID.fromString("00000000-0000-0000-0000-000000000000")
 }

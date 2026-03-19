@@ -15,7 +15,7 @@ import org.eclipse.jetty.util.resource.{ResourceFactory, Resources}
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 import org.slf4j.LoggerFactory
 
-abstract class JettyServerHelper() {
+abstract class JettyServerHelper {
 
   val logger = LoggerFactory.getLogger(getClass.getName)
 

@@ -29,7 +29,7 @@ class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P 
     renderImpl(param)
   }
 
-  def rerender(param: P)(implicit page: FSPageLike): Js = page.inContextClearedFor(this) { implicit fsc =>
+  def rerender(param: P)(implicit fsp: FSPageLike): Js = fsp.inContextClearedFor(this) { implicit fsc =>
     val rendered: Elem = renderImpl(param)
     val renderedWithId: Elem = rendered.withId(aroundId)
     RerendererDebugStatusState().rerender(aroundId, JS.replaceWithScriptExtraction(aroundId, renderedWithId))

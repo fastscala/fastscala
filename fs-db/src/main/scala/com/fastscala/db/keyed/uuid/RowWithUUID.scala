@@ -39,7 +39,7 @@ trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase with 
     val inDB = reload()
     func(inDB)
     inDB.save()
-    func(this)
+    copyFrom(inDB)
     this
   }
 

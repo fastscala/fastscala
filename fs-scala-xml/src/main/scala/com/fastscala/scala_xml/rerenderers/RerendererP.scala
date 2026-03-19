@@ -28,7 +28,7 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
 
   def render(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc => renderImpl(param) }
 
-  def rerender(param: P)(implicit page: FSPageLike) = page.inContextClearedFor(this) { implicit fsc =>
+  def rerender(param: P)(implicit fsp: FSPageLike) = fsp.inContextClearedFor(this) { implicit fsc =>
     val rendered: Elem = renderImpl(param)
     val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
     RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replaceWithScriptExtraction(getOrGenerateAroundId, renderedWithId))

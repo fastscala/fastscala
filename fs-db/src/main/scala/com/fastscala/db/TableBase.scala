@@ -138,7 +138,7 @@ trait TableBase extends DataTypeSupport {
     else {
       val pkeyName = SQLSyntax.createUnsafely(tableName + "_pkey").doubleQuoted
       val cols = primaryKeys.map({ case (name, _) => SQLSyntax.createUnsafely(columnNameForField(name)).doubleQuoted })
-      List(sql"""ALTER TABLE $tableNameSQLSyntaxQuoted ADD CONSTRAINT $pkeyName PRIMARY KEY (${SQLSyntax.join(cols, sqls",")});""".tap(println))
+      List(sql"""ALTER TABLE $tableNameSQLSyntaxQuoted ADD CONSTRAINT $pkeyName PRIMARY KEY (${SQLSyntax.join(cols, sqls",")});""")
     }
   }
 

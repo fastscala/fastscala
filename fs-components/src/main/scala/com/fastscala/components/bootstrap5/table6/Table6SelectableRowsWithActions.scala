@@ -18,6 +18,8 @@ trait Table6SelectableRowsWithActions extends Table6SelectableRowsBase with Tabl
 
   def actionsBtnToIncludeInTopDropdown: BSBtn = BSBtn().BtnPrimary.lbl(actionsBtnLabel)
 
+  def actionsBtnToIncludeInRowDropdownRightAligned: Boolean = false
+
   def actionsBtnToIncludeInRowDropdown: BSBtn = BSBtn().BtnPrimary.lbl(actionsBtnLabel).sm.withStyle(";padding: 2px 7px;")
 
   override def onSelectedRowsChange()(implicit fsc: FSContext): Js = super.onSelectedRowsChange() &
@@ -31,7 +33,7 @@ trait Table6SelectableRowsWithActions extends Table6SelectableRowsBase with Tabl
 
   lazy val ColActionsDefault = ColNsFullTd(actionsBtnToIncludeInRowDropdown.content.toString(), implicit fsc => {
     case (rowsWithIds, columnsWithIds, tableWrapperRenderer, tableRenderer, tableHeadRerenderer, tableBodyRerenderer, tableFootRerenderer, trRerenderer, tdRerenderer, col, colIdx, colId, row, rowIdx, rowId) =>
-      val contents = BSBtnDropdown(actionsBtnToIncludeInRowDropdown)(
+      val contents = BSBtnDropdown(actionsBtnToIncludeInRowDropdown, rightAlignedMenu = actionsBtnToIncludeInRowDropdownRightAligned)(
         actionsForRows(Seq(row)) *
       )
       <td class="py-1 align-middle">{contents}</td>

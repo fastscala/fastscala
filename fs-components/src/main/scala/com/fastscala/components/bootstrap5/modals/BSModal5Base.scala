@@ -81,7 +81,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def dispose(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).dispose()""")
 
-  def deleteContext()(implicit page: FSPageLike): Unit = page.deleteContextFor(modalRenderer)
+  def deleteContext()(implicit fsp: FSPageLike): Unit = fsp.deleteContextFor(modalRenderer)
 
   def handleUpdate(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).handleUpdate()""")
 
@@ -93,7 +93,14 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def toggle(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).toggle()""")
 
-  def onHideDefaultListenerServerSide()(implicit fsc: FSPageLike): Js = Js.Void
+  var _onHideDefaultListenerServerSideJs: FSPageLike => Js = _ => Js.Void
+
+  def onHideDefaultListenerServerSide(f: FSPageLike => Js => Js): this.type = mutate {
+    val cur = _onHideDefaultListenerServerSideJs
+    _onHideDefaultListenerServerSideJs = fsp => f(fsp)(cur(fsp))
+  }
+
+  def onHideDefaultListenerServerSide()(implicit fsp: FSPageLike): Js = _onHideDefaultListenerServerSideJs(fsp)
 
   def eventListenerOnShow()(implicit fsc: FSContext): Js = Js.Void
 
@@ -118,7 +125,9 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def modalHeaderTitle: String
 
-  def modalHeaderTitleNs: Elem = <h1 class="modal-title fs-5">{modalHeaderTitle}</h1>
+  def modalHeaderTitleNs: Elem = <h1 class="modal-title fs-5">
+    {modalHeaderTitle}
+  </h1>
 
   def modalHeaderContents()(implicit fsc: FSContext): NodeSeq = {
     modalHeaderTitleNs ++

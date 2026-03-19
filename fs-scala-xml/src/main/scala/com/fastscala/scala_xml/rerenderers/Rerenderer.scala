@@ -13,5 +13,5 @@ class Rerenderer(renderFunc: Rerenderer => FSContext => Elem, idOpt: Option[Stri
 
   def render()(implicit fsc: FSContext): Elem = super.render(())
 
-  def rerender()(implicit fsc: FSPageLike) = super.rerender(())
+  def rerender()(implicit fsp: FSPageLike) = super.rerender(())
 }

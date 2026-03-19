@@ -26,12 +26,12 @@ import scala.util.chaining.scalaUtilChainingOps
 
 abstract class FSSessionVar[T](default: => T) {
 
-  def apply()(implicit hasSession: FSPageLike): T = hasSession.session.getDataOpt(this).getOrElse({
-    hasSession.session.setData(this, default)
+  def apply()(implicit fss: FSSessionLike): T = fss.session.getDataOpt(this).getOrElse({
+    fss.session.setData(this, default)
     apply()
   })
 
-  def update(value: T)(implicit hasSession: FSPageLike): Unit = hasSession.session.setData(this, value)
+  def update(value: T)(implicit fss: FSSessionLike): Unit = fss.session.setData(this, value)
 }
 
 abstract class FSSessionVarOpt[T]() {

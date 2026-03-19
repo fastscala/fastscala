@@ -15,5 +15,5 @@ class ContentRerenderer(renderFunc: ContentRerenderer => FSContext => NodeSeq, i
 
   def render()(implicit fsc: FSContext): Elem = super.render(())
 
-  def rerender()(implicit fsc: FSPageLike) = super.rerender(())
+  def rerender()(implicit fsp: FSPageLike) = super.rerender(())
 }

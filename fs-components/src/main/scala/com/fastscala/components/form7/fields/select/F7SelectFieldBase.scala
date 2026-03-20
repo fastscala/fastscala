@@ -12,7 +12,8 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRenderer)
-  extends StandardOneInputElemF7Field[T]
+  extends F7FieldWithValue[T]
+    with F7InputValidatableField
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
     with F7Field

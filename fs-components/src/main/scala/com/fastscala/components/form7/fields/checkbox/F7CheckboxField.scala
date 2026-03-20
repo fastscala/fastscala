@@ -12,7 +12,8 @@ import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 class F7CheckboxField()(implicit val renderer: CheckboxF7FieldRenderer)
-  extends StandardOneInputElemF7Field[Boolean]
+  extends F7FieldWithValue[Boolean]
+    with F7InputValidatableField
     with F7Field
     with StringSerializableF7Field
     with FocusableF7Field

@@ -1,7 +1,7 @@
 package com.fastscala.components.form7.fields.number
 
 import com.fastscala.components.form7.F7Field
-import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
+import com.fastscala.components.form7.fields.{F7InputFieldBase, F7InputOptFieldBase}
 import com.fastscala.components.form7.mixins.*
 import com.fastscala.components.form7.renderers.*
 
@@ -10,16 +10,7 @@ import java.util.regex.Pattern
 import scala.xml.NodeSeq
 
 
-class F7IntOptField()(implicit renderer: TextF7FieldRenderer)
-  extends F7ValueEncodedAsStringFieldBase[Option[Int]]
-    with F7FieldWithPrefix
-    with F7FieldWithSuffix
-    with F7FieldWithMin
-    with F7FieldWithStep
-    with F7FieldWithMax {
-  override def _inputTypeDefault: String = "number"
-
-  override def defaultValue: Option[Int] = None
+class F7IntOptField()(implicit renderer: TextF7FieldRenderer) extends F7NumericOptFieldBase[Int] {
 
   def toString(value: Option[Int]): String = value.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
 
@@ -34,11 +25,8 @@ class F7IntOptField()(implicit renderer: TextF7FieldRenderer)
         .replaceAll(" *" + Pattern.quote(suffix.toLowerCase) + "$", "")
         .toIntOption match {
         case Some(value) => Right(Some(value))
-        case None => Left(s"Not an int?: $str")
+        case None => Left(s"Not an Int?: $str")
       }
     }
   }
-
-  override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++
-    (if (required && currentValue.isEmpty) Seq((this, scala.xml.Text(renderer.defaultRequiredFieldLabel))) else Seq())
 }

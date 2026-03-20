@@ -9,11 +9,12 @@ import java.text.DecimalFormat
 import java.util.regex.Pattern
 import scala.xml.NodeSeq
 
-class F7DoubleOptField()(implicit renderer: TextF7FieldRenderer) extends F7NumericOptFieldBase[Double] {
 
-  def toString(value: Option[Double]): String = value.map(value => prefix + " " + value + " " + suffix).map(_.trim).getOrElse("")
+class F7LongOptField()(implicit renderer: TextF7FieldRenderer) extends F7NumericOptFieldBase[Long] {
 
-  def fromString(str: String): Either[String, Option[Double]] = {
+  def toString(value: Option[Long]): String = value.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
+
+  def fromString(str: String): Either[String, Option[Long]] = {
     if (str.trim == "") {
       Right(None)
     } else {
@@ -22,9 +23,9 @@ class F7DoubleOptField()(implicit renderer: TextF7FieldRenderer) extends F7Numer
         .trim
         .replaceAll("^" + Pattern.quote(prefix.toLowerCase) + " *", "")
         .replaceAll(" *" + Pattern.quote(suffix.toLowerCase) + "$", "")
-        .toDoubleOption match {
+        .toLongOption match {
         case Some(value) => Right(Some(value))
-        case None => Left(s"Not a double?: $str")
+        case None => Left(s"Not a Long?: $str")
       }
     }
   }

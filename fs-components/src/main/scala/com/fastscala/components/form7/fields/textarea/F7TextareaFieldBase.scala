@@ -12,8 +12,8 @@ import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRenderer)
-  extends StandardOneInputElemF7Field[T]
-    with F7Field
+  extends F7FieldWithValue[T]
+    with F7InputValidatableField
     with StringSerializableF7Field
     with FocusableF7Field
     with F7FieldWithNumRows
@@ -63,32 +63,32 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: TextareaF7FieldRe
     showingValidation = errorsToShow.nonEmpty
     renderer.render(this)(
       inputElem = processInputElem(<textarea
-          type="text"
-          id={id.getOrElse(null)}
-          onblur={
-            fsc.callback(
-              JS.elementValueById(elemId),
-              str => {
-                fromString(str) match {
-                  case Right(value) =>
-                    setFilled()
-                    if (currentValue != value) {
-                      currentValue = value
-                      _renderedValue.setRendered()
-                      form.onEvent(ChangedField(this))
-                    } else {
-                      JS.void
-                    }
-                  case Left(error) =>
-                    JS.void
-                }
+      type="text"
+      id={id.getOrElse(null)}
+      onblur={fsc.callback(
+        JS.elementValueById(elemId),
+        str => {
+          fromString(str) match {
+            case Right(value) =>
+              setFilled()
+              if (currentValue != value) {
+                currentValue = value
+                _renderedValue.setRendered()
+                form.onEvent(ChangedField(this))
+              } else {
+                JS.void
               }
-            ).cmd
-          }>{this.toString(currentValue)}</textarea>),
+            case Left(error) =>
+              JS.void
+          }
+        }
+      ).cmd}>
+        {this.toString(currentValue)}
+      </textarea>),
       label = this.label,
       invalidFeedback = errorsToShow.headOption.map(error => <div>
-          {error._2}
-        </div>),
+        {error._2}
+      </div>),
       validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
       help = help
     )

@@ -1,13 +1,13 @@
 package com.fastscala.components.form7.fields.date
 
-import com.fastscala.components.form7.fields.F7ValueEncodedAsStringFieldBase
+import com.fastscala.components.form7.fields.F7InputFieldBase
 import com.fastscala.components.form7.renderers.*
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 
-class F7LocalDateField(dflt: LocalDate = LocalDate.now())(implicit renderer: TextF7FieldRenderer) extends F7ValueEncodedAsStringFieldBase[java.time.LocalDate] {
+class F7LocalDateField(dflt: LocalDate = LocalDate.now())(implicit renderer: TextF7FieldRenderer) extends F7InputFieldBase[java.time.LocalDate] {
   override def _inputTypeDefault: String = "date"
 
   override def defaultValue: LocalDate = dflt

@@ -33,4 +33,12 @@ trait F7FieldWithInputType extends F7FieldInputFieldMixin with Mutable {
     super.updateFieldWithoutReRendering().map(_ & _inputType.updateIfChanged({
       case (old, cur) => JS.setAttr(elemId)("type", cur)
     }, Js.Void))
+
+  def inputTypeEmail = inputType("email")
+
+  def inputTypePassword = inputType("password")
+
+  def inputTypeTel = inputType("tel")
+
+  def inputTypeUrl = inputType("url")
 }

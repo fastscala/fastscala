@@ -11,8 +11,9 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
-  extends StandardOneInputElemF7Field[T]
+trait F7InputFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
+  extends F7FieldWithValue[T]
+    with F7InputValidatableField
     with StringSerializableF7Field
     with FocusableF7Field
     with F7FieldWithDisabled
@@ -84,25 +85,18 @@ abstract class F7ValueEncodedAsStringFieldBase[T]()(implicit val renderer: TextF
 
     renderer.render(this)(
       inputElem = processInputElem(<input
-              id={id.getOrElse(null)}
-              type={inputType}
-              onblur={sync(false)}
-              onchange={if (syncToServerOnChange) sync(false) else null}
-              onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${sync(true)}}"}
-              value={this.toString(currentValue)}
-            />),
+        id={id.getOrElse(null)}
+        type={inputType}
+        onblur={sync(false)}
+        onchange={if (syncToServerOnChange) sync(false) else null}
+        onkeypress={s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${sync(true)}}"}
+        value={this.toString(currentValue)}/>),
       label = this.label,
-      invalidFeedback = errorsToShow.headOption.map(error => <div>{error._2}</div>),
+      invalidFeedback = errorsToShow.headOption.map(error => <div>
+        {error._2}
+      </div>),
       validFeedback = if (errorsToShow.isEmpty) validFeedback else None,
       help = help
     )
   }
-
-  def inputTypeEmail = super.inputType("email")
-
-  def inputTypePassword = super.inputType("password")
-
-  def inputTypeTel = super.inputType("tel")
-
-  def inputTypeUrl = super.inputType("url")
 }

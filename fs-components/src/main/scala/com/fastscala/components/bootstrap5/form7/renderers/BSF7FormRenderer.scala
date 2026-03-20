@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.form7.renderers
 
 import com.fastscala.components.form7.mixins.ValidatableF7Field
-import com.fastscala.components.form7.renderers.{F7FormRenderer, StandardOneInputElemF7FieldRenderer}
+import com.fastscala.components.form7.renderers.{F7FormRenderer, F7InputValidatableFieldRenderer}
 import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 

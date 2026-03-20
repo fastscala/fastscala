@@ -2,14 +2,14 @@ package com.fastscala.components.bootstrap5.form7.renderers
 
 import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
 import com.fastscala.components.form7.mixins.ValidatableF7Field
-import com.fastscala.components.form7.renderers.StandardOneInputElemF7FieldRenderer
+import com.fastscala.components.form7.renderers.F7InputValidatableFieldRenderer
 import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-trait BSStandardF7FieldRenderer extends StandardOneInputElemF7FieldRenderer with BSStandardF7ModifiableFieldRenderer {
+trait BSStandardF7FieldRenderer extends F7InputValidatableFieldRenderer with BSStandardF7ModifiableFieldRenderer {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 

@@ -7,7 +7,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-trait StandardOneInputElemF7FieldRenderer extends StandardF7FieldRenderer {
+trait F7InputValidatableFieldRenderer extends StandardF7FieldRenderer {
 
   def render(
               field: ValidatableF7Field,

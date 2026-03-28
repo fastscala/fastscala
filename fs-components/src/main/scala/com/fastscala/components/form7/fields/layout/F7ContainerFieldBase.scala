@@ -9,7 +9,7 @@ import com.fastscala.scala_xml.js.JS
 
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidations with F7FieldWithEnabled with F7FieldWithDependencies with F7FieldWithDisabled with F7FieldWithReadOnly {
+abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidationRules with F7FieldWithEnabled with F7FieldWithDependencies with F7FieldWithDisabled with F7FieldWithReadOnly {
 
   def aroundClass: String
 

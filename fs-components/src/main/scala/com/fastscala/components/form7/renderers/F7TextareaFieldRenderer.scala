@@ -1,0 +1,3 @@
+package com.fastscala.components.form7.renderers
+
+trait F7TextareaFieldRenderer extends F7InputValidatableFieldRenderer

@@ -40,7 +40,7 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   def allColumns: Seq[C]
 
-  val initiallyVisibleColumns: Set[C]
+  lazy val initiallyVisibleColumns: Set[C] = allColumns.toSet
 
   def columnStartsVisible(c: C): Boolean = initiallyVisibleColumns.contains(c)
 

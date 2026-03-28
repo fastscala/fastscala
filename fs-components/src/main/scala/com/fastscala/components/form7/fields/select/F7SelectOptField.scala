@@ -5,7 +5,7 @@ import com.fastscala.components.form7.renderers.*
 
 import scala.xml.NodeSeq
 
-class F7SelectOptField[T]()(implicit renderer: SelectF7FieldRenderer) extends F7SelectFieldBase[Option[T]] {
+class F7SelectOptField[T]()(implicit renderer: F7SelectFieldRenderer) extends F7SelectFieldBase[Option[T]] {
   override def defaultValue: Option[T] = None
 
   def optionsNonEmpty(v: Seq[T]): F7SelectOptField.this.type = options(None +: v.map(Some(_)))

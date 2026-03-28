@@ -11,11 +11,11 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-trait F7InputFieldBase[T]()(implicit val renderer: TextF7FieldRenderer)
+trait F7InputFieldBase[T]()(implicit val renderer: F7InputValidatableFieldRenderer)
   extends F7FieldWithValue[T]
-    with F7InputValidatableField
-    with StringSerializableF7Field
-    with FocusableF7Field
+    with F7FieldWithValidationShowHideValidation
+    with F7FieldSerializableAsString
+    with F7FieldFocusable
     with F7FieldWithDisabled
     with F7FieldWithRequired
     with F7FieldWithReadOnly

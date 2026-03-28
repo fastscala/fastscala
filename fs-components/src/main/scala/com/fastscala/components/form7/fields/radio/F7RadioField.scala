@@ -9,10 +9,10 @@ import com.fastscala.js.Js
 import scala.util.Try
 
 
-class F7RadioField[T](opts: () => Seq[T])(implicit renderer: RadioF7FieldRenderer) extends F7RadioFieldBase[T] with F7FieldWithValidations {
+class F7RadioField[T](opts: () => Seq[T])(implicit renderer: F7RadioFieldRenderer) extends F7RadioFieldBase[T] with F7FieldWithValidationRules {
   options(opts)
 
-  def this(opts: Seq[T])(implicit renderer: RadioF7FieldRenderer) = this(() => opts)
+  def this(opts: Seq[T])(implicit renderer: F7RadioFieldRenderer) = this(() => opts)
 
   override def defaultValue: T = options.head
 }

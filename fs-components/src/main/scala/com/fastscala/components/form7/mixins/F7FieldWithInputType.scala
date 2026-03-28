@@ -34,11 +34,19 @@ trait F7FieldWithInputType extends F7FieldInputFieldMixin with Mutable {
       case (old, cur) => JS.setAttr(elemId)("type", cur)
     }, Js.Void))
 
-  def inputTypeEmail = inputType("email")
+  def inputTypeEmail: this.type = mutate {
+    inputType("email")
+  }
 
-  def inputTypePassword = inputType("password")
+  def inputTypePassword: this.type = mutate {
+    inputType("password")
+  }
 
-  def inputTypeTel = inputType("tel")
+  def inputTypeTel: this.type = mutate {
+    inputType("tel")
+  }
 
-  def inputTypeUrl = inputType("url")
+  def inputTypeUrl: this.type = mutate {
+    inputType("url")
+  }
 }

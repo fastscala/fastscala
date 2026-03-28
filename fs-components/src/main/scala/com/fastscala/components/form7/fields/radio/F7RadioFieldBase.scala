@@ -13,10 +13,10 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7RadioFieldBase[T]()(implicit val renderer: RadioF7FieldRenderer)
-  extends ValidatableF7Field
-    with StringSerializableF7Field
-    with FocusableF7Field
+abstract class F7RadioFieldBase[T]()(implicit val renderer: F7RadioFieldRenderer)
+  extends F7FieldWithValidation
+    with F7FieldSerializableAsString
+    with F7FieldFocusable
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
     with F7FieldWithDisabled

@@ -16,7 +16,7 @@ object F7HtmlField {
 class F7HtmlField(
                    var gen: FSContext => NodeSeq
                  ) extends F7Field
-  with F7FieldWithValidations
+  with F7FieldWithValidationRules
   with F7FieldWithDisabled
   with F7FieldWithDependencies
   with F7FieldWithEnabled {

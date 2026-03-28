@@ -5,13 +5,13 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form7.*
-import com.fastscala.components.form7.renderers.StandardF7FieldRenderer
+import com.fastscala.components.form7.renderers.F7StandardFieldRenderer
 
 import scala.xml.NodeSeq
 
-trait ValidatableF7Field extends F7Field
+trait F7FieldWithValidation extends F7Field
   with F7FieldWithOnChangedField
-  with F7FieldWithValidations {
+  with F7FieldWithValidationRules {
 
   def visible: () => Boolean = () => enabled
 

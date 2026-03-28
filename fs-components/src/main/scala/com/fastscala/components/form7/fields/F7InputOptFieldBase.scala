@@ -11,7 +11,7 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-trait F7InputOptFieldBase[T]()(implicit renderer: TextF7FieldRenderer)
+trait F7InputOptFieldBase[T]()(implicit renderer: F7InputValidatableFieldRenderer)
   extends F7InputFieldBase[Option[T]] with F7FieldWithValueOpt[T] with F7FieldWithRequired {
 
   override def validate(): Seq[(F7Field, NodeSeq)] = super.validate() ++

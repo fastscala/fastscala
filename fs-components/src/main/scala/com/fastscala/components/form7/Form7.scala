@@ -1,7 +1,7 @@
 package com.fastscala.components.form7
 
 import com.fastscala.components.form7.formmixins.{F7FormWithInitialState, F7FormWithValidationStrategy}
-import com.fastscala.components.form7.mixins.FocusableF7Field
+import com.fastscala.components.form7.mixins.F7FieldFocusable
 import com.fastscala.components.form7.renderers.F7FormRenderer
 import com.fastscala.components.utils.ElemWithRandomId
 import com.fastscala.core.FSContext
@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-abstract class DefaultForm7()(implicit val formRenderer: F7FormRenderer) extends Form7
+abstract class DefaultForm7()(implicit val formRenderer: F7FormRenderer) extends Form7 {
+  lazy val rootField: F7Field
+}
 
 object Form7State extends Enumeration {
   val Initial = Value
@@ -34,7 +36,9 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   def onChangedState(from: Form7State.Value, to: Form7State.Value)(using fsc: FSContext): Js = onEvent(ChangedFormState(from, to))(using this, fsc)
 
-  val rootField: F7Field
+  /** NOTE: Implementation should usually be a val or lazy val! don't re-instantiate the fields every time this method is called!
+   */
+  def rootField: F7Field
 
   def initForm()(implicit fsc: FSContext): Unit = ()
 
@@ -62,8 +66,8 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
   def formRenderer: F7FormRenderer
 
   def focusFirstFocusableFieldJs(): Js =
-    rootField.fieldAndChildreenMatchingPredicate({ case _: FocusableF7Field => true })
-      .collectFirst({ case fff: FocusableF7Field => fff })
+    rootField.fieldAndChildreenMatchingPredicate({ case _: F7FieldFocusable => true })
+      .collectFirst({ case fff: F7FieldFocusable => fff })
       .map(_.focusJs)
       .getOrElse(JS.void)
 

@@ -1,11 +1,10 @@
 package com.fastscala.components.form7.renderers
 
-
 import com.fastscala.components.form7.RenderHint
 
 import scala.xml.{Elem, NodeSeq}
 
-trait MultiSelectF7FieldRenderer extends F7InputValidatableFieldRenderer {
+trait F7SelectFieldRenderer extends F7InputValidatableFieldRenderer {
 
   def renderOption(
                     selected: Boolean,

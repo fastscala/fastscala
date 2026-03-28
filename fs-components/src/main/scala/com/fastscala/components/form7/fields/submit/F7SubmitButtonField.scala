@@ -12,12 +12,12 @@ import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
-trait F7SubmitButtonFieldRenderer[T] extends Function2[T, FSContext, Elem]
+trait F7SubmitBtnFieldRenderer[T] extends Function2[T, FSContext, Elem]
 
-object F7SubmitButtonFieldRenderer {
-  implicit lazy val evidenceBSBtn: F7SubmitButtonFieldRenderer[BSBtn] = (btn, fsc) => btn.btn(using fsc)
+object F7SubmitBtnFieldRenderer {
+  implicit lazy val evidenceBSBtn: F7SubmitBtnFieldRenderer[BSBtn] = (btn, fsc) => btn.btn(using fsc)
 
-  implicit lazy val evidenceElem: F7SubmitButtonFieldRenderer[Elem] = (btn, fsc) => btn
+  implicit lazy val evidenceElem: F7SubmitBtnFieldRenderer[Elem] = (btn, fsc) => btn
 }
 
 
@@ -25,9 +25,9 @@ object F7SubmitButtonField {
   implicit def evidence(btn: Elem): FSContext => Elem = implicit fsc => btn
 }
 
-class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B], val toChangedState: B => B = identity[B], val toErrorState: B => B = identity[B])(implicit renderer: ButtonF7FieldRenderer, evidence: F7SubmitButtonFieldRenderer[B])
+class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B], val toChangedState: B => B = identity[B], val toErrorState: B => B = identity[B])(implicit renderer: F7SubmitButtonFieldRenderer, evidence: F7SubmitBtnFieldRenderer[B])
   extends F7Field
-    with F7FieldWithValidations
+    with F7FieldWithValidationRules
     with F7FieldWithReadOnly
     with F7FieldWithDependencies
     with F7FieldWithDisabled

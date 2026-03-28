@@ -3,7 +3,7 @@ package com.fastscala.components.bootstrap5.form7.renderers
 import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
 import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.components.form7.fields.radio.F7RadioFieldBase
-import com.fastscala.components.form7.renderers.RadioF7FieldRenderer
+import com.fastscala.components.form7.renderers.F7RadioFieldRenderer
 import com.fastscala.components.utils.Mutable
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
@@ -19,7 +19,7 @@ abstract class BSRadioF7FieldRenderer()(
   checkboxAlignment: CheckboxAlignment.Value,
   checkboxStyle: CheckboxStyle.Value,
   checkboxSide: CheckboxSide.Value,
-) extends RadioF7FieldRenderer with BSStandardF7ModifiableFieldRenderer {
+) extends F7RadioFieldRenderer with BSStandardF7ModifiableFieldRenderer {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 

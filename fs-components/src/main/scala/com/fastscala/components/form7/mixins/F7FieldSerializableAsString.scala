@@ -6,7 +6,7 @@ import com.fastscala.components.utils.Mutable
 import scala.xml.NodeSeq
 
 
-trait StringSerializableF7Field extends Mutable {
+trait F7FieldSerializableAsString extends Mutable {
 
   def loadFromString(str: String): Seq[(F7Field, NodeSeq)]
 

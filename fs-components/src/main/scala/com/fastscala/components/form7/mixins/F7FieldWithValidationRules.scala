@@ -5,7 +5,7 @@ import com.fastscala.components.form7.F7Field
 import scala.xml.NodeSeq
 
 
-trait F7FieldWithValidations extends F7Field {
+trait F7FieldWithValidationRules extends F7Field {
   var _validations = collection.mutable.ListBuffer[() => Option[NodeSeq]]()
 
   def addValidation(validate: () => Option[NodeSeq]): this.type = mutate {

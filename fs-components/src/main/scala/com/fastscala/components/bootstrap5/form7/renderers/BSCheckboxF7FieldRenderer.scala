@@ -2,8 +2,8 @@ package com.fastscala.components.bootstrap5.form7.renderers
 
 import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
 import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
-import com.fastscala.components.form7.mixins.ValidatableF7Field
-import com.fastscala.components.form7.renderers.CheckboxF7FieldRenderer
+import com.fastscala.components.form7.mixins.F7FieldWithValidation
+import com.fastscala.components.form7.renderers.F7CheckboxFieldRenderer
 import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
@@ -15,12 +15,12 @@ abstract class BSCheckboxF7FieldRenderer()(
   checkboxAlignment: CheckboxAlignment.Value,
   checkboxStyle: CheckboxStyle.Value,
   checkboxSide: CheckboxSide.Value,
-) extends CheckboxF7FieldRenderer with BSStandardF7ModifiableFieldRenderer {
+) extends F7CheckboxFieldRenderer with BSStandardF7ModifiableFieldRenderer {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def render(
-                       field: ValidatableF7Field,
+                       field: F7FieldWithValidation,
                      )(
                        inputElem: Elem,
                        label: Option[Elem],

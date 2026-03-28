@@ -11,12 +11,12 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-class F7CheckboxOptField()(implicit val renderer: CheckboxF7FieldRenderer)
+class F7CheckboxOptField()(implicit val renderer: F7CheckboxFieldRenderer)
   extends F7FieldWithValue[Option[Boolean]]
-    with F7InputValidatableField
+    with F7FieldWithValidationShowHideValidation
     with F7Field
-    with StringSerializableF7Field
-    with FocusableF7Field
+    with F7FieldSerializableAsString
+    with F7FieldFocusable
     with F7FieldWithDisabled
     with F7FieldWithReadOnly
     with F7FieldWithEnabled

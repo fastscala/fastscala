@@ -7,7 +7,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-trait RadioF7FieldRenderer extends StandardF7FieldRenderer {
+trait F7RadioFieldRenderer extends F7StandardFieldRenderer {
 
   def render(
               field: F7RadioFieldBase[?],

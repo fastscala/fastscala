@@ -1,4 +1,0 @@
-package com.fastscala.components.form7.renderers
-
-
-trait CheckboxF7FieldRenderer extends F7InputValidatableFieldRenderer

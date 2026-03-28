@@ -12,28 +12,30 @@ import scala.xml.Elem
 
 
 trait F7FieldWithNumRows extends F7FieldInputFieldMixin with Mutable {
-  private val _rows: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
+  def defaultNumRows: Option[Int] = None
 
-  def rows: Option[Int] = _rows()
+  private val _numRows: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(defaultNumRows)
 
-  def rows(v: Option[Int]): this.type = mutate {
-    _rows() = () => v
+  def numRows: Option[Int] = _numRows()
+
+  def numRows(v: Option[Int]): this.type = mutate {
+    _numRows() = () => v
   }
 
-  def rows(v: Int): this.type = mutate {
-    _rows() = () => Some(v)
+  def numRows(v: Int): this.type = mutate {
+    _numRows() = () => Some(v)
   }
 
-  def rows(f: () => Option[Int]): this.type = mutate {
-    _rows() = f
+  def numRows(f: () => Option[Int]): this.type = mutate {
+    _numRows() = f
   }
 
   override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
-    _rows().map(rows => input.withAttr("rows", rows.toString)).getOrElse(input)
+    _numRows().map(rows => input.withAttr("rows", rows.toString)).getOrElse(input)
   }
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(_ & _rows.updateIfChanged({
+    super.updateFieldWithoutReRendering().map(_ & _numRows.updateIfChanged({
       case (old, None) => JS.removeAttr(elemId, "rows")
       case (old, Some(value)) => JS.setAttr(elemId)("rows", value.toString)
     }, Js.Void))

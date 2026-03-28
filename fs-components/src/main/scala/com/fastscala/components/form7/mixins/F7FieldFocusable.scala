@@ -5,7 +5,7 @@ import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 
-trait FocusableF7Field {
+trait F7FieldFocusable {
 
   def focusJs: Js
 }

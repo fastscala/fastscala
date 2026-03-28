@@ -2,15 +2,15 @@ package com.fastscala.components.form7.renderers
 
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.mixins.ValidatableF7Field
+import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-trait F7InputValidatableFieldRenderer extends StandardF7FieldRenderer {
+trait F7InputValidatableFieldRenderer extends F7ValidatableFieldRenderer {
 
   def render(
-              field: ValidatableF7Field,
+              field: F7FieldWithValidation,
             )(
               inputElem: Elem,
               label: Option[Elem],
@@ -18,23 +18,6 @@ trait F7InputValidatableFieldRenderer extends StandardF7FieldRenderer {
               validFeedback: Option[Elem],
               help: Option[Elem],
             ): Elem
-
-  def showOrUpdateValidation(
-                              field: ValidatableF7Field
-                            )(ns: NodeSeq): Js =
-    JS.setContents(field.invalidFeedbackId, ns) &
-      JS.removeClass(field.invalidFeedbackId, "visually-hidden") &
-      JS.addClass(field.validFeedbackId, "visually-hidden") &
-      JS.addClass(field.elemId, "is-invalid") &
-      JS.removeClass(field.elemId, "is-valid") &
-      JS.setAttr(field.elemId)("aria-describedby", field.invalidFeedbackId)
-
-  def hideValidation(
-                      field: ValidatableF7Field
-                    )(): Js =
-    JS.addClass(field.invalidFeedbackId, "visually-hidden") &
-      JS.removeClass(field.elemId, "is-invalid") &
-      JS.removeAttr(field.elemId, "aria-describedby")
 }
 
 

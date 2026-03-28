@@ -6,7 +6,7 @@ import com.fastscala.components.form7.renderers.*
 
 import scala.xml.NodeSeq
 
-class F7StringOptTextareaField()(implicit renderer: TextareaF7FieldRenderer) extends F7TextareaFieldBase[Option[String]] with F7FieldWithValueOpt[String] {
+class F7StringOptTextareaField()(implicit renderer: F7TextareaFieldRenderer) extends F7TextareaFieldBase[Option[String]] with F7FieldWithValueOpt[String] {
 
   def toString(value: Option[String]): String = value.getOrElse("")
 

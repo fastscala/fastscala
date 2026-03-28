@@ -2,15 +2,15 @@ package com.fastscala.components.form7.mixins
 
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.components.form7.renderers.F7InputValidatableFieldRenderer
+import com.fastscala.components.form7.renderers.{F7InputValidatableFieldRenderer, F7ValidatableFieldRenderer}
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.NodeSeq
 
 
-trait F7InputValidatableField extends ValidatableF7Field {
+trait F7FieldWithValidationShowHideValidation extends F7FieldWithValidation {
 
-  def renderer: F7InputValidatableFieldRenderer
+  def renderer: F7ValidatableFieldRenderer
 
   def showOrUpdateValidation(ns: NodeSeq): Js = renderer.showOrUpdateValidation(this)(ns)
 

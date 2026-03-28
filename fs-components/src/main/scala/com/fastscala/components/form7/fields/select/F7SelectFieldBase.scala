@@ -11,14 +11,14 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-abstract class F7SelectFieldBase[T]()(implicit val renderer: SelectF7FieldRenderer)
+abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRenderer)
   extends F7FieldWithValue[T]
-    with F7InputValidatableField
+    with F7FieldWithValidationShowHideValidation
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
     with F7Field
-    with StringSerializableF7Field
-    with FocusableF7Field
+    with F7FieldSerializableAsString
+    with F7FieldFocusable
     with F7FieldWithDisabled
     with F7FieldWithRequired
     with F7FieldWithReadOnly

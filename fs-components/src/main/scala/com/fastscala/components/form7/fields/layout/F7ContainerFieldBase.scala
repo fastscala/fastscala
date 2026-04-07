@@ -2,6 +2,8 @@ package com.fastscala.components.form7.fields.layout
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.F7FieldWithDisabled
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem

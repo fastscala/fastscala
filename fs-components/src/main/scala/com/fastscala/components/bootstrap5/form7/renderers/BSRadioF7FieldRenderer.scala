@@ -1,6 +1,6 @@
 package com.fastscala.components.bootstrap5.form7.renderers
 
-import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
+import com.fastscala.components.bootstrap5.form7.BSStandardModifiableF7InputElemFieldRenderer
 import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.components.form7.fields.radio.F7RadioFieldBase
 import com.fastscala.components.form7.renderers.F7RadioFieldRenderer
@@ -19,7 +19,7 @@ abstract class BSRadioF7FieldRenderer()(
   checkboxAlignment: CheckboxAlignment.Value,
   checkboxStyle: CheckboxStyle.Value,
   checkboxSide: CheckboxSide.Value,
-) extends F7RadioFieldRenderer with BSStandardF7ModifiableFieldRenderer {
+) extends F7RadioFieldRenderer with BSStandardModifiableF7InputElemFieldRenderer {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -79,22 +79,4 @@ abstract class BSRadioF7FieldRenderer()(
         help.getOrElse(div.visually_hidden).form_text.withIdIfNotSet(helpId).pipe(onHelpTransforms)
     }.pipe(onAroundDivTransforms)
   }
-
-  def showOrUpdateValidation(
-                              field: F7RadioFieldBase[?]
-                            )(ns: NodeSeq): Js =
-    JS.setContents(field.invalidFeedbackId, ns) &
-      JS.removeClass(field.invalidFeedbackId, "visually-hidden") &
-      JS.addClass(field.validFeedbackId, "visually-hidden") &
-      JS.addClassToElemsMatchingSelector(s"#${field.aroundId} > .form-check", "is-invalid") &
-      JS.addClassToElemsMatchingSelector(s"#${field.aroundId} > .form-check > input", "is-invalid") &
-      JS.removeClassFromElemsMatchingSelector(s"#${field.aroundId} > .form-check", "is-valid") &
-      JS.removeClassFromElemsMatchingSelector(s"#${field.aroundId} > .form-check > input", "is-valid")
-
-  def hideValidation(
-                      field: F7RadioFieldBase[?]
-                    )(): Js =
-    JS.addClass(field.invalidFeedbackId, "visually-hidden") &
-      JS.removeClassFromElemsMatchingSelector(s"#${field.aroundId} > .form-check", "is-invalid") &
-      JS.removeClassFromElemsMatchingSelector(s"#${field.aroundId} > .form-check > input", "is-invalid")
 }

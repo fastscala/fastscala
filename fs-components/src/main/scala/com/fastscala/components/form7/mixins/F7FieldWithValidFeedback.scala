@@ -1,6 +1,6 @@
 package com.fastscala.components.form7.mixins
 
-import com.fastscala.components.form7.{F7FieldMixinStatus, Form7}
+import com.fastscala.components.form7.{F7Field, F7FieldMixinStatus, Form7}
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -12,7 +12,7 @@ import scala.util.Success
 import scala.xml.Elem
 
 
-trait F7FieldWithValidFeedback extends F7FieldInputFieldMixin with Mutable {
+trait F7FieldWithValidFeedback extends F7Field with Mutable {
   lazy val _defaultValidFeedbackId = "valid_feedback_" + IdGen.id
 
   private var _validFeedbackId: () => String = () => _defaultValidFeedbackId

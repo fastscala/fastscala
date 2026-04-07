@@ -2,6 +2,7 @@ package com.fastscala.components.form7.fields.radio
 
 import com.fastscala.components.form7.Form7
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js

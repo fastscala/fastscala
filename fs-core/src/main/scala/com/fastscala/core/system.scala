@@ -189,31 +189,33 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                       handleFileUploadCallbackException(failure)
                     case None =>
                       stats.fileUploadCallbacksInProcessing.inc()
-                      parts.asScala.map(part =>
-                        try {
-                          executeFileUpload(
+                      val partsList = parts.asScala.toList
+                      try {
+                        executeFileUpload(
+                          partsList.map(part =>
                             new FSUploadedFile(
-                              name = part.getName,
-                              submittedFileName = part.getFileName,
+                              name = part.getFileName,
                               contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
                               bytes = () => Content.Source.asByteBuffer(part.getContentSource).array,
                               inputStream = () => Content.Source.asInputStream(part.getContentSource)
-                            ) :: Nil
+                            )
                           )
-                        } catch {
-                          case ex: Throwable =>
-                            handleFileUploadCallbackException(ex)
-                            throw ex
-                        } finally {
-                          stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
-                          stats.fileUploadCallbacksInProcessing.dec()
+                        )
+                      } catch {
+                        case ex: Throwable =>
+                          handleFileUploadCallbackException(ex)
+                          throw ex
+                      } finally {
+                        stats.fileUploadCallbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
+                        stats.fileUploadCallbacksInProcessing.dec()
+                        partsList.foreach(part => {
                           try {
                             part.close()
                           } finally {
                             part.delete()
                           }
-                        }
-                      ).reduceOption(_ & _).getOrElse(Js.Void)
+                        })
+                      }
                   }
                   Ok.js(rslt).respond(response, callback)
                 })
@@ -272,12 +274,13 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }
   }
+
   def executeKeepAlive()(implicit page: FSPage): Js = Js.Void
 
   def executeCallback(arg: String)(implicit func: FSFunc): Js = func.func(arg)
-  
+
   def executeFileUpload(files: Seq[FSUploadedFile])(implicit fileUpload: FSFileUpload): Js = fileUpload.func(files)
-  
+
   def onKeepAliveNotFound(missing: Missing.Value, sessionId: Option[String], pageId: String, session: Option[FSSession], page: Option[FSPage])(implicit req: Request): Js = {
     missing.updateStats()
     JS.void

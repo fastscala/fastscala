@@ -1,8 +1,9 @@
 package com.fastscala.components.bootstrap5.form7.renderers
 
-import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
+import com.fastscala.components.bootstrap5.form7.BSStandardModifiableF7InputElemFieldRenderer
 import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.components.form7.mixins.F7FieldWithValidation
+import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElem
 import com.fastscala.components.form7.renderers.F7CheckboxFieldRenderer
 import com.fastscala.components.utils.Mutable
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
@@ -15,14 +16,14 @@ abstract class BSCheckboxF7FieldRenderer()(
   checkboxAlignment: CheckboxAlignment.Value,
   checkboxStyle: CheckboxStyle.Value,
   checkboxSide: CheckboxSide.Value,
-) extends F7CheckboxFieldRenderer with BSStandardF7ModifiableFieldRenderer {
+) extends F7CheckboxFieldRenderer with BSStandardModifiableF7InputElemFieldRenderer {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   override def render(
-                       field: F7FieldWithValidation,
+                       field: F7FieldWithMainElem & F7FieldWithValidation,
                      )(
-                       inputElem: Elem,
+                       mainElem: Elem,
                        label: Option[Elem],
                        invalidFeedback: Option[Elem],
                        validFeedback: Option[Elem],
@@ -42,7 +43,7 @@ abstract class BSCheckboxF7FieldRenderer()(
         case com.fastscala.components.bootstrap5.form7.renderermodifiers.CheckboxSide.Opposite => elem.form_check_reverse
       })
       .mb_3.withId(field.aroundId).apply {
-        (inputElem.withIdIfNotSet(field.elemId).form_check_input.pipe(elem => {
+        (mainElem.withIdIfNotSet(field.mainElemId).form_check_input.pipe(elem => {
           if (invalidFeedback.isDefined) elem.is_invalid
           else if (validFeedback.isDefined) elem.is_valid
           else elem
@@ -54,8 +55,8 @@ abstract class BSCheckboxF7FieldRenderer()(
           }) ++
             label.map(help => "aria-labelledby" -> help.getIdOpt.getOrElse(field.helpId)) *
         ).pipe(onInputElemTransforms) ++
-          label.map(_.form_check_label.withFor(field.elemId).pipe(onLabelTransforms)).getOrElse(Empty) ++
-          invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.elemId).withIdIfNotSet(field.invalidFeedbackId).pipe(onInvalidFeedbackTransforms) ++
+          label.map(_.form_check_label.withFor(field.mainElemId).pipe(onLabelTransforms)).getOrElse(Empty) ++
+          invalidFeedback.getOrElse(div.visually_hidden).invalid_feedback.withFor(field.mainElemId).withIdIfNotSet(field.invalidFeedbackId).pipe(onInvalidFeedbackTransforms) ++
           validFeedback.getOrElse(div.visually_hidden).valid_feedback.withIdIfNotSet(field.validFeedbackId).pipe(onValidFeedbackTransforms) ++
           help.getOrElse(div.visually_hidden).form_text.withIdIfNotSet(field.helpId).pipe(onHelpTransforms)
           : NodeSeq)

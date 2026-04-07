@@ -28,7 +28,7 @@ object FSOptimizedResourceHandler {
   def cssLoaderUrl(files: String*): String = "/static/optimized/css_loader.css?" + files.map("f=" + URLEncoder.encode(_, "UTF-8")).mkString("&")
 
   def cssLoaderElem(files: String*): Elem =
-    <link></link>.withAttrs("rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files*))
+    <link></link>.withAttrs("rel" -> "stylesheet", "type" -> "text/css", "href" -> cssLoaderUrl(files *))
 }
 
 class FSOptimizedResourceHandler(
@@ -106,7 +106,7 @@ class FSOptimizedResourceHandler(
   val imgCache = mutable.WeakHashMap[String, Response]()
 
   override def handlerNoSession(response: JettyServerResponse, callback: Callback)(implicit req: Request): Option[Response] = Some(req).collect({
-    case Get("static", "optimized", "css_loader.css") =>
+    case r@Req(GET, "static" :: "optimized" :: "css_loader" :: Nil, "css", _) =>
       val files = Option(Request.getParameters(req).getValues("f")).getOrElse(Collections.emptyList).asScala.reverse
       val css: String = cssLoaderCache.getOrElseUpdate(files.mkString(";"), {
         files.toList.map(java.net.URLDecoder.decode(_, "UTF-8")).reverse.map(file => {
@@ -116,8 +116,7 @@ class FSOptimizedResourceHandler(
           }
         }).mkString("\n\n")
       })
-      Ok.css(css)
-        .addHeader("Cache-control", "public, max-age=7776000")
+      Ok.css(css).addHeader("Cache-control", "public, max-age=7776000")
 
     case r@Req(GET, "static" :: "optimized" :: restOfPath, suf@("jpg" | "jpeg"), _) =>
       if (imgCache.size > 50) {

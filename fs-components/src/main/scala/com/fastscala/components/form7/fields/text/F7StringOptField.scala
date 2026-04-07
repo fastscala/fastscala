@@ -7,7 +7,7 @@ import com.fastscala.components.form7.renderers.*
 import scala.xml.NodeSeq
 
 
-class F7StringOptField()(implicit renderer: TextF7FieldRenderer) extends F7InputOptFieldBase[String] {
+class F7StringOptField()(implicit renderer: F7InputFieldRenderer) extends F7InputOptFieldBase[String] {
 
   def toString(value: Option[String]): String = value.getOrElse("")
 

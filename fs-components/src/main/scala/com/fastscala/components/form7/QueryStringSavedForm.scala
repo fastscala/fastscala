@@ -1,7 +1,8 @@
 package com.fastscala.components.form7
 
 import com.fastscala.components.form5.fields.StringSerializableField
-import com.fastscala.components.form7.mixins.{F7FieldWithId, F7FieldSerializableAsString}
+import com.fastscala.components.form7.mixins.F7FieldSerializableAsString
+import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElemId
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
@@ -13,7 +14,7 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 
 trait QueryStringSavedForm extends Form7 {
 
-  type F7FieldWithIdAndStringSerializableF7Field = F7FieldWithId & F7FieldSerializableAsString
+  type F7FieldWithIdAndStringSerializableF7Field = F7FieldWithMainElemId & F7FieldSerializableAsString
 
   override def initForm()(implicit fsc: FSContext): Unit = {
     super.initForm()

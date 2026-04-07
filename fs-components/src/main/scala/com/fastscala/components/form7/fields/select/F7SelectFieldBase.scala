@@ -2,6 +2,8 @@ package com.fastscala.components.form7.fields.select
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.{F7FieldWithAdditionalAttrs, F7FieldWithDisabled}
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -12,13 +14,14 @@ import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRenderer)
-  extends F7FieldWithValue[T]
-    with F7FieldWithValidationShowHideValidation
+  extends F7Field
+    with F7FieldWithValue[T]
+    with F7FieldWithoutChildren
+    with F7FieldWithMainElemWithValidation
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
-    with F7Field
     with F7FieldSerializableAsString
-    with F7FieldFocusable
+    with F7FieldFocusableMainElem
     with F7FieldWithDisabled
     with F7FieldWithRequired
     with F7FieldWithReadOnly
@@ -29,7 +32,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRender
     with F7FieldWithHelp
     with F7FieldWithName
     with F7FieldWithLabel
-    with F7FieldWithId
+    with F7FieldWithMainElemId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
     with F7FieldWithOptionsNsLabel[T] {
@@ -54,12 +57,10 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRender
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
-
   override def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): Try[Js] = (for {
     (renderedOptions, ids2Option, option2Id) <- currentRenderedOptions
     valueId <- option2Id.get(currentValue)
-  } yield JS.setElementValue(elemId, valueId)).map(Success(_)).getOrElse(Failure(new Exception("Needs rerender")))
+  } yield JS.setElementValue(mainElemId, valueId)).map(Success(_)).getOrElse(Failure(new Exception("Needs rerender")))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
@@ -77,7 +78,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRender
     })
 
     val onchangeJs = fsc.callback(
-      JS.elementValueById(elemId),
+      JS.elementValueById(mainElemId),
       id => {
         ids2Option.get(id) match {
           case Some(value) if currentValue == value => JS.void
@@ -96,7 +97,7 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRender
     ).cmd
 
     renderer.render(this)(
-      inputElem = processInputElem(<select
+      mainElem = processMainElem(<select
         id={id.getOrElse(null)}
         onchange={onchangeJs}>
           {optionsRendered}

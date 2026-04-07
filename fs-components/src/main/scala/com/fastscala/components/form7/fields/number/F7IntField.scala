@@ -2,12 +2,13 @@ package com.fastscala.components.form7.fields.number
 
 import com.fastscala.components.form7.fields.F7InputFieldBase
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
 import com.fastscala.components.form7.renderers.*
 
 import java.util.regex.Pattern
 
 
-class F7IntField()(implicit renderer: TextF7FieldRenderer) extends F7NumericFieldBase[Int] {
+class F7IntField()(implicit renderer: F7InputFieldRenderer) extends F7NumericFieldBase[Int] {
 
   override def defaultValue: Int = 0
 

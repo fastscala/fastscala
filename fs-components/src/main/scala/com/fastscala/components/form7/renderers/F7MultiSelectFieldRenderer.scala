@@ -7,7 +7,7 @@ import com.fastscala.components.form7.mixins.F7FieldWithValidation
 
 import scala.xml.{Elem, NodeSeq}
 
-trait F7MultiSelectFieldRenderer extends F7InputValidatableFieldRenderer {
+trait F7MultiSelectFieldRenderer extends F7ValidatableFieldWithMainElemRenderer {
 
   def renderOption(
                     selected: Boolean,

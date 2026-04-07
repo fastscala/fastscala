@@ -5,7 +5,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form7.*
-import com.fastscala.components.form7.renderers.F7StandardFieldRenderer
+import com.fastscala.utils.IdGen
 
 import scala.xml.NodeSeq
 
@@ -13,11 +13,16 @@ trait F7FieldWithValidation extends F7Field
   with F7FieldWithOnChangedField
   with F7FieldWithValidationRules {
 
-  def visible: () => Boolean = () => enabled
+  def labelId: String
+
+  def invalidFeedbackId: String = "invalid_feedback_" + IdGen.id
+
+  def validFeedbackId: String
+
+  def helpId: String
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
-    super.updateFieldWithoutReRendering().map(_ &
-      updateValidation())
+    super.updateFieldWithoutReRendering().map(_ & updateValidation())
 
   override def postValidation(errors: Seq[(F7Field, NodeSeq)])(implicit form: Form7, fsc: FSContext): Js = {
     updateValidation()
@@ -46,11 +51,4 @@ trait F7FieldWithValidation extends F7Field
       hideValidation()
     } else JS.void
   }
-
-  override def postSubmit()(implicit form: Form7, fsc: FSContext): Js = super.postSubmit() & {
-    setFilled()
-    JS.void
-  }
-
-  override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
 }

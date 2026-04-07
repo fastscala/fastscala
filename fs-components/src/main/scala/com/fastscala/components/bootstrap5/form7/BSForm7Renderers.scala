@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.form7
 
 import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
-import com.fastscala.components.bootstrap5.form7.renderers.{BSAceEditorF7FieldRenderer, BSCheckboxF7FieldRenderer, BSF7FormRenderer, BSFormInputGroupF7FieldRenderer, BSRadioF7FieldRenderer, BSStandardF7FieldRenderer}
+import com.fastscala.components.bootstrap5.form7.renderers.*
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.fields.*
 import com.fastscala.components.form7.fields.submit.F7SubmitButtonField
@@ -19,7 +19,7 @@ abstract class BSForm7Renderers()(implicit checkboxAlignment: CheckboxAlignment.
 
   implicit val bsFormRenderer: BSForm7Renderers = this
 
-  implicit val textFieldRenderer: TextF7FieldRenderer & BSStandardF7FieldRenderer = new TextF7FieldRenderer with BSStandardF7FieldRenderer {
+  implicit val textFieldRenderer: F7InputFieldRenderer & BSStandardF7FieldRenderer = new F7InputFieldRenderer with BSStandardF7FieldRenderer {
     def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 
@@ -60,6 +60,10 @@ abstract class BSForm7Renderers()(implicit checkboxAlignment: CheckboxAlignment.
       if (!field.enabled) div.withId(field.aroundId).withStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(btn)
     }
+  }
+
+  implicit val fileUploadF7FieldRenderer: BSFileUploadF7FieldRenderer = new BSFileUploadF7FieldRenderer {
+    override def defaultRequiredFieldLabel: String = BSForm7Renderers.this.defaultRequiredFieldLabel
   }
 
   implicit val aceEditorFieldRenderer: BSAceEditorF7FieldRenderer = new BSAceEditorF7FieldRenderer {

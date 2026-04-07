@@ -7,7 +7,7 @@ import com.fastscala.components.form7.renderers.*
 import scala.xml.NodeSeq
 
 
-class F7StringField()(implicit renderer: TextF7FieldRenderer) extends F7InputFieldBase[String] {
+class F7StringField()(implicit renderer: F7InputFieldRenderer) extends F7InputFieldBase[String] {
 
   override def defaultValue: String = ""
 

@@ -8,7 +8,8 @@ import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.components.form7.{ChangedField, F7Field, Form7, SuggestSubmit}
 import com.fastscala.components.form7.fields.F7InputFieldBase
 import com.fastscala.components.form7.fields.text.F7TextareaFieldBase
-import com.fastscala.components.form7.mixins.{F7AceEditorFieldWithLanguage, F7AceEditorFieldWithTheme, F7FieldFocusable, F7FieldSerializableAsString, F7FieldWithAdditionalAttrs, F7FieldWithDependencies, F7FieldWithDisabled, F7FieldWithEnabled, F7FieldWithHelp, F7FieldWithId, F7FieldWithInputType, F7FieldWithLabel, F7FieldWithMaxlength, F7FieldWithName, F7FieldWithNumRows, F7FieldWithOnChangedField, F7FieldWithPlaceholder, F7FieldWithReadOnly, F7FieldWithRequired, F7FieldWithSyncToServerOnChange, F7FieldWithTabIndex, F7FieldWithValidFeedback, F7FieldWithValidation, F7FieldWithValidationRules, F7FieldWithValidationShowHideValidation, F7FieldWithValue}
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.*
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -19,28 +20,22 @@ import scala.util.Try
 import scala.xml.{Elem, NodeSeq}
 
 class F7AceEditorField(implicit val renderer: F7AceEditorValidatableFieldRenderer) extends F7FieldWithValue[String]
-  with F7FieldWithValidationShowHideValidation
+  with F7FieldWithoutChildren
+  with F7FieldWithMainElemWithValidation
   with F7FieldSerializableAsString
   with F7FieldWithValidation
-  with F7FieldWithDisabled
-  with F7FieldWithReadOnly
   with F7FieldWithEnabled
-  with F7FieldWithTabIndex
-  with F7FieldWithName
   with F7FieldWithNumRows
-  with F7FieldWithPlaceholder
   with F7FieldWithLabel
-  with F7FieldWithId
+  with F7FieldWithMainElemId
   with F7FieldWithValidFeedback
   with F7FieldWithHelp
-  with F7FieldWithMaxlength
   with F7FieldWithOnChangedField
-  with F7FieldWithSyncToServerOnChange
-  with F7FieldWithInputType
-  with F7FieldWithAdditionalAttrs
   with F7FieldWithDependencies
   with F7AceEditorFieldWithLanguage
   with F7AceEditorFieldWithTheme {
+
+  override def disabled: Boolean = false
 
   override def defaultValue: String = ""
 
@@ -59,8 +54,6 @@ class F7AceEditorField(implicit val renderer: F7AceEditorValidatableFieldRendere
   }
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
-
-  override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
 
   override def updateFieldValueWithoutReRendering(previous: String, current: String)(implicit form: Form7, fsc: FSContext): Try[Js] = ???
 

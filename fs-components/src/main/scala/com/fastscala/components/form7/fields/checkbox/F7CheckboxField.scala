@@ -2,6 +2,8 @@ package com.fastscala.components.form7.fields.checkbox
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.{F7FieldWithAdditionalAttrs, F7FieldWithDisabled}
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -13,7 +15,9 @@ import scala.xml.{Elem, NodeSeq}
 
 class F7CheckboxField()(implicit val renderer: F7CheckboxFieldRenderer)
   extends F7FieldWithValue[Boolean]
-    with F7FieldWithValidationShowHideValidation
+    with F7FieldWithoutChildren
+    with F7FieldFocusableMainElem
+    with F7FieldWithMainElemWithValidation
     with F7Field
     with F7FieldSerializableAsString
     with F7FieldFocusable
@@ -25,7 +29,7 @@ class F7CheckboxField()(implicit val renderer: F7CheckboxFieldRenderer)
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithLabel
-    with F7FieldWithId
+    with F7FieldWithMainElemId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies {
 
@@ -44,17 +48,15 @@ class F7CheckboxField()(implicit val renderer: F7CheckboxFieldRenderer)
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
-
   override def updateFieldValueWithoutReRendering(previous: Boolean, current: Boolean)(implicit form: Form7, fsc: FSContext): Try[Js] =
-    Success(JS.setChecked(elemId, current))
+    Success(JS.setChecked(mainElemId, current))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
     showingValidation = errorsToShow.nonEmpty
 
     val onchangeJs = fsc.callback(
-      JS.isCheckedById(elemId),
+      JS.isCheckedById(mainElemId),
       str => {
         str.toBooleanOption match {
           case Some(value) if currentValue == value => JS.void
@@ -75,7 +77,7 @@ class F7CheckboxField()(implicit val renderer: F7CheckboxFieldRenderer)
     ).cmd
 
     renderer.render(this)(
-      inputElem = processInputElem(<input type="checkbox"
+      mainElem = processMainElem(<input type="checkbox"
                       id={id.getOrElse(null)}
                       onchange={onchangeJs}
                       checked={if (currentValue) "true" else null}

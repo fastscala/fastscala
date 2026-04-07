@@ -1,4 +1,4 @@
-package com.fastscala.components.form7.mixins
+package com.fastscala.components.form7.mixins.mainelem
 
 import com.fastscala.components.form7.{F7FieldMixinStatus, Form7}
 import com.fastscala.components.utils.Mutable
@@ -11,7 +11,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 
-trait F7FieldWithTabIndex extends F7FieldInputFieldMixin with Mutable {
+trait F7FieldWithTabIndex extends F7FieldWithMainElem with Mutable {
   private val _tabIndex: F7FieldMixinStatus[Option[Int]] = F7FieldMixinStatus(None)
 
   def tabIndex: Option[Int] = _tabIndex()
@@ -28,13 +28,13 @@ trait F7FieldWithTabIndex extends F7FieldInputFieldMixin with Mutable {
     _tabIndex() = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processMainElem(input: Elem): Elem = super.processMainElem(input).pipe { input =>
     _tabIndex().map(tabIndex => input.withAttr("tabindex", tabIndex.toString)).getOrElse(input)
   }
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _tabIndex.updateIfChanged({
-      case (_, Some(tabindex)) => JS.setAttr(elemId)("tabindex", tabindex.toString)
-      case (_, None) => JS.removeAttr(elemId, "tabindex")
+      case (_, Some(tabindex)) => JS.setAttr(mainElemId)("tabindex", tabindex.toString)
+      case (_, None) => JS.removeAttr(mainElemId, "tabindex")
     }, Js.Void))
 }

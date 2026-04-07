@@ -3,6 +3,8 @@ package com.fastscala.components.form7.fields.submit
 import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.F7FieldWithDisabled
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -27,18 +29,17 @@ object F7SubmitButtonField {
 
 class F7SubmitButtonField[B](btn: FSContext => B, val toInitialState: B => B = identity[B], val toChangedState: B => B = identity[B], val toErrorState: B => B = identity[B])(implicit renderer: F7SubmitButtonFieldRenderer, evidence: F7SubmitBtnFieldRenderer[B])
   extends F7Field
+    with F7FieldWithoutChildren
     with F7FieldWithValidationRules
     with F7FieldWithReadOnly
     with F7FieldWithDependencies
     with F7FieldWithDisabled
     with F7FieldWithEnabled {
 
-  override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] = if (predicate.applyOrElse[F7Field, Boolean](this, _ => false)) List(this) else Nil
-
   val btnRenderer = JS.rerenderableP[(B => B, Form7)](_ =>
     implicit fsc => {
       case (transformer, form) =>
-        (evidence(transformer(btn(fsc)), fsc): Elem).withId(elemId).addOnClick((JS.focus(elemId) & form.submitFormClientSide()).cmd)
+        (evidence(transformer(btn(fsc)), fsc): Elem).withId(mainElemId).addOnClick((JS.focus(mainElemId) & form.submitFormClientSide()).cmd)
     }
   )
 

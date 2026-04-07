@@ -7,7 +7,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 
-trait F7RadioFieldRenderer extends F7StandardFieldRenderer {
+trait F7RadioFieldRenderer {
 
   def render(
               field: F7RadioFieldBase[?],
@@ -21,9 +21,9 @@ trait F7RadioFieldRenderer extends F7StandardFieldRenderer {
 
   def showOrUpdateValidation(
                               field: F7RadioFieldBase[?]
-                            )(ns: NodeSeq): Js
+                            )(ns: NodeSeq): Js = ValidationUtils.RadioField.showOrUpdateValidation(field)(ns)
 
   def hideValidation(
                       field: F7RadioFieldBase[?]
-                    )(): Js
+                    )(): Js = ValidationUtils.RadioField.hideValidation(field)
 }

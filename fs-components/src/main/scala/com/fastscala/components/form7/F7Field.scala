@@ -1,10 +1,11 @@
 package com.fastscala.components.form7
 
+import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElemId
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
-import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithId, F7FieldWithOnChangedField, F7FieldWithState}
+import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithOnChangedField, F7FieldWithState}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.utils.IdGen
 
@@ -15,10 +16,7 @@ import scala.xml.{Elem, NodeSeq}
  * A field can contain other fields.
  */
 trait F7Field
-  extends F7FieldWithDependencies
-    with F7FieldWithState
-    with ElemWithId
-    with F7FieldWithId {
+  extends F7FieldWithDependencies with F7FieldWithState {
 
   var fieldStatuses: List[F7FieldMixinStatus[?]] = Nil
 
@@ -78,7 +76,10 @@ trait F7Field
 
   def submit()(implicit form: Form7, fsc: FSContext): Js = JS.void
 
-  def postSubmit()(implicit form: Form7, fsc: FSContext): Js = JS.void
+  def postSubmit()(implicit form: Form7, fsc: FSContext): Js = {
+    setFilled()
+    JS.void
+  }
 
   def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field]
 

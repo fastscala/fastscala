@@ -1,6 +1,7 @@
 package com.fastscala.components.form7.fields.select
 
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
 import com.fastscala.components.form7.renderers.*
 
 

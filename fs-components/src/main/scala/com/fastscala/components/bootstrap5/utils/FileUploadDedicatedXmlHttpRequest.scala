@@ -13,19 +13,19 @@ import java.util.zip.ZipInputStream
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
 
-object FileUpload2 {
+object FileUploadDedicatedXmlHttpRequest {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   def apply(
              processUpload: Seq[FSUploadedFile] => Js,
              labelOpt: Option[Elem] = None,
-             transformSubmit: Elem => Elem = (_: Elem).apply("Upload").btn.btn_success.mt_2.w_100,
+             transformSubmitBtn: Elem => Elem = (_: Elem).btn.btn_success.mt_2.w_100,
              transformProgress: Elem => Elem = (_: Elem).withStyle("height: 20px;").mt_2,
              transformProgressBar: Elem => Elem = identity[Elem],
-             buttonLbl: Option[String] = None,
+             submitBtnLbl: Option[String] = Some("Upload"),
              multiple: Boolean = false,
-             clipboardUpload: Boolean = false,
+             clipboardUploadEnabled: Boolean = false,
              acceptTypes: Option[String] = None,
              inputClasses: String = "form-control",
              uploadTimeoutMillis: Long = 600000
@@ -39,46 +39,7 @@ object FileUpload2 {
     val progressBarId = IdGen.id("progressBar")
     val inputId = IdGen.id("input")
     val buttonId = IdGen.id("btn")
-    ScalaXmlElemUtils.showIf(clipboardUpload) {
-      val callback = fsc.callbackJSON(JS("[fileName, fileType, base64String]"), json => {
-        json.arrayOrObject(
-          JS.void,
-          {
-            case Vector(fileName, fileType, contentsEncoded) =>
-              val bytes = Base64.getDecoder().decode(contentsEncoded.asString.get)
-              processUpload(
-                Seq(new FSUploadedFile(
-                  fileName.asString.get,
-                  fileName.asString.get,
-                  fileType.asString.get,
-                  () => bytes,
-                  () => new ByteArrayInputStream(bytes)
-                ))
-              )
-          },
-          obj => JS.void
-        )
-      })
-      JS.inScriptTag(JS(
-        s"""document.addEventListener('paste', function (evt) {
-           |    const items = evt.clipboardData.items;
-           |    if (items.length === 0) { return; }
-           |    const item = items[0];
-           |    const blob = item.getAsFile();
-           |    const fileName = blob.name;
-           |    const fileType = blob.type;
-           |	  const reader = new FileReader();
-           |	  reader.onloadend = () => {
-           |	  	const base64String = reader.result
-           |		  	.replace('data:', '')
-           |		  	.replace(/^.+,/, '');
-           |     $callback
-           |	};
-           |	reader.readAsDataURL(blob);
-           |});
-           |""".stripMargin
-      ).onDOMContentLoaded)
-    } ++
+    ScalaXmlElemUtils.showIf(clipboardUploadEnabled)(FileUpload.pasteFromClipboard(processUpload)) ++
       <form>
         {
         labelOpt.map(label => label.withFor(inputId)).getOrElse(Empty)
@@ -88,8 +49,8 @@ object FileUpload2 {
         transformProgress(<div class="progress" role="progressbar">{transformProgressBar(<div class="progress-bar progress-bar-striped progress-bar-animated"></div>.withId(progressBarId))}</div>.withId(progressId).withStyle("display:none;"))
         }
         {
-        transformSubmit(
-          BSBtn().BtnPrimary.sm.id(buttonId).withStyle("display:none").lbl(buttonLbl.getOrElse("")).onclick(JS.hide(buttonId) & JS.show(progressId) & Js(
+        transformSubmitBtn(
+          BSBtn().BtnPrimary.sm.id(buttonId).withStyle("display:none").lbl(submitBtnLbl.getOrElse("")).onclick(JS.hide(buttonId) & JS.show(progressId) & Js(
             s"""
                |var fileInput = document.getElementById(${JS.asJsStr(inputId)});
                |var formdata = new FormData();
@@ -118,29 +79,4 @@ object FileUpload2 {
         }
       </form>
   }
-
-  def withZipSupport(
-                      callback: List[(String, Array[Byte])] => Js,
-                      labelOpt: Option[Elem] = None,
-                      transformSubmit: Elem => Elem = (_: Elem).apply("Upload").btn.btn_success.mt_2.w_100,
-                      buttonLbl: Option[String] = None,
-                      multiple: Boolean = false
-                    )(implicit fsc: FSContext): NodeSeq = apply(uploadedFiles =>
-
-    callback(uploadedFiles.flatMap(uploadedFile => {
-      if (uploadedFile.name.trim.toLowerCase.endsWith(".zip")) {
-        val zipFile = new ZipInputStream(new ByteArrayInputStream(uploadedFile.bytes()))
-
-        Iterator.continually(zipFile.getNextEntry).takeWhile(_ != null).map(entry => {
-          (entry.getName, Iterator.continually(zipFile.read()).takeWhile(_ >= 0).map(_.toByte).toArray[Byte])
-        }).toList
-      } else {
-        List((uploadedFile.name, uploadedFile.bytes()))
-      }
-    }).toList)
-    , labelOpt = labelOpt
-    , transformSubmit = transformSubmit
-    , buttonLbl = buttonLbl
-    , multiple = multiple
-  )
 }

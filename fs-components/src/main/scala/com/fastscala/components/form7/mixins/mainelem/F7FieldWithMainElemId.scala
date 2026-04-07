@@ -1,8 +1,8 @@
-package com.fastscala.components.form7.mixins
+package com.fastscala.components.form7.mixins.mainelem
 
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId, Mutable}
 
-trait F7FieldWithId extends Mutable with ElemWithRandomId {
+trait F7FieldWithMainElemId extends F7FieldWithMainElem {
   var _id: () => Option[String] = () => None
 
   def id: Option[String] = _id()
@@ -15,5 +15,5 @@ trait F7FieldWithId extends Mutable with ElemWithRandomId {
     _id = () => Some(v)
   }
 
-  override def elemId: String = _id().getOrElse(super.elemId)
+  override def mainElemId: String = _id().getOrElse(super.mainElemId)
 }

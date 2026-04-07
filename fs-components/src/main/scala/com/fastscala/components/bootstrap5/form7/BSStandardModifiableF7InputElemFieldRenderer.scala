@@ -4,7 +4,7 @@ import com.fastscala.components.utils.Mutable
 
 import scala.xml.Elem
 
-trait BSStandardF7ModifiableFieldRenderer extends Mutable {
+trait BSStandardModifiableF7InputElemFieldRenderer extends Mutable {
 
   protected var onAroundDivTransforms: Elem => Elem = identity[Elem]
   protected var onLabelTransforms: Elem => Elem = identity[Elem]

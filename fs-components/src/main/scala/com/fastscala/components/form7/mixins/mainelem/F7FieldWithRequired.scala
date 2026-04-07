@@ -1,5 +1,7 @@
-package com.fastscala.components.form7.mixins
+package com.fastscala.components.form7.mixins.mainelem
 
+import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
 import com.fastscala.components.form7.{F7FieldMixinStatus, Form7}
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
@@ -11,7 +13,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 
-trait F7FieldWithRequired extends F7FieldInputFieldMixin with Mutable {
+trait F7FieldWithRequired extends F7FieldWithMainElem with Mutable {
   private val _required: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
 
   def required: Boolean = _required()
@@ -30,7 +32,7 @@ trait F7FieldWithRequired extends F7FieldInputFieldMixin with Mutable {
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _required.updateIfChanged({
-      case (_, true) => JS.setAttr(elemId)("required", "true")
-      case (_, false) => JS.removeAttr(elemId, "required")
+      case (_, true) => JS.setAttr(mainElemId)("required", "true")
+      case (_, false) => JS.removeAttr(mainElemId, "required")
     }, Js.Void))
 }

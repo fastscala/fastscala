@@ -2,6 +2,8 @@ package com.fastscala.components.form7.fields.multiselect
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.{F7FieldWithAdditionalAttrs, F7FieldWithDisabled}
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -13,12 +15,13 @@ import scala.xml.{Elem, NodeSeq}
 
 abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: F7MultiSelectFieldRenderer)
   extends F7FieldWithValue[Set[T]]
-    with F7FieldWithValidationShowHideValidation
+    with F7FieldWithoutChildren
+    with F7FieldWithMainElemWithValidation
     with F7FieldWithOptions[T]
     with F7FieldWithOptionIds[T]
     with F7Field
     with F7FieldSerializableAsString
-    with F7FieldFocusable
+    with F7FieldFocusableMainElem
     with F7FieldWithDisabled
     with F7FieldWithRequired
     with F7FieldWithReadOnly
@@ -29,7 +32,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: F7MultiSelectF
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithLabel
-    with F7FieldWithId
+    with F7FieldWithMainElemId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
     with F7FieldWithOptionsNsLabel[T] {
@@ -49,14 +52,12 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: F7MultiSelectF
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
-
   override def updateFieldValueWithoutReRendering(previous: Set[T], current: Set[T])(implicit form: Form7, fsc: FSContext): Try[Js] = (for {
     (renderedOptions, ids2Option, option2Id) <- currentRenderedOptions
   } yield {
     val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
     JS {
-      s"""var element = document.getElementById('${elemId}');
+      s"""var element = document.getElementById('$mainElemId');
          |var selected = [${selectedIndexes.mkString(",")}];
          |for (var i = 0; i < element.options.length; i++) {
          |    element.options[i].selected = selected.includes(i);
@@ -80,7 +81,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: F7MultiSelectF
     })
 
     val onchangeJs = fsc.callback(
-      JS.selectedValues(JS.elementById(elemId)),
+      JS.selectedValues(JS.elementById(mainElemId)),
       ids => {
         val value = ids.split(",").filter(_.trim != "").toSet[String].map(id => ids2Option(id))
         if (currentValue != value) {
@@ -95,7 +96,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: F7MultiSelectF
     ).cmd
 
     renderer.render(this)(
-      inputElem = processInputElem(<select
+      mainElem = processMainElem(<select
               id={id.getOrElse(null)}
               multiple="multiple"
               onblur={onchangeJs}

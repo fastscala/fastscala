@@ -3,6 +3,7 @@ package com.fastscala.components.form7.fields.number
 import com.fastscala.components.form7.F7Field
 import com.fastscala.components.form7.fields.{F7InputFieldBase, F7InputOptFieldBase}
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
 import com.fastscala.components.form7.renderers.*
 
 import java.text.DecimalFormat
@@ -10,7 +11,7 @@ import java.util.regex.Pattern
 import scala.xml.NodeSeq
 
 
-class F7IntOptField()(implicit renderer: TextF7FieldRenderer) extends F7NumericOptFieldBase[Int] {
+class F7IntOptField()(implicit renderer: F7InputFieldRenderer) extends F7NumericOptFieldBase[Int] {
 
   def toString(value: Option[Int]): String = value.map(value => prefix + " " + new DecimalFormat("0.#").format(value) + " " + suffix).map(_.trim).getOrElse("")
 

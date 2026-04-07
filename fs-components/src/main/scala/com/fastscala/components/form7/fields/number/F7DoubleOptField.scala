@@ -3,13 +3,14 @@ package com.fastscala.components.form7.fields.number
 import com.fastscala.components.form7.F7Field
 import com.fastscala.components.form7.fields.{F7InputFieldBase, F7InputOptFieldBase}
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
 import com.fastscala.components.form7.renderers.*
 
 import java.text.DecimalFormat
 import java.util.regex.Pattern
 import scala.xml.NodeSeq
 
-class F7DoubleOptField()(implicit renderer: TextF7FieldRenderer) extends F7NumericOptFieldBase[Double] {
+class F7DoubleOptField()(implicit renderer: F7InputFieldRenderer) extends F7NumericOptFieldBase[Double] {
 
   def toString(value: Option[Double]): String = value.map(value => prefix + " " + value + " " + suffix).map(_.trim).getOrElse("")
 

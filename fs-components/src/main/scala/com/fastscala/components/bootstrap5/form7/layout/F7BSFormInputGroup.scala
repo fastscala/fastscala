@@ -9,6 +9,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
+import com.fastscala.utils.IdGen
 
 import scala.xml.{Elem, Node, NodeSeq}
 
@@ -21,6 +22,8 @@ class F7BSFormInputGroup()(groupChildren: F7Field*)(implicit renderer: BSFormInp
   override def aroundClass: String = ""
 
   override def children: Seq[(String, F7Field)] = groupChildren.map("" -> _)
+
+  lazy val inputGroupId: String = "input_group_" + IdGen.id
 
   override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     currentlyEnabled = enabled
@@ -107,10 +110,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*)(implicit renderer: BSFormInp
     } else JS.void
   }
 
-  def showValidation(): Js =
-    JS.addClass(elemId, "is-invalid") &
-      JS.removeClass(elemId, "is-valid")
+  def showValidation(): Js = JS.addClass(inputGroupId, "is-invalid") & JS.removeClass(inputGroupId, "is-valid")
 
-  def hideValidation(): Js =
-    JS.removeClass(elemId, "is-invalid")
+  def hideValidation(): Js = JS.removeClass(inputGroupId, "is-invalid")
 }

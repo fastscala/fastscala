@@ -222,7 +222,7 @@ trait TableBase extends DataTypeSupport {
     fieldsList.zipWithIndex.foreach({
       case (field, idx) =>
         field.setAccessible(true)
-        setValue(rs, field, prefix, field.getType, instance)
+        setValue(rs, field, prefix, field.getType, instance, tableName)
     })
     instance
   }

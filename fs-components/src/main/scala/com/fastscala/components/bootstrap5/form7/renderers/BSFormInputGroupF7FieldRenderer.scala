@@ -1,6 +1,6 @@
 package com.fastscala.components.bootstrap5.form7.renderers
 
-import com.fastscala.components.bootstrap5.form7.BSStandardF7ModifiableFieldRenderer
+import com.fastscala.components.bootstrap5.form7.BSStandardModifiableF7InputElemFieldRenderer
 import com.fastscala.components.bootstrap5.form7.layout.F7BSFormInputGroup
 import com.fastscala.components.bootstrap5.form7.mixins.InputGroupSize
 import com.fastscala.components.bootstrap5.helpers.BSHelpers.{div, is_invalid}
@@ -40,7 +40,7 @@ trait BSFormInputGroupF7FieldRenderer extends Mutable {
   ): Elem = {
     div.withId(field.aroundId).mb_3.apply {
       (nodesBeforeInputGroup ++
-        input_group.withId(field.elemId)
+        input_group.withId(field.inputGroupId)
           .addClassIf(showErrors, is_invalid.getClassAttr)
           .addClass(inputGroupSize.`class`)
           .apply(nodesInsideInputGroup.map({

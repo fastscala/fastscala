@@ -10,7 +10,7 @@ import com.fastscala.scala_xml.js.JS
 
 import scala.xml.{Elem, NodeSeq}
 
-trait F7AceEditorValidatableFieldRenderer extends F7ValidatableFieldRenderer {
+trait F7AceEditorValidatableFieldRenderer {
 
   def render(field: F7AceEditorField)(
     aceEditor: AceEditor,

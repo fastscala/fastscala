@@ -1,5 +1,6 @@
-package com.fastscala.components.form7.mixins
+package com.fastscala.components.form7.mixins.mainelem
 
+import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElem
 import com.fastscala.components.form7.{F7FieldMixinStatus, Form7}
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
@@ -11,7 +12,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 
-trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin with Mutable {
+trait F7FieldWithAdditionalAttrs extends F7FieldWithMainElem with Mutable {
   private val _additionalAttrs: F7FieldMixinStatus[Seq[(String, String)]] = F7FieldMixinStatus(Nil)
 
   def additionalAttrs: Seq[(String, String)] = _additionalAttrs()
@@ -24,7 +25,7 @@ trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin with Mutable {
     _additionalAttrs() = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processMainElem(mainElem: Elem): Elem = super.processMainElem(mainElem).pipe { input =>
     input.withAttrs(_additionalAttrs() *)
   }
 
@@ -32,8 +33,8 @@ trait F7FieldWithAdditionalAttrs extends F7FieldInputFieldMixin with Mutable {
     super.updateFieldWithoutReRendering().map(_ & _additionalAttrs.updateIfChanged({
       case (old, cur) =>
         val removed = old.map(_._1).toSet -- cur.map(_._1).toSet
-        (removed.map(name => JS.removeAttr(elemId, name)).toList :::
-          cur.map({ case (attr, value) => JS.setAttr(elemId)(attr, value) }).toList)
+        (removed.map(name => JS.removeAttr(mainElemId, name)).toList :::
+          cur.map({ case (attr, value) => JS.setAttr(mainElemId)(attr, value) }).toList)
           .reduceOption[Js](_ & _).getOrElse(Js.Void)
     }, Js.Void))
 }

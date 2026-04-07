@@ -2,6 +2,8 @@ package com.fastscala.components.form7.fields.radio
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.{F7FieldWithAdditionalAttrs, F7FieldWithDisabled}
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -15,6 +17,7 @@ import scala.xml.{Elem, NodeSeq}
 
 abstract class F7RadioFieldBase[T]()(implicit val renderer: F7RadioFieldRenderer)
   extends F7FieldWithValidation
+    with F7FieldWithoutChildren
     with F7FieldSerializableAsString
     with F7FieldFocusable
     with F7FieldWithOptions[T]
@@ -28,7 +31,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: F7RadioFieldRenderer
     with F7FieldWithHelp
     with F7FieldWithName
     with F7FieldWithLabel
-    with F7FieldWithId
+    with F7FieldWithMainElemId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
     with F7FieldWithValue[T]
@@ -56,7 +59,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: F7RadioFieldRenderer
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
+  def focusJs: Js = ???
 
   override def updateFieldDisabledStatus(_disabled: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_disabled.updateIfChanged({
     case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
@@ -97,7 +100,7 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: F7RadioFieldRenderer
         }
       }).cmd
       (
-        processInputElem(<input id={option2Id(opt)} checked={if (currentValue == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>),
+        processMainElem(<input id={option2Id(opt)} checked={if (currentValue == opt) "checked" else null} onchange={onchange} type="radio" name={radioNameId}></input>),
         Some(<label>{_option2NodeSeq(opt)}</label>)
       )
     })

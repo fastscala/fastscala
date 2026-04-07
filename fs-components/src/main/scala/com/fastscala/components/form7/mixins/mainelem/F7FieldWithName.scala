@@ -1,4 +1,4 @@
-package com.fastscala.components.form7.mixins
+package com.fastscala.components.form7.mixins.mainelem
 
 import com.fastscala.components.form7.{F7FieldMixinStatus, Form7}
 import com.fastscala.components.utils.Mutable
@@ -11,7 +11,7 @@ import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.Elem
 
 
-trait F7FieldWithName extends F7FieldInputFieldMixin with Mutable {
+trait F7FieldWithName extends F7FieldWithMainElem with Mutable {
   private val _name: F7FieldMixinStatus[Option[String]] = F7FieldMixinStatus(None)
 
   def name(): Option[String] = _name()
@@ -28,13 +28,13 @@ trait F7FieldWithName extends F7FieldInputFieldMixin with Mutable {
     _name() = f
   }
 
-  override def processInputElem(input: Elem): Elem = super.processInputElem(input).pipe { input =>
+  override def processMainElem(input: Elem): Elem = super.processMainElem(input).pipe { input =>
     _name().map(name => input.withAttr("name", name)).getOrElse(input)
   }
 
   override def updateFieldWithoutReRendering()(implicit form: Form7, fsc: FSContext): scala.util.Try[Js] =
     super.updateFieldWithoutReRendering().map(_ & _name.updateIfChanged({
-      case (old, None) => JS.removeAttr(elemId, "name")
-      case (old, Some(value)) => JS.setAttr(elemId)("name", value)
+      case (old, None) => JS.removeAttr(mainElemId, "name")
+      case (old, Some(value)) => JS.setAttr(mainElemId)("name", value)
     }, Js.Void))
 }

@@ -2,6 +2,8 @@ package com.fastscala.components.form7.fields
 
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.mixins.*
+import com.fastscala.components.form7.mixins.mainelem.*
+import com.fastscala.components.form7.mixins.mainelem.{F7FieldWithAdditionalAttrs, F7FieldWithDisabled}
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -11,11 +13,12 @@ import com.fastscala.scala_xml.js.JS
 import scala.util.{Success, Try}
 import scala.xml.{Elem, NodeSeq}
 
-trait F7InputFieldBase[T]()(implicit val renderer: F7InputValidatableFieldRenderer)
+trait F7InputFieldBase[T]()(implicit val renderer: F7ValidatableFieldWithMainElemRenderer)
   extends F7FieldWithValue[T]
-    with F7FieldWithValidationShowHideValidation
+    with F7FieldWithoutChildren
+    with F7FieldWithMainElemWithValidation
     with F7FieldSerializableAsString
-    with F7FieldFocusable
+    with F7FieldFocusableMainElem
     with F7FieldWithDisabled
     with F7FieldWithRequired
     with F7FieldWithReadOnly
@@ -24,13 +27,13 @@ trait F7InputFieldBase[T]()(implicit val renderer: F7InputValidatableFieldRender
     with F7FieldWithName
     with F7FieldWithPlaceholder
     with F7FieldWithLabel
-    with F7FieldWithId
+    with F7FieldWithMainElemId
     with F7FieldWithValidFeedback
     with F7FieldWithHelp
     with F7FieldWithMaxlength
     with F7FieldWithOnChangedField
     with F7FieldWithSyncToServerOnChange
-    with F7FieldWithInputType
+    with F7FieldWithInputElemType
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies {
 
@@ -53,17 +56,15 @@ trait F7InputFieldBase[T]()(implicit val renderer: F7InputValidatableFieldRender
 
   override def submit()(implicit form: Form7, fsc: FSContext): Js = super.submit() & _setter(currentValue)
 
-  def focusJs: Js = JS.focus(elemId) & JS.select(elemId)
-
   override def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): Try[Js] =
-    Success(JS.setElementValue(elemId, this.toString(currentValue)))
+    Success(JS.setElementValue(mainElemId, this.toString(currentValue)))
 
   protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
     val errorsToShow: Seq[(F7Field, NodeSeq)] = if (shouldShowValidation_?) validate() else Nil
     showingValidation = errorsToShow.nonEmpty
 
     def sync(suggestSubmit: Boolean) = fsc.callback(
-      JS.elementValueById(elemId),
+      JS.elementValueById(mainElemId),
       str => {
         fromString(str) match {
           case Right(value) =>
@@ -84,7 +85,7 @@ trait F7InputFieldBase[T]()(implicit val renderer: F7InputValidatableFieldRender
     ).cmd
 
     renderer.render(this)(
-      inputElem = processInputElem(<input
+      mainElem = processMainElem(<input
         id={id.getOrElse(null)}
         type={inputType}
         onblur={sync(false)}

@@ -121,7 +121,7 @@ trait DataTypeSupport {
     case _ => throw new Exception(s"Unexpected field class ${clas.getSimpleName} for field ${field.getName}")
   }
 
-  def setValue(rs: WrappedResultSet, field: java.lang.reflect.Field, prefix: Option[String], valueType: Class[?], instance: Any, nullable: Boolean = false): Unit = try {
+  def setValue(rs: WrappedResultSet, field: java.lang.reflect.Field, prefix: Option[String], valueType: Class[?], instance: Any, tableName: String, nullable: Boolean = false): Unit = try {
     valueType.getName match {
 
       case "com.fastscala.db.computed.ComputedCol" =>
@@ -193,8 +193,8 @@ trait DataTypeSupport {
       case "io.circe.Json" => field.set(instance, io.circe.parser.parse(rs.string(columnNameForField(field, prefix))).right.get)
 
       case "scala.Option" =>
-        if (field.get(instance).isInstanceOf[None.type]) throw new Exception(s"Missing sample value for optional column ${columnNameForField(field)}")
-        setValue(rs, field, prefix, field.get(instance).asInstanceOf[Some[Any]].get.getClass, instance, true)
+        if (field.get(instance).isInstanceOf[None.type]) throw new Exception(s"Missing sample value for optional column ${columnNameForField(field)} on table ${tableName}")
+        setValue(rs, field, prefix, field.get(instance).asInstanceOf[Some[Any]].get.getClass, instance, tableName, true)
 
       case _ if field.getType.isEnum => field.set(instance, trustMe(field.getType, rs.string(columnNameForField(field, prefix))))
 

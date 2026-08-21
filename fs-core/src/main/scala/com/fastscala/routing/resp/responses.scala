@@ -72,11 +72,14 @@ trait BinaryResponse extends Response {
 
   def contentType: String
 
+  def attachmentFileNameOpt: Option[String]
+
   override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
     super.respond(response, callback)
     val responseHeaders = response.getHeaders
     responseHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
-    responseHeaders.put(HttpHeader.CONTENT_LENGTH, contents.length)
+    attachmentFileNameOpt.foreach(fileName => responseHeaders.put(HttpHeader.CONTENT_DISPOSITION, s"attachment; filename=\"$fileName\""))
+    responseHeaders.put(HttpHeader.CONTENT_LENGTH, contents.length.toString)
     response.write(true, BufferUtil.toBuffer(contents), callback)
     true
   }
@@ -87,10 +90,16 @@ trait OutputStreamResponse extends Response {
 
   def contentType: String
 
+  def size: Option[Int]
+
+  def attachmentFileNameOpt: Option[String]
+
   override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
     super.respond(response, callback)
     val responseHeaders = response.getHeaders
     responseHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
+    attachmentFileNameOpt.foreach(fileName => responseHeaders.put(HttpHeader.CONTENT_DISPOSITION, s"attachment; filename=\"$fileName\""))
+    size.foreach(size => responseHeaders.put(HttpHeader.CONTENT_LENGTH, size.toString))
     val baos = new ByteArrayOutputStream()
     val os = Content.Sink.asOutputStream(response)
     stream(baos)
@@ -129,56 +138,76 @@ object Ok {
 
   def js(js: Js) = new OkTextBased(js.cmd, "text/javascript;charset=utf-8")
 
-  def utf8WithContentType(text: String, contentType: String) = {
+  def utf8WithContentType(text: String, contentType: String, attachmentFileName: Option[String] = None) = {
     val _contentType = contentType
     new BinaryResponse {
       override def contents: Array[Byte] = text.getBytes("UTF-8")
 
+      override def attachmentFileNameOpt: Option[String] = attachmentFileName
+
       override def contentType: String = _contentType
 
       override def status: HttpStatus = HttpStatuses.OK
     }
   }
 
-  def utf8AutoDetectContentType(text: String, fileName: String) = new BinaryResponse {
+  def utf8AutoDetectContentType(text: String, fileName: String, attachmentFileName: Option[String] = None) = new BinaryResponse {
     override def contents: Array[Byte] = text.getBytes("UTF-8")
 
+    override def attachmentFileNameOpt: Option[String] = attachmentFileName
+
     override def contentType: String = Files.probeContentType(Path.of(fileName))
 
     override def status: HttpStatus = HttpStatuses.OK
   }
 
-  def binaryAutoDetectContentType(bytes: Array[Byte], fileName: String) = new BinaryResponse {
+  def binaryAutoDetectContentType(bytes: Array[Byte], fileName: String, attachmentFileName: Option[String] = None) = new BinaryResponse {
     override def contents: Array[Byte] = bytes
 
-    override def contentType: String = Files.probeContentType(Path.of(fileName))
-
-    override def status: HttpStatus = HttpStatuses.OK
-  }
-
-  def outputStreamAutoDetectContentType(streamOutput: OutputStream => Unit, fileName: String) = new OutputStreamResponse {
-    override def stream(os: OutputStream): Unit = streamOutput(os)
+    override def attachmentFileNameOpt: Option[String] = attachmentFileName
 
     override def contentType: String = Files.probeContentType(Path.of(fileName))
 
     override def status: HttpStatus = HttpStatuses.OK
   }
 
-  def outputStreamWithContentType(streamOutput: OutputStream => Unit, contentType: String) = {
-    val _contentType = contentType
+  def outputStreamAutoDetectContentType(streamOutput: OutputStream => Unit, fileName: String, size: Option[Int], attachmentFileName: Option[String] = None) = {
+    val _size = size
     new OutputStreamResponse {
       override def stream(os: OutputStream): Unit = streamOutput(os)
 
+      override def size: Option[Int] = _size
+
+      override def attachmentFileNameOpt: Option[String] = attachmentFileName
+
+      override def contentType: String = Files.probeContentType(Path.of(fileName))
+
+      override def status: HttpStatus = HttpStatuses.OK
+    }
+  }
+
+  def outputStreamWithContentType(streamOutput: OutputStream => Unit, contentType: String, fileName: String, size: Option[Int], attachmentFileName: Option[String] = None) = {
+    val _contentType = contentType
+    val _size = size
+    new OutputStreamResponse {
+      override def stream(os: OutputStream): Unit = streamOutput(os)
+
+      override def attachmentFileNameOpt: Option[String] = attachmentFileName
+
+      override def size: Option[Int] = _size
+
       override def contentType: String = _contentType
 
       override def status: HttpStatus = HttpStatuses.OK
     }
   }
 
-  def binaryWithContentType(bytes: Array[Byte], contentType: String) = {
+  def binaryWithContentType(bytes: Array[Byte], contentType: String, fileName: String, attachmentFileName: Option[String] = None) = {
     val _contentType = contentType
     new BinaryResponse {
       override def contents: Array[Byte] = bytes
+
+      override def attachmentFileNameOpt: Option[String] = attachmentFileName
 
       override def contentType: String = _contentType
 

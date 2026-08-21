@@ -18,9 +18,9 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   var onDropdownBtnTransforms: Elem => Elem = identity[Elem]
 
-  def dropdownBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
+  def dropdownBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
 
-  def dropdownBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
+  def dropdownBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
 
   def onDropdownBtnWrapper(f: Elem => Elem): this.type = mutate {
     onDropdownBtnTransforms = onDropdownBtnTransforms.pipe(onDropdownBtnTransforms => elem => f(onDropdownBtnTransforms(elem)))
@@ -28,9 +28,9 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
 
   var onDropdownIndividualBtnTransforms: Elem => Elem = identity[Elem]
 
-  def dropdownIndividualBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
+  def dropdownIndividualBtnClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
 
-  def dropdownIndividualBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): String = ""
+  def dropdownIndividualBtnStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
 
   def onDropdownIndividualBtnWrapper(f: Elem => Elem): this.type = mutate {
     onDropdownIndividualBtnTransforms = onDropdownIndividualBtnTransforms.pipe(onDropdownIndividualBtnTransforms => elem => f(onDropdownIndividualBtnTransforms(elem)))

@@ -8,6 +8,8 @@ case class ChangedFormState(from: Form7State.Value, to: Form7State.Value) extend
 
 case class ChangedField(field: F7Field) extends F7Event
 
+case class EnabledStatusChanged(field: F7Field) extends F7Event
+
 /**
  * Requested submit by, for example, pressing return.
  */

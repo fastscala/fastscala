@@ -110,7 +110,7 @@ class JsXmlUtils extends JsUtils {
       node.attribute("type").flatMap(_.headOption).map(_.toString)
         .exists(str => str == "text/javascript" || str == "module") =>
       NodeSeq.Empty
-    case node: Elem => new Elem(prefix = node.prefix, label = node.label, attributes1 = node.attributes, scope = node.scope, minimizeEmpty = node.minimizeEmpty, child = excludeJsInScriptTags(node.child: NodeSeq)*)
+    case node: Elem => new Elem(prefix = node.prefix, label = node.label, attributes1 = node.attributes, scope = node.scope, minimizeEmpty = node.minimizeEmpty, child = excludeJsInScriptTags(node.child: NodeSeq) *)
     case other: Seq[Node] => other
   }
 
@@ -118,7 +118,7 @@ class JsXmlUtils extends JsUtils {
     case node: Node if node.label == "script" &&
       node.attribute("type").flatMap(_.headOption).map(_.toString)
         .exists(str => str == "text/javascript" || str == "module") =>
-      Js(node.child.toString().replaceAll("\\n// <!\\[CDATA\\[", "").replaceAll("\\n// \\]\\]>", ""))
+      Js(node.child.map(_.toString()).mkString.replaceAll("\\n// <!\\[CDATA\\[", "").replaceAll("\\n// \\]\\]>", ""))
     case node: Node => node.child.map(extractJsInScriptTags).reduceOption(_ & _).getOrElse(Js.Void)
     case _ => Js.Void
   }
@@ -130,8 +130,8 @@ extension (js: Js) {
 
   def inScriptTagModule: Elem = JS.inScriptTagModule(js)
 
-  def printBeforeExec: Js = {
-    println("> " + js.cmd)
+  def printBeforeExec(label: String = "Running code"): Js = {
+    println(s"$label: " + js.cmd)
     JS.consoleLog(js.cmd) & js
   }
 

@@ -41,7 +41,7 @@ trait QueryStringSavedForm extends Form7 {
             |} else {
             |   ${JS.redirectTo(updatedUrl)}
             |}
-            |""".stripMargin).printBeforeExec
+            |""".stripMargin)
     }
   }
 }

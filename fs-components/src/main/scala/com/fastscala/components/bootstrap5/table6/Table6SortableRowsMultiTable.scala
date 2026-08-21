@@ -29,14 +29,14 @@ trait Table6SortableRowsMultiTable extends Table6Base with Table6RowsRetrievable
 
   implicit val jsonDecoder: Decoder[RowSorted] = semiauto.deriveDecoder[RowSorted]
 
-  override def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int], tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem = {
+  override def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem = {
     val transformed = super.transformTableBodyTrElem(elem)
     if (isSortableRow(row)) transformed.addClass("sortable-row").withAttr("row-id", getIdForRow(row)) else transformed
   }
 
   def sortableRowsMinDistancePx = 15
 
-  override def renderTableBody()(implicit fsc: FSContext, columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], knownTotalNumberOfRows: Option[Int], tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): Elem = {
+  override def renderTableBody()(implicit fsc: FSContext, columnsWithIds: Seq[(String, C)], rowsWithIds: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableRenderer: TableRerenderer, tableHeadRerenderer: TableHeadRerenderer, tableBodyRerenderer: TableBodyRerenderer, tableFootRerenderer: TableFootRerenderer): Elem = {
     val elem = super.renderTableBody()
 
     val callback = fsc.callbackJSONDecoded[RowSorted](

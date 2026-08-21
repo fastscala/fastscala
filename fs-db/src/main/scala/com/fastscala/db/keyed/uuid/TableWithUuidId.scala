@@ -32,11 +32,11 @@ trait TableWithUuidId[R <: RowWithUUID[R]] extends Table[R] with TableWithUUIDBa
   def _getForIds(uuid: UUID*)(implicit session: DBSession): List[R] = _selectWithAdditionalCols(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(uuid.map(_.toString).toArray[String]))).map(_._1)
 
   def deleteAll(rows: Seq[R]): Long = {
-    delete(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(rows.flatMap(_.uuid.map(_.toString)).toArray[String])))
+    delete(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(rows.flatMap(_.uuid.map(_.toString)).toArray[String])))
   }
 
   def deleteAllById(rows: Seq[UUID]): Long = {
-    delete(SQLSyntax.createUnsafely(""" WHERE uuid = ANY(?::UUID[])""", Seq(rows.map(_.toString).toArray[String])))
+    delete(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(rows.map(_.toString).toArray[String])))
   }
 }
 

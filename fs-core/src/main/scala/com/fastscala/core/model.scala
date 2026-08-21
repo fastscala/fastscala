@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-import it.unimi.dsi.util.XoRoShiRo128PlusRandom
+
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -48,7 +48,7 @@ class FSFileUpload(val id: String, val func: Seq[FSUploadedFile] => Js, var keep
   }
 }
 
-class FSFileDownload(val id: String, val contentType: String, val content: Either[() => Array[Byte], OutputStream => Unit], var keepAliveAt: Long = System.currentTimeMillis(), val debugLbl: Option[String] = None)(implicit
+class FSFileDownload(val id: String, val contentType: String, val fileName: String, val content: Either[() => Array[Byte], (OutputStream => Unit, Option[Int])], var keepAliveAt: Long = System.currentTimeMillis(), val debugLbl: Option[String] = None)(implicit
                                                                                                                                                                                                                      val fsc: FSContext
 ) {
 

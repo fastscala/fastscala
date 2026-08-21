@@ -6,7 +6,7 @@ import com.fastscala.components.utils.Mutable
 import com.fastscala.core.{FSContext, FSPageLike}
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.scala_xml.rerenderers.Rerenderer
 import com.fastscala.utils.IdGen
 
@@ -62,8 +62,8 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
                , backdropStatic: Boolean = false
                , focus: Boolean = true
                , keyboard: Boolean = true
-             )(implicit fsc: FSContext): Js =
-    append2DOM()(using fsc.page.rootFSContext) & {
+             )(implicit fsc: FSContext): Js = fsc.pipe(_.page.rootFSContext).pipe { implicit fsc =>
+    append2DOM() & {
       JS(
         s"""new bootstrap.Modal(document.getElementById('$modalId'), {
            |  backdrop: ${if (backdropStatic) "'static'" else backdrop.toString},
@@ -78,6 +78,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
           Some(eventListenerOnHidden()).filter(_ != Js.Void).map(addEventListenerOnHidden)
         ).flatten.reduceOption(_ & _).getOrElse(Js.Void)
     }
+  }
 
   def dispose(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).dispose()""")
 
@@ -108,10 +109,10 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def eventListenerOnHide()(implicit fsc: FSContext): Js =
     JS.removeId(modalId) &
-      fsc.callback(() => {
+      fsc.callback(Js.Void, _ => {
         deleteContext()
         onHideDefaultListenerServerSide()
-      })
+      }, debugLbl = Some("eventListenerOnHide"))
 
   def eventListenerOnHidden()(implicit fsc: FSContext): Js = Js.Void
 

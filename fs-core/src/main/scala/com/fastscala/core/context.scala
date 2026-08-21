@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-import it.unimi.dsi.util.XoRoShiRo128PlusRandom
+
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -138,7 +138,9 @@ class FSContext(
     parentFSContext.foreach(_.children -= this)
     if (__fsSystem.debug) {
       val path = this.fullPath
-      page.deletedCallbacksContextPath ++= functionsGenerated.map(id => id -> path)
+      page.deletedCallbacksContextPath ++= page.callbacks.map({
+        case (id, fsFunc) => id -> fsFunc.fullPath
+      })
     }
     page.callbacks --= functionsGenerated
     session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
@@ -154,12 +156,12 @@ class FSContext(
 
   def callback(func: () => Js): Js = callback(JS.void, _ => func())
 
-  def callback(arg: Js, func: String => Js, async: Boolean = true, expectReturn: Boolean = true, ignoreErrors: Boolean = false, env: Js = Js("{}")): Js = {
+  def callback(arg: Js, func: String => Js, async: Boolean = true, expectReturn: Boolean = true, ignoreErrors: Boolean = false, env: Js = Js("{}"), debugLbl: Option[String] = None): Js = {
     logger.trace(s"CREATING CALLBACK IN CONTEXT ${fullPath}")
     session.fsSystem.gc()
     val funcId = session.nextID()
     functionsGenerated += funcId
-    page.callbacks += funcId -> new FSFunc(funcId, str => func(str))
+    page.callbacks += funcId -> new FSFunc(funcId, str => func(str), debugLbl = debugLbl)
     session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
     session.fsSystem.stats.callbacksTotal.inc()
     session.fsSystem.stats.currentCallbacks.inc()
@@ -186,20 +188,20 @@ class FSContext(
   def fileDownloadByteArrayAutodetectContentType(fileName: String, download: () => Array[Byte]): String =
     fileDownloadByteArray(fileName, Files.probeContentType(Path.of(fileName)), download)
 
-  def fileDownloadStreamingAutodetectContentType(fileName: String, stream: OutputStream => Unit): String =
-    fileDownload(fileName, Files.probeContentType(Path.of(fileName)), Right(stream))
+  def fileDownloadStreamingAutodetectContentType(fileName: String, stream: OutputStream => Unit, size: Option[Int] = None): String =
+    fileDownload(fileName, Files.probeContentType(Path.of(fileName)), Right(stream -> size))
 
   def fileDownloadByteArray(fileName: String, contentType: String, download: () => Array[Byte]): String =
     fileDownload(fileName, contentType, Left(download))
 
-  def fileDownloadStreaming(fileName: String, contentType: String, stream: OutputStream => Unit): String =
-    fileDownload(fileName, contentType, Right(stream))
+  def fileDownloadStreaming(fileName: String, contentType: String, stream: OutputStream => Unit, size: Option[Int] = None): String =
+    fileDownload(fileName, contentType, Right(stream -> size))
 
-  private def fileDownload(fileName: String, contentType: String, content: Either[() => Array[Byte], OutputStream => Unit]): String = {
+  private def fileDownload(fileName: String, contentType: String, content: Either[() => Array[Byte], (OutputStream => Unit, Option[Int])]): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
     functionsFileDownloadGenerated += funcId
-    page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, content)
+    page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, fileName, content)
     session.fsSystem.stats.event(StatEvent.CREATE_FILE_DOWNLOAD, additionalFields = Seq("file_name" -> fileName, "content_type" -> contentType))
     session.fsSystem.stats.fileDownloadCallabacksTotal.inc()
     session.fsSystem.stats.currentFileDownloadCallbacks.inc()

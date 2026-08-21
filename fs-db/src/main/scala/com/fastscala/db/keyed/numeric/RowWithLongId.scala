@@ -6,12 +6,16 @@ import com.fastscala.db.keyed.{RowWithId, RowWithIdBase}
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
-trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
+import scala.reflect.ClassTag
+
+trait RowWithLongId[R <: RowWithLongId[R] : ClassTag] extends Row[R] with RowWithIdBase with RowWithId[java.lang.Long, R] {
   self: R =>
 
   @PrimaryKey var id: java.lang.Long = null
 
   def table: TableWithLongId[R]
+
+  def keyOpt: Option[java.lang.Long] = Option(id)
 
   override def key: java.lang.Long = id
 
@@ -32,13 +36,16 @@ trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase wit
     this
   }
 
-  def duplicate(): R = DB.localTx({ implicit session =>
+  def duplicate(): R = {
     val oldId = id
-    id = null
-    val newId = table.insertSQL(this).updateAndReturnGeneratedKey("id").apply()
-    id = oldId
-    table.getForIdOpt(newId).get
-  })
+    try {
+      id = null
+      val newId = DB.localTx({ implicit session => table.insertSQL(this).updateAndReturnGeneratedKey("id").apply() })
+      table.getForIdOpt(newId).get
+    } finally {
+      id = oldId
+    }
+  }
 
   def update(): Unit = {
     DB.localTx({ implicit session =>
@@ -73,13 +80,10 @@ trait RowWithLongId[R <: RowWithLongId[R]] extends Row[R] with RowWithIdBase wit
 
   override def hashCode(): Int = id.hashCode() * 41
 
-  override def equals(obj: Any): Boolean = {
-    if (obj.isInstanceOf[R]) {
-      val obj2 = obj.asInstanceOf[R]
-      (obj2.id != null && id != null && obj2.id == id) ||
-        (obj2.id == null && id == null && super.equals(obj2))
-    } else {
-      false
-    }
+  override def equals(obj: Any): Boolean = obj match {
+    case obj: R =>
+      (obj.keyOpt.isDefined && keyOpt.isDefined && obj.keyOpt == keyOpt) ||
+        (obj.keyOpt.isEmpty && keyOpt.isEmpty && super.equals(obj))
+    case _ => false
   }
 }

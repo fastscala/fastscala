@@ -15,7 +15,7 @@ import com.fastscala.utils.IdGen
 import scala.util.Try
 import scala.xml.{Elem, NodeSeq}
 
-class F7FileUploadField()(implicit renderer: F7FileUploadFieldRenderer)
+class F7FileField()(implicit renderer: F7FileFieldRenderer)
   extends F7FieldWithValue[Seq[F7UploadedFile]]
     with F7FieldWithoutChildren
     with F7FieldWithMainElem

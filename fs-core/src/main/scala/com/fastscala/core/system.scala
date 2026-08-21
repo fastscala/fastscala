@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-import it.unimi.dsi.util.XoRoShiRo128PlusRandom
+
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -242,9 +242,9 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                 fSFileDownload.content match {
                   case Left(array) =>
                     val bytes = array()
-                    Ok.binaryWithContentType(bytes, fSFileDownload.contentType)
-                  case Right(outputStream) =>
-                    Ok.outputStreamWithContentType(outputStream, fSFileDownload.contentType)
+                    Ok.binaryWithContentType(bytes, fSFileDownload.contentType, fSFileDownload.fileName)
+                  case Right((outputStream, sizeOpt)) =>
+                    Ok.outputStreamWithContentType(outputStream, fSFileDownload.contentType, fSFileDownload.fileName, sizeOpt)
                 }
               } catch {
                 case ex: Exception => handleFileDownloadCallbackException(ex)

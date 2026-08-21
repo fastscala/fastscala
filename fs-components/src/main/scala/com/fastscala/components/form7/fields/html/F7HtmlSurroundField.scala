@@ -13,7 +13,7 @@ import scala.xml.Elem
 
 
 class F7HtmlSurroundField[T <: F7Field](
-                                         surround: Elem => Elem
+                                         surround: FSContext => Elem => Elem
                                        )(
                                          field: T
                                        )
@@ -25,7 +25,7 @@ class F7HtmlSurroundField[T <: F7Field](
 
   override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem =
     if (!enabled) <div style="display:none;" id={aroundId}></div>
-    else <div id={aroundId}>{surround(field.render())}</div>
+    else <div id={aroundId}>{surround(fsc)(field.render())}</div>
 
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] =
     List(this).filter(_ => predicate.applyOrElse[F7Field, Boolean](this, _ => false)) :::

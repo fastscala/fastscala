@@ -15,7 +15,7 @@ trait F7FieldWithValidation extends F7Field
 
   def labelId: String
 
-  def invalidFeedbackId: String = "invalid_feedback_" + IdGen.id
+  lazy val invalidFeedbackId: String = "invalid_feedback_" + IdGen.id
 
   def validFeedbackId: String
 

@@ -1,14 +1,15 @@
 package com.fastscala.db.keyed.uuid
 
 import com.fastscala.db.keyed.RowWithId
-import com.fastscala.db.{TableWithUuidId, Row}
+import com.fastscala.db.{Row, TableWithUuidId}
 import org.postgresql.util.PSQLException
 import scalikejdbc.*
 import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
+import scala.reflect.ClassTag
 
-trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase with RowWithId[UUID, R] {
+trait RowWithUUID[R <: RowWithUUID[R] : ClassTag] extends Row[R] with RowWithUUIDBase with RowWithId[UUID, R] {
   self: R =>
 
   def table: TableWithUuidId[R]
@@ -36,7 +37,10 @@ trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase with 
   }
 
   def update(func: R => Unit): R = {
-    val inDB = reload()
+    val inDB = uuid match {
+      case Some(id) => table.getForIdOpt(id).get
+      case None => this
+    }
     func(inDB)
     inDB.save()
     copyFrom(inDB)
@@ -84,13 +88,10 @@ trait RowWithUUID[R <: RowWithUUID[R]] extends Row[R] with RowWithUUIDBase with 
 
   override def hashCode(): Int = uuid.hashCode() * 41
 
-  override def equals(obj: Any): Boolean = {
-    if (obj.isInstanceOf[R]) {
-      val obj2 = obj.asInstanceOf[R]
-      (obj2.uuid.isDefined && uuid.isDefined && obj2.uuid == uuid) ||
-        (obj2.uuid.isEmpty && uuid.isEmpty && super.equals(obj2))
-    } else {
-      false
-    }
+  override def equals(obj: Any): Boolean = obj match {
+    case obj: R =>
+      (obj.uuid.isDefined && uuid.isDefined && obj.uuid == uuid) ||
+        (obj.uuid.isEmpty && uuid.isEmpty && super.equals(obj))
+    case _ => false
   }
 }

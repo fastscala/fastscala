@@ -27,14 +27,14 @@ trait Table6Paginated extends Table6Base {
 
   lazy val currentPage = Lazy(defaultCurrentPage)
 
-  def maxPages: Int = knownTotalNumberOfRows().map(n => (n - 1) / currentPageSize()).getOrElse(currentPage() + 10)
+  def maxPages(implicit knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Int = knownTotalNumberOfRowsMat.value.map(n => (n - 1) / currentPageSize()).getOrElse(currentPage() + 10)
 
   override def rowsHints(): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
     offset = currentPage() * currentPageSize()
     , limit = currentPageSize()
   )
 
-  def visiblePages(): List[Int] =
+  def visiblePages()(implicit knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): List[Int] =
     (math.max(0, currentPage() - defaultNumberOfAdditionalPagesEachSide) to math.min(maxPages, (currentPage() + (defaultNumberOfAdditionalPagesEachSide * 2)))).take(defaultNumberOfAdditionalPagesEachSide * 2 + 1)
       .toList
       .filter(_ >= 0)
@@ -57,7 +57,7 @@ trait Table6Paginated extends Table6Base {
     onPageSizeSelectTransforms = onPageSizeSelectTransforms.pipe(onPageSizeSelectTransforms => elem => f(onPageSizeSelectTransforms(elem)))
   }
 
-  def renderPagesButtons()(implicit fsc: FSContext): Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
+  def renderPagesButtons()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
     BSBtn().BtnLight.lbl("«").callback(implicit fsc => {
       currentPage() = math.max(0, currentPage() - 1)
       rerender()
@@ -77,7 +77,7 @@ trait Table6Paginated extends Table6Base {
       }).btn.pipe(onPaginationButtonsTransforms)
   }
 
-  def renderPageSizeDropdown()(implicit fsc: FSContext): Elem = {
+  def renderPageSizeDropdown()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Elem = {
     ImmediateInputFields.select[Int](
       () => visiblePageSizes,
       () => currentPageSize(),
@@ -89,19 +89,19 @@ trait Table6Paginated extends Table6Base {
     ).mb_3.mx_3.pipe(onPageSizeSelectTransforms)
   }
 
-  def renderTableSizeInfo(from: Int, to: Int, pageSize: Int, total: Option[Int])(implicit fsc: FSContext): NodeSeq = {
+  def renderTableSizeInfo(from: Int, to: Int, pageSize: Int, total: Option[Int])(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {
     i18n_tableSizeInfo(from, to, pageSize, total).map(mesg => <div>{mesg}</div>.pipe(onTableSizeInfoTransforms)).getOrElse(NodeSeq.Empty)
   }
 
-  def renderTableSizeInfo()(implicit fsc: FSContext): NodeSeq = {
-    knownTotalNumberOfRows().map(knownTotalNumberOfRows => {
+  def renderTableSizeInfo()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {
+    knownTotalNumberOfRowsMat.value.map(knownTotalNumberOfRows => {
       val from = currentPage() * currentPageSize() + 1
       val to = math.min(knownTotalNumberOfRows, (currentPage() + 1) * currentPageSize())
       renderTableSizeInfo(from, to, to - from + 1, Some(knownTotalNumberOfRows))
     }).getOrElse(renderTableSizeInfo(currentPage() * currentPageSize() + 1, (currentPage() + 1) * currentPageSize(), currentPageSize(), None))
   }
 
-  def renderPaginationBottomControls()(implicit fsc: FSContext): NodeSeq = {
+  def renderPaginationBottomControls()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {
     if (hidePaginationBottomControlsIfUnnecessary && maxPages <= 1) NodeSeq.Empty
     else {
       row.apply {
@@ -112,6 +112,6 @@ trait Table6Paginated extends Table6Base {
     }
   }
 
-  override def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int]): Elem =
+  override def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem =
     super.transformTableWrapperElem(elem).withAppendedToContents(renderPaginationBottomControls())
 }

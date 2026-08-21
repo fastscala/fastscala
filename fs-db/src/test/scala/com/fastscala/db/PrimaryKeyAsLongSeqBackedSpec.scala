@@ -34,6 +34,14 @@ class PrimaryKeyAsLongSeqBackedSpec extends AnyFlatSpec with DBConn {
       assert(PrimaryKeyAsLongSeqBackedSpecTable.getForIdOpt(1).isDefined)
     })
   }
+  "duplicate" should "return the row by id" in {
+    DB.localTx({ implicit session =>
+      assert(PrimaryKeyAsLongSeqBackedSpecTable.selectAll().size == 1)
+      val single = PrimaryKeyAsLongSeqBackedSpecTable.selectAll().head
+      val dup = single.duplicate()
+      assert(PrimaryKeyAsLongSeqBackedSpecTable.selectAll().size == 2)
+    })
+  }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
       PrimaryKeyAsLongSeqBackedSpecTable.__dropTableSQL.foreach(_.execute())

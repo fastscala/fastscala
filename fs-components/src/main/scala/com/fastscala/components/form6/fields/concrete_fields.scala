@@ -304,7 +304,7 @@ class F6SaveButtonField[B](
 //        val previewRenderer = Js.rerenderable(rerenderer => implicit fsc => renderPreview(fsc)(currentValue))
 //        val actionUrl = fsc.fileUploadActionUrl({
 //          case Seq(uploadedFile: FSUploadedFile, _ *) =>
-//            currentValue = Some((uploadedFile.submittedFileName, uploadedFile.content))
+//            currentValue = Some((uploadedFile.name, uploadedFile.content))
 //            previewRenderer.rerender() &
 //              form.onEvent(ChangedField(this)) &
 //              (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &

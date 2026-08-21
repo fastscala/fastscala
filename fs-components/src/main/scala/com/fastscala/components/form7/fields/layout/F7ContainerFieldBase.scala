@@ -7,7 +7,7 @@ import com.fastscala.components.form7.mixins.mainelem.F7FieldWithDisabled
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 
 import scala.xml.{Elem, NodeSeq}
 
@@ -23,12 +23,19 @@ abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidationRu
     currentlyEnabled = enabled
     if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
     else {
-      val contents = children.map({ case (clas, field) =>
-        <div class={clas}>{field.render()}</div>
+      val contents = children.map({
+        case (clas, field) if field.enabled => <div class={clas} id={field.aroundId + "_container_wrapper"}>{field.render()}</div>
+        case (clas, field) if !field.enabled => <div class={clas} id={field.aroundId + "_container_wrapper"} style="display:none;">{field.render()}</div>
       }).reduceOption[NodeSeq](_ ++ _).getOrElse(NodeSeq.Empty)
       <div class={aroundClass} id={aroundId}>{contents}</div>
     }
   }
+
+  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = (event match {
+    case EnabledStatusChanged(field) if children.exists(_._2 == field) && field.enabled => JS.show(field.aroundId + "_container_wrapper")
+    case EnabledStatusChanged(field) if children.exists(_._2 == field) && !field.enabled => JS.hide(field.aroundId + "_container_wrapper")
+    case _ => JS.void
+  }) & super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 
   override def reRender()(implicit form: Form7, fsc: FSContext): Js = {
     if (enabled != currentlyEnabled) {
@@ -41,7 +48,4 @@ abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidationRu
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] =
     List(this).filter(_ => predicate.applyOrElse[F7Field, Boolean](this, _ => false)) :::
       children.toList.flatMap(_._2.fieldAndChildreenMatchingPredicate(predicate))
-
-  override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js =
-    super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 }

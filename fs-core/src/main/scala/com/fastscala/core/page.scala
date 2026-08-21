@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-import it.unimi.dsi.util.XoRoShiRo128PlusRandom
+
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -31,8 +31,9 @@ object FSPage {
 }
 
 /** Your own page implementation (should be a subclass)
+ *
  * @tparam R
- *   The result type of rendering the page
+ * The result type of rendering the page
  */
 trait FSPageImpl[R] {
   def render()(implicit fsc: FSContext): R
@@ -53,7 +54,7 @@ class FSPage(
               var wsQueue: List[Js] = Nil,
               var wsLock: AnyRef = new AnyRef,
               val debugLbl: Option[String] = None
-            ) extends FSPageLike  {
+            ) extends FSPageLike {
 
   override def page: FSPage = this
 
@@ -110,8 +111,8 @@ class FSPage(
 
   def inContextForOption[T](contextFor: AnyRef)(f: FSContext => T): Option[T] = {
     if (!key2FSContext.contains(contextFor)) None
-    if (key2FSContext(contextFor).deleted) None
-    Some(f(key2FSContext(contextFor)))
+    else if (key2FSContext(contextFor).deleted) None
+    else Some(f(key2FSContext(contextFor)))
   }
 
   def deleteContextFor(key: AnyRef): Unit = {
@@ -180,10 +181,12 @@ class FSPage(
          |  },
          |  initWebSocket: function() {
          |    if(!window._fs.ws) {
-         |      window._fs.ws = new WebSocket(location.origin.replace(/^http/, 'ws') + "/${session.fsSystem.FSPrefix}/ws?sessionId=${URLEncoder.encode(
-        fsc.session.id,
-        "UTF-8"
-      )}&pageId=${URLEncoder.encode(fsc.page.id, "UTF-8")}", "fs");
+         |      window._fs.ws = new WebSocket(location.origin.replace(/^http/, 'ws') + "/${session.fsSystem.FSPrefix}/ws?sessionId=${
+        URLEncoder.encode(
+          fsc.session.id,
+          "UTF-8"
+        )
+      }&pageId=${URLEncoder.encode(fsc.page.id, "UTF-8")}", "fs");
          |      window._fs.ws.onmessage = function(event) {
          |        try {eval(event.data);} catch(err) { console.log(err.message); console.log('While runnning the code:\\n' + event.data); }
          |      };

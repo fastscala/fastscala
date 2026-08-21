@@ -20,7 +20,7 @@ trait Table6SortableRows extends Table6Base {
 
   def sortableRowsHandle: Option[String] = None
 
-  override def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: Option[Int], tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem = {
+  override def transformTableBodyTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableBodyRerenderer: TableBodyRerenderer, trRerenderer: TrRerenderer, row: R, rowIdx: TableRowIdx, rowId: TableRowId): Elem = {
     val transformed = super.transformTableBodyTrElem(elem)
     if (isSortableRow(row)) transformed.addClass("sortable-row").withAttr("on-sorted" -> fsc.callback(Js("idx"), newIdx => sortedRow(row, newIdx.toInt)).cmd) else transformed
   }
@@ -31,7 +31,7 @@ trait Table6SortableRows extends Table6Base {
                                  fsc: FSContext,
                                  rowsWithIds: Seq[(String, R)],
                                  columnsWithIds: Seq[(String, C)],
-                                 knownTotalNumberOfRows: Option[Int],
+                                 knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized,
                                  tableRenderer: TableRerenderer,
                                  tableHeadRerenderer: TableHeadRerenderer,
                                  tableBodyRerenderer: TableBodyRerenderer,

@@ -45,7 +45,7 @@ class F7AceEditorField(implicit val renderer: F7AceEditorValidatableFieldRendere
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
-  private var currentAceEditor = Option.empty[AceEditor]
+  var currentAceEditor = Option.empty[AceEditor]
 
   override def loadFromString(str: String): Seq[(F7Field, NodeSeq)] = {
     currentValue = str
@@ -67,6 +67,8 @@ class F7AceEditorField(implicit val renderer: F7AceEditorValidatableFieldRendere
 
     val field = this
     val aceEditor = new AceEditor() {
+      override def elemId: String = mainElemId
+
       override def initalValue: String = field.currentValue
 
       override def defaultMode: Language.Value = language

@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-import it.unimi.dsi.util.XoRoShiRo128PlusRandom
+import org.apache.commons.rng.simple.RandomSource
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -59,7 +59,7 @@ class FSSession(
   val logger = LoggerFactory.getLogger(getClass.getName)
 
   private var idSeq = 0L
-  private lazy val xoRoShiRo128PlusRandom = new XoRoShiRo128PlusRandom()
+  private lazy val rng = RandomSource.XO_RO_SHI_RO_128_PP.create()
 
   private implicit def __fsContextOpt: Option[FSContext] = None
 
@@ -71,7 +71,7 @@ class FSSession(
 
   def nextID(prefix: String = ""): String = {
     if (useRandomIds) {
-      prefix + java.lang.Long.toHexString(xoRoShiRo128PlusRandom.nextLong())
+      prefix + java.lang.Long.toHexString(rng.nextLong())
     } else {
       session.synchronized {
         session.idSeq += 1

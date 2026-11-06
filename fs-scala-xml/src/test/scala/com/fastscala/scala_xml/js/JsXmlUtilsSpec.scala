@@ -246,6 +246,17 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
     assert(!JS.hasJsInScriptTags(<div><p>a</p><script type="text/template">t</script><script>x()</script></div>))
   }
 
+  it should "handle very deep trees without overflowing the stack" in {
+    val deep = (1 to 100_000).foldLeft[Elem](<p>leaf</p>)((acc, _) => <div>{acc}</div>)
+    assert(!JS.hasJsInScriptTags(deep))
+    val deepWithScript = (1 to 100_000).foldLeft[Elem](js("a()"))((acc, _) => <div>{acc}</div>)
+    assert(JS.hasJsInScriptTags(deepWithScript))
+  }
+
+  it should "find a script after script-free siblings and nested groups" in {
+    assert(JS.hasJsInScriptTags(<div><p><b>a</b></p>{Group(Seq(<i/>, Group(Seq(<u/>, module("m()")))))}</div>))
+  }
+
   "excludeJsInScriptTags" should "return the input itself when it has no JS scripts" in {
     val ns = <div><p>a</p><span>b</span></div>
     assert(JS.excludeJsInScriptTags(ns) eq ns)

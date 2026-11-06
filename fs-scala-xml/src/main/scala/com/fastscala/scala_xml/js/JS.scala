@@ -154,6 +154,7 @@ class JsXmlUtils extends JsUtils {
     if (hasJsInScriptTags(ns)) excludeJsInScriptTagsRec(ns) else ns // nothing to remove: no copying
 
   private def excludeJsInScriptTagsRec(ns: NodeSeq): NodeSeq = ns match {
+    case _ if !hasJsInScriptTags(ns) => ns
     case group: Group => Group(excludeJsInScriptTags(group.nodes: NodeSeq))
     case node: ElemWithJsInScript => NodeSeq.Empty
     case node: Elem if isJsScriptTag(node) => NodeSeq.Empty
@@ -183,12 +184,22 @@ class JsXmlUtils extends JsUtils {
    * Whether `ns` contains any JS `<script>` tag (see [[isJsScriptTag]]), at any depth. Stops at the first one found.
    * `ns` can be a single node or a sequence of nodes.
    */
-  def hasJsInScriptTags(ns: NodeSeq): Boolean = ns match {
-    case group: Group => group.nodes.exists(hasJsInScriptTags(_))
-    case _: ElemWithJsInScript => true
-    case node: Node if isJsScriptTag(node) => true
-    case node: Node => node.child.exists(hasJsInScriptTags(_))
-    case nodes => nodes.exists(hasJsInScriptTags(_))
+  def hasJsInScriptTags(ns: NodeSeq): Boolean = hasJsInScriptTags(ns.iterator :: Nil)
+
+  /**
+   * Depth-first, in document order, with an explicit stack (one iterator per level still being visited) instead of
+   * the call stack, so it's tail recursive and deep trees can't overflow the stack.
+   */
+  @scala.annotation.tailrec private def hasJsInScriptTags(stack: List[Iterator[Node]]): Boolean = stack match {
+    case Nil => false
+    case it :: rest if !it.hasNext => hasJsInScriptTags(rest)
+    case it :: _ => it.next() match {
+      // Group first: Group.label throws, so isJsScriptTag can't be called on it.
+      case group: Group => hasJsInScriptTags(group.nodes.iterator :: stack)
+      case _: ElemWithJsInScript => true
+      case node if node.label == "script" && isJsScriptTag(node) => true
+      case node => hasJsInScriptTags(node.child.iterator :: stack)
+    }
   }
 
   private def collectJsInScriptTags(ns: NodeSeq, scripts: collection.mutable.ListBuffer[Js]): Unit = ns match {

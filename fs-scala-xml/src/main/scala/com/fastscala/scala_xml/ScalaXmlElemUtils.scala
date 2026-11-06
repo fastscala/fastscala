@@ -13,6 +13,11 @@ trait ScalaXmlElemUtils extends Any {
 
   def attributeTransform(attrName: String, transform: Option[String] => String): Elem = {
 
+    // The existing value as text (e.g. `Text("a"), EntityRef("amp")` gives "a&"), so values made of several nodes are
+    // transformed too, instead of being left as they were.
+    def newValue(value: Seq[Node]): Seq[Node] =
+      Seq(Text(transform(if (value == null) None else Some(value.text))))
+
     def updateMetaData(metaData: MetaData = Option(elem.attributes).getOrElse(Null), found: Boolean = false): MetaData = metaData match {
       case Null if !found => new UnprefixedAttribute(attrName, transform(None), Null)
       case Null if found => Null
@@ -20,21 +25,13 @@ trait ScalaXmlElemUtils extends Any {
         new PrefixedAttribute(
           pre,
           key,
-          value match {
-            case null => Seq(Text(transform(None)))
-            case Seq(Text(value)) => Seq(Text(transform(Some(value))))
-            case other => other
-          },
+          newValue(value),
           updateMetaData(next, found = true)
         )
       case UnprefixedAttribute((key, value, next)) if key == attrName =>
         new UnprefixedAttribute(
           key,
-          value match {
-            case null => Seq(Text(transform(None)))
-            case Seq(Text(value)) => Seq(Text(transform(Some(value))))
-            case other => other
-          },
+          newValue(value),
           updateMetaData(next, found = true)
         )
       case PrefixedAttribute((pre, key, value, next)) => new PrefixedAttribute(pre, key, value, updateMetaData(next, found))
@@ -78,11 +75,39 @@ trait ScalaXmlElemUtils extends Any {
 
   def withAttr(kv: (String, String)): Elem = withAttr(kv._1)(_ => kv._2)
 
-  def withAttrs(attrs: (String, String)*): Elem = attrs.foldLeft[Elem](elem)((acc, next) =>
-    new ScalaXmlElemUtils {
-      override def elem: Elem = acc
-    }.withAttr(next)
-  )
+  /**
+   * Same result as applying [[withAttr]] for each pair in order (the last value for a name wins; existing attributes
+   * keep their position; new ones are appended in order of first appearance), but in a single pass over the
+   * attributes, creating one new [[Elem]].
+   */
+  def withAttrs(attrs: (String, String)*): Elem = if (attrs.isEmpty) elem else {
+    val values = collection.mutable.LinkedHashMap.empty[String, String]
+    attrs.foreach((k, v) => values(k) = v)
+    val found = collection.mutable.HashSet.empty[String]
+
+    // Existing attributes, in order, with matching values replaced:
+    val updated = collection.mutable.ArrayBuffer.empty[MetaData]
+    var md: MetaData = Option(elem.attributes).getOrElse(Null)
+    while (md ne Null) {
+      updated += (values.get(md.key) match {
+        case Some(newValue) =>
+          found += md.key
+          md match {
+            case p: PrefixedAttribute => new PrefixedAttribute(p.pre, p.key, Seq(Text(newValue)), Null)
+            case _ => new UnprefixedAttribute(md.key, Seq(Text(newValue)), Null)
+          }
+        case None => md
+      })
+      md = md.next
+    }
+
+    // Rebuild the chain back to front, appending the attributes that didn't exist yet:
+    var result: MetaData = Null
+    values.toSeq.reverseIterator.foreach((k, v) => if (!found(k)) result = new UnprefixedAttribute(k, v, result))
+    updated.reverseIterator.foreach(a => result = a.copy(result))
+
+    new Elem(elem.prefix, elem.label, result, elem.scope, elem.minimizeEmpty, elem.child *)
+  }
 
   def withRole(role: String): Elem = attributeTransform("role", _ => role)
 
@@ -118,15 +143,17 @@ trait ScalaXmlElemUtils extends Any {
 
   def hasAttribute(name: String, value: String): Boolean = elem.attributes.exists(a => a.key == name && a.value.map(_.toString()).mkString(" ") == value)
 
-  def attr(name: String): Option[String] = elem.attributes.find(a => a.key == name).map(_.value.map(_.toString()).mkString(" "))
+  // Attribute values are returned unescaped (`.text`): `title="a &amp; b"` gives "a & b".
 
-  def getClassAttr: String = elem.attributes.get("class").map(_.map(_.toString()).mkString(" ")).getOrElse("")
+  def attr(name: String): Option[String] = elem.attributes.find(a => a.key == name).map(_.value.text)
 
-  def getStyleAttr: String = elem.attributes.get("style").map(_.map(_.toString()).mkString(" ")).getOrElse("")
+  def getClassAttr: String = elem.attributes.get("class").map(_.text).getOrElse("")
+
+  def getStyleAttr: String = elem.attributes.get("style").map(_.text).getOrElse("")
 
   def getId: String = getIdOpt.get
 
-  def getIdOpt: Option[String] = elem.attributes.get("id").map(_.map(_.toString()).mkString(" "))
+  def getIdOpt: Option[String] = elem.attributes.get("id").map(_.text)
 }
 
 object ScalaXmlElemUtils {

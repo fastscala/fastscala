@@ -6,7 +6,7 @@ import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.req.{Get, Post}
 import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
-import com.fastscala.utils.{IdGen, Missing}
+import com.fastscala.utils.{Bytes, IdGen, Missing}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.http.*
@@ -181,7 +181,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                       stats.callbacksInProcessing.inc()
                       logger.trace(s"Running callback${fsFunc.debugLbl.map(lbl => s" '$lbl'").getOrElse("")} on thread ${Thread.currentThread()}...")
                       val rslt = executeCallback(arg)
-                      logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.lengthUtf8Enc} bytes")
+                      logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${Bytes.humanReadableBytes(rslt.lengthUtf8Enc, true)}")
                       rslt
                     } catch {
                       case trowable =>

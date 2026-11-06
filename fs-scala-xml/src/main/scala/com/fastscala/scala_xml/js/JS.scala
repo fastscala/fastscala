@@ -176,7 +176,7 @@ class JsXmlUtils extends JsUtils {
   def extractJsInScriptTags(ns: NodeSeq): Js = {
     if (!hasJsInScriptTags(ns)) return Js.Void
     val scripts = collection.mutable.ListBuffer[Js]()
-    collectJsInScriptTags(ns, scripts)
+    collectJsInScriptTags(ns.iterator :: Nil, scripts)
     if (scripts.size == 0) Js.Void else new CompositeJs(scripts.toSeq *).withSeparator(Js(";"))
   }
 
@@ -202,19 +202,26 @@ class JsXmlUtils extends JsUtils {
     }
   }
 
-  private def collectJsInScriptTags(ns: NodeSeq, scripts: collection.mutable.ListBuffer[Js]): Unit = ns match {
-    case _ if !hasJsInScriptTags(ns) =>
-    case group: Group => group.nodes.foreach(collectJsInScriptTags(_, scripts))
-    case node: ElemWithJsInScript => scripts.append(node.js)
-    case node: Node if isJsScriptTag(node) =>
-      val sb = new java.lang.StringBuilder()
-      node.child.foreach(child => sb.append(child.toString()))
-      // Literal (non-regex) replacements:
-      val js = sb.toString.replace("\n// <![CDATA[", "").replace("\n// ]]>", "")
-      // Empty scripts are skipped (as Js.Void would be by `&`).
-      if (js.nonEmpty) scripts.append(Js(js))
-    case node: Node => node.child.foreach(collectJsInScriptTags(_, scripts))
-    case nodes => nodes.foreach(collectJsInScriptTags(_, scripts))
+  /** Depth-first, in document order, with an explicit stack (see [[hasJsInScriptTags]]), so it's tail recursive. */
+  @scala.annotation.tailrec private def collectJsInScriptTags(stack: List[Iterator[Node]], scripts: collection.mutable.ListBuffer[Js]): Unit = stack match {
+    case Nil =>
+    case it :: rest if !it.hasNext => collectJsInScriptTags(rest, scripts)
+    case it :: _ => it.next() match {
+      // Group first: Group.label throws, so isJsScriptTag can't be called on it.
+      case group: Group => collectJsInScriptTags(group.nodes.iterator :: stack, scripts)
+      case script: ElemWithJsInScript =>
+        scripts.append(script.js)
+        collectJsInScriptTags(stack, scripts)
+      case script if isJsScriptTag(script) =>
+        val sb = new java.lang.StringBuilder()
+        script.child.foreach(child => sb.append(child.toString()))
+        // Literal (non-regex) replacements:
+        val js = sb.toString.replace("\n// <![CDATA[", "").replace("\n// ]]>", "")
+        // Empty scripts are skipped (as Js.Void would be by `&`).
+        if (js.nonEmpty) scripts.append(Js(js))
+        collectJsInScriptTags(stack, scripts)
+      case node => collectJsInScriptTags(node.child.iterator :: stack, scripts)
+    }
   }
 }
 

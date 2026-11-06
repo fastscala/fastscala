@@ -272,4 +272,30 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   "extractJsInScriptTags" should "return Js.Void when there are no JS scripts" in {
     assert(JS.extractJsInScriptTags(<div><p>a</p></div>) eq Js.Void)
   }
+
+  // ---------- deep trees / exclusion edge cases ----------
+
+  private def nest(depth: Int, inner: NodeSeq): Elem =
+    (1 to depth).foldLeft[NodeSeq](inner)((acc, _) => <div>{acc}</div>).head.asInstanceOf[Elem]
+
+  "excludeJsInScriptTags" should "remove scripts at several levels, keeping order and untouched siblings" in {
+    val untouched = <section><p>keep</p></section>
+    val ns = <div>{js("a()")}<b>1</b>{untouched}<span>{module("m()")}<i>2</i></span></div>
+    val result = JS.excludeJsInScriptTags(ns)
+    assert(result == <div><b>1</b>{untouched}<span><i>2</i></span></div>)
+    assert(result.head.child(1) eq untouched)
+  }
+
+  it should "handle top-level sequences, groups and scripts" in {
+    assert(JS.excludeJsInScriptTags(js("a()")) == NodeSeq.Empty)
+    assert(JS.excludeJsInScriptTags(<p>1</p> ++ js("a()") ++ <p>2</p>) == (<p>1</p> ++ <p>2</p>))
+    val grouped = JS.excludeJsInScriptTags(Group(Seq(<b>t</b>, module("m()"))))
+    assert(grouped.isInstanceOf[Group])
+    assert(grouped.asInstanceOf[Group].nodes.toList == List(<b>t</b>))
+  }
+
+  "extractJsInScriptTags" should "handle very deep trees without overflowing the stack" in {
+    val deep = nest(100_000, js("a()") ++ <p>{module("b()")}</p>)
+    assert(JS.extractJsInScriptTags(deep).cmd == "a();b()")
+  }
 }

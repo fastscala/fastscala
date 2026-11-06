@@ -1,39 +1,174 @@
 package com.fastscala.scala_xml.utils
 
 import java.io.Writer
+import scala.annotation.tailrec
 import scala.xml.*
 
+/**
+ * Writes XML to a [[Writer]] exactly as `Node.toString` would (MinimizeMode.Default), without building the whole
+ * string: output goes through one reused buffer, handed to the writer in chunks of about [[ChunkSize]] chars.
+ * Element names, attributes and text are written straight into that buffer (see [[appendAttributes]] and [[escape]]).
+ * The writer is not flushed or closed.
+ */
 object XmlStream {
 
-  def writeSeq(ns: NodeSeq, w: Writer, pscope: NamespaceBinding = TopScope): Unit =
-    ns.foreach(writeNode(_, w, pscope))
+  val ChunkSize = 8192
 
-  def writeNode(n: Node, w: Writer, pscope: NamespaceBinding = TopScope): Unit = n match {
-    case e: Elem =>
-      val open = new StringBuilder
-      open.append('<')
-      e.nameToString(open)
-      if (e.attributes ne null) e.attributes.buildString(open)
-      e.scope.buildString(open, pscope)
+  def writeSeq(ns: NodeSeq, w: Writer, pscope: NamespaceBinding = TopScope): Unit = {
+    val out = new Out(w)
+    write(new Level(ns.iterator, pscope, null) :: Nil, out)
+    out.drain()
+  }
 
-      // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
-      // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
-      if (e.child.isEmpty && e.minimizeEmpty) {
-        open.append("/>")
-        w.write(open.toString)
-      } else {
-        open.append('>')
-        w.write(open.toString)
-        writeSeq(e.child, w, e.scope) // recurse through writeSeq
-        w.write("</")
-        w.write(e.nameToString(new StringBuilder).toString)
-        w.write(">")
+  def writeNode(n: Node, w: Writer, pscope: NamespaceBinding = TopScope): Unit = {
+    val out = new Out(w)
+    write(new Level(Iterator.single(n), pscope, null) :: Nil, out)
+    out.drain()
+  }
+
+  /** The buffer everything is written to, handed to `w` once it reaches [[ChunkSize]] chars. */
+  private final class Out(w: Writer) {
+    val sb = new StringBuilder(ChunkSize * 2)
+    private var chars = new Array[Char](ChunkSize * 2)
+
+    inline def drainIfFull(): Unit = if (sb.length >= ChunkSize) drain()
+
+    def drain(): Unit = {
+      val n = sb.length
+      if (n > 0) {
+        if (chars.length < n) chars = new Array[Char](n) // a single node bigger than the buffer
+        sb.underlying.getChars(0, n, chars, 0)
+        w.write(chars, 0, n)
+        sb.setLength(0)
       }
+    }
+  }
 
-    case g: Group => // a Group is just a container of nodes
-      writeSeq(g.nodes, w, pscope)
+  /**
+   * Nodes still to write at one level of the tree: the children of an element (or of a Group, or the top-level
+   * nodes), the namespace scope they're written in, and the element to close once they're done (null if none).
+   */
+  private final class Level(val nodes: Iterator[Node], val scope: NamespaceBinding, val closing: Elem)
 
-    case other => // Text, Comment, PCData, EntityRef, ...
-      w.write(Utility.serialize(other, pscope).toString)
+  /** Depth-first, in document order, with an explicit stack of levels, so it's tail recursive. */
+  @tailrec private def write(stack: List[Level], out: Out): Unit = stack match {
+    case Nil =>
+    case level :: rest if !level.nodes.hasNext =>
+      if (level.closing ne null) {
+        out.sb.append("</")
+        appendName(level.closing.prefix, level.closing.label, out.sb).append('>')
+        out.drainIfFull()
+      }
+      write(rest, out)
+    case level :: _ => level.nodes.next() match {
+      case e: Elem =>
+        val sb = out.sb
+        sb.append('<')
+        appendName(e.prefix, e.label, sb)
+        if (e.attributes ne null) appendAttributes(e.attributes, sb)
+        e.scope.buildString(sb, level.scope)
+
+        // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
+        // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
+        if (e.child.isEmpty && e.minimizeEmpty) {
+          sb.append("/>")
+          out.drainIfFull()
+          write(stack, out)
+        } else {
+          sb.append('>')
+          out.drainIfFull()
+          write(new Level(e.child.iterator, e.scope, e) :: stack, out)
+        }
+
+      case g: Group => // a Group is just a container of nodes
+        write(new Level(g.nodes.iterator, level.scope, null) :: stack, out)
+
+        // Exactly Text, or exactly Atom (what `{value}` in an XML literal becomes when value isn't a Node): both serialize
+        // as Utility.escape(data.toString). Subclasses (PCData, Unparsed, ...) override buildString, so they go below.
+      case atom: Atom[?] if isPlainText(atom) =>
+        escape(atom.data.toString, out.sb)
+        out.drainIfFull()
+        write(stack, out)
+
+      case special: SpecialNode => // Text subclasses, Comment, PCData, Unparsed, EntityRef, ProcInstr
+        special.buildString(out.sb) // what Utility.serialize does for these, minus its own StringBuilder
+        out.drainIfFull()
+        write(stack, out)
+
+      case other => // any other Node subclass
+        out.sb.append(Utility.serialize(other, level.scope))
+        out.drainIfFull()
+        write(stack, out)
+    }
+  }
+
+  // ---------- allocation-free equivalents of scala-xml's own serialization ----------
+
+  /** As Node.nameToString, which builds an interpolated String for every name. */
+  private def appendName(prefix: String, label: String, sb: StringBuilder): StringBuilder = {
+    if (prefix ne null) sb.append(prefix).append(':')
+    sb.append(label)
+  }
+
+  /**
+   * As MetaData.buildString, which for each attribute creates two interpolated Strings, a temporary StringBuilder and
+   * its String. Attributes whose value is a single [[Text]] or [[Atom]] (nearly all) are written directly; anything else
+   * (other value nodes, other MetaData types) goes through scala-xml for that one attribute.
+   */
+  private def appendAttributes(attributes: MetaData, sb: StringBuilder): Unit = {
+    var md = attributes
+    while (md ne Null) {
+      md match {
+        case a: Attribute if isSinglePlainText(a.value) =>
+          sb.append(' ') // like MetaData.buildString
+          if (a.isPrefixed) sb.append(a.pre).append(':')
+          sb.append(a.key).append("=\"")
+          // The escaped text can't contain '"' (it becomes &quot;), so Utility.appendQuoted would pick '"' too.
+          escape(a.value.head.asInstanceOf[Atom[?]].data.toString, sb)
+          sb.append('"')
+        case other =>
+          other.copy(Null).buildString(sb) // just this attribute, including its leading ' '
+      }
+      md = md.next
+    }
+  }
+
+  private def isPlainText(node: Node): Boolean = {
+    val cls = node.getClass
+    (cls eq classOf[Text]) || (cls eq classOf[Atom[?]])
+  }
+
+  private def isSinglePlainText(value: Seq[Node]): Boolean =
+    (value ne null) && value.lengthCompare(1) == 0 && isPlainText(value.head)
+
+  /**
+   * Same output as [[Utility.escape]] (`&`, `<`, `>` and `"` become entities; control characters other than \n, \r
+   * and \t are dropped), but appending unchanged runs in bulk instead of a Map lookup per character.
+   */
+  def escape(text: String, sb: StringBuilder): StringBuilder = {
+    val jsb = sb.underlying
+    val len = text.length
+    var runStart = 0
+    var i = 0
+    while (i < len) {
+      val c = text.charAt(i)
+      val replacement: String =
+        if (c >= ' ') c match {
+          case '&' => "&amp;"
+          case '<' => "&lt;"
+          case '>' => "&gt;"
+          case '"' => "&quot;"
+          case _ => null
+        }
+        else if (c == '\n' || c == '\r' || c == '\t') null
+        else "" // dropped
+      if (replacement ne null) {
+        jsb.append(text, runStart, i).append(replacement)
+        runStart = i + 1
+      }
+      i += 1
+    }
+    jsb.append(text, runStart, len)
+    sb
   }
 }

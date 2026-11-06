@@ -8,7 +8,7 @@ import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.http.{HttpHeader, MimeTypes}
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.Response
-import org.eclipse.jetty.util.{BufferUtil, Callback}
+import org.eclipse.jetty.util.{BufferUtil, Callback, IteratingCallback}
 
 import java.security.SecureRandom
 import java.util.Date
@@ -16,18 +16,38 @@ import org.owasp.encoder.Encode
 
 import java.nio.ByteBuffer
 
-class CompositeJs(val children: Js*) extends Js {
-  override def cmd: String = children.map(_.cmd).mkString
+class CompositeJs private(val children: Js*)(separator: Js = Js.Void) extends Js {
 
-  override def lengthUtf8Enc: Long = children.map(_.lengthUtf8Enc).sum
+  def this(children: Js*) = this(children *)(Js.Void)
 
+  def withSeparator(sep: Js) = new CompositeJs(children *)(sep)
+
+  override def cmd: String = children.map(_.cmd).mkString(separator.cmd)
+
+  override def lengthUtf8Enc: Long =
+    children.map(_.lengthUtf8Enc).sum + separator.lengthUtf8Enc * math.max(0, children.size - 1)
+
+  /**
+   * Writes the children (with separators between them) one at a time: each part's write starts only once the previous
+   * one has completed, and `callback` completes exactly once — after the last write, or on the first failure.
+   * Every part's `writeUtf8Enc` must complete the callback it is given exactly once.
+   */
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = {
-    println("WRITING CHILDREN")
-    sink.write(false, ByteBuffer.wrap(cmd.getBytes("UTF-8")), callback)
-//    children.foreach(child => {
-//      println(s"WRITING CHILD:\n${child.cmd}")
-//      child.writeUtf8Enc(sink, callback)
-//    })
+    val parts: Iterator[Js] =
+      if (separator == Js.Void) children.iterator
+      else children.iterator.zipWithIndex.flatMap((child, idx) => if (idx == 0) Iterator(child) else Iterator(separator, child))
+
+    new IteratingCallback() {
+      override def process(): IteratingCallback.Action =
+        if (parts.hasNext) {
+          parts.next().writeUtf8Enc(sink, this) // calls succeeded()/failed() on `this`, which re-enters process()
+          IteratingCallback.Action.SCHEDULED
+        } else IteratingCallback.Action.SUCCEEDED
+
+      override def onCompleteSuccess(): Unit = callback.succeeded()
+
+      override def onCompleteFailure(cause: Throwable): Unit = callback.failed(cause)
+    }.iterate()
   }
 }
 
@@ -56,15 +76,11 @@ trait Js {
 
   def isVoid = cmd.trim == ""
 
-  def onDOMContentLoaded: Js = JS {
-    s"""(function () {
-       |  var load = function() {
-       |    $cmd;
-       |  };
-       |  if (/complete|interactive|loaded/.test(document.readyState)) {load();}
-       |  else { document.addEventListener('DOMContentLoaded', function() {load();}, false); }
-       |})();""".stripMargin
-  }
+  def onDOMContentLoaded: Js = JS(
+    Js("(function () {var load = function() {"),
+    this,
+    Js(";};if (/complete|interactive|loaded/.test(document.readyState)) {load();}else { document.addEventListener('DOMContentLoaded', function() {load();}, false); }})();"),
+  )
 
   override def toString: String = cmd
 }

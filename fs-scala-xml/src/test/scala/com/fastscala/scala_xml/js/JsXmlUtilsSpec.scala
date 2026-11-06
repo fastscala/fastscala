@@ -53,7 +53,8 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
 
   it should "strip the CDATA markers added by inScriptTag" in {
     val ns = <div>{JS.inScriptTag(Js("a()"))}{JS.inScriptTagModule(Js("b()"))}</div>
-    assert(JS.extractJsInScriptTags(ns).cmd == "\na()\n;\nb()\n")
+    // inScriptTag yields an ElemWithJsInScript, whose original Js is extracted as-is; inScriptTagModule is still parsed.
+    assert(JS.extractJsInScriptTags(ns).cmd == "a();\nb()\n")
   }
 
   // ---------- excludeJsInScriptTags ----------
@@ -156,7 +157,7 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
 
   "setContents" should "set the innerHTML to the escaped HTML" in {
     val html = <p>"x"</p>
-    assert(JS.setContents("target", html).cmd == s"""${byId("target")}.innerHTML = "${Encode.forJavaScript(html.toString)}"; """)
+    assert(JS.setContents("target", html).cmd == s"""${byId("target")}.innerHTML = "${Encode.forJavaScript(html.toString)}";""")
   }
 
   it should "set the innerHTML to the result of a Js expression" in {

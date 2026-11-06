@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.core.FSContext
-import com.fastscala.js.{Js, JsUtils}
+import com.fastscala.js.{CompositeJs, Js, JsUtils}
 import com.fastscala.scala_xml.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
 import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.utils.IdGen
@@ -18,27 +18,54 @@ import java.nio.ByteBuffer
 object JS extends JsXmlUtils
 
 class NodeSeqInStringEscapedJs(ns: NodeSeq) extends Js {
+  private def encodedWriter(out: OutputStream): EncodedWriter =
+    new EncodedWriter(new OutputStreamWriter(out, "UTF-8"), Encoders.JAVASCRIPT)
+
   override lazy val lengthUtf8Enc: Long = {
     var length = 0L
-    val fake = new OutputStream {
-
+    val counter = new OutputStream {
       override def write(i: Int): Unit = length += 1
+
+      override def write(b: Array[Byte], off: Int, len: Int): Unit = length += len
     }
-    val writer = new EncodedWriter(new OutputStreamWriter(fake, "UTF-8"), Encoders.JAVASCRIPT_ATTRIBUTE)
+    val writer = encodedWriter(counter)
     XmlStream.writeSeq(ns, writer)
+    writer.flush() // the encoder and OutputStreamWriter both buffer
     length
-    //    Encode.forJavaScript(cmd).getBytes("UTF-8").size
   }
 
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = {
-    val writer = new EncodedWriter(new OutputStreamWriter(Content.Sink.asOutputStream(sink), "UTF-8"), Encoders.JAVASCRIPT_ATTRIBUTE)
-    XmlStream.writeSeq(ns, writer)
+    // Not closed: closing the sink's OutputStream would write last=true and end the response.
+    try {
+      val writer = encodedWriter(Content.Sink.asOutputStream(sink))
+      XmlStream.writeSeq(ns, writer)
+      writer.flush() // must happen before signalling completion
+    } catch {
+      case t: Throwable =>
+        callback.failed(t)
+        return
+    }
     callback.succeeded()
-    //    sink.write(false, ByteBuffer.wrap(Encode.forJavaScript(cmd).getBytes("UTF-8")), callback)
   }
 
   override def cmd: String = org.owasp.encoder.Encode.forJavaScript(ns.toString())
 }
+
+class ElemWithJsInScript(val js: Js) extends Elem(
+  null,
+  "script",
+  new UnprefixedAttribute("type", "text/javascript", Null),
+  TopScope,
+  false,
+  Unparsed(
+    """
+// <![CDATA[
+""" + js +
+      """
+// ]]>
+"""
+  )
+)
 
 class JsXmlUtils extends JsUtils {
 
@@ -107,19 +134,8 @@ class JsXmlUtils extends JsUtils {
           |//]]>""".stripMargin)
     }</script>
   }
-  
-  def inScriptTag(js: Js): Elem = {
-    <script type="text/javascript">{
-      scala.xml.Unparsed(
-        """
-// <![CDATA[
-""" + js +
-          """
-// ]]>
-"""
-      )
-    }</script>
-  }
+
+  def inScriptTag(js: Js): Elem = new ElemWithJsInScript(js)
 
   def inScriptTagModule(js: Js): Elem = {
     <script type="module">{
@@ -142,6 +158,7 @@ class JsXmlUtils extends JsUtils {
    */
   def excludeJsInScriptTags(ns: NodeSeq): NodeSeq = ns match {
     case group: Group => Group(excludeJsInScriptTags(group.nodes: NodeSeq))
+    case node: ElemWithJsInScript => NodeSeq.Empty
     case node: Elem if isJsScriptTag(node) => NodeSeq.Empty
     case node: Elem => node.copy(child = excludeJsInScriptTags(node.child: NodeSeq))
     case node: Node => node // Text, comments, etc.
@@ -160,21 +177,22 @@ class JsXmlUtils extends JsUtils {
    * `ns` can be a single node or a sequence of nodes.
    */
   def extractJsInScriptTags(ns: NodeSeq): Js = {
-    // Single traversal, joining all scripts once at the end:
-    val scripts = new java.util.StringJoiner(";")
+    val scripts = collection.mutable.ListBuffer[Js]()
     collectJsInScriptTags(ns, scripts)
-    if (scripts.length() == 0) Js.Void else Js(scripts.toString)
+    if (scripts.size == 0) Js.Void else new CompositeJs(scripts.toSeq*).withSeparator(Js(";"))
   }
 
-  private def collectJsInScriptTags(ns: NodeSeq, scripts: java.util.StringJoiner): Unit = ns match {
+  private def collectJsInScriptTags(ns: NodeSeq, scripts: collection.mutable.ListBuffer[Js]): Unit = ns match {
     case group: Group => group.nodes.foreach(collectJsInScriptTags(_, scripts))
+    case node: ElemWithJsInScript =>
+      scripts.append(node.js)
     case node: Node if isJsScriptTag(node) =>
       val sb = new java.lang.StringBuilder()
       node.child.foreach(child => sb.append(child.toString()))
       // Literal (non-regex) replacements:
       val js = sb.toString.replace("\n// <![CDATA[", "").replace("\n// ]]>", "")
       // Empty scripts are skipped (as Js.Void would be by `&`).
-      if (js.nonEmpty) scripts.add(js)
+      if (js.nonEmpty) scripts.append(Js(js))
     case node: Node => node.child.foreach(collectJsInScriptTags(_, scripts))
     case nodes => nodes.foreach(collectJsInScriptTags(_, scripts))
   }

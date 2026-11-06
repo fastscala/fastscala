@@ -64,6 +64,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.3.10",
       "com.typesafe" % "config" % "1.4.3",
       "org.apache.commons" % "commons-text" % "1.12.0",
+      "org.apache.commons" % "commons-rng-simple" % "1.7",
       "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
       "it.unimi.dsi" % "dsiutils" % "2.7.3",
@@ -71,6 +72,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "org.owasp.encoder" % "encoder" % "1.6.0",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
       "com.google.guava" % "guava" % "33.8.0-jre",
+      "org.scalatest" %% "scalatest" % "3.2.19" % Test,
     )
   )
 

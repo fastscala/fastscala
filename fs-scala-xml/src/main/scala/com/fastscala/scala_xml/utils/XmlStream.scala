@@ -16,7 +16,9 @@ object XmlStream {
       if (e.attributes ne null) e.attributes.buildString(open)
       e.scope.buildString(open, pscope)
 
-      if (e.child.isEmpty) {
+      // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
+      // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
+      if (e.child.isEmpty && e.minimizeEmpty) {
         open.append("/>")
         w.write(open.toString)
       } else {

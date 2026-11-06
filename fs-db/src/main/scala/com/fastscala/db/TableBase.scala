@@ -44,11 +44,11 @@ trait TableBase extends DataTypeSupport with LazyLogging {
 
   def fieldsListNoComputedCols = fieldsList.filter(_.getType != classOf[ComputedCol[?]])
 
-  def tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getClass.getSimpleName.replaceAll("\\$$", ""))
+  lazy val tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getClass.getSimpleName.replaceAll("\\$$", ""))
 
   override def toString: String = tableName
 
-  def tableNameSQLSyntax = SQLSyntax.createUnsafely(tableName)
+  lazy val tableNameSQLSyntax = SQLSyntax.createUnsafely(tableName)
 
   def tableNameSQLSyntaxQuoted = tableNameSQLSyntax.doubleQuoted
 

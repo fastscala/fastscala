@@ -190,25 +190,25 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
   // Transform methods:
 
   def transformTableWrapperElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem =
-    onTableWrapperTransforms(elem.addClass(tableWrapperClasses()).withStyle(tableWrapperStyle()))
+    onTableWrapperTransforms(elem.addClass(tableWrapperClasses()).addStyle(tableWrapperStyle()))
 
-  def transformTableElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem = onTableTransforms(elem.addClass(tableClasses()).withStyle(tableStyle()))
+  def transformTableElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem = onTableTransforms(elem.addClass(tableClasses()).addStyle(tableStyle()))
 
   def transformTableHeadElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem =
-    onTableHeadTransforms(elem.addClass(tableHeadClasses()).withStyle(tableHeadStyle()))
+    onTableHeadTransforms(elem.addClass(tableHeadClasses()).addStyle(tableHeadStyle()))
 
   def transformTableBodyElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem =
-    onTableBodyTransforms(elem.addClass(tableBodyClasses()).withStyle(tableBodyStyle()))
+    onTableBodyTransforms(elem.addClass(tableBodyClasses()).addStyle(tableBodyStyle()))
 
   def transformTableFootElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): Elem =
-    onTableFootTransforms(elem.addClass(tableFootClasses()).withStyle(tableFootStyle()))
+    onTableFootTransforms(elem.addClass(tableFootClasses()).addStyle(tableFootStyle()))
 
   def transformTableHeadTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableHeadRerenderer: TableHeadRerenderer): Elem =
-    onTableHeadTrTransforms(elem.addClass(tableHeadTrClasses()).withStyle(tableHeadTrStyle()))
+    onTableHeadTrTransforms(elem.addClass(tableHeadTrClasses()).addStyle(tableHeadTrStyle()))
 
   def transformTableHeadTrThElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableHeadRerenderer: TableHeadRerenderer, trRerenderer: TrRerenderer): Elem =
     onTableHeadTrThTransforms(
-      elem.addClass(tableHeadTrThClasses()).withStyle(tableHeadTrThStyle())
+      elem.addClass(tableHeadTrThClasses()).addStyle(tableHeadTrThStyle())
     )
 
   def transformTableBodyTrElem(elem: Elem)(implicit
@@ -222,7 +222,7 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
                                            rowIdx: TableRowIdx,
                                            rowId: TableRowId
   ): Elem =
-    onTableBodyTrTransforms(elem.addClass(tableBodyTRClasses()).withStyle(tableBodyTRStyle()))
+    onTableBodyTrTransforms(elem.addClass(tableBodyTRClasses()).addStyle(tableBodyTRStyle()))
 
   def transformTableBodyTrTdElem(
                                   elem: Elem
@@ -240,10 +240,10 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
                                   rowIdx: TableRowIdx,
                                   rowId: TableRowId
                                 ): Elem =
-    onTableBodyTrTdTransforms(elem.addClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle()))
+    onTableBodyTrTdTransforms(elem.addClass(tableBodyTRTDClasses()).addStyle(tableBodyTRTDStyle()))
 
   def transformTableFootTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableFootRerenderer: TableFootRerenderer, trRerenderer: TrRerenderer): Elem =
-    onTableFootTrTransforms(elem.addClass(tableFootTRClasses()).withStyle(tableFootTRStyle()))
+    onTableFootTrTransforms(elem.addClass(tableFootTRClasses()).addStyle(tableFootTRStyle()))
 
   def transformTableFootTrThElem(elem: Elem)(implicit
                                              fsc: FSContext,
@@ -256,7 +256,7 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
                                              colIdx: TableColIdx,
                                              colId: TableColId
   ): Elem =
-    onTableFootTrThTransforms(elem.addClass(tableFootTrThClasses()).withStyle(tableFootTrThStyle()))
+    onTableFootTrThTransforms(elem.addClass(tableFootTrThClasses()).addStyle(tableFootTrThStyle()))
 
   def columns(): Seq[C]
 

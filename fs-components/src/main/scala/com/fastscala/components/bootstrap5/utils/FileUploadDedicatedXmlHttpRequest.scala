@@ -21,7 +21,7 @@ object FileUploadDedicatedXmlHttpRequest {
              processUpload: Seq[FSUploadedFile] => Js,
              labelOpt: Option[Elem] = None,
              transformSubmitBtn: Elem => Elem = (_: Elem).btn.btn_success.mt_2.w_100,
-             transformProgress: Elem => Elem = (_: Elem).withStyle("height: 20px;").mt_2,
+             transformProgress: Elem => Elem = (_: Elem).addStyle("height: 20px;").mt_2,
              transformProgressBar: Elem => Elem = identity[Elem],
              submitBtnLbl: Option[String] = Some("Upload"),
              multiple: Boolean = false,
@@ -46,7 +46,7 @@ object FileUploadDedicatedXmlHttpRequest {
         }
         <input class={inputClasses} name="file" type="file" accept={acceptTypes.getOrElse(null)} multiple={Some("true").filter(_ => multiple).getOrElse(null)} id={inputId} onchange={JS.show(buttonId).cmd} />
         {
-        transformProgress(<div class="progress" role="progressbar">{transformProgressBar(<div class="progress-bar progress-bar-striped progress-bar-animated"></div>.withId(progressBarId))}</div>.withId(progressId).withStyle("display:none;"))
+        transformProgress(<div class="progress" role="progressbar">{transformProgressBar(<div class="progress-bar progress-bar-striped progress-bar-animated"></div>.withId(progressBarId))}</div>.withId(progressId).addStyle("display:none;"))
         }
         {
         transformSubmitBtn(

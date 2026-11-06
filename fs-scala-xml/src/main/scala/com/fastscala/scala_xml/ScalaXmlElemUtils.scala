@@ -15,15 +15,15 @@ trait ScalaXmlElemUtils extends Any {
 
     def updateMetaData(metaData: MetaData = Option(elem.attributes).getOrElse(Null), found: Boolean = false): MetaData = metaData match {
       case Null if !found => new UnprefixedAttribute(attrName, transform(None), Null)
-      case Null if found  => Null
+      case Null if found => Null
       case PrefixedAttribute((pre, key, value, next)) if key == attrName =>
         new PrefixedAttribute(
           pre,
           key,
           value match {
-            case null             => Seq(Text(transform(None)))
+            case null => Seq(Text(transform(None)))
             case Seq(Text(value)) => Seq(Text(transform(Some(value))))
-            case other            => other
+            case other => other
           },
           updateMetaData(next, found = true)
         )
@@ -31,20 +31,20 @@ trait ScalaXmlElemUtils extends Any {
         new UnprefixedAttribute(
           key,
           value match {
-            case null             => Seq(Text(transform(None)))
+            case null => Seq(Text(transform(None)))
             case Seq(Text(value)) => Seq(Text(transform(Some(value))))
-            case other            => other
+            case other => other
           },
           updateMetaData(next, found = true)
         )
       case PrefixedAttribute((pre, key, value, next)) => new PrefixedAttribute(pre, key, value, updateMetaData(next, found))
-      case UnprefixedAttribute((key, value, next))    => new UnprefixedAttribute(key, value, updateMetaData(next, found))
+      case UnprefixedAttribute((key, value, next)) => new UnprefixedAttribute(key, value, updateMetaData(next, found))
     }
 
-    new Elem(elem.prefix, elem.label, updateMetaData(), elem.scope, elem.minimizeEmpty, elem.child*)
+    new Elem(elem.prefix, elem.label, updateMetaData(), elem.scope, elem.minimizeEmpty, elem.child *)
   }
 
-  def addClass(`class`: String): Elem = attributeTransform("class", _.getOrElse("") + " " + `class`)
+  def addClass(`class`: String): Elem = if (`class` == "") elem else attributeTransform("class", _.getOrElse("") + " " + `class`)
 
   def withClass(`class`: String): Elem = attributeTransform("class", _ => `class`)
 
@@ -58,7 +58,9 @@ trait ScalaXmlElemUtils extends Any {
 
   def withAttrIf(bool: Boolean, kv: (String, String)): Elem = if (bool) withAttr(kv) else elem
 
-  def withStyle(style: String): Elem = attributeTransform("style", _.map(_ + ";").getOrElse("") + style)
+  def addStyle(style: String): Elem = if (style == "") elem else attributeTransform("style", _.map(_ + ";").getOrElse("") + style)
+
+  def withStyle(style: String): Elem = attributeTransform("style", _ => style)
 
   def withFor(id: String): Elem = attributeTransform("for", _ => id)
 
@@ -87,7 +89,7 @@ trait ScalaXmlElemUtils extends Any {
   def withHref(href: String): Elem = attributeTransform("href", _ => href)
 
   def withRoleButton: Elem = withRole("button")
-  
+
   def withRoleAlert: Elem = withRole("alert")
 
   def withId(id: String): Elem = attributeTransform("id", _ => id)

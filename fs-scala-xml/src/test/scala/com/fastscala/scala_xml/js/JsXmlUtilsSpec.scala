@@ -53,8 +53,8 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
 
   it should "strip the CDATA markers added by inScriptTag" in {
     val ns = <div>{JS.inScriptTag(Js("a()"))}{JS.inScriptTagModule(Js("b()"))}</div>
-    // inScriptTag yields an ElemWithJsInScript, whose original Js is extracted as-is; inScriptTagModule is still parsed.
-    assert(JS.extractJsInScriptTags(ns).cmd == "a();\nb()\n")
+    // Both yield an ElemWithJsInScript, whose original Js is extracted as-is.
+    assert(JS.extractJsInScriptTags(ns).cmd == "a();b()")
   }
 
   // ---------- excludeJsInScriptTags ----------
@@ -206,5 +206,28 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
       <p>x</p>
     }
     assert(!evaluated)
+  }
+
+  // ---------- inScriptTag / inScriptTagModule ----------
+
+  private def oldScriptLiteral(tpe: String, code: Js): Elem =
+    <script type={tpe}>{Unparsed("\n// <![CDATA[\n" + code + "\n// ]]>\n")}</script>
+
+  "inScriptTag" should "render like the original <script type=\"text/javascript\"> literal, keeping the Js" in {
+    val code = Js("if (a < b && c) f('</x>')")
+    val elem = JS.inScriptTag(code)
+    assert(elem.toString == oldScriptLiteral("text/javascript", code).toString)
+    assert(elem.asInstanceOf[ElemWithJsInScript].js eq code)
+  }
+
+  "inScriptTagModule" should "render like the original <script type=\"module\"> literal, keeping the Js" in {
+    val code = Js("import x from './x.js'; x()")
+    val elem = JS.inScriptTagModule(code)
+    assert(elem.toString == oldScriptLiteral("module", code).toString)
+    assert(elem.asInstanceOf[ElemWithJsInScript].js eq code)
+  }
+
+  it should "be removed by excludeJsInScriptTags" in {
+    assert(JS.excludeJsInScriptTags(<div>{JS.inScriptTagModule(Js("m()"))}<p>k</p></div>) == <div><p>k</p></div>)
   }
 }

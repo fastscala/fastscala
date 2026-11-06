@@ -17,9 +17,9 @@ trait F7FieldWithFileUploadSettings extends F7Field with Mutable {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
-  private val _previewRenderer: F7FieldMixinStatus[Seq[F7UploadedFile] => FSContext => Elem] = F7FieldMixinStatus(_ => _ => <div></div>.withStyle(";display:none;"))
+  private val _previewRenderer: F7FieldMixinStatus[Seq[F7UploadedFile] => FSContext => Elem] = F7FieldMixinStatus(_ => _ => <div></div>.addStyle(";display:none;"))
   private val _submitBtnTransforms: F7FieldMixinStatus[Elem => Elem] = F7FieldMixinStatus((_: Elem).apply("Upload").btn.btn_success.mt_2.w_100)
-  private val _progressElemTransforms: F7FieldMixinStatus[Elem => Elem] = F7FieldMixinStatus((_: Elem).withStyle("height: 20px;").mt_2)
+  private val _progressElemTransforms: F7FieldMixinStatus[Elem => Elem] = F7FieldMixinStatus((_: Elem).addStyle("height: 20px;").mt_2)
   private val _progressBarElemTransforms: F7FieldMixinStatus[Elem => Elem] = F7FieldMixinStatus(identity[Elem])
   private val _multiple: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)
   private val _clipboardUploadEnabled: F7FieldMixinStatus[Boolean] = F7FieldMixinStatus(false)

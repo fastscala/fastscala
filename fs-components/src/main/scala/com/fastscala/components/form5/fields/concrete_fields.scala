@@ -1716,7 +1716,7 @@ class F5FileUploadField(
             <input name="file" type="file" id={inputId} onchange={JS.show(buttonId).cmd}/>.pipe(renderer.transforFileInputElem(this)(_)).pipe(transforFileInputElem)
           }
           {
-          submitBtn.pipe(renderer.transforSubmitButtonElem(this)).pipe(transforSubmitButtonElem).withId(buttonId).withStyle("display:none").withTypeSubmit()
+          submitBtn.pipe(renderer.transforSubmitButtonElem(this)).pipe(transforSubmitButtonElem).withId(buttonId).addStyle("display:none").withTypeSubmit()
           }
           {
           resetBtn.map(renderer.transforResetButtonElem(this)).map(transforResetButtonElem).map(_.withId(resetButtonId).addOnClick(fsc.callback(() => {

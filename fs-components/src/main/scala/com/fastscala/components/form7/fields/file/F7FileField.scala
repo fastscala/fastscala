@@ -106,7 +106,7 @@ class F7FileField()(implicit renderer: F7FileFieldRenderer)
           onchange={doUpload.cmd}
         />
 
-    val progressBarElem = progressElemTransforms(renderer.renderProgress(progressBarElemTransforms(renderer.renderProgressBar().withId(progressBarElemId))).withId(progressElemId).withStyle("display:none;"))
+    val progressBarElem = progressElemTransforms(renderer.renderProgress(progressBarElemTransforms(renderer.renderProgressBar().withId(progressBarElemId))).withId(progressElemId).addStyle("display:none;"))
 
     renderer.render(this)(
       inputElem = inputElem,

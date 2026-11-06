@@ -51,10 +51,15 @@ class NodeSeqInStringEscapedJs(ns: NodeSeq) extends Js {
   override def cmd: String = org.owasp.encoder.Encode.forJavaScript(ns.toString())
 }
 
-class ElemWithJsInScript(val js: Js) extends Elem(
+/**
+ * A `<script type="{scriptType}">` element wrapping `js` in a CDATA-commented block, which keeps a reference to the
+ * original [[Js]]. `scriptType` is "text/javascript" (see [[JsXmlUtils.inScriptTag]]) or "module" (see
+ * [[JsXmlUtils.inScriptTagModule]]).
+ */
+class ElemWithJsInScript(val js: Js, val scriptType: String = "text/javascript") extends Elem(
   null,
   "script",
-  new UnprefixedAttribute("type", "text/javascript", Null),
+  new UnprefixedAttribute("type", scriptType, Null),
   TopScope,
   false,
   Unparsed(
@@ -137,18 +142,7 @@ class JsXmlUtils extends JsUtils {
 
   def inScriptTag(js: Js): Elem = new ElemWithJsInScript(js)
 
-  def inScriptTagModule(js: Js): Elem = {
-    <script type="module">{
-      scala.xml.Unparsed(
-        """
-// <![CDATA[
-""" + js +
-          """
-// ]]>
-"""
-      )
-    }</script>
-  }
+  def inScriptTagModule(js: Js): Elem = new ElemWithJsInScript(js, "module")
 
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
 
@@ -166,11 +160,10 @@ class JsXmlUtils extends JsUtils {
   }
 
   private def isJsScriptTag(node: Node): Boolean =
-    node.label == "script" &&
-      node.attribute("type").exists(_.exists(node => {
-        val str = node.toString
-        str == "text/javascript" || str == "module"
-      }))
+    node.label == "script" && node.attribute("type").exists(_.exists(node => {
+      val str = node.toString
+      str == "text/javascript" || str == "module"
+    }))
 
   /**
    * The contents of all JS `<script>` tags (see [[isJsScriptTag]]) in `ns`, at any depth, in document order, joined by `;`.
@@ -179,7 +172,7 @@ class JsXmlUtils extends JsUtils {
   def extractJsInScriptTags(ns: NodeSeq): Js = {
     val scripts = collection.mutable.ListBuffer[Js]()
     collectJsInScriptTags(ns, scripts)
-    if (scripts.size == 0) Js.Void else new CompositeJs(scripts.toSeq*).withSeparator(Js(";"))
+    if (scripts.size == 0) Js.Void else new CompositeJs(scripts.toSeq *).withSeparator(Js(";"))
   }
 
   private def collectJsInScriptTags(ns: NodeSeq, scripts: collection.mutable.ListBuffer[Js]): Unit = ns match {

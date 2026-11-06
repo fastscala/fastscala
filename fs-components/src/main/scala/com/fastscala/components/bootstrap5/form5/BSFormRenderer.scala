@@ -34,12 +34,12 @@ abstract class BSFormRenderer  {
                             inputElem: Elem,
                             error: Option[NodeSeq]
                           )(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled()) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
         label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId).apply(lbl)).getOrElse(NodeSeq.Empty) ++
           inputElem
-            .withStyle(textFieldRendererInputElemStyle)
+            .addStyle(textFieldRendererInputElemStyle)
             .addClass(textFieldRendererInputElemClasses)
             .addClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
@@ -64,13 +64,13 @@ abstract class BSFormRenderer  {
                          inputElem: Elem,
                          error: Option[NodeSeq]
                        )(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled()) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = hints.contains(ShowValidationsHint)
         label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
           inputElem
             .addClass(textareaFieldRendererTextareaElemClasses)
-            .withStyle(textareaFieldRendererTextareaElemStyle)
+            .addStyle(textareaFieldRendererTextareaElemStyle)
             .addClassIf(showErrors && error.isDefined, is_invalid.getClassAttr)
             .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")
             .withAttrIf(hints.contains(ReadOnlyFieldsHint), "readonly" -> "true") ++
@@ -92,7 +92,7 @@ abstract class BSFormRenderer  {
                             elem: Elem,
                             error: Option[NodeSeq]
                           )(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled()) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = true // hints.contains(ShowValidationsHint)
         label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
@@ -119,7 +119,7 @@ abstract class BSFormRenderer  {
                             elem: Elem,
                             error: Option[NodeSeq]
                           )(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled()) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.withId(field.aroundId).apply {
         val showErrors = true // hints.contains(ShowValidationsHint)
         label.map(lbl => BSHelpers.label.form_label.withAttr("for" -> field.elemId)(lbl)).getOrElse(NodeSeq.Empty) ++
@@ -144,7 +144,7 @@ abstract class BSFormRenderer  {
                          elem: Elem,
                          error: Option[NodeSeq]
                        )(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled()) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.form_check.withId(field.aroundId) {
         val showErrors = hints.contains(ShowValidationsHint)
         elem
@@ -164,7 +164,7 @@ abstract class BSFormRenderer  {
 
   implicit val buttonFieldRenderer: ButtonFieldRenderer = new ButtonFieldRenderer {
     override def render(field: F5SaveButtonField[?])(btn: Elem)(implicit hints: Seq[RenderHint]): Elem = {
-      if (!field.enabled()) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled()) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId).apply(
         btn
           .withAttrIf(hints.contains(DisableFieldsHint), "disabled" -> "true")

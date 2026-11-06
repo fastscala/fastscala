@@ -51,7 +51,7 @@ trait Table6Paginated extends Table6Base {
     onPaginationButtonsTransforms = onPaginationButtonsTransforms.pipe(onPaginationButtonsTransforms => elem => f(onPaginationButtonsTransforms(elem)))
   }
 
-  var onPageSizeSelectTransforms: Elem => Elem = _.form_select_sm.withStyle("max-width: 200px; float: right;")
+  var onPageSizeSelectTransforms: Elem => Elem = _.form_select_sm.addStyle("max-width: 200px; float: right;")
 
   def onPageSizeSelect(f: Elem => Elem): this.type = mutate {
     onPageSizeSelectTransforms = onPageSizeSelectTransforms.pipe(onPageSizeSelectTransforms => elem => f(onPageSizeSelectTransforms(elem)))

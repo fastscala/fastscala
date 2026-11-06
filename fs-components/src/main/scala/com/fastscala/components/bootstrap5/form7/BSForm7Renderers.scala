@@ -57,7 +57,7 @@ abstract class BSForm7Renderers()(implicit checkboxAlignment: CheckboxAlignment.
 
   implicit val buttonFieldRenderer: F7SubmitButtonFieldRenderer = new F7SubmitButtonFieldRenderer {
     override def render(field: F7SubmitButtonField[?])(btn: Elem): Elem = {
-      if (!field.enabled) div.withId(field.aroundId).withStyle(";display:none;")
+      if (!field.enabled) div.withId(field.aroundId).addStyle(";display:none;")
       else div.mb_3.addClass("d-grid gap-2 d-md-flex justify-content-md-end").withId(field.aroundId)(btn)
     }
   }

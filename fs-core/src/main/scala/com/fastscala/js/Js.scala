@@ -12,12 +12,15 @@ import org.eclipse.jetty.util.BufferUtil
 
 import java.security.SecureRandom
 import java.util.Date
+import org.owasp.encoder.Encode
 
 trait Js {
 
+  lazy val stringBuilder = new StringBuilder()
+  
   def cmd: String
 
-  def cmdEscaped: String = "'" + StringEscapeUtils.escapeEcmaScript(cmd.replaceAll("\n", "")) + "'"
+  def cmdEscaped: String = "'" + Encode.forJavaScript(cmd.replaceAll("\n", "")) + "'"
 
   def &(js: Js) = (this, js) match {
     case (Js.Void, Js.Void) => Js.Void
@@ -144,7 +147,7 @@ trait JsUtils {
 
   def fromString(s: String): Js = JS(s)
 
-  def escapeStr(s: String) = StringEscapeUtils.escapeEcmaScript(s)
+  def escapeStr(s: String) = Encode.forJavaScript(s)
 
   def asJsStr(s: String): Js = JS(s""""${escapeStr(s)}"""")
 

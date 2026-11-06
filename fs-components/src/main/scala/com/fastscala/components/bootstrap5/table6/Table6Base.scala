@@ -1,6 +1,7 @@
 package com.fastscala.components.bootstrap5.table6
 
 import com.fastscala.components.bootstrap5.helpers.ClassEnrichableMutable
+import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
@@ -16,7 +17,7 @@ import scala.xml.{Elem, NodeSeq}
 
 case class KnownTotalNumberOfRowsMaterialized(value: Option[Int])
 
-abstract class Table6Base extends Table6ColsRenderable with Mutable with Table6LangPack {
+abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends Table6ColsRenderable with Mutable {
 
   type R
   type C
@@ -96,18 +97,64 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable with Table6L
   }
 
   // Table body tr level:
-  def tableBodyTRClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
+  def tableBodyTRClasses()(
+    implicit
+    fsc: FSContext,
+    columns: Seq[(String, C)],
+    rows: Seq[(String, R)],
+    knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized,
+    row: R,
+    rowIdx: TableRowIdx,
+    rowId: TableRowId
+  ): String = ""
 
-  def tableBodyTRStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
+  def tableBodyTRStyle()(
+    implicit
+    fsc: FSContext,
+    columns: Seq[(String, C)],
+    rows: Seq[(String, R)],
+    knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized,
+    row: R,
+    rowIdx: TableRowIdx,
+    rowId: TableRowId
+  ): String = ""
 
   def onAllTableBodyTR(f: Elem => Elem): this.type = mutate {
     onTableBodyTrTransforms = onTableBodyTrTransforms.pipe(onTableBodyTRTransforms => elem => f(onTableBodyTRTransforms(elem)))
   }
 
   // Table body tr td level:
-  def tableBodyTRTDClasses()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
+  def tableBodyTRTDClasses()(
+    implicit
+    fsc: FSContext,
+    columns: Seq[(String, C)],
+    rows: Seq[(String, R)],
+    knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized,
+    tableBodyRerenderer: TableBodyRerenderer,
+    trRerenderer: TrRerenderer,
+    col: C,
+    colIdx: TableColIdx,
+    colId: TableColId,
+    row: R,
+    rowIdx: TableRowIdx,
+    rowId: TableRowId
+  ): String = ""
 
-  def tableBodyTRTDStyle()(implicit columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized): String = ""
+  def tableBodyTRTDStyle()(
+    implicit
+    fsc: FSContext,
+    columns: Seq[(String, C)],
+    rows: Seq[(String, R)],
+    knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized,
+    tableBodyRerenderer: TableBodyRerenderer,
+    trRerenderer: TrRerenderer,
+    col: C,
+    colIdx: TableColIdx,
+    colId: TableColId,
+    row: R,
+    rowIdx: TableRowIdx,
+    rowId: TableRowId
+  ): String = ""
 
   def onAllTableBodyTRTD(f: Elem => Elem): this.type = mutate {
     onTableBodyTrTdTransforms = onTableBodyTrTdTransforms.pipe(onTableBodyTRTDTransforms => elem => f(onTableBodyTRTDTransforms(elem)))
@@ -196,7 +243,7 @@ abstract class Table6Base extends Table6ColsRenderable with Mutable with Table6L
     onTableBodyTrTdTransforms(elem.addClass(tableBodyTRTDClasses()).withStyle(tableBodyTRTDStyle()))
 
   def transformTableFootTrElem(elem: Elem)(implicit fsc: FSContext, columns: Seq[(String, C)], rows: Seq[(String, R)], knownTotalNumberOfRows: KnownTotalNumberOfRowsMaterialized, tableFootRerenderer: TableFootRerenderer, trRerenderer: TrRerenderer): Elem =
-    onTableFootTrTransforms(elem.addClass(tableFootTRClasses()).withStyle(tableBodyTRStyle()))
+    onTableFootTrTransforms(elem.addClass(tableFootTRClasses()).withStyle(tableFootTRStyle()))
 
   def transformTableFootTrThElem(elem: Elem)(implicit
                                              fsc: FSContext,

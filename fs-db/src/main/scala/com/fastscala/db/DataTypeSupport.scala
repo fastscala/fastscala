@@ -294,6 +294,7 @@ trait DataTypeSupport {
     case v: io.circe.Json => SQLSyntax.createUnsafely(s"'${v.noSpaces}'::json")
     case v: UUID => SQLSyntax.createUnsafely(s"'$v'::UUID")
     case v if v.getClass.isEnum => valueToLiteral(v.toString)
+    case _ => throw new Exception(s"Could not translate value $value (${value.getClass.getSimpleName}) to literal SQL value")
   }
 
   private val HEX_ARRAY = "0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII)

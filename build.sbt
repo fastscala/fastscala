@@ -68,6 +68,8 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
       "it.unimi.dsi" % "dsiutils" % "2.7.3",
       "commons-io" % "commons-io" % "2.21.0",
+      "org.owasp.encoder" % "encoder" % "1.6.0",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
     )
   )
 
@@ -82,7 +84,7 @@ lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0"))
+  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0", "org.scalatest" %% "scalatest" % "3.2.19" % Test))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))

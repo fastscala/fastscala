@@ -4,6 +4,7 @@ import com.fastscala.core.FSSystem
 import com.fastscala.utils.Jetty12StatisticsCollector
 import com.fastscala.websockets.FSWebsocketJettyContextHandler
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import io.prometheus.metrics.exporter.httpserver.HTTPServer
 import io.prometheus.metrics.instrumentation.jvm.JvmMetrics
 import org.eclipse.jetty.http.CompressedContentFormat
@@ -15,9 +16,7 @@ import org.eclipse.jetty.util.resource.{ResourceFactory, Resources}
 import org.eclipse.jetty.util.thread.QueuedThreadPool
 import org.slf4j.LoggerFactory
 
-abstract class JettyServerHelper {
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
+abstract class JettyServerHelper extends LazyLogging {
 
   val config = ConfigFactory.load()
 
@@ -84,7 +83,7 @@ abstract class JettyServerHelper {
       val resourceFactory = ResourceFactory.of(resourceHandler)
       resourceRoots.map(resourceFactory.newClassLoaderResource(_))
         .filter(Resources.isReadableDirectory(_))
-    }*))
+    } *))
 
     val wsHandler = FSWebsocketJettyContextHandler(server, "/" + fss.FSPrefix)
     val gzipHandler = new GzipHandler() {
@@ -103,7 +102,7 @@ abstract class JettyServerHelper {
           wsHandler,
           resourceHandler,
         ) :::
-        appendToHandlerList)*
+        appendToHandlerList) *
     ))
 
     val statHandler = new StatisticsHandler(gzipHandler)

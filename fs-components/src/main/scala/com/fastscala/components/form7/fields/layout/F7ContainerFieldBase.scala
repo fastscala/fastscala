@@ -9,6 +9,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 
+import scala.util.Failure
 import scala.xml.{Elem, NodeSeq}
 
 abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidationRules with F7FieldWithEnabled with F7FieldWithDependencies with F7FieldWithDisabled with F7FieldWithReadOnly {
@@ -17,18 +18,12 @@ abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidationRu
 
   def children: Seq[(String, F7Field)]
 
-  var currentlyEnabled = enabled
-
   override protected def renderImpl()(implicit form: Form7, fsc: FSContext): Elem = {
-    currentlyEnabled = enabled
-    if (!currentlyEnabled) <div style="display:none;" id={aroundId}></div>
-    else {
-      val contents = children.map({
-        case (clas, field) if field.enabled => <div class={clas} id={field.aroundId + "_container_wrapper"}>{field.render()}</div>
-        case (clas, field) if !field.enabled => <div class={clas} id={field.aroundId + "_container_wrapper"} style="display:none;">{field.render()}</div>
-      }).reduceOption[NodeSeq](_ ++ _).getOrElse(NodeSeq.Empty)
-      <div class={aroundClass} id={aroundId}>{contents}</div>
-    }
+    val contents = children.map({
+      case (clas, field) if field.enabled => <div class={clas} id={field.aroundId + "_container_wrapper"}>{field.render()}</div>
+      case (clas, field) if !field.enabled => <div class={clas} id={field.aroundId + "_container_wrapper"} style="display:none;">{field.render()}</div>
+    }).reduceOption[NodeSeq](_ ++ _).getOrElse(NodeSeq.Empty)
+    <div class={aroundClass} id={aroundId}>{contents}</div>
   }
 
   override def onEvent(event: F7Event)(implicit form: Form7, fsc: FSContext): Js = (event match {
@@ -37,13 +32,14 @@ abstract class F7ContainerFieldBase extends F7Field with F7FieldWithValidationRu
     case _ => JS.void
   }) & super.onEvent(event) & children.map(_._2.onEvent(event)).reduceOption(_ & _).getOrElse(JS.void)
 
-  override def reRender()(implicit form: Form7, fsc: FSContext): Js = {
-    if (enabled != currentlyEnabled) {
-      JS.replace(aroundId, render())
-    } else {
-      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
-    }
-  }
+  //  override def reRender()(implicit form: Form7, fsc: FSContext): Js = {
+  //    println(s"$this HERE!: enabled=$enabled != currentlyEnabled=$currentlyEnabled")
+  //    if (enabled != currentlyEnabled) {
+  //      JS.replace(aroundId, render())
+  //    } else {
+  //      children.map(_._2.reRender()).reduceOption[Js](_ & _).getOrElse(JS.void)
+  //    }
+  //  }
 
   override def fieldAndChildreenMatchingPredicate(predicate: PartialFunction[F7Field, Boolean]): List[F7Field] =
     List(this).filter(_ => predicate.applyOrElse[F7Field, Boolean](this, _ => false)) :::

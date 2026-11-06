@@ -13,6 +13,7 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
   protected var transforms: Elem => Elem = identity[Elem]
 
   var aroundId: Option[String] = None
+  var renderedWithParam: Option[P] = None
 
   def getOrGenerateAroundId: String = aroundId.getOrElse({
     aroundId = Some(idOpt.getOrElse(IdGen.id("rerenderer-p")))
@@ -22,16 +23,21 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
   protected def renderImpl(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
     val rendered: Elem = transforms(renderFunc(this)(fsc)(param))
     aroundId = aroundId.orElse(rendered.getIdOpt)
+    renderedWithParam = Some(param)
     val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
     RerendererDebugStatusState().render(renderedWithId)
   }
 
   def render(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc => renderImpl(param) }
 
-  def rerender(param: P)(implicit fsp: FSPageLike) = fsp.inContextClearedFor(this) { implicit fsc =>
+  def rerender(param: P)(implicit fsp: FSPageLike): Js = fsp.inContextClearedFor(this) { implicit fsc =>
     val rendered: Elem = renderImpl(param)
     val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
     RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replaceWithScriptExtraction(getOrGenerateAroundId, renderedWithId))
+  }
+
+  def rerenderTransform(modify: P => P)(implicit fsp: FSPageLike): Js = fsp.inContextClearedFor(this) { implicit fsc =>
+    rerender(modify(renderedWithParam.getOrElse(throw new Exception("Called rerender with a function to modify the current params, but hasn't been rendered the first time yet!"))))
   }
 
   def replaceBy(elem: Elem): Js = JS.replaceWithScriptExtraction(getOrGenerateAroundId, elem.withId(getOrGenerateAroundId))

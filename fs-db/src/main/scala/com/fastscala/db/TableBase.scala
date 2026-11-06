@@ -4,6 +4,7 @@ import com.fastscala.db.annotations.{ForeignKey, PrimaryKey, Unique}
 import com.fastscala.db.computed.ComputedCol
 import com.fastscala.db.util.doubleQuoted
 import com.google.common.base.CaseFormat
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.text.StringEscapeUtils
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
@@ -21,9 +22,7 @@ import scalikejdbc.*
 
 import java.util.UUID
 
-trait TableBase extends DataTypeSupport {
-
-  private val logger = LoggerFactory.getLogger(getClass.getName)
+trait TableBase extends DataTypeSupport with LazyLogging {
 
   def createSampleRow(): Any
 
@@ -42,6 +41,8 @@ trait TableBase extends DataTypeSupport {
       !field.getName.contains("$") &&
         !field.getAnnotations.exists(anno => transientAnnotations.contains(anno.annotationType().getName))
   }).toList
+
+  def fieldsListNoComputedCols = fieldsList.filter(_.getType != classOf[ComputedCol[?]])
 
   def tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getClass.getSimpleName.replaceAll("\\$$", ""))
 
@@ -149,7 +150,7 @@ trait TableBase extends DataTypeSupport {
       __createUniqueConstrainsSQL
 
   def __createTableOnlySQL: List[SQL[Nothing, NoExtractor]] = {
-    val columns: List[SQLSyntax] = fieldsList.map(field => {
+    val columns: List[SQLSyntax] = fieldsListNoComputedCols.map(field => {
       field.setAccessible(true)
       SQLSyntax.createUnsafely(s""""${columnNameForField(field)}" ${fieldTypeToSQLType(field, field.getType, field.get(sampleRow))}""")
     })
@@ -168,7 +169,7 @@ trait TableBase extends DataTypeSupport {
   def __addMissingColumnsIfNotExists: List[SQL[Nothing, NoExtractor]] = __addMissingColumnsIfNotExistsWithDefaults(PartialFunction.empty[Field, Any])
 
   def __addMissingColumnsIfNotExistsWithDefaults(default: PartialFunction[Field, Any]): List[SQL[Nothing, NoExtractor]] = {
-    fieldsList.map(field => {
+    fieldsListNoComputedCols.map(field => {
       field.setAccessible(true)
       val dfltValue = if (default.isDefinedAt(field)) Some(default(field)) else None
       val defaultSQL: SQLSyntax = dfltValue.map(v => sqls"default " + valueToLiteral(v)).getOrElse(SQLSyntax.empty)
@@ -178,7 +179,7 @@ trait TableBase extends DataTypeSupport {
   }
 
   def __addMissingColumnsIfNotExistsWithDefaultsFromSampleRow(): List[SQL[Nothing, NoExtractor]] = {
-    fieldsList.map(field => {
+    fieldsListNoComputedCols.map(field => {
       field.setAccessible(true)
       val dfltValue = field.get(sampleRow)
       val defaultSQL: SQLSyntax = sqls"default " + valueToLiteral(dfltValue)

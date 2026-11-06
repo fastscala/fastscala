@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-
+import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -24,9 +24,7 @@ import java.util.Collections
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 import scala.util.chaining.scalaUtilChainingOps
 
-object FSContext {
-  val logger = LoggerFactory.getLogger(getClass.getName)
-}
+object FSContext extends LazyLogging
 
 class FSContext(
                  val session: FSSession,
@@ -36,7 +34,7 @@ class FSContext(
                  var keepAliveAt: Long = System.currentTimeMillis(),
                  val debugLbl: Option[String] = None,
                  var deletedAt: Option[Long] = None
-               ) extends FSPageLike {
+               ) extends FSPageLike with LazyLogging {
 
   def deleteOlderThan(ts: Long): Unit = {
     if (keepAliveAt < ts) delete()
@@ -49,8 +47,6 @@ class FSContext(
   }
 
   def deleted: Boolean = deletedAt.isDefined
-
-  import FSContext.logger
 
   def depth: Int = parentFSContext.map(_.depth + 1).getOrElse(0)
 
@@ -133,28 +129,30 @@ class FSContext(
   }
 
   def delete(): Unit = {
-    logger.debug(s"Delete context $fullPath")
+    logger.trace(s"Delete context $fullPath")
     deletedAt = Some(System.currentTimeMillis())
     parentFSContext.foreach(_.children -= this)
-    if (__fsSystem.debug) {
+    if (__fsSystem.debugDeletedContextsFullPath) {
       val path = this.fullPath
       page.deletedCallbacksContextPath ++= page.callbacks.map({
         case (id, fsFunc) => id -> fsFunc.fullPath
       })
     }
     page.callbacks --= functionsGenerated
-    session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
+    if (session.fsSystem.eventsEnableGcCallback) session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
     session.fsSystem.stats.currentCallbacks.dec(functionsGenerated.size)
     page.fileUploadCallbacks --= functionsFileUploadGenerated
-    session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = functionsFileUploadGenerated.size)
+    if (session.fsSystem.eventsEnableGcFileUpload) session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = functionsFileUploadGenerated.size)
     session.fsSystem.stats.currentFileUploadCallbacks.dec(functionsFileUploadGenerated.size)
     page.fileDownloadCallbacks --= functionsFileDownloadGenerated
-    session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadGenerated.size)
+    if (session.fsSystem.eventsEnableGcFileDownload) session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadGenerated.size)
     session.fsSystem.stats.currentFileDownloadCallbacks.dec(functionsFileDownloadGenerated.size)
     children.foreach(_.delete())
   }
 
   def callback(func: () => Js): Js = callback(JS.void, _ => func())
+
+  def callback(func: () => Js, label: String): Js = callback(JS.void, _ => func(), debugLbl = Some(label))
 
   def callback(arg: Js, func: String => Js, async: Boolean = true, expectReturn: Boolean = true, ignoreErrors: Boolean = false, env: Js = Js("{}"), debugLbl: Option[String] = None): Js = {
     logger.trace(s"CREATING CALLBACK IN CONTEXT ${fullPath}")
@@ -162,7 +160,7 @@ class FSContext(
     val funcId = session.nextID()
     functionsGenerated += funcId
     page.callbacks += funcId -> new FSFunc(funcId, str => func(str), debugLbl = debugLbl)
-    session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
+    if (session.fsSystem.eventsEnableCreateCallback) session.fsSystem.stats.event(StatEvent.CREATE_CALLBACK)
     session.fsSystem.stats.callbacksTotal.inc()
     session.fsSystem.stats.currentCallbacks.inc()
 
@@ -174,7 +172,7 @@ class FSContext(
   def anonymousPageURL(render: FSContext => String, name: String): String = {
     session.fsSystem.gc()
     val funcId = session.nextID()
-    session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
+    if (session.fsSystem.eventsEnableCreateAnonPage) session.fsSystem.stats.event(StatEvent.CREATE_ANON_PAGE, additionalFields = Seq("page_name" -> name))
     session.fsSystem.stats.anonPagesTotal.inc()
     session.fsSystem.stats.currentAnonPages.inc()
     session.anonymousPages += funcId -> new FSAnonymousPage(funcId, session, render)
@@ -202,7 +200,7 @@ class FSContext(
     val funcId = session.nextID()
     functionsFileDownloadGenerated += funcId
     page.fileDownloadCallbacks += funcId -> new FSFileDownload(funcId, contentType, fileName, content)
-    session.fsSystem.stats.event(StatEvent.CREATE_FILE_DOWNLOAD, additionalFields = Seq("file_name" -> fileName, "content_type" -> contentType))
+    if (session.fsSystem.eventsEnableCreateFileDownload) session.fsSystem.stats.event(StatEvent.CREATE_FILE_DOWNLOAD, additionalFields = Seq("file_name" -> fileName, "content_type" -> contentType))
     session.fsSystem.stats.fileDownloadCallabacksTotal.inc()
     session.fsSystem.stats.currentFileDownloadCallbacks.inc()
     s"/${session.fsSystem.FSPrefix}/file-download/${page.id}/$funcId/${URLEncoder.encode(fileName, "UTF-8")}"
@@ -213,7 +211,7 @@ class FSContext(
     val funcId = session.nextID()
     functionsFileUploadGenerated += funcId
     page.fileUploadCallbacks += (funcId -> new FSFileUpload(funcId, func))
-    session.fsSystem.stats.event(StatEvent.CREATE_FILE_UPLOAD)
+    if (session.fsSystem.eventsEnableCreateFileUpload) session.fsSystem.stats.event(StatEvent.CREATE_FILE_UPLOAD)
     session.fsSystem.stats.fileUploadCallbacksTotal.inc()
     session.fsSystem.stats.currentFileUploadCallbacks.inc()
     s"/${session.fsSystem.FSPrefix}/file-upload/${page.id}/$funcId"

@@ -1,17 +1,15 @@
 package com.fastscala.db.keyed
 
 import com.fastscala.db.Table
+import com.typesafe.scalalogging.LazyLogging
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc.{DB, DBSession, SQLBatch, SQLLargeBatch, WrappedResultSet, scalikejdbcSQLInterpolationImplicitDef, sqls}
 
-object TableWithId {
+object TableWithId
 
-  val logger = LoggerFactory.getLogger(getClass.getName)
-}
-
-trait TableWithId[R, K] extends Table[R] {
+trait TableWithId[R, K] extends Table[R] with LazyLogging {
 
   def getForIdOpt(key: K): Option[R]
 
@@ -33,7 +31,7 @@ trait TableWithId[R, K] extends Table[R] {
       sql"${query}".map(rs => idFromWrappedResultSet(rs)).list()
     } catch {
       case ex: PSQLException =>
-        TableWithId.logger.error(s"Error on query $query", ex)
+        logger.error(s"Error on query $query", ex)
         throw ex
     }
   }

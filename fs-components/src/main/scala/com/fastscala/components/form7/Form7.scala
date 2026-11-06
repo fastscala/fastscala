@@ -10,6 +10,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.utils.Lazy
+import com.typesafe.scalalogging.LazyLogging
 import org.slf4j.LoggerFactory
 
 import scala.util.chaining.scalaUtilChainingOps
@@ -26,9 +27,7 @@ object Form7State extends Enumeration {
   val Saved = Value
 }
 
-trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWithValidationStrategy with F7FormWithInitialState {
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
+trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWithValidationStrategy with F7FormWithInitialState with LazyLogging {
 
   implicit def form: this.type = this
 

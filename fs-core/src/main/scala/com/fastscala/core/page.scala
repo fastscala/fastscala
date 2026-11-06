@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-
+import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -24,8 +24,7 @@ import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 import scala.util.chaining.scalaUtilChainingOps
 
 
-object FSPage {
-  val logger = LoggerFactory.getLogger(getClass.getName)
+object FSPage extends LazyLogging {
 
   implicit def fromFSContext(fsc: FSContext): FSPage = fsc.page
 }
@@ -54,7 +53,7 @@ class FSPage(
               var wsQueue: List[Js] = Nil,
               var wsLock: AnyRef = new AnyRef,
               val debugLbl: Option[String] = None
-            ) extends FSPageLike {
+            ) extends FSPageLike with LazyLogging {
 
   override def page: FSPage = this
 
@@ -93,20 +92,31 @@ class FSPage(
   val rootFSContext = new FSContext(session, this, onPageUnload = onPageUnload, debugLbl = Some("page_root_context"))
 
   def inContextFor[T](contextFor: AnyRef)(f: FSContext => T): T = {
-    if (!key2FSContext.contains(contextFor)) throw new Exception(s"Trying to get context for $contextFor, but wasn't found")
-    if (key2FSContext(contextFor).deleted) throw new Exception(s"Trying to get context for $contextFor, but it was deleted")
-    f(key2FSContext(contextFor))
+    val ctx = key2FSContext.get(contextFor) match {
+      case Some(ctx) if ctx.deleted => throw new Exception(s"Trying to get context for $contextFor, but it was deleted")
+      case Some(ctx) => ctx
+      case None =>
+        val newContext = new FSContext(session = session, page = this, parentFSContext = None)
+        key2FSContext(contextFor) = newContext
+        logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
+        newContext
+    }
+    f(ctx)
   }
 
   def inContextClearedFor[T](contextFor: AnyRef)(f: FSContext => T): T = {
-    if (!key2FSContext.contains(contextFor)) throw new Exception(s"Trying to get context for $contextFor, but wasn't found")
-    val oldContext = key2FSContext(contextFor)
-    val newContext = new FSContext(session, this, oldContext.parentFSContext, debugLbl = oldContext.debugLbl)
-    key2FSContext(contextFor) = newContext
-    oldContext.delete()
-    logger.trace(s"Created context, previously cleared, ${newContext.fullPath} ($newContext)")
-    oldContext.parentFSContext.foreach(_.children += newContext)
-    f(newContext)
+    if (!key2FSContext.contains(contextFor)) {
+      // There is no existing context for the key, so it's considered already "cleared":
+      inContextFor(contextFor)(f)
+    } else {
+      val oldContext = key2FSContext(contextFor)
+      val newContext = new FSContext(session, this, oldContext.parentFSContext, debugLbl = oldContext.debugLbl)
+      key2FSContext(contextFor) = newContext
+      oldContext.delete()
+      logger.trace(s"Created context, previously cleared, ${newContext.fullPath} ($newContext)")
+      oldContext.parentFSContext.foreach(_.children += newContext)
+      f(newContext)
+    }
   }
 
   def inContextForOption[T](contextFor: AnyRef)(f: FSContext => T): Option[T] = {
@@ -122,6 +132,7 @@ class FSPage(
       } else {
         logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
         existing.delete()
+        key2FSContext.remove(key)
       }
     })
   }

@@ -8,6 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.rng.simple.RandomSource
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
@@ -23,9 +24,7 @@ import java.util.Collections
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 import scala.util.chaining.scalaUtilChainingOps
 
-object FSSession {
-  val logger = LoggerFactory.getLogger(getClass.getName)
-}
+object FSSession extends LazyLogging
 
 object FSSessionLike {
   given Conversion[FSSessionLike, FSSession] = _.session
@@ -50,13 +49,11 @@ class FSSession(
                  val createdAt: Long = System.currentTimeMillis(),
                  var keepAliveAt: Long = System.currentTimeMillis(),
                  val debugLbl: Option[String] = None
-               ) extends FSSessionLike {
+               ) extends FSSessionLike with LazyLogging {
 
   val config = ConfigFactory.load()
 
   def useRandomIds: Boolean = Option(config.getBoolean("com.fastscala.core.random-ids")).getOrElse(false)
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
 
   private var idSeq = 0L
   private lazy val rng = RandomSource.XO_RO_SHI_RO_128_PP.create()
@@ -120,8 +117,8 @@ class FSSession(
     session.fsSystem.gc()
     val copy = new Request.Wrapper(req)
     val page = new FSPage(nextID(), this, copy, impl, onPageUnload = onPageUnload, debugLbl = debugLbl)
-    if (logger.isTraceEnabled) logger.trace(s"Created page ${page.id}")
-    fsSystem.stats.event(StatEvent.CREATE_PAGE)
+    logger.trace(s"Created page ${page.id}")
+    if (session.fsSystem.eventsEnableCreatePage) fsSystem.stats.event(StatEvent.CREATE_PAGE)
     session.fsSystem.stats.pagesTotal.inc()
     session.fsSystem.stats.currentPages.inc()
     this.synchronized {

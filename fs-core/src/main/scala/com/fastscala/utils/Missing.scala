@@ -11,22 +11,22 @@ object Missing extends Enumeration {
     def updateStats()(implicit fss: FSSystem): Unit = v match {
       case Session =>
         fss.stats.sessionNotFoundTotal.inc()
-        fss.stats.event(StatEvent.NOT_FOUND_SESSION)
+        if (fss.eventsEnableNotFoundSession) fss.stats.event(StatEvent.NOT_FOUND_SESSION)
       case Page =>
         fss.stats.pageNotFoundTotal.inc()
-        fss.stats.event(StatEvent.NOT_FOUND_PAGE)
+        if (fss.eventsEnableNotFoundPage) fss.stats.event(StatEvent.NOT_FOUND_PAGE)
       case AnonPage =>
         fss.stats.anonPageNotFoundTotal.inc()
-        fss.stats.event(StatEvent.NOT_FOUND_ANON_PAGE)
+        if (fss.eventsEnableNotFoundAnonPage) fss.stats.event(StatEvent.NOT_FOUND_ANON_PAGE)
       case CallbackFunction =>
         fss.stats.callbackNotFoundTotal.inc()
-        fss.stats.event(StatEvent.NOT_FOUND_CALLBACK)
+        if (fss.eventsEnableNotFoundCallback) fss.stats.event(StatEvent.NOT_FOUND_CALLBACK)
       case FileDownloadFunction =>
         fss.stats.fileDownloadCallbackNotFoundTotal.inc()
-        fss.stats.event(StatEvent.NOT_FOUND_FILE_DOWNLOAD)
+        if (fss.eventsEnableNotFoundFileDownload) fss.stats.event(StatEvent.NOT_FOUND_FILE_DOWNLOAD)
       case FileUploadFunction =>
         fss.stats.fileUploadCallbackNotFoundTotal.inc()
-        fss.stats.event(StatEvent.NOT_FOUND_FILE_UPLOAD)
+        if (fss.eventsEnableNotFoundFileUpload) fss.stats.event(StatEvent.NOT_FOUND_FILE_UPLOAD)
     }
   }
 }

@@ -54,11 +54,11 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
   def colLabel(col: C): String
 
   def renderColumnSelectionButton()(implicit fsc: FSContext): Elem =
-    BSBtn().BtnPrimary.lbl(i18n_columns).callback(implicit fsc => openColumnSelectionModal()).btn
+    BSBtn().BtnPrimary.lbl(langPack.tableColumns).callback(implicit fsc => openColumnSelectionModal()).btn
 
   def openColumnSelectionModal()(implicit fsc: FSContext): Js = BSModal5.verySimple(
-    i18n_selectColumns,
-    i18n_done,
+    langPack.tableSelectColumns,
+    langPack.modalDone,
     onHidden = fsc.callback(() => rerender())
   )(modal =>
     implicit fsc => {

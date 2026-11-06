@@ -7,7 +7,7 @@ import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
 
-import scala.xml.Elem
+import scala.xml.{Elem, NodeSeq}
 
 object ImmediateInputFields {
 
@@ -138,16 +138,12 @@ object ImmediateInputFields {
       onSubmitClientSide(value) & fsc.callback(value, idxStr => set(values(idxStr.toInt)))
     }).cmd
 
-    <select id={elemId} class={classes} style={style} onchange={submit}>
-      {values.zipWithIndex.map({
-      case (value, idx) if value == get() => <option value={idx.toString} selected="selected">
-        {toString(value)}
-      </option>
-      case (value, idx) => <option value={idx.toString}>
-        {toString(value)}
-      </option>
-    })}
-    </select>
+    <select id={elemId} class={classes} style={style} onchange={submit}>{
+      values.zipWithIndex.map({
+        case (value, idx) if value == get() => <option value={idx.toString} selected="selected">{toString(value)}</option>
+        case (value, idx) => <option value={idx.toString}>{toString(value)}</option>
+      })
+    }</select>
   }
 
   def textarea(

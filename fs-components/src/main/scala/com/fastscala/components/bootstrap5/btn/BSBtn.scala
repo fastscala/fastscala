@@ -68,11 +68,11 @@ case class BSBtn(
 
   def ns(ns: NodeSeq): BSBtn = copy(content = ns)
 
-  def onclick(js: Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & js))
+  def onclick(js: Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(Js.Void) & js))
   
-  def onclick(js: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & js(fsc)))
+  def onclick(js: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(Js.Void) & js(fsc)))
 
-  def callback(func: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc))))
+  def callback(func: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(JS.void) & fsc.callback(() => func(fsc))))
 
   def ajaxOnce(func: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = callbackRunOnce(func)
 
@@ -85,10 +85,10 @@ case class BSBtn(
   }
 
   def callbackConfirm(question: String, func: FSContext => Js): BSBtn =
-    copy(onclickOpt = Some(fsc => JS.confirm(question, onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc)))))
+    copy(onclickOpt = Some(fsc => JS.confirm(question, onclickOpt.map(_(fsc)).getOrElse(Js.Void) & fsc.callback(() => func(fsc)))))
 
   def callbackConfirm(question: () => String, func: FSContext => Js): BSBtn =
-    copy(onclickOpt = Some(fsc => fsc.callback(() => JS.confirm(question(), onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc) & fsc.callback(() => func(fsc))))))
+    copy(onclickOpt = Some(fsc => fsc.callback(() => JS.confirm(question(), onclickOpt.map(_(fsc)).getOrElse(Js.Void) & fsc.callback(() => func(fsc))))))
 
   def href(s: String): BSBtn = copy(hrefOpt = Some(s))
 
@@ -125,7 +125,7 @@ case class BSBtn(
     generate
   }
 
-  def disableAfterOneClick(): BSBtn = copy(onclickOpt = Some(fsc => disable() & onclickOpt.getOrElse((_: FSContext) => JS.void)(fsc)))
+  def disableAfterOneClick(): BSBtn = copy(onclickOpt = Some(fsc => disable() & onclickOpt.map(_(fsc)).getOrElse(Js.Void)))
 
   def disable(): Js = JS.fromString(s"$$('#$id').addClass('disabled').attr('disabled','true');")
 

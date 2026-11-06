@@ -7,7 +7,10 @@ import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.Response as JettyServerResponse
 import org.eclipse.jetty.util.{BufferUtil, Callback}
 
+import java.nio.ByteBuffer
+import java.nio.charset.{Charset, StandardCharsets}
 import java.nio.file.{Files, Path}
+import java.util.concurrent.ConcurrentHashMap
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, OutputStream}
 
 
@@ -54,17 +57,45 @@ object VoidResponse extends Response {
 }
 
 trait TextResponse extends Response {
-  def contents: String
 
   def contentType: String
 
+  /**
+   * The body encoded with `charset` (taken from [[contentType]], UTF-8 by default), as one or more buffers written in order.
+   * Several buffers avoid concatenating the body into a single String first (see [[OkHtml]]).
+   */
+  protected def encodedContents(charset: Charset): List[ByteBuffer]
+
   override def respond(response: JettyServerResponse, callback: Callback): Boolean = {
     super.respond(response, callback)
-    response.getHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
-    val charsetName = Option(MimeTypes.getCharsetFromContentType(contentType)).getOrElse("UTF-8")
-    response.write(true, BufferUtil.toBuffer(contents.getBytes(charsetName)), callback)
+    val ct = contentType
+    val buffers = encodedContents(TextResponse.charsetFor(ct))
+    val responseHeaders = response.getHeaders
+    responseHeaders.put(HttpHeader.CONTENT_TYPE, ct)
+    // Known length: lets Jetty skip chunked transfer encoding.
+    responseHeaders.put(HttpHeader.CONTENT_LENGTH, buffers.foldLeft(0L)(_ + _.remaining()))
+    TextResponse.writeAll(response, buffers, callback)
     true
   }
+}
+
+object TextResponse {
+
+  // Content types are almost always a handful of constants: cache the (string-parsing) charset lookup per content type.
+  private val charsetCache = new ConcurrentHashMap[String, Charset]()
+
+  /** Writes the buffers in order, each write starting only after the previous one succeeded; the last one ends the content. */
+  def writeAll(sink: Content.Sink, buffers: List[ByteBuffer], callback: Callback): Unit = buffers match {
+    case Nil => sink.write(true, BufferUtil.EMPTY_BUFFER, callback)
+    case last :: Nil => sink.write(true, last, callback)
+    case head :: tail => sink.write(false, head, Callback.from(() => writeAll(sink, tail, callback), (t: Throwable) => callback.failed(t)))
+  }
+
+  def charsetFor(contentType: String): Charset =
+    if (contentType == null) StandardCharsets.UTF_8
+    else charsetCache.computeIfAbsent(contentType, ct =>
+      Option(MimeTypes.getCharsetFromContentType(ct)).map(Charset.forName).getOrElse(StandardCharsets.UTF_8)
+    )
 }
 
 trait BinaryResponse extends Response {
@@ -114,14 +145,14 @@ trait RedirectResponse extends TextResponse {
 
   def redirectTo: String
 
-  def contentType: String = "text/css;charset=utf-8"
+  def contentType: String = "text/html;charset=utf-8"
 
-  override def contents: String = {
+  override protected def encodedContents(charset: Charset): List[ByteBuffer] = List(ByteBuffer.wrap(
     s"""<html>
        |<head><title>Moved</title></head>
        |<body>=Moved=<p>This page has moved to <a href="$redirectTo">$redirectTo</a>.</p></body>
-       |</html>""".stripMargin
-  }
+       |</html>""".stripMargin.getBytes(charset)
+  ))
 
   override final def respond(response: JettyServerResponse, callback: Callback): Boolean = {
     response.getHeaders.put(HttpHeader.LOCATION, redirectTo)
@@ -371,13 +402,26 @@ class OkHtml(ns: String) extends TextResponse {
 
   override def contentType: String = "text/html;charset=utf-8"
 
-  def docType: String = "<!DOCTYPE html>"
+  def docType: String = OkHtml.DefaultDocType
 
-  override def contents: String = docType + "\n" + ns
+  // Writes the doctype and the page as two buffers, instead of copying the whole page into `docType + "\n" + ns` first.
+  override protected def encodedContents(charset: Charset): List[ByteBuffer] = {
+    val dt = docType
+    val prefix =
+      if (dt == OkHtml.DefaultDocType && charset == StandardCharsets.UTF_8) OkHtml.DefaultPrefixUtf8.asReadOnlyBuffer() // shared constant: own position per response
+      else ByteBuffer.wrap((dt + "\n").getBytes(charset))
+    List(prefix, ByteBuffer.wrap(ns.getBytes(charset)))
+  }
+}
+
+object OkHtml {
+  val DefaultDocType = "<!DOCTYPE html>"
+
+  private val DefaultPrefixUtf8: ByteBuffer = ByteBuffer.wrap((DefaultDocType + "\n").getBytes(StandardCharsets.UTF_8)).asReadOnlyBuffer()
 }
 
 class OkTextBased(text: String, val contentType: String) extends TextResponse {
   override def status: HttpStatus = HttpStatuses.OK
 
-  override def contents: String = text
+  override protected def encodedContents(charset: Charset): List[ByteBuffer] = List(ByteBuffer.wrap(text.getBytes(charset)))
 }

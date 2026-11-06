@@ -1,6 +1,7 @@
 package com.fastscala.db
 
 import com.fastscala.db.computed.ComputedCol
+import com.typesafe.scalalogging.LazyLogging
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
@@ -12,9 +13,7 @@ import scala.util.chaining.scalaUtilChainingOps
 // unsafe methods directly.
 import scalikejdbc.*
 
-trait Table[R] extends TableBase {
-
-  private val logger = LoggerFactory.getLogger(getClass.getName)
+trait Table[R] extends TableBase with LazyLogging {
 
   def createSampleRow(): R
 
@@ -93,7 +92,7 @@ trait Table[R] extends TableBase {
 
   def _selectWithAdditionalCols(where: SQLSyntax = SQLSyntax.empty, rest: SQLSyntax = SQLSyntax.empty, additionalCols: List[(SQLSyntax, WrappedResultSet => Any)] = Nil)(implicit session: DBSession): List[(R, List[Any])] = {
     val colsSql = additionalCols match {
-      case Nil            => selectSQL(None)
+      case Nil => selectSQL(None)
       case additionalCols => SQLSyntax.join(selectSQL(None) :: additionalCols.map(_._1), sqls",")
     }
     val query =

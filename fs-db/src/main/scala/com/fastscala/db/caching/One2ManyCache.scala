@@ -3,6 +3,7 @@ package com.fastscala.db.caching
 import com.fastscala.db.*
 import com.fastscala.db.keyed.RowWithId
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
+import com.typesafe.scalalogging.LazyLogging
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 
@@ -21,7 +22,7 @@ class One2ManyCache[
    val filterOneOnMany: K => SQLSyntax,
    val one2Many: collection.mutable.Map[O, ListBuffer[M]] = collection.mutable.Map[O, ListBuffer[M]](),
    val many2One: collection.mutable.Map[M, O] = collection.mutable.Map[M, O]()
- ) extends DBObserver {
+ ) extends DBObserver with LazyLogging {
 
   val OneTable = cacheOne.table
 
@@ -38,8 +39,6 @@ class One2ManyCache[
       })
     })
   }
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
 
   def getOne(many: M): Option[O] = cacheOne.getForIdOptX(getOneId(many))
 

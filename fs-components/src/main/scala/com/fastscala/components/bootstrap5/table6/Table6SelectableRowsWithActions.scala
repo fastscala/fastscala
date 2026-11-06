@@ -12,7 +12,7 @@ trait Table6SelectableRowsWithActions extends Table6SelectableRowsBase with Tabl
 
   def actionsForRows(rows: Seq[R]): Seq[BSBtn] = Nil
 
-  def actionsBtnLabel = i18n_actions
+  def actionsBtnLabel = langPack.tableActions
 
   def actionsBtnToIncludeInTopDropdownRightAlignedMenu: Boolean = true
 

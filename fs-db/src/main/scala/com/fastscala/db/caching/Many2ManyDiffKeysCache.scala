@@ -3,6 +3,7 @@ package com.fastscala.db.caching
 import com.fastscala.db.*
 import com.fastscala.db.keyed.RowWithId
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
+import com.typesafe.scalalogging.LazyLogging
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax
 import scalikejdbc.scalikejdbcSQLInterpolationImplicitDef
@@ -25,11 +26,9 @@ class Many2ManyDiffKeysCache[KL, KJ, KR, L <: Row[L] & ObservableRowBase & RowWi
                      // If a key is present in these maps, then all the joins are *guaranteed* to be loaded:
                      val left2Join: collection.mutable.Map[KL, collection.mutable.Set[J]] = collection.mutable.Map[KL, collection.mutable.Set[J]](),
                      val right2Join: collection.mutable.Map[KR, collection.mutable.Set[J]] = collection.mutable.Map[KR, collection.mutable.Set[J]]()
-                   ) extends DBObserver {
+                   ) extends DBObserver with LazyLogging {
 
   override def observingTables: Seq[Table[?]] = Seq[Table[?]](cacheL.table, cacheJ.table, cacheR.table)
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
 
   def hydrateFully(): Unit = cacheJ.selectAll().foreach(joinElem => {
     left2Join.getOrElseUpdate(getLeft(joinElem), scala.collection.mutable.Set()) += joinElem
@@ -125,7 +124,7 @@ class Many2ManyDiffKeysCache[KL, KJ, KR, L <: Row[L] & ObservableRowBase & RowWi
           rightK = getRight(join)
         } {
           left2Join(leftK) -= join
-          right2Join(rightK) -= join
+          right2Join.get(rightK).foreach(_ -= join)
         }
       case (`joinTable`, row: J) =>
         if (left2Join.contains(getLeft(row))) {
@@ -141,8 +140,8 @@ class Many2ManyDiffKeysCache[KL, KJ, KR, L <: Row[L] & ObservableRowBase & RowWi
           leftK = getLeft(join)
           rightK = right.key
         } {
-          left2Join(leftK) -= join
           right2Join(rightK) -= join
+          left2Join.get(leftK).foreach(_ -= join)
         }
       case _ =>
     }

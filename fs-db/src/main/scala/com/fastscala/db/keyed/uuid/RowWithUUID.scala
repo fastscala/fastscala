@@ -56,6 +56,14 @@ trait RowWithUUID[R <: RowWithUUID[R] : ClassTag] extends Row[R] with RowWithUUI
     }
   }
 
+  /**
+   * Returns None if doesn't exist in DB.
+   */
+  def reloadOpt(): Option[R] = uuid.flatMap(uuid => table.getForIdOpt(uuid).map(inDB => {
+    copyFrom(inDB)
+    this
+  }))
+
   def _reload()(implicit session: DBSession): R = {
     uuid match {
       case Some(uuid) =>

@@ -4,6 +4,7 @@ import com.fastscala.db.*
 import com.fastscala.db.keyed.{RowWithId, TableWithId}
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
 import com.fastscala.db.util.Utils
+import com.typesafe.scalalogging.LazyLogging
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import scalikejdbc.WrappedResultSet
@@ -11,11 +12,9 @@ import scalikejdbc.interpolation.SQLSyntax
 
 class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table: TableWithId[R, K], val whereCond: SQLSyntax = SQLSyntax.empty, var status: CacheStatus.Value = CacheStatus.NONE_LOADED, val entries: collection.mutable.Map[K, R] = collection.mutable.Map[K, R]())
   extends DBObserver
-    with TableCacheLike[K, R] {
+    with TableCacheLike[K, R] with LazyLogging {
 
   def loadAllEntriesAfterNFailedLookups: Int = 5
-
-  val logger = LoggerFactory.getLogger(getClass.getName)
 
   override def observingTables: Seq[TableBase] = Seq(table)
 

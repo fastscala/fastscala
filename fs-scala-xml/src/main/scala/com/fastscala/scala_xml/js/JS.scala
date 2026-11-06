@@ -8,6 +8,7 @@ import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
 
 import scala.xml.*
+import org.owasp.encoder.Encode
 
 object JS extends JsXmlUtils
 
@@ -50,21 +51,15 @@ class JsXmlUtils extends JsUtils {
     replace(id, excludeJsInScriptTags(by)) & extractJsInScriptTags(by)
 
   def replace(id: String, by: NodeSeq): Js = JS(
-    s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${
-      htmlToElement(
-        by
-      ).cmd
-    }) : console.error("Element with id ${escapeStr(id)} not found"));""")
+    s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
 
-  def setContents(id: String, ns: NodeSeq): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${StringEscapeUtils.escapeEcmaScript(ns.toString())}"; """)
+  def setContents(id: String, ns: NodeSeq): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${Encode.forJavaScript(ns.toString())}"; """)
 
   def setContents(id: String, js: Js): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = $js; """)
 
   def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js = JS {
     s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${
-      StringEscapeUtils.escapeEcmaScript(
-        html.toString()
-      )
+      Encode.forJavaScript(html.toString())
     }"))).content"""
   }
 
@@ -105,22 +100,47 @@ class JsXmlUtils extends JsUtils {
 
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
 
+  /**
+   * Removes the JS `<script>` tags (see [[isJsScriptTag]]), at any depth, from `ns`.
+   * `ns` can be a single node or a sequence of nodes.
+   */
   def excludeJsInScriptTags(ns: NodeSeq): NodeSeq = ns match {
-    case node: Elem if node.label == "script" &&
-      node.attribute("type").flatMap(_.headOption).map(_.toString)
-        .exists(str => str == "text/javascript" || str == "module") =>
-      NodeSeq.Empty
-    case node: Elem => new Elem(prefix = node.prefix, label = node.label, attributes1 = node.attributes, scope = node.scope, minimizeEmpty = node.minimizeEmpty, child = excludeJsInScriptTags(node.child: NodeSeq) *)
-    case other: Seq[Node] => other
+    case group: Group => Group(excludeJsInScriptTags(group.nodes: NodeSeq))
+    case node: Elem if isJsScriptTag(node) => NodeSeq.Empty
+    case node: Elem => node.copy(child = excludeJsInScriptTags(node.child: NodeSeq))
+    case node: Node => node // Text, comments, etc.
+    case nodes => nodes.flatMap(excludeJsInScriptTags(_))
   }
 
-  def extractJsInScriptTags(ns: NodeSeq): Js = ns match {
-    case node: Node if node.label == "script" &&
-      node.attribute("type").flatMap(_.headOption).map(_.toString)
-        .exists(str => str == "text/javascript" || str == "module") =>
-      Js(node.child.map(_.toString()).mkString.replaceAll("\\n// <!\\[CDATA\\[", "").replaceAll("\\n// \\]\\]>", ""))
-    case node: Node => node.child.map(extractJsInScriptTags).reduceOption(_ & _).getOrElse(Js.Void)
-    case _ => Js.Void
+  private def isJsScriptTag(node: Node): Boolean =
+    node.label == "script" &&
+      node.attribute("type").exists(_.exists(node => {
+        val str = node.toString
+        str == "text/javascript" || str == "module"
+      }))
+
+  /**
+   * The contents of all JS `<script>` tags (see [[isJsScriptTag]]) in `ns`, at any depth, in document order, joined by `;`.
+   * `ns` can be a single node or a sequence of nodes.
+   */
+  def extractJsInScriptTags(ns: NodeSeq): Js = {
+    // Single traversal, joining all scripts once at the end:
+    val scripts = new java.util.StringJoiner(";")
+    collectJsInScriptTags(ns, scripts)
+    if (scripts.length() == 0) Js.Void else Js(scripts.toString)
+  }
+
+  private def collectJsInScriptTags(ns: NodeSeq, scripts: java.util.StringJoiner): Unit = ns match {
+    case group: Group => group.nodes.foreach(collectJsInScriptTags(_, scripts))
+    case node: Node if isJsScriptTag(node) =>
+      val sb = new java.lang.StringBuilder()
+      node.child.foreach(child => sb.append(child.toString()))
+      // Literal (non-regex) replacements:
+      val js = sb.toString.replace("\n// <![CDATA[", "").replace("\n// ]]>", "")
+      // Empty scripts are skipped (as Js.Void would be by `&`).
+      if (js.nonEmpty) scripts.add(js)
+    case node: Node => node.child.foreach(collectJsInScriptTags(_, scripts))
+    case nodes => nodes.foreach(collectJsInScriptTags(_, scripts))
   }
 }
 

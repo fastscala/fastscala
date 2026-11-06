@@ -8,7 +8,7 @@ import com.fastscala.routing.resp.*
 import com.fastscala.stats.{FSStats, StatEvent}
 import com.fastscala.utils.{IdGen, Missing}
 import com.typesafe.config.ConfigFactory
-
+import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.http.*
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
@@ -26,13 +26,52 @@ import scala.util.chaining.scalaUtilChainingOps
 
 
 class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
-  extends RoutingHandlerNoSessionHelper {
+  extends RoutingHandlerNoSessionHelper with LazyLogging {
 
   val config = ConfigFactory.load()
 
-  def debug: Boolean = config.getBoolean("com.fastscala.core.debug")
+  lazy val debug: Boolean = config.getBoolean("com.fastscala.core.debug")
 
-  val logger = LoggerFactory.getLogger(getClass.getName)
+  lazy val debugDeletedContextsFullPath: Boolean = config.getBoolean("com.fastscala.core.debug.deleted_contexts_full_path")
+
+  lazy val eventsEnableCreateSession: Boolean = config.getBoolean("com.fastscala.core.events.create_session.enable")
+
+  lazy val eventsEnableCreatePage: Boolean = config.getBoolean("com.fastscala.core.events.create_page.enable")
+
+  lazy val eventsEnableCreateAnonPage: Boolean = config.getBoolean("com.fastscala.core.events.create_anon_page.enable")
+
+  lazy val eventsEnableCreateFileDownload: Boolean = config.getBoolean("com.fastscala.core.events.create_file_download.enable")
+
+  lazy val eventsEnableCreateFileUpload: Boolean = config.getBoolean("com.fastscala.core.events.create_file_upload.enable")
+
+  lazy val eventsEnableCreateCallback: Boolean = config.getBoolean("com.fastscala.core.events.create_callback.enable")
+
+  lazy val eventsEnableUseCallback: Boolean = config.getBoolean("com.fastscala.core.events.use_callback.enable")
+
+  lazy val eventsEnableGcSession: Boolean = config.getBoolean("com.fastscala.core.events.gc_session.enable")
+
+  lazy val eventsEnableGcPage: Boolean = config.getBoolean("com.fastscala.core.events.gc_page.enable")
+
+  lazy val eventsEnableGcAnonPage: Boolean = config.getBoolean("com.fastscala.core.events.gc_anon_page.enable")
+
+  lazy val eventsEnableGcFileDownload: Boolean = config.getBoolean("com.fastscala.core.events.gc_file_download.enable")
+
+  lazy val eventsEnableGcCallback: Boolean = config.getBoolean("com.fastscala.core.events.gc_callback.enable")
+
+  lazy val eventsEnableGcFileUpload: Boolean = config.getBoolean("com.fastscala.core.events.gc_file_upload.enable")
+
+  lazy val eventsEnableNotFoundSession: Boolean = config.getBoolean("com.fastscala.core.events.not_found_session.enable")
+
+  lazy val eventsEnableNotFoundPage: Boolean = config.getBoolean("com.fastscala.core.events.not_found_page.enable")
+
+  lazy val eventsEnableNotFoundAnonPage: Boolean = config.getBoolean("com.fastscala.core.events.not_found_anon_page.enable")
+
+  lazy val eventsEnableNotFoundFileDownload: Boolean = config.getBoolean("com.fastscala.core.events.not_found_file_download.enable")
+
+  lazy val eventsEnableNotFoundFileUpload: Boolean = config.getBoolean("com.fastscala.core.events.not_found_file_upload.enable")
+
+  lazy val eventsEnableNotFoundCallback: Boolean = config.getBoolean("com.fastscala.core.events.not_found_callback.enable")
+
   val sessions: collection.mutable.Map[String, FSSession] = collection.mutable.Map[String, FSSession]()
 
   // private implicit def __fsContextOpt: Option[FSContext] = None
@@ -51,11 +90,11 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
     implicit val __fsContextOpt: Option[FSContext] = None
     implicit val __fsPageOpt: Option[FSPage] = None
     implicit val __fsSessionOpt: Option[FSSession] = Some(session)
-    stats.event(StatEvent.CREATE_SESSION)
+    if (session.fsSystem.eventsEnableCreateSession) stats.event(StatEvent.CREATE_SESSION)
     session.fsSystem.stats.sessionsTotal.inc()
     session.fsSystem.stats.currentSessions.inc()
     this.synchronized(sessions.put(session.id, session))
-    FSSession.logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
+    logger.info(s"Created session: session_id=${session.id}, evt_type=create_session")
     session
   }
 
@@ -122,7 +161,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
           }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, session = Some(session), page = None)))
         }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, session = sessionOpt, page = None)))
 
-      // Callback invocation:
+        // Callback invocation:
       case Post(FSPrefix, "cb", pageId, funcId) =>
         sessionOpt.map(implicit session => {
           session.pages.get(pageId).map(implicit page => {
@@ -130,7 +169,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
               fsFunc.keepAlive()
               val start = System.currentTimeMillis()
               stats.callbackInvocationsTotal.inc()
-              stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
+              if (session.fsSystem.eventsEnableUseCallback) stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
 
               Content.Source.asStringAsync(req, Request.getCharset(req)).whenComplete((arg, failure) => {
                 val rslt: Js = Option(failure) match {
@@ -140,23 +179,22 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                     val start = System.currentTimeMillis()
                     try {
                       stats.callbacksInProcessing.inc()
-                      if (logger.isTraceEnabled) logger.trace(s"Running callback on thread ${Thread.currentThread()}...")
+                      logger.trace(s"Running callback${fsFunc.debugLbl.map(lbl => s" '$lbl'").getOrElse("")} on thread ${Thread.currentThread()}...")
                       val rslt = executeCallback(arg)
-                      if (logger.isTraceEnabled) logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
+                      logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
                       rslt
                     } catch {
                       case trowable =>
-                        if (logger.isTraceEnabled) logger.trace(s"Finished with EXCEPTION in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}): $trowable")
+                        logger.trace(s"Finished with EXCEPTION in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}): $trowable")
                         handleCallbackException(trowable)
                     } finally {
                       stats.callbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
                       stats.callbacksInProcessing.dec()
                     }
                 }
-                if (logger.isTraceEnabled)
-                  logger.trace(
-                    s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func"
-                  )
+                logger.trace(
+                  s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func"
+                )
                 Ok.js(rslt).respond(response, callback)
               })
               VoidResponse
@@ -227,7 +265,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
           }).getOrElse(Ok.js(onFileUploadNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None)))
         }).getOrElse(Ok.js(onFileUploadNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = sessionOpt, page = None)))
 
-      // File downloads:
+        // File downloads:
       case Get(FSPrefix, "file-download", pageId, funcId, _) =>
         sessionOpt.map(implicit session => {
           session.pages.get(pageId).map(implicit page => {
@@ -256,7 +294,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
           }).getOrElse(onFileDownloadNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None))
         }).getOrElse(onFileDownloadNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = sessionOpt, page = None))
 
-      // Anonymous pages:
+        // Anonymous pages:
       case Get(FSPrefix, "anon", anonymousPageId, _) =>
 
         sessionOpt.map(implicit session => {
@@ -292,7 +330,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
     else {
       (for {
         page <- page
-        if debug
+        if debugDeletedContextsFullPath
         context <- page.deletedCallbacksContextPath.get(functionId)
         mesg = s"Callback $functionId not found - it's context was DELETED: $context"
       } yield {
@@ -344,7 +382,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
     if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
       System.gc()
       if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
-        if (logger.isTraceEnabled) logger.trace(s"Less than ${minFreeSpacePercent.formatted("%.2f%%")} space available, freeing up space...")
+        logger.trace(s"Less than ${minFreeSpacePercent.formatted("%.2f%%")} space available, freeing up space...")
         freeUpSpace()
         gc()
       }

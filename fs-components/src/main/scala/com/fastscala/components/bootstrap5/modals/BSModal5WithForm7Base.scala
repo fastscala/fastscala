@@ -3,6 +3,7 @@ package com.fastscala.components.bootstrap5.modals
 import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.components.form7.{F7Field, Form7}
 import com.fastscala.components.form7.renderers.F7FormRenderer
+import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.FSContext
 import com.fastscala.scala_xml.ScalaXmlElemUtils
 
@@ -10,15 +11,15 @@ import scala.xml.NodeSeq
 
 abstract class BSModal5WithForm7Base(
                                       val modalHeaderTitle: String
-                                    )(implicit val formRenderer: F7FormRenderer) extends BSModal5Base with Form7 {
+                                    )(implicit val formRenderer: F7FormRenderer, langPack: FSComponentsLangPack) extends BSModal5Base with Form7 {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
   lazy val rootField: F7Field
-  
-  def saveBtnLbl = "Save"
 
-  def cancelBtnLbl = "Cancel"
+  def saveBtnLbl = langPack.modalSave
+
+  def cancelBtnLbl = langPack.modalCancel
 
   def cancelBtnEnabled: Boolean = false
 

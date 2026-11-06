@@ -53,11 +53,13 @@ trait F7Field
 
   val aroundId: String = "f7_field_around_" + IdGen.id
 
+  def renderNotEnabled()(implicit form: Form7, fsc: FSContext) = <div style="display:none;" id={aroundId}></div>
+
   val fieldRenderer = JS.rerenderableP[Form7](_ => implicit fsc => implicit form => {
     if (enabled) {
       preRender()
       renderImpl()
-    } else <div></div>
+    } else renderNotEnabled()
   }, idOpt = Some(aroundId))
 
   final def render()(implicit form: Form7, fsc: FSContext): Elem = fieldRenderer.render(form)

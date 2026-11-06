@@ -90,7 +90,7 @@ trait Table6Paginated extends Table6Base {
   }
 
   def renderTableSizeInfo(from: Int, to: Int, pageSize: Int, total: Option[Int])(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {
-    i18n_tableSizeInfo(from, to, pageSize, total).map(mesg => <div>{mesg}</div>.pipe(onTableSizeInfoTransforms)).getOrElse(NodeSeq.Empty)
+    langPack.tableSizeInfo(from, to, pageSize, total).map(mesg => <div>{mesg}</div>.pipe(onTableSizeInfoTransforms)).getOrElse(NodeSeq.Empty)
   }
 
   def renderTableSizeInfo()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {

@@ -150,7 +150,10 @@ class JsXmlUtils extends JsUtils {
    * Removes the JS `<script>` tags (see [[isJsScriptTag]]), at any depth, from `ns`.
    * `ns` can be a single node or a sequence of nodes.
    */
-  def excludeJsInScriptTags(ns: NodeSeq): NodeSeq = ns match {
+  def excludeJsInScriptTags(ns: NodeSeq): NodeSeq =
+    if (hasJsInScriptTags(ns)) excludeJsInScriptTagsRec(ns) else ns // nothing to remove: no copying
+
+  private def excludeJsInScriptTagsRec(ns: NodeSeq): NodeSeq = ns match {
     case group: Group => Group(excludeJsInScriptTags(group.nodes: NodeSeq))
     case node: ElemWithJsInScript => NodeSeq.Empty
     case node: Elem if isJsScriptTag(node) => NodeSeq.Empty
@@ -159,7 +162,7 @@ class JsXmlUtils extends JsUtils {
     case nodes => nodes.flatMap(excludeJsInScriptTags(_))
   }
 
-  private def isJsScriptTag(node: Node): Boolean =
+  inline private def isJsScriptTag(node: Node): Boolean =
     node.label == "script" && node.attribute("type").exists(_.exists(node => {
       val str = node.toString
       str == "text/javascript" || str == "module"
@@ -170,15 +173,28 @@ class JsXmlUtils extends JsUtils {
    * `ns` can be a single node or a sequence of nodes.
    */
   def extractJsInScriptTags(ns: NodeSeq): Js = {
+    if (!hasJsInScriptTags(ns)) return Js.Void
     val scripts = collection.mutable.ListBuffer[Js]()
     collectJsInScriptTags(ns, scripts)
     if (scripts.size == 0) Js.Void else new CompositeJs(scripts.toSeq *).withSeparator(Js(";"))
   }
 
+  /**
+   * Whether `ns` contains any JS `<script>` tag (see [[isJsScriptTag]]), at any depth. Stops at the first one found.
+   * `ns` can be a single node or a sequence of nodes.
+   */
+  def hasJsInScriptTags(ns: NodeSeq): Boolean = ns match {
+    case group: Group => group.nodes.exists(hasJsInScriptTags(_))
+    case _: ElemWithJsInScript => true
+    case node: Node if isJsScriptTag(node) => true
+    case node: Node => node.child.exists(hasJsInScriptTags(_))
+    case nodes => nodes.exists(hasJsInScriptTags(_))
+  }
+
   private def collectJsInScriptTags(ns: NodeSeq, scripts: collection.mutable.ListBuffer[Js]): Unit = ns match {
+    case _ if !hasJsInScriptTags(ns) =>
     case group: Group => group.nodes.foreach(collectJsInScriptTags(_, scripts))
-    case node: ElemWithJsInScript =>
-      scripts.append(node.js)
+    case node: ElemWithJsInScript => scripts.append(node.js)
     case node: Node if isJsScriptTag(node) =>
       val sb = new java.lang.StringBuilder()
       node.child.foreach(child => sb.append(child.toString()))

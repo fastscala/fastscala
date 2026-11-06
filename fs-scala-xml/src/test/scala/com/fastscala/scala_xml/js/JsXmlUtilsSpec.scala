@@ -230,4 +230,35 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   it should "be removed by excludeJsInScriptTags" in {
     assert(JS.excludeJsInScriptTags(<div>{JS.inScriptTagModule(Js("m()"))}<p>k</p></div>) == <div><p>k</p></div>)
   }
+
+  // ---------- hasJsInScriptTags ----------
+
+  "hasJsInScriptTags" should "find JS scripts at any depth, in elements, groups and sequences" in {
+    assert(JS.hasJsInScriptTags(js("a()")))
+    assert(JS.hasJsInScriptTags(<div><p>{module("m()")}</p></div>))
+    assert(JS.hasJsInScriptTags(<p>x</p> ++ <div>{JS.inScriptTag(Js("a()"))}</div>))
+    assert(JS.hasJsInScriptTags(Group(Seq(<b>t</b>, JS.inScriptTagModule(Js("m()"))))))
+  }
+
+  it should "be false without JS scripts" in {
+    assert(!JS.hasJsInScriptTags(NodeSeq.Empty))
+    assert(!JS.hasJsInScriptTags(Text("script")))
+    assert(!JS.hasJsInScriptTags(<div><p>a</p><script type="text/template">t</script><script>x()</script></div>))
+  }
+
+  "excludeJsInScriptTags" should "return the input itself when it has no JS scripts" in {
+    val ns = <div><p>a</p><span>b</span></div>
+    assert(JS.excludeJsInScriptTags(ns) eq ns)
+  }
+
+  it should "keep script-free subtrees as-is while removing scripts elsewhere" in {
+    val untouched = <section><p>keep</p></section>
+    val result = JS.excludeJsInScriptTags(<div>{untouched}{js("a()")}</div>)
+    assert(result == <div>{untouched}</div>)
+    assert(result.head.child.head eq untouched)
+  }
+
+  "extractJsInScriptTags" should "return Js.Void when there are no JS scripts" in {
+    assert(JS.extractJsInScriptTags(<div><p>a</p></div>) eq Js.Void)
+  }
 }

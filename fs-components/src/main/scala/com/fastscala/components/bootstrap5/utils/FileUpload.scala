@@ -13,7 +13,7 @@ import scala.xml.Elem
 object FileUpload {
 
   def pasteFromClipboard(processUpload: Seq[FSUploadedFile] => Js)(implicit fsc: FSContext): Elem = {
-    val callback = fsc.callbackJSON(JS("[fileName, fileType, base64String]"), json => {
+    val callback = fsc.callbackJSON(Js("[fileName, fileType, base64String]"), json => {
       json.arrayOrObject(
         JS.void,
         {
@@ -31,7 +31,7 @@ object FileUpload {
         obj => JS.void
       )
     })
-    JS.inScriptTag(JS(
+    JS.inScriptTag(Js(
       s"""document.addEventListener('paste', function (evt) {
          |  Array.from(evt.clipboardData.items).forEach(item => {
          |    const blob = item.getAsFile();

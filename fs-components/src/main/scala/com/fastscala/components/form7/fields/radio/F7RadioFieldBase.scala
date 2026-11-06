@@ -62,13 +62,13 @@ abstract class F7RadioFieldBase[T]()(implicit val renderer: F7RadioFieldRenderer
   def focusJs: Js = ???
 
   override def updateFieldDisabledStatus(_disabled: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_disabled.updateIfChanged({
-    case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
-    case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
+    case (_, true) => Js(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('disabled', 'disabled') });""")
+    case (_, false) => Js(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('disabled') });""")
   }, Js.Void))
 
   override def updateFieldReadOnlyStatus(_readOnly: F7FieldMixinStatus[Boolean])(implicit form: Form7, fsc: FSContext): Try[Js] = scala.util.Success(_readOnly.updateIfChanged({
-    case (_, true) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
-    case (_, false) => JS.apply(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
+    case (_, true) => Js(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.setAttribute('readonly', 'true') });""")
+    case (_, false) => Js(s"""Array.from(document.querySelectorAll('#${aroundId} [name=$radioNameId]')).forEach((elem,idx) => { elem.removeAttribute('readonly') });""")
   }, Js.Void))
 
   override def updateFieldValueWithoutReRendering(previous: T, current: T)(implicit form: Form7, fsc: FSContext): Try[Js] = (for {

@@ -1561,7 +1561,7 @@ class F5CodeField(
     else {
       withFieldRenderHints { implicit hints =>
 
-        val onChangeCallbackJS = fsc.callback(JS(s"window.$editorId.session.getValue()"), value => {
+        val onChangeCallbackJS = fsc.callback(Js(s"window.$editorId.session.getValue()"), value => {
           currentValue = value
           form.onEvent(ChangedField(this)) & (if (hints.contains(ShowValidationsHint)) reRender() else JS.void)
         })

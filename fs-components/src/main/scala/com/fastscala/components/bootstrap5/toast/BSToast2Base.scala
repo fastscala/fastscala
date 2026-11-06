@@ -249,23 +249,23 @@ abstract class BSToast2Base
 
   def install(backdrop: Boolean = true, backdropStatic: Boolean = false, focus: Boolean = true, keyboard: Boolean = true)(implicit fsc: FSContext): Js = append2DOM()
 
-  def dispose(): Js = JS(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).dispose()""")
+  def dispose(): Js = Js(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).dispose()""")
 
   def remove(): Js = AllContainerIds.map(JS.removeId(_)).reduceOption(_ & _).getOrElse(Js.Void)
 
   def hideAndRemove(): Js = hide() & onHidden(remove())
 
-  def hide(): Js = JS(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).hide()""")
+  def hide(): Js = Js(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).hide()""")
 
-  def show(): Js = JS(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).show()""")
+  def show(): Js = Js(s"""bootstrap.Toast.getOrCreateInstance(${JS.elementById(toastId)}).show()""")
 
-  def onShow(js: Js): Js = JS(s"""$$('#$toastId').on('show.bs.toast', function (e) {${js.cmd}});""")
+  def onShow(js: Js): Js = Js(s"""$$('#$toastId').on('show.bs.toast', function (e) {${js.cmd}});""")
 
-  def onShown(js: Js): Js = JS(s"""$$('#$toastId').on('shown.bs.toast', function (e) {${js.cmd}});""")
+  def onShown(js: Js): Js = Js(s"""$$('#$toastId').on('shown.bs.toast', function (e) {${js.cmd}});""")
 
-  def onHide(js: Js): Js = JS(s"""$$('#$toastId').on('hide.bs.toast', function (e) {${js.cmd}});""")
+  def onHide(js: Js): Js = Js(s"""$$('#$toastId').on('hide.bs.toast', function (e) {${js.cmd}});""")
 
-  def onHidden(js: Js): Js = JS(s"""$$('#$toastId').on('hidden.bs.toast', function (e) {${js.cmd}});""")
+  def onHidden(js: Js): Js = Js(s"""$$('#$toastId').on('hidden.bs.toast', function (e) {${js.cmd}});""")
 
   def removeOnHidden(): Js = onHidden(remove())
 

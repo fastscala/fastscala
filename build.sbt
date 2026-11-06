@@ -70,6 +70,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "commons-io" % "commons-io" % "2.21.0",
       "org.owasp.encoder" % "encoder" % "1.6.0",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+      "com.google.guava" % "guava" % "33.8.0-jre",
     )
   )
 

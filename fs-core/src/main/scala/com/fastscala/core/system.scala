@@ -181,7 +181,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                       stats.callbacksInProcessing.inc()
                       logger.trace(s"Running callback${fsFunc.debugLbl.map(lbl => s" '$lbl'").getOrElse("")} on thread ${Thread.currentThread()}...")
                       val rslt = executeCallback(arg)
-                      logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.cmd.length} chars")
+                      logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${rslt.lengthUtf8Enc} bytes")
                       rslt
                     } catch {
                       case trowable =>
@@ -193,7 +193,7 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                     }
                 }
                 logger.trace(
-                  s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.cmd.getBytes.size}, evt_type=invk_func"
+                  s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.lengthUtf8Enc}, evt_type=invk_func"
                 )
                 Ok.js(rslt).respond(response, callback)
               })

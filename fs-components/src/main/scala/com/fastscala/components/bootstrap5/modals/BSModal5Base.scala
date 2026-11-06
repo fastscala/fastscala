@@ -64,7 +64,7 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
                , keyboard: Boolean = true
              )(implicit fsc: FSContext): Js = fsc.pipe(_.page.rootFSContext).pipe { implicit fsc =>
     append2DOM() & {
-      JS(
+      Js(
         s"""new bootstrap.Modal(document.getElementById('$modalId'), {
            |  backdrop: ${if (backdropStatic) "'static'" else backdrop.toString},
            |  keyboard: $keyboard,
@@ -80,19 +80,19 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
     }
   }
 
-  def dispose(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).dispose()""")
+  def dispose(): Js = Js(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).dispose()""")
 
   def deleteContext()(implicit fsp: FSPageLike): Unit = fsp.deleteContextFor(modalRenderer)
 
-  def handleUpdate(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).handleUpdate()""")
+  def handleUpdate(): Js = Js(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).handleUpdate()""")
 
   def hideAndRemoveAndDeleteContext()(implicit fsc: FSContext): Js = hide()
 
-  def hide(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).hide()""")
+  def hide(): Js = Js(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).hide()""")
 
-  def show(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).show()""")
+  def show(): Js = Js(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).show()""")
 
-  def toggle(): Js = JS(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).toggle()""")
+  def toggle(): Js = Js(s"""bootstrap.Modal.getInstance(document.getElementById('$modalId')).toggle()""")
 
   var _onHideDefaultListenerServerSideJs: FSPageLike => Js = _ => Js.Void
 
@@ -116,13 +116,13 @@ abstract class BSModal5Base extends ClassEnrichableMutable with Mutable {
 
   def eventListenerOnHidden()(implicit fsc: FSContext): Js = Js.Void
 
-  def addEventListenerOnShow(js: Js): Js = JS(s"""document.getElementById('$modalId').addEventListener('show.bs.modal', function (e) {${js.cmd}});""")
+  def addEventListenerOnShow(js: Js): Js = Js(s"""document.getElementById('$modalId').addEventListener('show.bs.modal', function (e) {${js.cmd}});""")
 
-  def addEventListenerOnShown(js: Js): Js = JS(s"""document.getElementById('$modalId').addEventListener('shown.bs.modal', function (e) {${js.cmd}});""")
+  def addEventListenerOnShown(js: Js): Js = Js(s"""document.getElementById('$modalId').addEventListener('shown.bs.modal', function (e) {${js.cmd}});""")
 
-  def addEventListenerOnHide(js: Js): Js = JS(s"""document.getElementById('$modalId').addEventListener('hide.bs.modal', function (e) {${js.cmd}});""")
+  def addEventListenerOnHide(js: Js): Js = Js(s"""document.getElementById('$modalId').addEventListener('hide.bs.modal', function (e) {${js.cmd}});""")
 
-  def addEventListenerOnHidden(js: Js): Js = JS(s"""document.getElementById('$modalId').addEventListener('hidden.bs.modal', function (e) {${js.cmd}});""")
+  def addEventListenerOnHidden(js: Js): Js = Js(s"""document.getElementById('$modalId').addEventListener('hidden.bs.modal', function (e) {${js.cmd}});""")
 
   def modalHeaderTitle: String
 

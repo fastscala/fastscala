@@ -168,7 +168,7 @@ class FSPage(
   def callbackClientSideOnTimeout(implicit fsc: FSContext): Js = session.fsSystem.callbackClientSideOnTimeout
 
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = {
-    JS {
+    Js {
       s"""window._fs = {
          |  sessionId: ${JS.asJsStr(session.id).cmd},
          |  pageId: ${JS.asJsStr(id).cmd},
@@ -218,7 +218,7 @@ class FSPage(
 
   def isAlive_? = !isDefunct_?
 
-  def setupKeepAlive(): Js = JS(s"""function sendKeepAlive() {window._fs.keepAlive(${JS.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
+  def setupKeepAlive(): Js = Js(s"""function sendKeepAlive() {window._fs.keepAlive(${JS.asJsStr(id).cmd});setTimeout(sendKeepAlive, ${periodicKeepAlivePeriod});};sendKeepAlive();""")
 
-  def initWebSocket() = JS("window._fs.initWebSocket();")
+  def initWebSocket() = Js("window._fs.initWebSocket();")
 }

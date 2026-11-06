@@ -56,7 +56,7 @@ abstract class F7MultiSelectFieldBase[T]()(implicit val renderer: F7MultiSelectF
     (renderedOptions, ids2Option, option2Id) <- currentRenderedOptions
   } yield {
     val selectedIndexes = renderedOptions.zipWithIndex.filter(e => currentValue.contains(e._1)).map(_._2)
-    JS {
+    Js {
       s"""var element = document.getElementById('$mainElemId');
          |var selected = [${selectedIndexes.mkString(",")}];
          |for (var i = 0; i < element.options.length; i++) {

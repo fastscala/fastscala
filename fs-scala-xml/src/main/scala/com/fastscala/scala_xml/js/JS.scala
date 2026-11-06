@@ -1,16 +1,44 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.core.FSContext
-import com.fastscala.js.{Js, JsUtils, RawJs}
+import com.fastscala.js.{Js, JsUtils}
 import com.fastscala.scala_xml.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
-
+import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
+import org.eclipse.jetty.io.Content
+import org.eclipse.jetty.util.Callback
 
 import scala.xml.*
-import org.owasp.encoder.Encode
+import org.owasp.encoder.{Encode, EncodedWriter, Encoders}
+
+import java.io.{OutputStream, OutputStreamWriter}
+import java.nio.ByteBuffer
 
 object JS extends JsXmlUtils
+
+class NodeSeqInStringEscapedJs(ns: NodeSeq) extends Js {
+  override lazy val lengthUtf8Enc: Long = {
+    var length = 0L
+    val fake = new OutputStream {
+
+      override def write(i: Int): Unit = length += 1
+    }
+    val writer = new EncodedWriter(new OutputStreamWriter(fake, "UTF-8"), Encoders.JAVASCRIPT_ATTRIBUTE)
+    XmlStream.writeSeq(ns, writer)
+    length
+    //    Encode.forJavaScript(cmd).getBytes("UTF-8").size
+  }
+
+  override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = {
+    val writer = new EncodedWriter(new OutputStreamWriter(Content.Sink.asOutputStream(sink), "UTF-8"), Encoders.JAVASCRIPT_ATTRIBUTE)
+    XmlStream.writeSeq(ns, writer)
+    callback.succeeded()
+    //    sink.write(false, ByteBuffer.wrap(Encode.forJavaScript(cmd).getBytes("UTF-8")), callback)
+  }
+
+  override def cmd: String = org.owasp.encoder.Encode.forJavaScript(ns.toString())
+}
 
 class JsXmlUtils extends JsUtils {
 
@@ -31,37 +59,45 @@ class JsXmlUtils extends JsUtils {
 
   def append2Body(ns: NodeSeq): Js = {
     val elemId = IdGen.id("template")
-    JS(s"document.body.appendChild(${htmlToElement(ns, elemId).cmd})") &
+    Js(Js(s"document.body.appendChild("), htmlToElement(ns, elemId), Js(")")) &
       removeId(elemId)
   }
 
   def append2(id: String, ns: NodeSeq): Js = {
     val elemId = IdGen.id("template")
-    JS(s"""document.getElementById("${escapeStr(id)}").appendChild(${htmlToElement(ns, elemId).cmd})""") &
+    Js(Js(s"""document.getElementById("${escapeStr(id)}").appendChild("""), htmlToElement(ns, elemId), Js(""")""")) &
       removeId(elemId)
   }
 
   def prepend2(id: String, ns: NodeSeq): Js = {
     val elemId = IdGen.id("template")
-    JS(s"""document.getElementById("${escapeStr(id)}").insertBefore(${htmlToElement(ns, elemId).cmd}, document.getElementById("${escapeStr(id)}").firstChild)""") &
+    Js(Js(s"""document.getElementById("${escapeStr(id)}").insertBefore("""), htmlToElement(ns, elemId), Js(s""", document.getElementById("${escapeStr(id)}").firstChild)""")) &
       removeId(elemId)
   }
 
   def replaceWithScriptExtraction(id: String, by: NodeSeq): Js =
     replace(id, excludeJsInScriptTags(by)) & extractJsInScriptTags(by)
 
-  def replace(id: String, by: NodeSeq): Js = JS(
-    s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(${htmlToElement(by).cmd}) : console.error("Element with id ${escapeStr(id)} not found"));""")
+  def replace(id: String, by: NodeSeq): Js = Js(
+    Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith("""),
+    htmlToElement(by),
+    Js(s""") : console.error("Element with id ${escapeStr(id)} not found"));""")
+  )
 
-  def setContents(id: String, ns: NodeSeq): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = "${Encode.forJavaScript(ns.toString())}"; """)
+  def setContents(id: String, ns: NodeSeq): Js = Js(
+    Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = """"),
+    NodeSeqInStringEscapedJs(ns),
+    Js("""";"""),
+  )
 
-  def setContents(id: String, js: Js): Js = JS(s"""document.getElementById("${escapeStr(id)}").innerHTML = $js; """)
+  def setContents(id: String, js: Js): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = $js; """)
 
-  def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js = JS {
-    s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})("${
-      Encode.forJavaScript(html.toString())
-    }"))).content"""
-  }
+  def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js =
+    Js(
+      Js(s"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", "$templateId");template.innerHTML = html.trim(); return template;})(""""),
+      NodeSeqInStringEscapedJs(html),
+      Js("\"))).content")
+    )
 
   def forceHttps: Elem = {
     <script type="text/javascript">{
@@ -71,7 +107,7 @@ class JsXmlUtils extends JsUtils {
           |//]]>""".stripMargin)
     }</script>
   }
-
+  
   def inScriptTag(js: Js): Elem = {
     <script type="text/javascript">{
       scala.xml.Unparsed(

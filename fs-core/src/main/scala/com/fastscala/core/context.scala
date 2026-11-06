@@ -156,7 +156,7 @@ class FSContext(
 
   def callback(arg: Js, func: String => Js, async: Boolean = true, expectReturn: Boolean = true, ignoreErrors: Boolean = false, env: Js = Js("{}"), debugLbl: Option[String] = None): Js = {
     logger.trace(s"CREATING CALLBACK IN CONTEXT ${fullPath}")
-    session.fsSystem.gc()
+    //    session.fsSystem.gc()
     val funcId = session.nextID()
     functionsGenerated += funcId
     page.callbacks += funcId -> new FSFunc(funcId, str => func(str), debugLbl = debugLbl)
@@ -164,7 +164,7 @@ class FSContext(
     session.fsSystem.stats.callbacksTotal.inc()
     session.fsSystem.stats.currentCallbacks.inc()
 
-    JS.fromString(
+    Js(
       s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${JS.asJsStr(page.id).cmd},${JS.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn,$env);"
     )
   }
@@ -217,7 +217,7 @@ class FSContext(
     s"/${session.fsSystem.FSPrefix}/file-upload/${page.id}/$funcId"
   }
 
-  def exec(func: () => Js, async: Boolean = true): Js = callback(JS("''"), _ => func(), async)
+  def exec(func: () => Js, async: Boolean = true): Js = callback(Js("''"), _ => func(), async)
 
   def fsPageScript(openWSSessionAtStart: Boolean = false)(implicit fsc: FSContext): Js = page.fsPageScript(openWSSessionAtStart)
 }

@@ -127,9 +127,9 @@ case class BSBtn(
 
   def disableAfterOneClick(): BSBtn = copy(onclickOpt = Some(fsc => disable() & onclickOpt.map(_(fsc)).getOrElse(Js.Void)))
 
-  def disable(): Js = JS.fromString(s"$$('#$id').addClass('disabled').attr('disabled','true');")
+  def disable(): Js = Js(s"$$('#$id').addClass('disabled').attr('disabled','true');")
 
-  def enable(): Js = JS.fromString(s"$$('#$id').removeClass('disabled').removeAttr('disabled');")
+  def enable(): Js = Js(s"$$('#$id').removeClass('disabled').removeAttr('disabled');")
 
   def toPrimary: Js = changeToStyleWithClasses("btn btn-primary")
 
@@ -165,7 +165,7 @@ case class BSBtn(
 
   def toOutlineWarning: Js = changeToStyleWithClasses("btn btn-outline btn-outline-warning")
 
-  def changeToStyleWithClasses(classes: String): Js = JS.fromString(s"$$('#$id').removeClass('${styleClasses.mkString(" ")}').addClass('$classes');")
+  def changeToStyleWithClasses(classes: String): Js = Js(s"$$('#$id').removeClass('${styleClasses.mkString(" ")}').addClass('$classes');")
 
   val styleClasses = Vector(
     "btn-primary"

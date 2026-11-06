@@ -29,7 +29,7 @@ object RerendererDebugStatus extends Enumeration {
     def rerender(aroundId: String, rerenderJs: Js): Js = {
       if (v == RerendererDebugStatus.Enabled) {
         JS.catchAndLogErrors(JS.setAttr(aroundId + "-overlay")("style", style("rgb(255 147 156 / 50%)"))) &
-          JS(s"""$$("#$aroundId").fadeOut(1500, function() {${rerenderJs.cmd}});""")
+          Js(s"""$$("#$aroundId").fadeOut(1500, function() {${rerenderJs.cmd}});""")
       } else {
         rerenderJs
       }

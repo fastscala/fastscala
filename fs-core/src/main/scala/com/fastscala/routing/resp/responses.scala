@@ -167,7 +167,22 @@ object Ok {
 
   def css(css: String) = new OkTextBased(css, "text/css;charset=utf-8")
 
-  def js(js: Js) = new OkTextBased(js.cmd, "text/javascript;charset=utf-8")
+  def js(js: Js) = new Response {
+    val ContentType: String = "text/javascript;charset=utf-8"
+
+    override def status: HttpStatus = HttpStatuses.OK
+
+    override def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+      super.respond(response, callback)
+      val responseHeaders = response.getHeaders
+      responseHeaders.put(HttpHeader.CONTENT_TYPE, ContentType)
+      // Known length: lets Jetty skip chunked transfer encoding.
+      responseHeaders.put(HttpHeader.CONTENT_LENGTH, js.lengthUtf8Enc)
+      js.writeUtf8Enc(response, callback)
+      response.write(true, ByteBuffer.allocate(0), callback)
+      true
+    }
+  }
 
   def utf8WithContentType(text: String, contentType: String, attachmentFileName: Option[String] = None) = {
     val _contentType = contentType

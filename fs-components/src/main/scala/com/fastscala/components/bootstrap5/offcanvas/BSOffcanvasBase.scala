@@ -76,7 +76,7 @@ trait BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
              )(implicit fsc: FSContext): Js =
     append2DOM()(using fsc.page.rootFSContext) & {
       offcanvasInstalled = Some(offcanvasId)
-      JS(
+      Js(
         s""";new bootstrap.Offcanvas(document.getElementById('$offcanvasId'), {
            |  backdrop: ${if (backdropStatic) "'static'" else backdrop.toString},
            |  keyboard: $keyboard,
@@ -87,23 +87,23 @@ trait BSOffcanvasBase extends ClassEnrichableMutable with Mutable {
 
   def hideAndRemoveAndDeleteContext()(implicit fsc: FSContext): Js = hide() & removeOnHidden()
 
-  def dispose(): Js = JS(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').dispose()""")
+  def dispose(): Js = Js(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').dispose()""")
 
-  def hide(): Js = JS(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').hide()""")
+  def hide(): Js = Js(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').hide()""")
 
-  def show(): Js = JS(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').show()""")
+  def show(): Js = Js(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').show()""")
 
-  def toggle(): Js = JS(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').toggle()""")
+  def toggle(): Js = Js(s"""bootstrap.Offcanvas.getOrCreateInstance('#$offcanvasId').toggle()""")
 
-  def onShow(js: Js): Js = JS(s"""$$('#$offcanvasId').on('show.bs.offcanvas', function (e) {${js.cmd}});""")
+  def onShow(js: Js): Js = Js(s"""$$('#$offcanvasId').on('show.bs.offcanvas', function (e) {${js.cmd}});""")
 
-  def onShown(js: Js): Js = JS(s"""$$('#$offcanvasId').on('shown.bs.offcanvas', function (e) {${js.cmd}});""")
+  def onShown(js: Js): Js = Js(s"""$$('#$offcanvasId').on('shown.bs.offcanvas', function (e) {${js.cmd}});""")
 
-  def onHide(js: Js): Js = JS(s"""$$('#$offcanvasId').on('hide.bs.offcanvas', function (e) {${js.cmd}});""")
+  def onHide(js: Js): Js = Js(s"""$$('#$offcanvasId').on('hide.bs.offcanvas', function (e) {${js.cmd}});""")
 
-  def onHidden(js: Js): Js = JS(s"""$$('#$offcanvasId').on('hidden.bs.offcanvas', function (e) {${js.cmd}});""")
+  def onHidden(js: Js): Js = Js(s"""$$('#$offcanvasId').on('hidden.bs.offcanvas', function (e) {${js.cmd}});""")
 
-  def onHidePrevented(js: Js): Js = JS(s"""$$('#$offcanvasId').on('hidePrevented.bs.offcanvas', function (e) {${js.cmd}});""")
+  def onHidePrevented(js: Js): Js = Js(s"""$$('#$offcanvasId').on('hidePrevented.bs.offcanvas', function (e) {${js.cmd}});""")
 
   def deleteContext()(implicit fsc: FSContext): Unit = fsc.page.deleteContextFor(offcanvasRenderer)
 

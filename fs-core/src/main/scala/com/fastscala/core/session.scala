@@ -53,8 +53,6 @@ class FSSession(
 
   val config = ConfigFactory.load()
 
-  def useRandomIds: Boolean = Option(config.getBoolean("com.fastscala.core.random-ids")).getOrElse(false)
-
   private var idSeq = 0L
   private lazy val rng = RandomSource.XO_RO_SHI_RO_128_PP.create()
 
@@ -67,7 +65,7 @@ class FSSession(
   private implicit def __fsSystem: FSSystem = fsSystem
 
   def nextID(prefix: String = ""): String = {
-    if (useRandomIds) {
+    if (fsSystem.useRandomIds) {
       prefix + java.lang.Long.toHexString(rng.nextLong())
     } else {
       session.synchronized {

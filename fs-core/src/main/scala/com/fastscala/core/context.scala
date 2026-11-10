@@ -33,7 +33,8 @@ class FSContext(
                  val onPageUnload: () => Js = () => JS.void,
                  var keepAliveAt: Long = System.currentTimeMillis(),
                  val debugLbl: Option[String] = None,
-                 var deletedAt: Option[Long] = None
+                 var deletedAt: Option[Long] = None,
+                 val key: Option[AnyRef] = None,
                ) extends FSPageLike with LazyLogging {
 
   def deleteOlderThan(ts: Long): Unit = {
@@ -60,10 +61,10 @@ class FSContext(
 
   private implicit def __fsSystem: FSSystem = session.fsSystem
 
-  val functionsGenerated = collection.mutable.Set[String]()
-  val functionsFileUploadGenerated = collection.mutable.Set[String]()
-  val functionsFileDownloadGenerated = collection.mutable.Set[String]()
-  val children = collection.mutable.Set[FSContext]()
+  lazy val functionsGenerated = collection.mutable.Set[String]()
+  lazy val functionsFileUploadGenerated = collection.mutable.Set[String]()
+  lazy val functionsFileDownloadGenerated = collection.mutable.Set[String]()
+  lazy val children = collection.mutable.Set[FSContext]()
 
   def fullPath: String = Iterator.unfold(Option(this))(_.map(ctx => (ctx, ctx.parentFSContext))).toSeq.reverse.map(ctx =>
     ctx.debugLbl.getOrElse(s"anon[${ctx.##.toHexString}]").pipe(name => if (ctx.deleted) s"[del: $name]" else name)
@@ -106,7 +107,7 @@ class FSContext(
     // If it already exists, delete:
     page.deleteContextFor(contextFor)
 
-    val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel)
+    val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel, key = Some(contextFor))
     page.key2FSContext(contextFor) = newContext
     logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
     children += newContext
@@ -118,7 +119,7 @@ class FSContext(
     // If it already exists, delete:
     val ctx = page.key2FSContext.getOrElseUpdate(
       contextFor, {
-        val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel.orElse(Some(s"ctx4$contextFor")))
+        val newContext = new FSContext(session, page, Some(this), debugLbl = debugLabel.orElse(Some(s"ctx4$contextFor")), key = Some(contextFor))
         page.key2FSContext(contextFor) = newContext
         logger.trace(s"Creating context ${newContext.fullPath} ($newContext)")
         children += newContext
@@ -129,7 +130,7 @@ class FSContext(
   }
 
   def delete(): Unit = {
-    logger.trace(s"Delete context $fullPath")
+    //    logger.trace(s"Delete context $fullPath")
     deletedAt = Some(System.currentTimeMillis())
     parentFSContext.foreach(_.children -= this)
     if (__fsSystem.debugDeletedContextsFullPath) {
@@ -138,6 +139,7 @@ class FSContext(
         case (id, fsFunc) => id -> fsFunc.fullPath
       })
     }
+    key.foreach(page.key2FSContext -= _)
     page.callbacks --= functionsGenerated
     if (session.fsSystem.eventsEnableGcCallback) session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
     session.fsSystem.stats.currentCallbacks.dec(functionsGenerated.size)
@@ -165,7 +167,7 @@ class FSContext(
     session.fsSystem.stats.currentCallbacks.inc()
 
     Js(
-      s"window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},${JS.asJsStr(page.id).cmd},${JS.asJsStr(funcId).cmd},$ignoreErrors,$async,$expectReturn,$env);"
+      s"""window._fs.callback(${if (arg.cmd.trim == "") "''" else arg.cmd},"${page.id}","$funcId",$ignoreErrors,$async,$expectReturn,$env);"""
     )
   }
 

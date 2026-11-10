@@ -12,7 +12,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
 ThisBuild / version := Version
-ThisBuild / scalaVersion := "3.8.2"
+ThisBuild / scalaVersion := "3.10.0"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
 
@@ -87,7 +87,7 @@ lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.3.0", "org.scalatest" %% "scalatest" % "3.2.19" % Test))
+  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.5.0", "org.scalatest" %% "scalatest" % "3.2.19" % Test, "net.bytebuddy" % "byte-buddy" % "1.18.17"))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
@@ -100,7 +100,7 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
       "io.circe" %% "circe-core" % "0.14.15",
       "io.circe" %% "circe-generic" % "0.14.15",
       "io.circe" %% "circe-parser" % "0.14.15",
-      "org.postgresql" % "postgresql" % "42.7.8",
+      "org.postgresql" % "postgresql" % "42.7.14",
       "org.xerial" % "sqlite-jdbc" % "3.51.0.0",
       "org.scalikejdbc" %% "scalikejdbc" % "4.3.5",
       "com.google.guava" % "guava" % "33.5.0-jre",

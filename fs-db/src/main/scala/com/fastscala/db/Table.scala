@@ -1,6 +1,7 @@
 package com.fastscala.db
 
 import com.fastscala.db.computed.ComputedCol
+import com.fastscala.utils.Utils
 import com.typesafe.scalalogging.LazyLogging
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
@@ -17,17 +18,42 @@ trait Table[R] extends TableBase with LazyLogging {
 
   def createSampleRow(): R
 
+  override lazy val sampleRowInstance: R = createSampleRowInternal()
+
   def createEmptyRow(): R = createSampleRow()
 
   def createSampleRowInternal(): R = createSampleRow()
 
-  def createEmptyRowInternal(): R = createSampleRowInternal()
+  private lazy val unsafe: sun.misc.Unsafe = {
+    val theUnsafe = classOf[sun.misc.Unsafe].getDeclaredField("theUnsafe")
+    theUnsafe.setAccessible(true)
+    theUnsafe.get(null).asInstanceOf[sun.misc.Unsafe]
+  }
+
+  // allocateInstance skips the row constructor, so anything it sets that isn't loaded from a column
+  // (e.g. the ClassTag used by RowWithUUID.equals) is copied from the sample row. Lazy val state is left unset.
+  private lazy val nonColumnFieldValues: Array[(Field, AnyRef)] =
+    Iterator.iterate[Class[?]](sampleRowInstance.getClass)(_.getSuperclass)
+      .takeWhile(c => c != null && c != classOf[Object])
+      .flatMap(_.getDeclaredFields)
+      .filterNot(f => java.lang.reflect.Modifier.isStatic(f.getModifiers) || fieldsList.contains(f) || f.getName.contains("$lzy") || f.getName.contains("bitmap$"))
+      .map(f => {
+        f.setAccessible(true)
+        (f, f.get(sampleRowInstance))
+      })
+      .filter(_._2 != null)
+      .toArray
+
+  def createEmptyRowInternal(): R = {
+    val instance = unsafe.allocateInstance(sampleRowInstance.getClass)
+    nonColumnFieldValues.foreach({ case (field, value) => field.set(instance, value) })
+    instance.asInstanceOf[R]
+  }
 
   lazy val sampleRow: R = createSampleRowInternal()
 
   def copyRow(from: R, to: R): Unit = {
     fieldsList.foreach(field => {
-      field.setAccessible(true)
       field.set(to, field.get(from))
     })
   }
@@ -99,7 +125,10 @@ trait Table[R] extends TableBase with LazyLogging {
       sqls"""select $colsSql from $tableNameSQLSyntaxQuoted"""
         .where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
     try {
-      sql"${query}".map(rs => (fromWrappedResultSet(rs, None), additionalCols.map(_._2(rs)))).list()
+      val setters = fieldsList.map(field => {
+        createValueSetterForField(field, sampleRowInstance, tableName)
+      })
+      sql"${query}".map(rs => (createRowFromWrappedResultSet(rs, setters), additionalCols.map(_._2(rs)))).list()
     } catch {
       case ex: PSQLException =>
         logger.error(s"Error on query $query", ex)
@@ -112,7 +141,8 @@ trait Table[R] extends TableBase with LazyLogging {
   def _count(where: SQLSyntax = SQLSyntax.empty)(implicit session: DBSession): Long = {
     val query = sqls"""select count(*) from $tableNameSQLSyntaxQuoted""".where(Some(where).filter(_ != SQLSyntax.empty))
     try {
-      sql"${query}".map(rs => fromWrappedResultSet(rs, None)).map(_.long(1)).list().head
+      val fieldsWithColumnNames = fieldsList.map(f => (f, columnNameForField(f, None)))
+      sql"${query}".map(_.long(1)).list().head
     } catch {
       case ex: PSQLException =>
         logger.error(s"Error on query $query", ex)
@@ -124,15 +154,22 @@ trait Table[R] extends TableBase with LazyLogging {
 
   def _delete(where: SQLSyntax, rest: SQLSyntax = SQLSyntax.empty)(implicit session: DBSession): Long = {
     val query = deleteFromSQL.where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
-    sql"${query}".map(rs => fromWrappedResultSet(rs, None)).executeUpdate().longValue()
+    sql"${query}".executeUpdate().longValue()
   }
 
   def listFromQuery(query: SQLSyntax): List[R] = DB.readOnly({ implicit session => _listFromQuery(query) })
 
   def _listFromQuery(query: SQLSyntax)(implicit session: DBSession): List[R] = {
-    println("STATEMENT: " + sql"${query}".statement)
-    sql"${query}".map(rs => fromWrappedResultSet(rs, None)).list()
+    val setters = fieldsList.map(field => {
+      createValueSetterForField(field, sampleRowInstance, tableName)
+    })
+    sql"${query}".map(rs => createRowFromWrappedResultSet(rs, setters)).list()
   }
 
-  override def fromWrappedResultSet(rs: WrappedResultSet, prefix: Option[String] = None): R = super.fromWrappedResultSet(rs, prefix).asInstanceOf[R]
+  // Took 477ms to run
+  def createRowFromWrappedResultSet(rs: WrappedResultSet, setters: Seq[(WrappedResultSet, R) => Unit]): R = {
+    val instance = createEmptyRowInternal()
+    setters.foreach(_(rs, instance))
+    instance
+  }
 }

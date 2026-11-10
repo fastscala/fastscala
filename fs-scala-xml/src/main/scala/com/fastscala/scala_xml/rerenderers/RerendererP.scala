@@ -24,7 +24,8 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
     val rendered: Elem = transforms(renderFunc(this)(fsc)(param))
     aroundId = aroundId.orElse(rendered.getIdOpt)
     renderedWithParam = Some(param)
-    val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
+    val idToSet = getOrGenerateAroundId
+    val renderedWithId: Elem = if (rendered.getIdOpt != Some(idToSet)) rendered.withId(getOrGenerateAroundId) else rendered
     RerendererDebugStatusState().render(renderedWithId)
   }
 
@@ -32,7 +33,8 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
 
   def rerender(param: P)(implicit fsp: FSPageLike): Js = fsp.inContextClearedFor(this) { implicit fsc =>
     val rendered: Elem = renderImpl(param)
-    val renderedWithId: Elem = rendered.withId(getOrGenerateAroundId)
+    val idToSet = getOrGenerateAroundId
+    val renderedWithId: Elem = if (rendered.getIdOpt != Some(idToSet)) rendered.withId(getOrGenerateAroundId) else rendered
     RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replaceWithScriptExtraction(getOrGenerateAroundId, renderedWithId))
   }
 

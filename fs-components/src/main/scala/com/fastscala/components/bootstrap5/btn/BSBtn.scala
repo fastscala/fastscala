@@ -16,6 +16,28 @@ object BSBtn {
   def apply(): BSBtn = new BSBtn("", NodeSeq.Empty)
 
   implicit def evidence(btn: BSBtn): FSContext => Elem = implicit fsc => btn.btn
+
+  val StyleClasses = Vector(
+    "btn-primary"
+    , "btn-secondary"
+    , "btn-info"
+    , "btn-danger"
+    , "btn-dark"
+    , "btn-light"
+    , "btn-success"
+    , "btn-warning"
+    , "btn-link"
+    , "btn-outline-danger"
+    , "btn-outline-dark"
+    , "btn-outline-info"
+    , "btn-outline-light"
+    , "btn-outline-primary"
+    , "btn-outline-secondary"
+    , "btn-outline-success"
+    , "btn-outline-warning"
+    , "btn-outline"
+    , "btn"
+  )
 }
 
 case class BSBtn(
@@ -167,27 +189,7 @@ case class BSBtn(
 
   def changeToStyleWithClasses(classes: String): Js = Js(s"$$('#$id').removeClass('${styleClasses.mkString(" ")}').addClass('$classes');")
 
-  val styleClasses = Vector(
-    "btn-primary"
-    , "btn-secondary"
-    , "btn-info"
-    , "btn-danger"
-    , "btn-dark"
-    , "btn-light"
-    , "btn-success"
-    , "btn-warning"
-    , "btn-link"
-    , "btn-outline-danger"
-    , "btn-outline-dark"
-    , "btn-outline-info"
-    , "btn-outline-light"
-    , "btn-outline-primary"
-    , "btn-outline-secondary"
-    , "btn-outline-success"
-    , "btn-outline-warning"
-    , "btn-outline"
-    , "btn"
-  )
+  val styleClasses = BSBtn.StyleClasses
 
   def Btn: BSBtn = addClass("")
 

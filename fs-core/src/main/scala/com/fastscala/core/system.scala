@@ -30,6 +30,8 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
 
   val config = ConfigFactory.load()
 
+  lazy val useRandomIds: Boolean = Option(config.getBoolean("com.fastscala.core.random-ids")).getOrElse(false)
+
   lazy val debug: Boolean = config.getBoolean("com.fastscala.core.debug")
 
   lazy val debugDeletedContextsFullPath: Boolean = config.getBoolean("com.fastscala.core.debug.deleted_contexts_full_path")

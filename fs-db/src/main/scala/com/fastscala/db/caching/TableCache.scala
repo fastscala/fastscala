@@ -3,7 +3,7 @@ package com.fastscala.db.caching
 import com.fastscala.db.*
 import com.fastscala.db.keyed.{RowWithId, TableWithId}
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
-import com.fastscala.db.util.Utils
+import com.fastscala.utils.Utils
 import com.typesafe.scalalogging.LazyLogging
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
@@ -121,10 +121,9 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
 
   def getForIdsX(ids: K*): List[R] = {
     val idsSet = ids.toSet
-    entries.keySet.intersect(idsSet).map(entries) ++ (idsSet.diff(entries.keySet).toList match {
-      case Nil => Seq()
-      case missingIds => processLoadedRows(table.getForIds(missingIds *))
-    })
+    val missingIds = idsSet.diff(entries.keySet)
+    if (missingIds.isEmpty) idsSet.flatMap(entries.get)
+    else idsSet.flatMap(entries.get) ++ processLoadedRows(table.getForIds(missingIds.toSeq *))
   }.toList
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()

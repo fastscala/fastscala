@@ -34,13 +34,21 @@ trait TableBase extends DataTypeSupport with LazyLogging {
 
   def sampleRow: Any
 
+  lazy val sampleRowInstance: Any = ???
+
   val transientAnnotations = Set("java.beans.Transient", "scala.transient", "com.fastscala.db.annotations.NotAColumn")
 
-  val fieldsList: List[Field] = sampleRow.getClass.getDeclaredFields.iterator.filter({
+  val fieldsList: List[Field] = sampleRowInstance.getClass.getDeclaredFields.iterator.filter({
     case field =>
       !field.getName.contains("$") &&
         !field.getAnnotations.exists(anno => transientAnnotations.contains(anno.annotationType().getName))
+  }).map(field => {
+    field.setAccessible(true)
+    field
   }).toList
+  lazy val fieldSetters: Seq[(WrappedResultSet, Any) => Unit] = fieldsList.map(field => {
+    createValueSetterForField(field, sampleRowInstance, tableName)
+  }).toVector
 
   def fieldsListNoComputedCols = fieldsList.filter(_.getType != classOf[ComputedCol[?]])
 
@@ -56,13 +64,13 @@ trait TableBase extends DataTypeSupport with LazyLogging {
 
   private case class UniqueConstraint(constraintName: SQLSyntax, columns: Seq[SQLSyntax])
 
-  private def foreignKeyConstraints: List[ForeignKeyConstraint] = (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
+  private def foreignKeyConstraints: List[ForeignKeyConstraint] = (sampleRowInstance.getClass.getDeclaredConstructors.flatMap(cons => {
     cons.getParameters.flatMap(param => {
       param.getDeclaredAnnotations.collect({
         case fk: ForeignKey => param.getName -> fk
       })
     })
-  }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
+  }) ++ sampleRowInstance.getClass.getDeclaredFields.flatMap(f => {
     f.getDeclaredAnnotations.collect({
       case fk: ForeignKey => f.getName -> fk
     })
@@ -77,13 +85,13 @@ trait TableBase extends DataTypeSupport with LazyLogging {
       ForeignKeyConstraint(fkName, column, referencesTable, referencesColumn, onUpdate, onDelete)
   })
 
-  private def uniqueConstraints: List[UniqueConstraint] = (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
+  private def uniqueConstraints: List[UniqueConstraint] = (sampleRowInstance.getClass.getDeclaredConstructors.flatMap(cons => {
     cons.getParameters.flatMap(param => {
       param.getDeclaredAnnotations.collect({
         case unq: Unique => param.getName -> unq
       })
     })
-  }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
+  }) ++ sampleRowInstance.getClass.getDeclaredFields.flatMap(f => {
     f.getDeclaredAnnotations.collect({
       case unq: Unique => f.getName -> unq
     })
@@ -94,13 +102,13 @@ trait TableBase extends DataTypeSupport with LazyLogging {
       List(UniqueConstraint(constraintName, uniqueCols.map(col => SQLSyntax.createUnsafely(columnNameForField(col._1)).doubleQuoted)))
   }
 
-  private def primaryKeys: List[(String, PrimaryKey)] = (sampleRow.getClass.getDeclaredConstructors.flatMap(cons => {
+  private def primaryKeys: List[(String, PrimaryKey)] = (sampleRowInstance.getClass.getDeclaredConstructors.flatMap(cons => {
     cons.getParameters.flatMap(param => {
       param.getDeclaredAnnotations.collect({
         case pk: PrimaryKey => param.getName -> pk
       })
     })
-  }) ++ sampleRow.getClass.getDeclaredFields.flatMap(f => {
+  }) ++ sampleRowInstance.getClass.getDeclaredFields.flatMap(f => {
     f.getDeclaredAnnotations.collect({
       case pk: PrimaryKey => f.getName -> pk
     })
@@ -152,7 +160,7 @@ trait TableBase extends DataTypeSupport with LazyLogging {
   def __createTableOnlySQL: List[SQL[Nothing, NoExtractor]] = {
     val columns: List[SQLSyntax] = fieldsListNoComputedCols.map(field => {
       field.setAccessible(true)
-      SQLSyntax.createUnsafely(s""""${columnNameForField(field)}" ${fieldTypeToSQLType(field, field.getType, field.get(sampleRow))}""")
+      SQLSyntax.createUnsafely(s""""${columnNameForField(field)}" ${fieldTypeToSQLType(field, field.getType, field.get(sampleRowInstance))}""")
     })
 
     List(sql"""CREATE TABLE IF NOT EXISTS $tableNameSQLSyntaxQuoted ($columns)""")
@@ -173,7 +181,7 @@ trait TableBase extends DataTypeSupport with LazyLogging {
       field.setAccessible(true)
       val dfltValue = if (default.isDefinedAt(field)) Some(default(field)) else None
       val defaultSQL: SQLSyntax = dfltValue.map(v => sqls"default " + valueToLiteral(v)).getOrElse(SQLSyntax.empty)
-      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(columnNameForField(field))}" ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRow)))} ${defaultSQL}""".stripMargin
+      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(columnNameForField(field))}" ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRowInstance)))} ${defaultSQL}""".stripMargin
       statement
     })
   }
@@ -181,9 +189,9 @@ trait TableBase extends DataTypeSupport with LazyLogging {
   def __addMissingColumnsIfNotExistsWithDefaultsFromSampleRow(): List[SQL[Nothing, NoExtractor]] = {
     fieldsListNoComputedCols.map(field => {
       field.setAccessible(true)
-      val dfltValue = field.get(sampleRow)
+      val dfltValue = field.get(sampleRowInstance)
       val defaultSQL: SQLSyntax = sqls"default " + valueToLiteral(dfltValue)
-      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(columnNameForField(field))}" ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRow)))} ${defaultSQL}""".stripMargin
+      val statement = sql"""ALTER TABLE ${SQLSyntax.createUnsafely(s"\"$tableName\"")} ADD COLUMN IF NOT EXISTS "${SQLSyntax.createUnsafely(columnNameForField(field))}" ${SQLSyntax.createUnsafely(fieldTypeToSQLType(field, field.getType, field.get(sampleRowInstance)))} ${defaultSQL}""".stripMargin
       statement
     })
   }
@@ -210,22 +218,12 @@ trait TableBase extends DataTypeSupport with LazyLogging {
     val alias: SQLSyntax = SQLSyntax.createUnsafely(prefix.map(prefix => '"' + prefix + '_' + name + '"').getOrElse('"' + name + '"'))
     if (f.getType == classOf[ComputedCol[?]]) {
       f.setAccessible(true)
-      sqls"${f.get(sampleRow).asInstanceOf[ComputedCol[?]].sql} AS $alias"
+      sqls"${f.get(sampleRowInstance).asInstanceOf[ComputedCol[?]].sql} AS $alias"
     } else sqls"$column as $alias"
   }), sqls",", true)
 
   def selectFromSQL(prefix: Option[String] = None): SQLSyntax = sqls"""select ${selectSQL(prefix)} from $tableNameSQLSyntaxQuoted"""
 
   def deleteFromSQL: SQLSyntax = sqls"""delete from $tableNameSQLSyntaxQuoted"""
-
-  def fromWrappedResultSet(rs: WrappedResultSet, prefix: Option[String]): Any = {
-    val instance = createEmptyRowInternal()
-    fieldsList.zipWithIndex.foreach({
-      case (field, idx) =>
-        field.setAccessible(true)
-        setValue(rs, field, prefix, field.getType, instance, tableName)
-    })
-    instance
-  }
 }
 

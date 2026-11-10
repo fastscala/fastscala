@@ -182,9 +182,7 @@ trait Table6StdColsHelper {
                                    row: R,
                                    rowIdx: TableRowIdx,
                                    rowId: TableRowId
-    ): Elem = <td class={additionalClasses}>
-      {render(row)}
-    </td>
+    ): Elem = <td class={additionalClasses}>{render(row)}</td>
 
     override def renderTfootTrTh()(implicit
                                    fsc: FSContext,

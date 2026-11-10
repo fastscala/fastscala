@@ -3,7 +3,6 @@ package com.fastscala.db.caching
 import com.fastscala.db.*
 import com.fastscala.db.keyed.{RowWithId, TableWithId}
 import com.fastscala.db.observable.{DBObserver, ObservableRowBase}
-import com.fastscala.db.util.Utils
 import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import scalikejdbc.interpolation.SQLSyntax

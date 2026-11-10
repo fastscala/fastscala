@@ -34,9 +34,12 @@ import java.util.UUID
 
 trait DataTypeSupport {
 
-  def columnNameForField(field: java.lang.reflect.Field, prefix: Option[String] = None): String =
+  private val columnNameCache = collection.mutable.Map[(java.lang.reflect.Field, Option[String]), String]()
+
+  def columnNameForField(field: java.lang.reflect.Field, prefix: Option[String] = None): String = columnNameCache.getOrElseUpdate(field -> prefix, {
     prefix.map(_ + "_" + columnNameForField(field.getName)).getOrElse(columnNameForField(field.getName))
       .tap(name => if (name.length > 63) throw new Exception(s"Cannot create the column name from field '${field.getName}': more than 63 chars."))
+  })
 
   def columnNameForField(name: String): String = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name)
 
@@ -121,90 +124,115 @@ trait DataTypeSupport {
     case _ => throw new Exception(s"Unexpected field class ${clas.getSimpleName} for field ${field.getName}")
   }
 
-  def setValue(rs: WrappedResultSet, field: java.lang.reflect.Field, prefix: Option[String], valueType: Class[?], instance: Any, tableName: String, nullable: Boolean = false): Unit = try {
+  // JDBC primitive getters return 0/false for SQL NULL, so these must be called right after reading the value.
+  private def optionUnlessNull[T](rs: WrappedResultSet, value: T): Option[T] = if (rs.underlying.wasNull()) None else Some(value)
+
+  private def requireNotNull[T](rs: WrappedResultSet, columnName: String, value: T): T = {
+    if (rs.underlying.wasNull()) throw new Exception(s"Unexpected NULL in non-optional column $columnName")
+    value
+  }
+
+  def createValueSetterForField[T](field: java.lang.reflect.Field, sampleRowInstance: T, tableName: String): (WrappedResultSet, T) => Unit =
+    createValueSetterForField(field, field.getType, sampleRowInstance, tableName, false)
+
+  private def createValueSetterForField[T](field: java.lang.reflect.Field, valueType: Class[?], sampleRowInstance: T, tableName: String, nullable: Boolean): (WrappedResultSet, T) => Unit = {
+    val columnName = columnNameForField(field, None)
+    val sampleValue = field.get(sampleRowInstance)
+
+    def setter(value: (WrappedResultSet, Int) => Any): (WrappedResultSet, T) => Unit = { (rs: WrappedResultSet, instance: T) =>
+      var idx = -1
+      try {
+        if (idx == -1) {
+          idx = rs.underlying.findColumn(columnName)
+        }
+        field.set(instance, value(rs, idx))
+      } catch {
+        case ex: Exception =>
+          val meta = rs.underlying.getMetaData
+          val existing = (1 to meta.getColumnCount).map(idx => s"$idx: ${meta.getColumnName(idx)} (${meta.getColumnTypeName(idx)})").mkString("[", ", ", "]")
+          throw new Exception(s"Exception setting value of field ${columnNameForField(field)} of type ${valueType.getName} (existing columns: $existing)", ex)
+      }
+    }
+
     valueType.getName match {
-
       case "com.fastscala.db.computed.ComputedCol" =>
-        val col = field.get(instance).asInstanceOf[ComputedCol[?]]
-        col.getClass.getDeclaredFields.find(_.getName == "value").foreach(f => {
-          f.setAccessible(true)
-          f.set(col, col.read(columnNameForField(field, prefix))(rs))
-        })
+        val sample = sampleValue.asInstanceOf[ComputedCol[Any]]
+        setter((rs, idx) => new ComputedCol[Any](sample.sql, sample.read, sample.read(columnName)(rs)))
 
-      case "java.lang.String" | "string" if nullable => field.set(instance, rs.stringOpt(columnNameForField(field, prefix)))
-      case "java.lang.String" | "string" => field.set(instance, rs.string(columnNameForField(field, prefix)))
+      case "java.lang.String" | "string" if nullable => setter((rs, idx) => Option(rs.underlying.getString(idx)))
+      case "java.lang.String" | "string" => setter((rs, idx) => rs.underlying.getString(idx))
 
-      case "java.lang.Long" | "long" if nullable => field.set(instance, rs.bigIntOpt(columnNameForField(field, prefix)).map(_.longValue()))
-      case "java.lang.Long" | "long" => field.set(instance, rs.bigInt(columnNameForField(field, prefix)).longValue())
+      case "java.lang.Long" | "long" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getLong(idx)))
+      case "java.lang.Long" | "long" => setter((rs, idx) => requireNotNull(rs, columnName, rs.underlying.getLong(idx)))
 
-      case "java.lang.Character" | "char" if nullable => field.set(instance, rs.stringOpt(columnNameForField(field, prefix)).map(_.head))
-      case "java.lang.Character" | "char" => field.set(instance, rs.string(columnNameForField(field, prefix)).head)
+      case "java.lang.Character" | "char" if nullable => setter((rs, idx) => Option(rs.underlying.getString(idx)).map(_.head))
+      case "java.lang.Character" | "char" => setter((rs, idx) => rs.underlying.getString(idx).head)
 
-      case "java.lang.Integer" | "int" if nullable => field.set(instance, rs.intOpt(columnNameForField(field, prefix)))
-      case "java.lang.Integer" | "int" => field.set(instance, rs.int(columnNameForField(field, prefix)))
+      case "java.lang.Integer" | "int" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getInt(idx)))
+      case "java.lang.Integer" | "int" => setter((rs, idx) => requireNotNull(rs, columnName, rs.underlying.getInt(idx)))
 
-      case "scala.Enumeration$Value" => field.set(instance, enumSampleToValue(field.get(instance), rs.int(columnNameForField(field, prefix))))
+      case "scala.Enumeration$Value" => setter((rs, idx) => enumSampleToValue(sampleValue.asInstanceOf[AnyRef], rs.underlying.getInt(idx)))
 
-      case "scala.Enumeration$Val" if nullable => field.set(instance, rs.intOpt(columnNameForField(field, prefix)).map(i => enumSampleToValue(field.get(instance).asInstanceOf[Some[AnyRef]].get, i)))
+      case "scala.Enumeration$Val" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getInt(idx)).map(i => enumSampleToValue(sampleValue.asInstanceOf[Some[AnyRef]].get, i)))
 
-      case "java.lang.Short" | "short" if nullable => field.set(instance, rs.shortOpt(columnNameForField(field, prefix)))
-      case "java.lang.Short" | "short" => field.set(instance, rs.short(columnNameForField(field, prefix)))
+      case "java.lang.Short" | "short" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getShort(idx)))
+      case "java.lang.Short" | "short" => setter((rs, idx) => requireNotNull(rs, columnName, rs.underlying.getShort(idx)))
 
-      case "java.lang.Float" | "float" if nullable => field.set(instance, rs.floatOpt(columnNameForField(field, prefix)))
-      case "java.lang.Float" | "float" => field.set(instance, rs.float(columnNameForField(field, prefix)))
+      case "java.lang.Float" | "float" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getFloat(idx)))
+      case "java.lang.Float" | "float" => setter((rs, idx) => requireNotNull(rs, columnName, rs.underlying.getFloat(idx)))
 
-      case "java.lang.Double" | "double" if nullable => field.set(instance, rs.doubleOpt(columnNameForField(field, prefix)))
-      case "java.lang.Double" | "double" => field.set(instance, rs.double(columnNameForField(field, prefix)))
+      case "java.lang.Double" | "double" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getDouble(idx)))
+      case "java.lang.Double" | "double" => setter((rs, idx) => requireNotNull(rs, columnName, rs.underlying.getDouble(idx)))
 
-      case "java.math.BigDecimal" if nullable => field.set(instance, rs.bigDecimalOpt(columnNameForField(field, prefix)))
-      case "java.math.BigDecimal" => field.set(instance, rs.bigDecimal(columnNameForField(field, prefix)))
+      case "java.math.BigDecimal" if nullable => setter((rs, idx) => Option(rs.underlying.getBigDecimal(idx)))
+      case "java.math.BigDecimal" => setter((rs, idx) => rs.underlying.getBigDecimal(idx))
 
-      case "scala.math.BigDecimal" if nullable => field.set(instance, rs.bigDecimalOpt(columnNameForField(field, prefix)).map(scala.math.BigDecimal(_)))
-      case "scala.math.BigDecimal" => field.set(instance, rs.bigDecimal(columnNameForField(field, prefix)): scala.math.BigDecimal)
+      case "scala.math.BigDecimal" if nullable => setter((rs, idx) => Option(rs.underlying.getBigDecimal(idx)).map(scala.math.BigDecimal(_)))
+      case "scala.math.BigDecimal" => setter((rs, idx) => rs.underlying.getBigDecimal(idx): scala.math.BigDecimal)
 
-      case "java.lang.Boolean" | "boolean" if nullable => field.set(instance, rs.booleanOpt(columnNameForField(field, prefix)))
-      case "java.lang.Boolean" | "boolean" => field.set(instance, rs.boolean(columnNameForField(field, prefix)))
+      case "java.lang.Boolean" | "boolean" if nullable => setter((rs, idx) => optionUnlessNull(rs, rs.underlying.getBoolean(idx)))
+      case "java.lang.Boolean" | "boolean" => setter((rs, idx) => requireNotNull(rs, columnName, rs.underlying.getBoolean(idx)))
 
-      case "[B" if nullable => field.set(instance, rs.bytesOpt(columnNameForField(field, prefix)))
-      case "[B" => field.set(instance, rs.bytes(columnNameForField(field, prefix)))
+      case "[B" if nullable => setter((rs, idx) => Option(rs.underlying.getBytes(idx)))
+      case "[B" => setter((rs, idx) => rs.underlying.getBytes(idx))
 
-      case "java.time.LocalDate" if nullable => field.set(instance, rs.localDateOpt(columnNameForField(field, prefix)))
-      case "java.time.LocalDate" => field.set(instance, rs.localDate(columnNameForField(field, prefix)))
+      case "java.time.LocalDate" if nullable => setter((rs, idx) => Option(rs.underlying.getObject(columnName, classOf[java.time.LocalDate])))
+      case "java.time.LocalDate" => setter((rs, idx) => rs.underlying.getObject(columnName, classOf[java.time.LocalDate]))
 
-      case "java.time.LocalTime" if nullable => field.set(instance, rs.localTimeOpt(columnNameForField(field, prefix)))
-      case "java.time.LocalTime" => field.set(instance, rs.localTime(columnNameForField(field, prefix)))
+      case "java.time.LocalTime" if nullable => setter((rs, idx) => Option(rs.underlying.getObject(columnName, classOf[java.time.LocalTime])))
+      case "java.time.LocalTime" => setter((rs, idx) => rs.underlying.getObject(columnName, classOf[java.time.LocalTime]))
 
-      case "java.time.LocalDateTime" if nullable => field.set(instance, rs.localDateTimeOpt(columnNameForField(field, prefix)))
-      case "java.time.LocalDateTime" => field.set(instance, rs.localDateTime(columnNameForField(field, prefix)))
+      case "java.time.LocalDateTime" if nullable => setter((rs, idx) => Option(rs.underlying.getObject(columnName, classOf[java.time.LocalDateTime])))
+      case "java.time.LocalDateTime" => setter((rs, idx) => rs.underlying.getObject(columnName, classOf[java.time.LocalDateTime]))
 
-      case "java.time.OffsetDateTime" if nullable => field.set(instance, rs.offsetDateTimeOpt(columnNameForField(field, prefix)))
-      case "java.time.OffsetDateTime" => field.set(instance, rs.offsetDateTime(columnNameForField(field, prefix)))
+        // Via Timestamp so values stay in the system offset; pgjdbc's getObject(OffsetDateTime) returns UTC.
+      case "java.time.OffsetDateTime" if nullable => setter((rs, idx) => Option(rs.underlying.getTimestamp(idx)).map(ts => java.time.OffsetDateTime.ofInstant(ts.toInstant, java.time.ZoneId.systemDefault())))
+      case "java.time.OffsetDateTime" => setter((rs, idx) => Option(rs.underlying.getTimestamp(idx)).map(ts => java.time.OffsetDateTime.ofInstant(ts.toInstant, java.time.ZoneId.systemDefault())).orNull)
 
-      case "java.time.Instant" if nullable => field.set(instance, rs.timestampOpt(columnNameForField(field, prefix)).map(_.toInstant))
-      case "java.time.Instant" => field.set(instance, rs.timestamp(columnNameForField(field, prefix)).toInstant)
+      case "java.time.Instant" if nullable => setter((rs, idx) => Option(rs.underlying.getTimestamp(idx)).map(_.toInstant))
+      case "java.time.Instant" => setter((rs, idx) => rs.underlying.getTimestamp(idx).toInstant)
 
-      case "java.sql.Timestamp" if nullable => field.set(instance, rs.timestampOpt(columnNameForField(field, prefix)))
-      case "java.sql.Timestamp" => field.set(instance, rs.timestamp(columnNameForField(field, prefix)))
+      case "java.sql.Timestamp" if nullable => setter((rs, idx) => Option(rs.underlying.getTimestamp(idx)))
+      case "java.sql.Timestamp" => setter((rs, idx) => rs.underlying.getTimestamp(idx))
 
-      case "java.util.UUID" if nullable => field.set(instance, rs.stringOpt(columnNameForField(field, prefix)).map(UUID.fromString))
-      case "java.util.UUID" => field.set(instance, UUID.fromString(rs.string(columnNameForField(field, prefix))))
+      case "java.util.UUID" if nullable => setter((rs, idx) => {
+        val obj = rs.underlying.getObject(idx)
+        if (obj == null) None
+        else Some(obj.asInstanceOf[UUID])
+      })
+      case "java.util.UUID" => setter((rs, idx) => rs.underlying.getObject(idx).asInstanceOf[UUID])
 
-      case "io.circe.Json" if nullable => field.set(instance, rs.stringOpt(columnNameForField(field, prefix)).map(str => io.circe.parser.parse(str).right.get))
-      case "io.circe.Json" => field.set(instance, io.circe.parser.parse(rs.string(columnNameForField(field, prefix))).right.get)
+      case "io.circe.Json" if nullable => setter((rs, idx) => Option(rs.underlying.getString(idx)).map(str => io.circe.parser.parse(str).right.get))
+      case "io.circe.Json" => setter((rs, idx) => io.circe.parser.parse(rs.underlying.getString(idx)).right.get)
 
       case "scala.Option" =>
-        if (field.get(instance).isInstanceOf[None.type]) throw new Exception(s"Missing sample value for optional column ${columnNameForField(field)} on table ${tableName}")
-        setValue(rs, field, prefix, field.get(instance).asInstanceOf[Some[Any]].get.getClass, instance, tableName, true)
+        if (sampleValue.isInstanceOf[None.type]) throw new Exception(s"Missing sample value for optional column ${columnNameForField(field)} on table ${tableName}")
+        createValueSetterForField(field, sampleValue.asInstanceOf[Some[Any]].get.getClass, sampleRowInstance, tableName, true)
 
-      case _ if field.getType.isEnum => field.set(instance, trustMe(field.getType, rs.string(columnNameForField(field, prefix))))
+      case _ if field.getType.isEnum => setter((rs, idx) => trustMe(field.getType, rs.underlying.getString(idx)))
 
       case unknown => throw new Exception(s"Unknown value type $unknown of field ${columnNameForField(field)}")
     }
-  } catch {
-    case ex: Exception =>
-      val meta = rs.underlying.getMetaData
-      val existing = (1 to meta.getColumnCount).map(idx => s"$idx: ${meta.getColumnName(idx)} (${meta.getColumnTypeName(idx)})").mkString("[", ", ", "]")
-      throw new Exception(s"Exception setting value of field ${columnNameForField(field)} of type ${valueType.getName} (existing columns: $existing)", ex)
   }
 
   def trustMe[T <: Enum[T]](cls: Class[?], name: String): Enum[T] = Enum.valueOf[T](cls.asInstanceOf[Class[T]], name)

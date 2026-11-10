@@ -18,14 +18,19 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-package com.fastscala.db.util
+package com.fastscala.utils
+
+import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicBoolean
 
 object Utils {
 
   var enableProfiling = true
 
   implicit def __print[T](v: T): Object {def #!(s: String, t: T => String): T} = new {
-    def #!(s: String = "", t: T => String = _.toString): T = { println(s + t(v)); v }
+    def #!(s: String = "", t: T => String = _.toString): T = {
+      println(s + t(v)); v
+    }
   }
 
 
@@ -33,6 +38,13 @@ object Utils {
     val start = System.currentTimeMillis()
     val v = f
     r(System.currentTimeMillis() - start)
+    v
+  }
+
+  def timeNs[T](f: => T)(r: Long => Unit): T = {
+    val start = System.nanoTime()
+    val v = f
+    r(System.nanoTime() - start)
     v
   }
 
@@ -107,5 +119,50 @@ object Utils {
       b
     }
 
+  }
+
+  def profile[T](name: String, threshold: Long, samplePeriod: Long, matchPrefix: String = "")(code: => T): T = {
+    val finished = new AtomicBoolean(false)
+    val inspected = Thread.currentThread()
+    val started = System.currentTimeMillis()
+    val watchdog = new Thread() {
+
+      def stripCommonSuffix(strs: Seq[String]): Seq[String] =
+        if (strs.isEmpty) strs
+        else {
+          val first = strs.head
+
+          // number of trailing chars shared by all strings
+          var n = first.length
+          val it = strs.iterator.drop(1)
+          while (n > 0 && it.hasNext) {
+            val s = it.next()
+            var k = 0
+            val limit = math.min(n, s.length)
+            while (k < limit && first.charAt(first.length - 1 - k) == s.charAt(s.length - 1 - k)) k += 1
+            n = k
+          }
+
+          if (n == 0) strs else strs.map(s => s.substring(0, s.length - n))
+        }
+
+      var stackTraces = List[String]()
+
+      override def run(): Unit = {
+        while (!finished.get()) {
+          this.synchronized(this.wait(samplePeriod))
+          stackTraces ::= (s"\n\n[$name - profile stack trace @${System.currentTimeMillis() - started}ms - ${LocalDateTime.now()}]:\n" + inspected.getStackTrace.filter(_.toString.startsWith(matchPrefix)).map("\t" + _).mkString("\n"))
+        }
+        if ((System.currentTimeMillis() - started) > threshold) {
+          stripCommonSuffix(stackTraces).reverse.foreach(stackTrace => println(stackTrace))
+        }
+      }
+    }
+    watchdog.start()
+    try {
+      code
+    } finally {
+      finished.set(true)
+    }
   }
 }

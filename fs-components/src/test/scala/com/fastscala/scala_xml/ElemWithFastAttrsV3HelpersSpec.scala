@@ -1,27 +1,27 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
-import com.fastscala.scala_xml.utils.{ElemWithFastAttrsV2, XmlStream}
+import com.fastscala.scala_xml.utils.{ElemWithFastAttrsV3, XmlStream}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
 import scala.xml.*
 
 /**
- * [[ElemWithFastAttrsV2]] defers attribute transforms (addClass, withAttr, ...) until the attributes are
+ * [[ElemWithFastAttrsV3]] defers attribute transforms (addClass, withAttr, ...) until the attributes are
  * read, so a chain like `<span/>.btn_sm.btn.ms_2` computes the final attributes once, when printed, instead of once
  * per step.
  *
- * In package `com.fastscala.scala_xml` to read [[ElemWithFastAttrsV2.Computations]]. Lives in fs-components
+ * In package `com.fastscala.scala_xml` to read [[ElemWithFastAttrsV3.Computations]]. Lives in fs-components
  * because it uses [[com.fastscala.components.bootstrap5.helpers.BSHelpers]].
  */
-class ElemWithFastAttrsV2Spec extends AnyFlatSpec {
+class ElemWithFastAttrsV3HelpersSpec extends AnyFlatSpec {
 
   /** How many times attributes were computed while running `f`. Tests in this suite run sequentially. */
   private def computations[A](f: => A): (A, Long) = {
-    val before = ElemWithFastAttrsV2.Computations.get()
+    val before = ElemWithFastAttrsV3.Computations.get()
     val result = f
-    (result, ElemWithFastAttrsV2.Computations.get() - before)
+    (result, ElemWithFastAttrsV3.Computations.get() - before)
   }
 
   private def serialize(n: Node): String = {
@@ -42,7 +42,7 @@ class ElemWithFastAttrsV2Spec extends AnyFlatSpec {
   "A chain of BSHelpers classes" should "compute nothing until printed" in {
     val (elem, n) = computations(<span></span>.btn_sm.btn.ms_2)
     assert(n == 0)
-    assert(elem.isInstanceOf[ElemWithFastAttrsV2])
+    assert(elem.isInstanceOf[ElemWithFastAttrsV3])
   }
 
   it should "compute the attributes exactly once when printed to a StringBuilder" in {

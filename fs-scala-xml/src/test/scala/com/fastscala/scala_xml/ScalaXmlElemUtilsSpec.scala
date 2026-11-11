@@ -72,9 +72,9 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
     assert(multiNode("x").withAttrs("x" -> "new").attr("x") == Some("new"))
   }
 
-  "attributeTransform" should "transform a value made of several nodes, seeing it as its text" in {
+  "withAttr(name)(transform)" should "transform a value made of several nodes, seeing it as its text" in {
     var seen: String = null
-    val result = multiNode("x").attributeTransform("x", existing => { seen = existing; existing + "!" })
+    val result = multiNode("x").withAttr("x")(existing => { seen = existing; existing + "!" })
     assert(result.attr("x") == Some("a&b!")) // transforms run when the attributes are first read
     assert(seen == "a&b")
     assert(result.toString == """<p x="a&amp;b!"/>""")
@@ -82,13 +82,13 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
 
   it should "pass \"\" for a missing attribute and append it" in {
     var seen: String = "unset"
-    val result = <p a="1"/>.attributeTransform("x", existing => { seen = existing; "v" })
+    val result = <p a="1"/>.withAttr("x")(existing => { seen = existing; "v" })
     assert(result.attrs == Map("a" -> "1", "x" -> "v")) // attribute order doesn't matter
     assert(seen == "")
   }
 
   it should "remove the attribute when the transform returns null" in {
-    val result = <p a="1" b="2"/>.attributeTransform("a", _ => null)
+    val result = <p a="1" b="2"/>.withAttr("a")(_ => null)
     assert(result.toString == """<p b="2"/>""")
     assert(result.attr("a").isEmpty)
     assert(result.addClass("c").attr("a").isEmpty)

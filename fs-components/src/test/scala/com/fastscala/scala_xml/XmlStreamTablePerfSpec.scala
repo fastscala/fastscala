@@ -12,7 +12,7 @@ import scala.xml.*
  * Performance test: a `<table>` with 10 000 `<tr>`, each with 4 classes added via [[BSHelpers]] and 10 `<td>`, each
  * `<td>` also with 4 classes added via [[BSHelpers]], rendered with [[XmlStream]].
  *
- * BSHelpers' class transforms are deferred (see [[ElemWithFastAttrsV2]]) and computed when the attributes are
+ * BSHelpers' class transforms are deferred (see [[ElemWithFastAttrsV3]]) and computed when the attributes are
  * read, i.e. while rendering, so the render time includes computing the final `class` attributes.
  *
  * Lives in fs-components because it uses BSHelpers. Run with:

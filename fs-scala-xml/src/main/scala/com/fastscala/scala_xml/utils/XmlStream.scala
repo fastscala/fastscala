@@ -67,6 +67,7 @@ object XmlStream {
         appendName(e.prefix, e.label, sb)
         e match {
           // Write the attributes straight from its Map: reading e.attributes would build (and cache) the MetaData.
+          case fast: ElemWithFastAttrsV3 => appendFastAttrsV3(fast.attrs, sb)
           case fast: ElemWithFastAttrsV2 => appendFastAttrs(fast.attrs, sb)
           case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
         }
@@ -150,6 +151,26 @@ object XmlStream {
         escape(value, sb)
         sb.append('"')
       })
+
+  /**
+   * The attributes of an [[ElemWithFastAttrsV3]], in the same order and format as its computed MetaData would print:
+   * ` name="..."`, with each of the value's pieces escaped straight into the buffer, so the value is never joined.
+   * Pieces are stored newest first, so they're written from the end of the list.
+   */
+  private def appendFastAttrsV3(attrs: Map[String, List[String]], sb: StringBuilder): Unit =
+    attrs.foreachEntry((name, pieces) =>
+      if (pieces.nonEmpty) { // an empty list is a removed attribute (never in the Map, but don't print one if it is)
+        sb.append(' ').append(name).append("=\"")
+        escapeOldestFirst(pieces, sb)
+        sb.append('"')
+      })
+
+  /** Escapes `pieces` (newest first) oldest first. Recursion depth is the number of pieces, a handful per value. */
+  private def escapeOldestFirst(pieces: List[String], sb: StringBuilder): Unit =
+    if (pieces.nonEmpty) {
+      escapeOldestFirst(pieces.tail, sb)
+      escape(pieces.head, sb)
+    }
 
   private def isPlainText(node: Node): Boolean = {
     val cls = node.getClass

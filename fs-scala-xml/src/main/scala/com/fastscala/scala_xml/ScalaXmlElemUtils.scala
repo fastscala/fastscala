@@ -4,7 +4,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemWithFastAttrsV2
+import com.fastscala.scala_xml.utils.ElemWithFastAttrsV3
 import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
@@ -18,45 +18,67 @@ import scala.xml.*
 trait ScalaXmlElemUtils extends Any {
   def elem: Elem
 
-  /** `transform` gets the current value (`""` if missing); returning `null` removes the attribute. */
-  def attributeTransform(name: String, transform: String => String): ElemWithFastAttrsV2 = elem match {
-    case elem: ElemWithFastAttrsV2 => new ElemWithFastAttrsV2(elem, name, transform)
-    case elem => new ElemWithFastAttrsV2(elem, name, transform)
+  /** Appends `value` to attribute `name` (creating it if missing): one piece prepended, as pieces are newest first. */
+  private inline def attributeConcat(name: String, value: String): ElemWithFastAttrsV3 =
+    attributeListTransform(name, (pieces: List[String]) => value :: pieces)
+
+  /** Appends `values`, given newest first like the stored pieces, to attribute `name` (creating it if missing). */
+  private inline def attributeConcat(name: String, values: List[String]): ElemWithFastAttrsV3 =
+    attributeListTransform(name, (pieces: List[String]) => values ::: pieces)
+
+  /** Sets attribute `name` to `value`, without joining its current pieces; a null `value` removes it. */
+  private inline def attributeSet(name: String, value: String): ElemWithFastAttrsV3 =
+    if (value eq null) attributeRemove(name)
+    else attributeListTransform(name, (_: List[String]) => value :: Nil)
+
+  /** Removes attribute `name` (nothing happens if it's missing). */
+  private inline def attributeRemove(name: String): ElemWithFastAttrsV3 =
+    attributeListTransform(name, (_: List[String]) => Nil)
+
+  private inline def attributeTransform(name: String, transform: String => String): ElemWithFastAttrsV3 = elem match {
+    case elem: ElemWithFastAttrsV3 => new ElemWithFastAttrsV3(elem, name, transform)
+    case elem => new ElemWithFastAttrsV3(elem, name, transform)
   }
 
-  def addClass(`class`: String): Elem = if (`class` == "") elem else attributeTransform("class", _ + " " + `class`)
+  /** As [[attributeTransform]], on the value's pieces (Nil if missing; returning Nil removes it), without joining them. */
+  private def attributeListTransform(name: String, transform: List[String] => List[String]): ElemWithFastAttrsV3 = elem match {
+    case elem: ElemWithFastAttrsV3 => new ElemWithFastAttrsV3(elem, name, transform)
+    case elem => new ElemWithFastAttrsV3(elem, name, transform)
+  }
 
-  def withClass(`class`: String): Elem = attributeTransform("class", _ => `class`)
+  def addClass(`class`: String): Elem = if (`class` == "") elem else attributeConcat("class", " " + `class`)
+
+  def withClass(`class`: String): Elem = attributeSet("class", `class`)
 
   def addClassIf(bool: Boolean, `class`: String): Elem = if (bool) addClass(`class`) else elem
 
   def removeClass(`class`: String): Elem = attributeTransform("class", _.replaceAll("(?i)" + Pattern.quote(`class`), ""))
 
-  def addOnClick(js: String): Elem = attributeTransform("onclick", _ + ";" + js)
+  def addOnClick(js: String): Elem = attributeConcat("onclick", ";" + js)
 
   def addOnClick(js: Js): Elem = addOnClick(js.cmd)
 
   def withAttrIf(bool: Boolean, kv: (String, String)): Elem = if (bool) withAttr(kv) else elem
 
-  def addStyle(style: String): Elem = if (style == "") elem else attributeTransform("style", _ + ";" + style)
+  def addStyle(style: String): Elem = if (style == "") elem else attributeConcat("style", ";" + style)
 
-  def withStyle(style: String): Elem = attributeTransform("style", _ => style)
+  def withStyle(style: String): Elem = attributeSet("style", style)
 
-  def withFor(id: String): Elem = attributeTransform("for", _ => id)
+  def withFor(id: String): Elem = attributeSet("for", id)
 
-  def withType(`type`: String): Elem = attributeTransform("type", _ => `type`)
+  def withType(`type`: String): Elem = attributeSet("type", `type`)
 
-  def withValue(value: String): Elem = attributeTransform("value", _ => value)
+  def withValue(value: String): Elem = attributeSet("value", value)
 
-  def withTitle(title: String): Elem = attributeTransform("title", _ => title)
+  def withTitle(title: String): Elem = attributeSet("title", title)
 
-  def withName(name: String): Elem = attributeTransform("name", _ => name)
+  def withName(name: String): Elem = attributeSet("name", name)
 
-  def withTypeSubmit(): Elem = attributeTransform("type", _ => "submit")
+  def withTypeSubmit(): Elem = attributeSet("type", "submit")
 
   def withAttr(name: String)(value: String => String): Elem = attributeTransform(name, value)
 
-  def withAttr(kv: (String, String)): Elem = withAttr(kv._1)(_ => kv._2)
+  def withAttr(kv: (String, String)): Elem = attributeSet(kv._1, kv._2)
 
   /**
    * Sets each attribute, in a single pass over the attributes, creating one new [[Elem]]. Names should be unique
@@ -65,19 +87,26 @@ trait ScalaXmlElemUtils extends Any {
    */
   def withAttrs(attrs: (String, String)*): Elem = elem match {
     case elem if attrs.isEmpty => elem
-    case elem: ElemWithFastAttrsV2 => new ElemWithFastAttrsV2(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
-    case elem => new ElemWithFastAttrsV2(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
+    case elem: ElemWithFastAttrsV3 => new ElemWithFastAttrsV3(elem, setAll(attrs))
+    case elem => new ElemWithFastAttrsV3(elem, setAll(attrs))
   }
 
-  def withRole(role: String): Elem = attributeTransform("role", _ => role)
+  /** As [[attributeSet]] for each pair (a null value removes it), as list transforms, so nothing is joined. */
+  private def setAll(attrs: Seq[(String, String)]): Seq[(String, List[String] => List[String])] =
+    attrs.map({ case (name, value) =>
+      val pieces = if (value eq null) Nil else value :: Nil
+      name -> ((_: List[String]) => pieces)
+    })
 
-  def withHref(href: String): Elem = attributeTransform("href", _ => href)
+  def withRole(role: String): Elem = attributeSet("role", role)
+
+  def withHref(href: String): Elem = attributeSet("href", href)
 
   def withRoleButton: Elem = withRole("button")
 
   def withRoleAlert: Elem = withRole("alert")
 
-  def withId(id: String): Elem = attributeTransform("id", _ => id)
+  def withId(id: String): Elem = attributeSet("id", id)
 
   def withIdIfNotSet(id: String): Elem = attributeTransform("id", existing => if (existing == "") id else existing)
 

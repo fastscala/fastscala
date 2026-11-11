@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.progress
 
 import com.fastscala.components.bootstrap5.helpers.{AttrEnrichableImmutable, ClassEnrichableImmutable}
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 

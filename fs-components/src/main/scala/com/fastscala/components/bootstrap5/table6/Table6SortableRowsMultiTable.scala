@@ -5,7 +5,7 @@ import com.fastscala.components.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.core.FSContext
 import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, inScriptTag}
 import io.circe.Decoder
 import io.circe.generic.semiauto

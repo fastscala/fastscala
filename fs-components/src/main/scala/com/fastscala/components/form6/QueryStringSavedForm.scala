@@ -4,7 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form6.fields.QuerySerializableStringF6Field
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import org.eclipse.jetty.server.Request
 
 import java.net.URLEncoder

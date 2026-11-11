@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.ElemWithFastAttrsV2
@@ -115,26 +115,42 @@ trait ScalaXmlElemUtilsV2 extends Any {
 
   def showIf(bool: Boolean): NodeSeq = if (bool) elem else NodeSeq.Empty
 
-  def getAttrs: List[(String, String)] = elem.attributes.toList.map(a => a.key -> a.value.map(_.toString()).mkString(" "))
+  // ---------- getters: read an ElemWithFastAttrsV2's attrs directly, instead of computing its MetaData ----------
 
-  def hasAttribute(name: String, value: String): Boolean = elem.attributes.exists(a => a.key == name && a.value.map(_.toString()).mkString(" ") == value)
+  /** The (unescaped) value of attribute `name`; `plain` (the lookup on `elem.attributes`) if `elem` isn't fast. */
+  private inline def fastAttr(name: String, inline plain: Option[String]): Option[String] = elem match {
+    case fast: ElemWithFastAttrsV2 => fast.attrs.get(name)
+    case _ => plain
+  }
+
+  /** The attributes as (name, unescaped value), in `elem.attributes`' order; null if `elem` isn't fast. */
+  private def fastAttrList: List[(String, String)] = elem match {
+    case fast: ElemWithFastAttrsV2 => fast.attrs.toList // the MetaData is built in the Map's iteration order
+    case _ => null
+  }
+
+  // getAttrs and hasAttribute use the values as `toString` prints them, i.e. escaped (`a &amp; b`); the fast paths
+  // escape the same way, so the result doesn't depend on the element's class.
+
+  def getAttrs: List[(String, String)] = fastAttrList match {
+    case null => elem.attributes.toList.map(a => a.key -> a.value.map(_.toString()).mkString(" "))
+    case attrs => attrs.map(kv => kv._1 -> Utility.escape(kv._2))
+  }
+
+  def hasAttribute(name: String, value: String): Boolean = fastAttrList match {
+    case null => elem.attributes.exists(a => a.key == name && a.value.map(_.toString()).mkString(" ") == value)
+    case _ => fastAttr(name, None).exists(v => Utility.escape(v) == value)
+  }
 
   // Attribute values are returned unescaped (`.text`): `title="a &amp; b"` gives "a & b".
 
-  def attr(name: String): Option[String] = elem.attributes.find(a => a.key == name).map(_.value.text)
+  def attr(name: String): Option[String] = fastAttr(name, elem.attributes.find(a => a.key == name).map(_.value.text))
 
-  def getClassAttr: String = elem.attributes.get("class").map(_.text).getOrElse("")
+  def getClassAttr: String = fastAttr("class", elem.attributes.get("class").map(_.text)).getOrElse("")
 
-  def getStyleAttr: String = elem.attributes.get("style").map(_.text).getOrElse("")
+  def getStyleAttr: String = fastAttr("style", elem.attributes.get("style").map(_.text)).getOrElse("")
 
   def getId: String = getIdOpt.get
 
-  def getIdOpt: Option[String] = elem.attributes.get("id").map(_.text)
-}
-
-object ScalaXmlElemUtilsV2 {
-
-  implicit class RichElem(val elem: Elem) extends AnyVal with ScalaXmlElemUtilsV2
-
-  def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
+  def getIdOpt: Option[String] = fastAttr("id", elem.attributes.get("id").map(_.text))
 }

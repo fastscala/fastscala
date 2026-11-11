@@ -4,7 +4,7 @@ import com.fastscala.components.bootstrap5.helpers.ClassEnrichableMutable
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.{MkNSFromElems, MkNSFromNodeSeq}
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen

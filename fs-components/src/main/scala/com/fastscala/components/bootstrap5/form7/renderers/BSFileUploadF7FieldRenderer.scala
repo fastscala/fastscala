@@ -10,7 +10,7 @@ import com.fastscala.components.form7.renderers.{F7AceEditorValidatableFieldRend
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{inScriptTag, printBeforeExec}
 import com.fastscala.scala_xml.rerenderers.RerendererP
 

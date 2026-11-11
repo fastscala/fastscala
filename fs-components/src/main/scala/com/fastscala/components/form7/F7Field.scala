@@ -3,7 +3,7 @@ package com.fastscala.components.form7
 import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElemId
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.components.form7.mixins.{F7FieldWithDependencies, F7FieldWithEnabled, F7FieldWithOnChangedField, F7FieldWithState}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}

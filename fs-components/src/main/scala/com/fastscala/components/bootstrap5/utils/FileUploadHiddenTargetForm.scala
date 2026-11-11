@@ -2,10 +2,10 @@ package com.fastscala.components.bootstrap5.utils
 
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2
+import com.fastscala.scala_xml.ScalaXmlElemUtils
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
-import ScalaXmlElemUtilsV2.RichElem
+import ScalaXmlElemUtils.RichElem
 
 import java.io.ByteArrayInputStream
 import java.util.Base64
@@ -35,7 +35,7 @@ object FileUploadHiddenTargetForm {
     val targetId = IdGen.id("targetFrame")
     val inputId = IdGen.id("input")
     val buttonId = IdGen.id("btn")
-    (ScalaXmlElemUtilsV2.showIf(clipboardUpload)(FileUpload.pasteFromClipboard(processUpload)) ++
+    (JS.showIf(clipboardUpload)(FileUpload.pasteFromClipboard(processUpload)) ++
       <iframe id={targetId} name={targetId} src="about:blank" onload="eval(this.contentWindow.document.body.innerText)" style="width:0;height:0;border:0px solid #fff;"><html><body></body></html></iframe> ++
       <form target={targetId} action={actionUrl} method="post" encoding="multipart/form-data" enctype="multipart/form-data" >
         {

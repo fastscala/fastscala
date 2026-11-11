@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.helpers
 
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2
-import ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 
@@ -9,7 +9,7 @@ object BSHelpers extends BSClassesHelper[Elem] with BasicElemsHelper {
 
   override protected def addClass(clas: String): Elem = <div></div>.addClass(clas)
 
-  implicit class RichElemBootstrapClasses(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with BSColorsHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtilsV2 {
+  implicit class RichElemBootstrapClasses(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with BSColorsHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtilsV1 {
     override def addClass(clas: String): Elem = new RichElem(elem).addClass(clas)
 
     override protected def setAttribute(name: String, value: String): Elem = elem.withAttr((name, value))

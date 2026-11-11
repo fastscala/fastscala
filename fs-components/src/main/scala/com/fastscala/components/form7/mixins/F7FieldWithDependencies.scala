@@ -5,7 +5,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form7.*
 import com.fastscala.components.utils.Mutable
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 
 trait F7FieldWithDependencies extends Mutable {

@@ -6,7 +6,7 @@ import com.fastscala.components.form7.mixins.mainelem.F7FieldWithDisabled
 import com.fastscala.components.form7.{F7Event, F7Field, Form7, RenderHint}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 
 import scala.xml.Elem

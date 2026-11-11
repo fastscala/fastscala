@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.utils
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
 import net.bytebuddy.ByteBuddy
@@ -66,6 +66,13 @@ object ElemWithFastAttrsV1 {
               ): Int = self.next.length(i)
   }
 
+  /** The attributes `transforms` (for names not on the element yet) add: each applied to "", null results dropped. */
+  private[utils] def added(transforms: Map[String, String => String]): List[(String, String)] =
+    transforms.toList.flatMap({ case (name, transform) =>
+      val value = transform("")
+      if (value eq null) None else Some(name -> value)
+    })
+
   @static private val interceptor = new Interceptor()
 
   @static val UnprefixedAttributeClass: Class[? <: UnprefixedAttribute] = new ByteBuddy()
@@ -101,11 +108,12 @@ object ElemWithFastAttrsV1 {
 
 /**
  * An [[Elem]] whose attributes are kept as a list of (name, value), only turned into [[MetaData]] (once, cached) when
- * read. Transforms are `String => String`: a missing attribute is seen as `""`, and returning `null` removes it.
+ * read. Transforms are `String => String`: a missing attribute is seen as `""`, and returning `null` removes it (in
+ * every constructor: the attribute is dropped from `attrs`, never stored with a null value).
  *
  * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrsV1]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
- * @param attrs in reverse print order, names unique; a null value is a removed attribute
+ * @param attrs in reverse print order; names unique, values never null (a removed attribute is not in the list)
  */
 class ElemWithFastAttrsV1 private(
                                    val attrs: List[(String, String)],
@@ -117,14 +125,19 @@ class ElemWithFastAttrsV1 private(
                                  ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
   def this(orig: Elem, name: String, transform: String => String) = this({
-    var found = false
-    val updated = orig.attributes.iterator.map(md => {
-      if (md.key == name) {
-        found = true
-        md.key -> transform(ElemWithFastAttrsV1.textOfValue(md.value))
-      } else md.key -> ElemWithFastAttrsV1.textOfValue(md.value)
-    }).toList
-    if (found) updated else (name -> transform("")) :: updated
+    val (found, updated) = orig.attributes.iterator.foldLeft((false, List[(String, String)]()))({
+      case ((_, cur), md) if md.key == name =>
+        transform(ElemWithFastAttrsV1.textOfValue(md.value)) match {
+          case null => (true, cur)
+          case value => (true, (name -> value) :: cur)
+        }
+      case ((found, cur), md) => (found, md.key -> ElemWithFastAttrsV1.textOfValue(md.value) :: cur)
+    })
+    if (found) updated
+    else {
+      val value = transform("")
+      if (value eq null) updated else (name -> value) :: updated
+    }
   },
     orig.prefix,
     orig.label,
@@ -133,18 +146,24 @@ class ElemWithFastAttrsV1 private(
     orig.child *
   )
 
-  def this(orig: Elem, transforms: Seq[(String, String => String)]) = this(({
-    var found = Set[String]()
+  def this(orig: Elem, transforms: Seq[(String, String => String)]) = this({
     val transformsByKey = transforms.toMap
-    val updated = orig.attributes.iterator.map(md => {
-      if (transformsByKey.contains(md.key)) {
-        found += md.key
-        md.key -> transformsByKey(md.key)(ElemWithFastAttrsV1.textOfValue(md.value))
-      } else md.key -> ElemWithFastAttrsV1.textOfValue(md.value)
-    }).toList
-    if (found.size == transforms.size) updated
-    else transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2("")) ::: updated // last one per name wins
-  }: List[(String, String)]),
+    val (missing, updated) = orig.attributes.iterator.foldLeft((transformsByKey.keySet, List[(String, String)]()))({
+      case ((missing, cur), md) if transformsByKey.contains(md.key) =>
+        transformsByKey(md.key)(ElemWithFastAttrsV1.textOfValue(md.value)) match {
+          case null => (missing - md.key, cur)
+          case value => (missing - md.key, (md.key -> value) :: cur)
+        }
+      case ((missing, cur), md) => (missing, md.key -> ElemWithFastAttrsV1.textOfValue(md.value) :: cur)
+    })
+    if (missing.isEmpty) updated else {
+      missing.foldLeft(updated)({
+        case (updated, key) =>
+          val value = transformsByKey(key)("")
+          if (value eq null) updated else (key -> value) :: updated
+      })
+    }
+  },
     orig.prefix,
     orig.label,
     orig.scope,
@@ -153,14 +172,12 @@ class ElemWithFastAttrsV1 private(
   )
 
   def this(orig: ElemWithFastAttrsV1, name: String, transform: String => String) = this(orig.attrs match {
-    case (`name`, value) :: rest =>
-      val updated = transform(value)
-      if (updated ne null) (name, transform(value)) :: rest
-      else rest
     case Nil =>
       val value = transform("")
-      if (value ne null) List((name, transform("")))
-      else Nil
+      if (value ne null) List((name, value)) else Nil
+    case (`name`, value) :: rest => // names are unique, so rest doesn't have it
+      val updated = transform(value)
+      if (updated ne null) (name, updated) :: rest else rest
     case attrs =>
       val found = attrs.find(_._1 == name)
       val updated = transform(found.getOrElse(("", ""))._2)
@@ -183,12 +200,18 @@ class ElemWithFastAttrsV1 private(
     {
       var found = Set[String]()
       val transformsByKey = transforms.toMap
-      val updated = orig.attrs.collect({
-        case (key, value) if transformsByKey.contains(key) && !found.contains(key) =>
-          found += key
-          key -> transformsByKey(key)(value)
-      }) ::: orig.attrs
-      transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2.apply("")) ::: updated
+      // In place, keeping names unique; a null result removes the attribute.
+      val updated = orig.attrs.flatMap({ case (key, value) =>
+        transformsByKey.get(key) match {
+          case Some(transform) =>
+            found += key
+            val transformed = transform(value)
+            if (transformed eq null) None else Some(key -> transformed)
+          case None => Some(key -> value)
+        }
+      })
+      if (found.size == transformsByKey.size) updated
+      else ElemWithFastAttrsV1.added(transformsByKey.removedAll(found)) ::: updated
     },
     orig.prefix,
     orig.label,

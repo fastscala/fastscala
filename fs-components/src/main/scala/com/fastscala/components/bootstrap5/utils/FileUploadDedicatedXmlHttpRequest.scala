@@ -2,8 +2,8 @@ package com.fastscala.components.bootstrap5.utils
 
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, inScriptTag}
 import com.fastscala.utils.IdGen
 
@@ -39,7 +39,7 @@ object FileUploadDedicatedXmlHttpRequest {
     val progressBarId = IdGen.id("progressBar")
     val inputId = IdGen.id("input")
     val buttonId = IdGen.id("btn")
-    ScalaXmlElemUtilsV2.showIf(clipboardUploadEnabled)(FileUpload.pasteFromClipboard(processUpload)) ++
+    JS.showIf(clipboardUploadEnabled)(FileUpload.pasteFromClipboard(processUpload)) ++
       <form>
         {
         labelOpt.map(label => label.withFor(inputId)).getOrElse(Empty)

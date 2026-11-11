@@ -3,7 +3,7 @@ package com.fastscala.components.bootstrap5.table6
 import com.fastscala.components.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.core.FSContext
 import com.fastscala.js.{Js, JsFunc1}
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 
 import scala.util.chaining.scalaUtilChainingOps

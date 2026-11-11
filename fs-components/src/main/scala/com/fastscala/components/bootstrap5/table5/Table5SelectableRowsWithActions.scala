@@ -6,7 +6,7 @@ import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.rerenderers.{Rerenderer, RerendererP}
 import com.fastscala.components.bootstrap5.components.BSBtnDropdown
 import com.fastscala.components.bootstrap5.utils.BSBtn
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 
 trait Table5SelectableRowsWithActions extends Table5SelectableRows with Table5StdColsHelper {
 

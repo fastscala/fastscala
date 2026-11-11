@@ -110,9 +110,11 @@ class FSPage(
       inContextFor(contextFor)(f)
     } else {
       val oldContext = key2FSContext(contextFor)
-      val newContext = new FSContext(session, this, oldContext.parentFSContext, debugLbl = oldContext.debugLbl)
-      key2FSContext(contextFor) = newContext
+      // Delete first: delete() removes the old context's key (contextFor) from key2FSContext, so registering the new
+      // context before it would lose the new one. The new context keeps the key, for its own deletion later.
       oldContext.delete()
+      val newContext = new FSContext(session, this, oldContext.parentFSContext, debugLbl = oldContext.debugLbl, key = Some(contextFor))
+      key2FSContext(contextFor) = newContext
       logger.trace(s"Created context, previously cleared, ${newContext.fullPath} ($newContext)")
       oldContext.parentFSContext.foreach(_.children += newContext)
       f(newContext)

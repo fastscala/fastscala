@@ -9,11 +9,12 @@ import java.io.{StringWriter, Writer}
 import scala.xml.*
 
 /**
- * Performance test: a `<table>` with [[XmlStreamTablePerfSpec.Rows]] `<tr>`, each with 4 classes added via Bootstrap
- * class helpers and [[XmlStreamTablePerfSpec.Cols]] `<td>`, each `<td>` also with 4 classes, rendered with
- * [[XmlStream]]. Run for each implementation of the attribute helpers, for comparison:
+ * Performance test: a `<table>` with [[XmlStreamTablePerfSpec.Rows]] `<tr>`, each with [[XmlStreamTablePerfSpec.Cols]]
+ * `<td>`, rendered with [[XmlStream]]. Every element already has a class in its literal, and gets a unique id (from a
+ * counter) and 4 classes added via Bootstrap class helpers; each `<td>` also gets a style ([[XmlStreamTablePerfSpec.TdStyle]]).
+ * Run for each implementation of the attribute helpers, for comparison:
  *
- *  - V2: [[BSHelpers]], on [[ScalaXmlElemUtils]] ([[com.fastscala.scala_xml.utils.ElemWithFastAttrsV2]])
+ *  - V2: [[BSHelpers]], on [[ScalaXmlElemUtilsV2]] ([[com.fastscala.scala_xml.utils.ElemWithFastAttrsV2]])
  *  - V1: the same class helpers on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.utils.ElemWithFastAttrsV1]])
  *
  * The class transforms are computed when the attributes are read, so for implementations XmlStream has no fast path
@@ -48,8 +49,11 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec {
   /** Discards output, so only rendering is measured (no growing buffer to copy). */
   private final class CountingWriter extends Writer {
     var count = 0L
+
     override def write(cbuf: Array[Char], off: Int, len: Int): Unit = count += len
+
     override def flush(): Unit = ()
+
     override def close(): Unit = ()
   }
 
@@ -79,12 +83,26 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec {
       assert(out == small.toString, "XmlStream output differs from toString")
       assert(out.split("<tr ", -1).length - 1 == Rows)
       assert(out.split("<td ", -1).length - 1 == Rows * Cols)
-      // Class order isn't fixed (it differs between implementations), and addClass may leave a leading space.
-      def classesOf(tag: String): Set[String] =
-        s"""<$tag class="([^"]*)"""".r.findFirstMatchIn(out).map(_.group(1).trim.split("\\s+").toSet).getOrElse(Set())
-      assert(classesOf("td") == Set("px-2", "py-1", "text-center", "align-middle"), out.take(500))
-      assert(classesOf("tr") == Set("table-active", "border", "border-primary", "fw-bold"), out.take(500))
+
+      // The first <tag ...> start tag's attributes (their order isn't fixed: it differs between implementations).
+      def attrsOf(tag: String): Map[String, String] =
+        s"""<$tag( [^>]*)>""".r.findFirstMatchIn(out).map(m =>
+          """ ([\w-]+)="([^"]*)"""".r.findAllMatchIn(m.group(1))
+            .map(a => a.group(1) -> a.group(2)).toMap).getOrElse(Map())
+
+      // addClass may leave a leading space.
+      def classesOf(tag: String): Set[String] = attrsOf(tag).get("class").map(_.trim.split("\\s+").toSet).getOrElse(Set())
+
+      assert(classesOf("td") == Set("data-cell", "px-2", "py-1", "text-center", "align-middle"), out.take(500))
+      assert(classesOf("tr") == Set("data-row", "table-active", "border", "border-primary", "fw-bold"), out.take(500))
+      assert(classesOf("table") == Set("data-table", "table", "table-striped"), out.take(500))
+      assert(attrsOf("td").get("style") == Some(TdStyle), out.take(500))
+      assert(attrsOf("tr").get("style").isEmpty, out.take(500))
       assert(out.contains(">r1 c1</td>"), out.take(500))
+      // Every element has an id, and they're all different.
+      val ids = """ id="([^"]*)"""".r.findAllMatchIn(out).map(_.group(1)).toVector
+      assert(ids.size == 1 + Rows + Rows * Cols)
+      assert(ids.distinct.size == ids.size, "duplicate ids")
 
       // Warm up the JIT.
       (1 to WarmupIterations).foreach(_ => render(buildTable()))
@@ -112,7 +130,7 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec {
         System.nanoTime() - t0
       }
 
-      info(s"[$variant] Table: $Rows rows x $Cols cols, 4 classes per <tr> and <td>, $chars chars of output")
+      info(s"[$variant] Table: $Rows rows x $Cols cols; each element has a class, gets an id and 4 more classes (<td>s also a style); $chars chars of output")
       info(stats(s"[$variant] Build                     ", buildTimes.result()))
       info(stats(s"[$variant] Render (first, XmlStream) ", renderTimes.result()))
       info(stats(s"[$variant] Re-render (XmlStream)     ", rerenderTimes))
@@ -136,43 +154,67 @@ object XmlStreamTablePerfSpec {
   val Rows = 50_000
   val Cols = 20
 
+  /** Set on every <td>: keep long content to one truncated line. */
+  val TdStyle = "max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+
   // Each table is built in its own object, importing only its own helpers, so the implicit conversions don't clash.
 
-  /** With [[BSHelpers]], i.e. [[ScalaXmlElemUtils]] / ElemWithFastAttrsV2. */
+  /** With [[BSHelpers]], i.e. [[ScalaXmlElemUtilsV2]] / ElemWithFastAttrsV2. */
   object V2Table {
+
     import BSHelpers.*
 
-    def build(): Elem =
-      <table>{
-        (1 to Rows).map { r =>
-          <tr>{
-            (1 to Cols).map { c =>
-              <td>{s"r$r c$c"}</td>.px_2.py_1.text_center.align_middle
-            }
-          }</tr>.table_active.border.border_primary.fw_bold
-        }
-      }</table>.table.table_striped
-  }
+    def build(): Elem = {
+      // A unique id for every element, from a counter.
+      var lastId = 0
 
-  /** The same Bootstrap class helpers as BSHelpers, but on [[ScalaXmlElemUtilsV1]] / ElemWithFastAttrsV1. */
-  object V1Helpers {
-    implicit class RichElemV1(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] {
-      override protected def addClass(clas: String): Elem = new ScalaXmlElemUtilsV1.RichElem(elem).addClass(clas)
+      def nextId(): String = {
+        lastId += 1; s"e$lastId"
+      }
+
+      // Each element already has a class (from the literal); then an id, a style for the <td>s, and 4 classes.
+      <table class="data-table">{
+        (1 to Rows).map { r =>
+          <tr class="data-row">{
+            (1 to Cols).map { c =>
+              <td class="data-cell">{s"r$r c$c"}</td>.withId(nextId()).withStyle(TdStyle).px_2.py_1.text_center.align_middle
+            }
+          }</tr>.withId(nextId()).table_active.border.border_primary.fw_bold
+        }
+      }</table>.withId(nextId()).table.table_striped
     }
   }
 
+  /**
+   * The same Bootstrap class helpers as BSHelpers, but on [[ScalaXmlElemUtilsV1]] / ElemWithFastAttrsV1 (mixed in, as
+   * BSHelpers mixes in ScalaXmlElemUtilsV2, for withId, withStyle, ...).
+   */
+  object V1Helpers {
+    implicit class RichElemV1(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with ScalaXmlElemUtilsV1
+  }
+
   object V1Table {
+
     import V1Helpers.*
 
-    def build(): Elem =
-      <table>{
+    def build(): Elem = {
+      // A unique id for every element, from a counter.
+      var lastId = 0
+
+      def nextId(): String = {
+        lastId += 1; s"e$lastId"
+      }
+
+      // Each element already has a class (from the literal); then an id, a style for the <td>s, and 4 classes.
+      <table class="data-table">{
         (1 to Rows).map { r =>
-          <tr>{
+          <tr class="data-row">{
             (1 to Cols).map { c =>
-              <td>{s"r$r c$c"}</td>.px_2.py_1.text_center.align_middle
+              <td class="data-cell">{s"r$r c$c"}</td>.withId(nextId()).withStyle(TdStyle).px_2.py_1.text_center.align_middle
             }
-          }</tr>.table_active.border.border_primary.fw_bold
+          }</tr>.withId(nextId()).table_active.border.border_primary.fw_bold
         }
-      }</table>.table.table_striped
+      }</table>.withId(nextId()).table.table_striped
+    }
   }
 }

@@ -86,8 +86,10 @@ class JsXmlUtils extends JsUtils {
   def rerenderableContentsP[P](render: ContentRerendererP[P] => FSContext => P => NodeSeq, id: Option[String] = None, debugLabel: Option[String] = None): ContentRerendererP[P] =
     new ContentRerendererP[P](rerenderer => fsc => param => render(rerenderer)(fsc)(param), idOpt = id, debugLabel = debugLabel)
 
-  def append2BodyWithScriptExtraction(ns: NodeSeq): Js =
-    append2Body(excludeJsInScriptTags(ns)) & extractJsInScriptTags(ns)
+  def append2BodyWithScriptExtraction(ns: NodeSeq): Js = {
+    val (cleaned, js) = extractJsFromScriptTags(ns)
+    append2Body(cleaned) & js
+  }
 
   def append2Body(ns: NodeSeq): Js = {
     val elemId = IdGen.id("template")
@@ -107,8 +109,10 @@ class JsXmlUtils extends JsUtils {
       removeId(elemId)
   }
 
-  def replaceWithScriptExtraction(id: String, by: NodeSeq): Js =
-    replace(id, excludeJsInScriptTags(by)) & extractJsInScriptTags(by)
+  def replaceWithScriptExtraction(id: String, by: NodeSeq): Js = {
+    val (cleaned, js) = extractJsFromScriptTags(by)
+    replace(id, cleaned) & js
+  }
 
   def replace(id: String, by: NodeSeq): Js = Js(
     Js(s"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith("""),
@@ -145,6 +149,69 @@ class JsXmlUtils extends JsUtils {
   def inScriptTagModule(js: Js): Elem = new ElemWithJsInScript(js, "module")
 
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
+
+  /**
+   * In a single pass, the same as `(excludeJsInScriptTags(ns), extractJsInScriptTags(ns))`: `ns` without its JS
+   * `<script>` tags (see [[isJsScriptTag]]), at any depth, and their contents, in document order, joined by `;`.
+   * Subtrees without scripts aren't copied: if there are no scripts at all, `ns` itself is returned.
+   * `ns` can be a single node or a sequence of nodes; a single node stays a single node, and a Group a Group.
+   */
+  def extractJsFromScriptTags(ns: NodeSeq): (NodeSeq, Js) = {
+    val scripts = collection.mutable.ListBuffer[Js]()
+    val cleaned: NodeSeq = ns match {
+      case node: Node => extractJsFromScriptTagsRec(node, scripts)
+      case nodes =>
+        val children = extractJsFromScriptTagsSeq(nodes, scripts)
+        if (children eq nodes) nodes else NodeSeq.fromSeq(children)
+    }
+    (cleaned, if (scripts.isEmpty) Js.Void else new CompositeJs(scripts.toSeq *).withSeparator(Js(";")))
+  }
+
+  /** `node` without its scripts (`node` itself, by reference, if it has none), appending their JS to `scripts`. */
+  private def extractJsFromScriptTagsRec(node: Node, scripts: collection.mutable.ListBuffer[Js]): NodeSeq = node match {
+    // Group first: Group.label throws, so isJsScriptTag can't be called on it.
+    case group: Group =>
+      val nodes = extractJsFromScriptTagsSeq(group.nodes, scripts)
+      if (nodes eq group.nodes) group else Group(nodes)
+    case script: ElemWithJsInScript =>
+      scripts.append(script.js)
+      NodeSeq.Empty
+    case script if isJsScriptTag(script) =>
+      val js = scriptTagJs(script)
+      if (js.nonEmpty) scripts.append(Js(js)) // empty scripts are skipped (as Js.Void would be by `&`)
+      NodeSeq.Empty
+    case elem: Elem =>
+      val child = extractJsFromScriptTagsSeq(elem.child, scripts)
+      if (child eq elem.child) elem else elem.copy(child = child)
+    case node => node // Text, comments, etc.
+  }
+
+  /** `nodes` without their scripts (`nodes` itself, by reference, if they have none): only copied from the first change. */
+  private def extractJsFromScriptTagsSeq(nodes: Seq[Node], scripts: collection.mutable.ListBuffer[Js]): Seq[Node] = {
+    var result: collection.mutable.ArrayBuffer[Node] = null // stays null while nothing has changed
+    var i = 0
+    val it = nodes.iterator
+    while (it.hasNext) {
+      val node = it.next()
+      val cleaned = extractJsFromScriptTagsRec(node, scripts)
+      if (result == null && !(cleaned eq node)) {
+        result = new collection.mutable.ArrayBuffer[Node](nodes.knownSize max 16)
+        result ++= nodes.iterator.take(i) // the unchanged nodes before this one
+      }
+      if (result != null) result ++= cleaned
+      i += 1
+    }
+    if (result == null) nodes else result.toSeq
+  }
+
+  /** The JS in a `<script>` tag: its children's text, without the CDATA markers added by [[inScriptTag]]. */
+  private def scriptTagJs(script: Node): String = {
+    val sb = new java.lang.StringBuilder()
+    script.child.foreach(child => sb.append(child.toString()))
+    // Literal (non-regex) replacements:
+    sb.toString.replace("\n// <![CDATA[", "").replace("\n// ]]>", "")
+  }
+
 
   /**
    * Removes the JS `<script>` tags (see [[isJsScriptTag]]), at any depth, from `ns`.
@@ -213,10 +280,7 @@ class JsXmlUtils extends JsUtils {
         scripts.append(script.js)
         collectJsInScriptTags(stack, scripts)
       case script if isJsScriptTag(script) =>
-        val sb = new java.lang.StringBuilder()
-        script.child.foreach(child => sb.append(child.toString()))
-        // Literal (non-regex) replacements:
-        val js = sb.toString.replace("\n// <![CDATA[", "").replace("\n// ]]>", "")
+        val js = scriptTagJs(script)
         // Empty scripts are skipped (as Js.Void would be by `&`).
         if (js.nonEmpty) scripts.append(Js(js))
         collectJsInScriptTags(stack, scripts)

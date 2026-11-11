@@ -118,7 +118,7 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
     version := Version,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
-    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.12.7", "com.lihaoyi" %% "upickle" % "4.1.0", "com.softwaremill.quicklens" %% "quicklens" % "1.9.11"),
+    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.12.7", "com.lihaoyi" %% "upickle" % "4.1.0", "com.softwaremill.quicklens" %% "quicklens" % "1.9.11", "org.scalatest" %% "scalatest" % "3.2.19" % Test),
     javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
     Compile / run / fork := true,
     Compile / run / connectInput := true

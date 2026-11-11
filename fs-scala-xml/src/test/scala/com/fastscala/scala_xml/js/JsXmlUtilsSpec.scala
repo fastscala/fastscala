@@ -101,6 +101,46 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
     assert(JS.excludeJsInScriptTags(Group(Seq(<b>t</b>))).isInstanceOf[Group])
   }
 
+  // ---------- extractJsFromScriptTags ----------
+
+  "extractJsFromScriptTags" should "be the same as excludeJsInScriptTags and extractJsInScriptTags" in {
+    val cases: Seq[NodeSeq] = Seq(
+      js("a()"),
+      <div id="d" class="c"><p>a</p>{js("one()")}<span>{module("two()")}</span></div>,
+      <p>x</p> ++ <div>{js("a()")}<script>kept()</script></div> ++ js("b()"),
+      Group(Seq(js("g()"), <b>t</b>)),
+      <div>{js("")}{js("a()")}<script type="text/plain">p</script></div>,
+      <div>{JS.inScriptTag(Js("a()"))}{JS.inScriptTag(Js("b()"))}</div>,
+      <div><p>no scripts</p></div>,
+      Text("hi"),
+      Comment("c"),
+      NodeSeq.Empty,
+    )
+    cases.foreach { ns =>
+      val (cleaned, extracted) = JS.extractJsFromScriptTags(ns)
+      assert(cleaned.toString == JS.excludeJsInScriptTags(ns).toString, ns.toString)
+      assert(extracted.cmd == JS.extractJsInScriptTags(ns).cmd, ns.toString)
+    }
+  }
+
+  it should "return Js.Void, and the NodeSeq itself, when there are no scripts" in {
+    val ns: NodeSeq = <p>x</p> ++ <div><span>y</span><script>kept()</script></div>
+    val (cleaned, extracted) = JS.extractJsFromScriptTags(ns)
+    assert(cleaned eq ns)
+    assert(extracted == Js.Void)
+  }
+
+  it should "not copy the subtrees without scripts" in {
+    val untouched = <ul><li>a</li><li>b</li></ul>
+    val (cleaned, _) = JS.extractJsFromScriptTags(<div>{untouched}{js("a()")}</div>)
+    assert(cleaned.head.child.head eq untouched)
+  }
+
+  it should "return a single node as that node, and a Group as a Group" in {
+    assert(JS.extractJsFromScriptTags(<div>{js("a()")}</div>)._1.isInstanceOf[Elem])
+    assert(JS.extractJsFromScriptTags(Group(Seq(<b>t</b>, js("a()"))))._1.isInstanceOf[Group])
+  }
+
   // ---------- *WithScriptExtraction ----------
 
   "append2BodyWithScriptExtraction" should "append the HTML without the scripts, then run the scripts" in {

@@ -10,7 +10,7 @@ import net.bytebuddy.matcher.ElementMatchers
 
 import java.lang.reflect.Modifier
 import java.util.regex.Pattern
-import scala.collection.immutable.{AbstractSeq, LinearSeq}
+import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
 import scala.xml.*
 
 class Interceptor {
@@ -23,11 +23,10 @@ class Interceptor {
 
   def updateMetaData(metaData: MetaData, remaining: Map[String, List[Option[String] => String]]): MetaData = metaData match {
     case Null =>
-      // Create attributes that didn't exist yet:
-      remaining.map({
-        case (key, transforms) => key -> transforms.reverse.foldLeft(Option.empty[String])((cur, next) => Some(next(cur)))
-      }).toList.foldLeft(Null: MetaData)({
-        case (prev, (key, Some(nextAttr))) => new UnprefixedAttribute(key, nextAttr, prev)
+      // Create attributes that didn't exist yet, in the order they were first transformed (remaining is a ListMap):
+      remaining.toList.foldRight(Null: MetaData)({
+        case ((key, transforms), acc) =>
+          new UnprefixedAttribute(key, transforms.reverse.foldLeft(Option.empty[String])((cur, next) => Some(next(cur))).get, acc)
       })
     case PrefixedAttribute((pre, key, value, next)) if remaining.contains(key) =>
       val attrValue: String = remaining(key).reverse.foldLeft(textOfValue(value))((cur, next) => Some(next(cur))).get
@@ -51,21 +50,46 @@ class Interceptor {
     else if ((orig eq null) || (pending eq null)) Null // called before the fields were set: don't cache
     else {
       // Benign race: concurrent callers may compute twice, but the result is the same.
+      ElemWithPendingAttrTransforms.Computations.incrementAndGet()
       val computed = updateMetaData(orig.attributes, pending)
       ElemWithPendingAttrTransforms.FieldCached.set(self, computed)
       computed
     }
   }
+
+  // The placeholder (key "", value null) heads the attribute list, with the computed attributes as its `next`.
+  // scala-xml already skips null-valued attributes when iterating, but these two would still count/print it:
+
+  /** MetaData.buildString appends ' ' before each attribute, even a null-valued one: print only the real ones. */
+  def buildString(
+                   @net.bytebuddy.implementation.bind.annotation.This self: MetaData,
+                   @net.bytebuddy.implementation.bind.annotation.Argument(0) sb: StringBuilder
+                 ): StringBuilder = self.next.buildString(sb)
+
+  /** MetaData.length counts every attribute, even a null-valued one. */
+  def length(
+              @net.bytebuddy.implementation.bind.annotation.This self: MetaData,
+              @net.bytebuddy.implementation.bind.annotation.Argument(0) i: Int
+            ): Int = self.next.length(i)
 }
 
 object ElemWithPendingAttrTransforms {
+  /** How many times the attributes of an [[ElemWithPendingAttrTransforms]] were computed; for tests. */
+  private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
+
+  private val interceptor = new Interceptor()
+
   val UnprefixedAttributeClass = new ByteBuddy()
     .subclass(classOf[UnprefixedAttribute])
     .defineField("pending", classOf[Map[String, List[Option[String] => String]]], Modifier.PUBLIC)
     .defineField("orig", classOf[Elem], Modifier.PUBLIC)
     .defineField("cached", classOf[MetaData], Modifier.PUBLIC)
-    .method(ElementMatchers.named("next"))
-    .intercept(MethodDelegation.to(new Interceptor()))
+    .method(ElementMatchers.named("next").and(ElementMatchers.takesArguments(0)))
+    .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("intercept")).to(interceptor))
+    .method(ElementMatchers.named("buildString").and(ElementMatchers.takesArguments(classOf[StringBuilder])))
+    .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("buildString")).to(interceptor))
+    .method(ElementMatchers.named("length").and(ElementMatchers.takesArguments(classOf[Int])))
+    .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("length")).to(interceptor))
     .make()
     .load(getClass.getClassLoader)
     .getLoaded
@@ -74,9 +98,13 @@ object ElemWithPendingAttrTransforms {
   val FieldCached = ElemWithPendingAttrTransforms.UnprefixedAttributeClass.getField("cached")
 }
 
+/**
+ * @param orig the element the transforms apply to; never itself an [[ElemWithPendingAttrTransforms]] (see
+ *             [[ScalaXmlElemUtils.attributeTransform]]), so a chain of transforms computes the attributes only once.
+ */
 class ElemWithPendingAttrTransforms(
-                                     orig: Elem,
-                                     val pending: Map[String, List[Option[String] => String]]
+                                     val orig: Elem,
+                                     val pending: ListMap[String, List[Option[String] => String]]
                                    ) extends Elem(
   orig.prefix,
   orig.label,
@@ -101,8 +129,10 @@ trait ScalaXmlElemUtils extends Any {
 
   def attributeTransform(name: String, transform: Option[String] => String): ElemWithPendingAttrTransforms = elem match {
     case elem: ElemWithPendingAttrTransforms =>
-      new ElemWithPendingAttrTransforms(elem, elem.pending.removed(name) + (name -> (transform :: elem.pending.getOrElse(name, Nil))))
-    case elem => new ElemWithPendingAttrTransforms(elem, Map(name -> List(transform)))
+      // Wrap the original element, not `elem`: elem's transforms are already in elem.pending, and wrapping elem
+      // would compute its attributes too and then apply its transforms a second time.
+      new ElemWithPendingAttrTransforms(elem.orig, elem.pending.updated(name, transform :: elem.pending.getOrElse(name, Nil)))
+    case elem => new ElemWithPendingAttrTransforms(elem, ListMap(name -> List(transform)))
   }
 
   def addClass(`class`: String): Elem = if (`class` == "") elem else attributeTransform("class", _.getOrElse("") + " " + `class`)
@@ -144,33 +174,14 @@ trait ScalaXmlElemUtils extends Any {
    * keep their position; new ones are appended in order of first appearance), but in a single pass over the
    * attributes, creating one new [[Elem]].
    */
-  def withAttrs(attrs: (String, String)*): Elem = if (attrs.isEmpty) elem else {
-    val values = collection.mutable.LinkedHashMap.empty[String, String]
-    attrs.foreach((k, v) => values(k) = v)
-    val found = collection.mutable.HashSet.empty[String]
-
-    // Existing attributes, in order, with matching values replaced:
-    val updated = collection.mutable.ArrayBuffer.empty[MetaData]
-    var md: MetaData = Option(elem.attributes).getOrElse(Null)
-    while (md ne Null) {
-      updated += (values.get(md.key) match {
-        case Some(newValue) =>
-          found += md.key
-          md match {
-            case p: PrefixedAttribute => new PrefixedAttribute(p.pre, p.key, Seq(Text(newValue)), Null)
-            case _ => new UnprefixedAttribute(md.key, Seq(Text(newValue)), Null)
-          }
-        case None => md
-      })
-      md = md.next
+  def withAttrs(attrs: (String, String)*): Elem = {
+    val transforms = attrs.map({
+      case (k, v) => k -> List(((_: Option[String]) => v))
+    })
+    elem match {
+      case elem: ElemWithPendingAttrTransforms => new ElemWithPendingAttrTransforms(elem.orig, elem.pending ++ transforms)
+      case elem => new ElemWithPendingAttrTransforms(elem, ListMap(transforms *))
     }
-
-    // Rebuild the chain back to front, appending the attributes that didn't exist yet:
-    var result: MetaData = Null
-    values.toSeq.reverseIterator.foreach((k, v) => if (!found(k)) result = new UnprefixedAttribute(k, v, result))
-    updated.reverseIterator.foreach(a => result = a.copy(result))
-
-    new Elem(elem.prefix, elem.label, result, elem.scope, elem.minimizeEmpty, elem.child *)
   }
 
   def withRole(role: String): Elem = attributeTransform("role", _ => role)

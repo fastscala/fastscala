@@ -59,16 +59,16 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
   "attributeTransform" should "transform a value made of several nodes, seeing it as its text" in {
     var seen: Option[String] = None
     val result = multiNode("x").attributeTransform("x", existing => { seen = existing; existing.get + "!" })
+    assert(result.attr("x") == Some("a&b!")) // transforms run when the attributes are first read
     assert(seen == Some("a&b"))
-    assert(result.attr("x") == Some("a&b!"))
     assert(result.toString == """<p x="a&amp;b!"/>""")
   }
 
   it should "pass None for a missing attribute and append it" in {
     var seen: Option[String] = Some("unset")
     val result = <p a="1"/>.attributeTransform("x", existing => { seen = existing; "v" })
+    assert(result.toString == """<p a="1" x="v"/>""") // transforms run when the attributes are first read
     assert(seen.isEmpty)
-    assert(result.toString == """<p a="1" x="v"/>""")
   }
 
   "addClass" should "append to a class value made of several nodes" in {

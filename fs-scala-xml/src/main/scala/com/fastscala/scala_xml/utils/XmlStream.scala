@@ -119,6 +119,8 @@ object XmlStream {
     var md = attributes
     while (md ne Null) {
       md match {
+        case a: Attribute if a.value eq null => // not an attribute (Elem's normalize drops these), e.g. the placeholder
+                                                // heading an ElemWithPendingAttrTransforms' attributes: write nothing
         case a: Attribute if isSinglePlainText(a.value) =>
           sb.append(' ') // like MetaData.buildString
           if (a.isPrefixed) sb.append(a.pre).append(':')

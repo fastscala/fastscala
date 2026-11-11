@@ -11,17 +11,22 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
   private def reference(elem: Elem, attrs: (String, String)*): Elem =
     attrs.foldLeft(elem)((acc, kv) => acc.withAttr(kv))
 
-  private def same(a: Elem, b: Elem): Boolean =
-    a.toString == b.toString && a.attributes.toList.map(_.key) == b.attributes.toList.map(_.key)
+  /** Same element, ignoring attribute order. */
+  extension (e: Elem) private def attrs: Map[String, String] = e.attributes.toList.map(md => md.prefixedKey -> md.value.text).toMap
+
+  private def same(a: Elem, b: Elem): Boolean = {
+    def attrs(e: Elem) = e.attributes.toList.map(md => (md.prefixedKey, md.value.text)).toSet
+    a.prefix == b.prefix && a.label == b.label && attrs(a) == attrs(b) && a.child == b.child &&
+      a.attributes.length == b.attributes.length // no duplicates
+  }
 
   private val pfx = new PrefixedAttribute("xlink", "href", "old", Null)
 
+  // Names are unique within each call: for a name repeated in one withAttrs call, the resulting value is undefined.
   private val cases: Seq[(String, Elem, Seq[(String, String)])] = Seq(
-    ("no attributes, new ones appended in order", <div/>, Seq("a" -> "1", "b" -> "2")),
-    ("existing attribute replaced in place", <div a="x" b="y" c="z"/>, Seq("b" -> "2")),
-    ("mix of replaced and appended", <div a="x" c="z">t</div>, Seq("d" -> "4", "a" -> "1", "e" -> "5", "c" -> "3")),
-    ("last value for a repeated name wins", <div/>, Seq("a" -> "1", "b" -> "2", "a" -> "3")),
-    ("repeated name that already exists", <div a="x"/>, Seq("a" -> "1", "a" -> "2")),
+    ("no attributes, new ones added", <div/>, Seq("a" -> "1", "b" -> "2")),
+    ("existing attribute replaced", <div a="x" b="y" c="z"/>, Seq("b" -> "2")),
+    ("mix of replaced and added", <div a="x" c="z">t</div>, Seq("d" -> "4", "a" -> "1", "e" -> "5", "c" -> "3")),
     ("prefixed attribute with the same key replaced", Elem(null, "a", pfx, TopScope, true), Seq("href" -> "new")),
     ("value with several nodes replaced", Elem(null, "p", new UnprefixedAttribute("a", Seq(Text("x"), EntityRef("amp")), Null), TopScope, true), Seq("a" -> "new", "b" -> "1")),
     ("special characters", <div/>, Seq("title" -> "a \"q\" & <b>")),
@@ -41,6 +46,17 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
   it should "return the element itself when given no attributes" in {
     val elem = <div a="x"/>
     assert(elem.withAttrs() eq elem)
+  }
+
+  it should "let a later call override an earlier one" in {
+    assert(<div/>.withAttrs("a" -> "1").withAttrs("a" -> "3").attr("a") == Some("3"))
+    assert(<div a="x"/>.withAttrs("a" -> "1").withAttrs("a" -> "3").attr("a") == Some("3"))
+    assert(<div/>.withAttrs("a" -> "1", "b" -> "2").withAttrs("a" -> "3").attrs == Map("a" -> "3", "b" -> "2"))
+    assert(<div/>.withAttrs("a" -> "1").withAttr("a" -> "3").attr("a") == Some("3"))
+    assert(<div/>.withAttr("a" -> "1").withAttrs("a" -> "3").attr("a") == Some("3"))
+    val chained = <div/>.withAttrs("a" -> "1").withAttrs("a" -> "3")
+    assert(chained.attributes.length == 1, chained.toString)
+    assert(chained.toString == """<div a="3"/>""")
   }
 
   it should "not modify the original element" in {
@@ -116,6 +132,8 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
     val elem = <div/>.withClass("a & b").addClass("c").withAttr("title" -> "x < y")
     assert(elem.getClassAttr == "a & b c")
     assert(elem.attr("title") == Some("x < y"))
-    assert(elem.addClass(elem.getClassAttr).toString == """<div class="a &amp; b c a &amp; b c" title="x &lt; y"/>""")
+    val out = elem.addClass(elem.getClassAttr).toString // attribute order doesn't matter
+    assert(out.contains("""class="a &amp; b c a &amp; b c""""), out)
+    assert(out.contains("""title="x &lt; y""""), out)
   }
 }

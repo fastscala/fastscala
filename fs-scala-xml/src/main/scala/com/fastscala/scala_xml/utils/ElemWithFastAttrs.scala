@@ -8,7 +8,9 @@ import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
 
+import java.lang.invoke.{MethodHandle, MethodHandles, MethodType}
 import java.lang.reflect.Modifier
+import scala.annotation.static
 import java.util.regex.Pattern
 import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
 import scala.xml.*
@@ -16,7 +18,7 @@ import scala.xml.*
 
 object ElemWithFastAttrs {
   /** How many times the attributes of an [[ElemWithFastAttrs]] were computed; for tests. */
-  private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
+  @static private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
 
   inline def textOfValue(value: Seq[Node]): String = value match {
     case null => ""
@@ -44,7 +46,7 @@ object ElemWithFastAttrs {
           case ((cur, seenAttrs), (name, null)) => (cur, seenAttrs + name)
           case ((cur, seenAttrs), (name, value)) => (new UnprefixedAttribute(name, value, cur), seenAttrs + name)
         })._1
-        ElemWithFastAttrs.FieldCached.set(self, computed)
+        ElemWithFastAttrs.SetCached.invokeExact(self, computed): Unit
         computed
       }
     }
@@ -65,9 +67,9 @@ object ElemWithFastAttrs {
               ): Int = self.next.length(i)
   }
 
-  private val interceptor = new Interceptor()
+  @static private val interceptor = new Interceptor()
 
-  val UnprefixedAttributeClass = new ByteBuddy()
+  @static val UnprefixedAttributeClass: Class[? <: UnprefixedAttribute] = new ByteBuddy()
     .subclass(classOf[UnprefixedAttribute])
     .defineField("attrs", classOf[List[(String, String)]], Modifier.PUBLIC)
     .defineField("orig", classOf[Elem], Modifier.PUBLIC)
@@ -81,12 +83,23 @@ object ElemWithFastAttrs {
     .make()
     .load(getClass.getClassLoader)
     .getLoaded
-  val UnprefixedAttributeClassConstructor =
-    UnprefixedAttributeClass
-      .getDeclaredConstructor(classOf[String], classOf[scala.collection.Seq[Node]], classOf[MetaData])
-  val FieldAttrs = ElemWithFastAttrs.UnprefixedAttributeClass.getField("attrs")
-  val FieldOrig = ElemWithFastAttrs.UnprefixedAttributeClass.getField("orig")
-  val FieldCached = ElemWithFastAttrs.UnprefixedAttributeClass.getField("cached")
+
+  // MethodHandles instead of reflection (Constructor.newInstance / Field.set check access and look things up on every
+  // call). @static makes them static final fields, which the JIT treats as constants and can inline through.
+  // Each is adapted (asType) to the exact types used at its invokeExact call site.
+  @static private val lookup = MethodHandles.lookup()
+
+  /** (key: String, value: Seq[Node], next: MetaData) => new UnprefixedAttributeClass */
+  @static val NewAttribute: MethodHandle = lookup
+    .findConstructor(UnprefixedAttributeClass, MethodType.methodType(classOf[Unit], classOf[String], classOf[scala.collection.Seq[Node]], classOf[MetaData]))
+    .asType(MethodType.methodType(classOf[UnprefixedAttribute], classOf[String], classOf[scala.collection.Seq[Node]], classOf[MetaData]))
+
+  private def setter(name: String, owner: Class[?], tpe: Class[?]): MethodHandle =
+    lookup.unreflectSetter(UnprefixedAttributeClass.getField(name)).asType(MethodType.methodType(Void.TYPE, owner, tpe))
+
+  @static val SetAttrs: MethodHandle = setter("attrs", classOf[UnprefixedAttribute], classOf[List[?]])
+  @static val SetOrig: MethodHandle = setter("orig", classOf[UnprefixedAttribute], classOf[Elem])
+  @static val SetCached: MethodHandle = setter("cached", classOf[AnyRef], classOf[MetaData])
 }
 
 /**
@@ -134,7 +147,7 @@ class ElemWithFastAttrs private(
         } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
       }).toList
       if (found.size == transforms.size) updated
-      else transforms.filter(t => !found.contains(t._1)).map(t => t._1 -> t._2("")).toList ::: updated
+      else transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2("")) ::: updated // last one per name wins
     }: List[(String, String)])
   )
 
@@ -158,9 +171,9 @@ class ElemWithFastAttrs private(
   )
 
   override val attributes: MetaData = {
-    val ins = ElemWithFastAttrs.UnprefixedAttributeClassConstructor.newInstance("", null, Null)
-    ElemWithFastAttrs.FieldOrig.set(ins, orig)
-    ElemWithFastAttrs.FieldAttrs.set(ins, attrs)
+    val ins = ElemWithFastAttrs.NewAttribute.invokeExact("", null: scala.collection.Seq[Node], Null: MetaData): UnprefixedAttribute
+    ElemWithFastAttrs.SetOrig.invokeExact(ins, orig): Unit
+    ElemWithFastAttrs.SetAttrs.invokeExact(ins, attrs): Unit
     ins
   }
 }

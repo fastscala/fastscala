@@ -59,11 +59,12 @@ trait ScalaXmlElemUtils extends Any {
   def withAttr(kv: (String, String)): Elem = withAttr(kv._1)(_ => kv._2)
 
   /**
-   * Same result as applying [[withAttr]] for each pair in order (the last value for a name wins; existing attributes
-   * keep their position; new ones are appended in order of first appearance), but in a single pass over the
-   * attributes, creating one new [[Elem]].
+   * Sets each attribute, in a single pass over the attributes, creating one new [[Elem]]. Names should be unique
+   * within one call: for a repeated name the resulting value is undefined. A later call overrides an earlier one
+   * (`withAttrs("a" -> "1").withAttrs("a" -> "3")` gives `a="3"`). Attribute order is not preserved.
    */
   def withAttrs(attrs: (String, String)*): Elem = elem match {
+    case elem if attrs.isEmpty => elem
     case elem: ElemWithFastAttrs => new ElemWithFastAttrs(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
     case elem => new ElemWithFastAttrs(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
   }

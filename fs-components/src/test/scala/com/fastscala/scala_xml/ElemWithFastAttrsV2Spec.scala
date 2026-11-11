@@ -57,11 +57,19 @@ class ElemWithFastAttrsV2Spec extends AnyFlatSpec {
     assert(classesOf(elem) == List("btn-sm", "btn", "ms-2"))
   }
 
-  it should "compute the attributes exactly once when written with XmlStream" in {
+  it should "not compute the attributes when written with XmlStream (it writes them from attrs)" in {
     val elem = <span></span>.btn_sm.btn.ms_2
     val (out, n) = computations(stream(elem))
-    assert(n == 1, s"computed $n times")
+    assert(n == 0, s"computed $n times")
     assert(out == serialize(elem))
+  }
+
+  it should "write with XmlStream exactly what toString prints, with several attributes" in {
+    val elem = <div id="x" title="a &amp; b"><b>c</b></div>.btn.withAttr("data-q" -> "\"<q>\"").ms_2.withAttr("title" -> null)
+    val out = stream(elem)
+    assert(out == elem.toString, s"\n  stream:   $out\n  toString: ${elem.toString}")
+    assert(!out.contains("title"), out)
+    assert(out.contains("""data-q="&quot;&lt;q&gt;&quot;""""), out)
   }
 
   it should "not compute again when printed again" in {

@@ -65,7 +65,11 @@ object XmlStream {
         val sb = out.sb
         sb.append('<')
         appendName(e.prefix, e.label, sb)
-        if (e.attributes ne null) appendAttributes(e.attributes, sb)
+        e match {
+          // Write the attributes straight from its Map: reading e.attributes would build (and cache) the MetaData.
+          case fast: ElemWithFastAttrsV2 => appendFastAttrs(fast.attrs, sb)
+          case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
+        }
         e.scope.buildString(sb, level.scope)
 
         // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
@@ -134,6 +138,18 @@ object XmlStream {
       md = md.next
     }
   }
+
+  /**
+   * The attributes of an [[ElemWithFastAttrsV2]], in the same order and format as its computed MetaData would print
+   * (see its Interceptor): ` name="escaped value"` for each entry. foreachEntry: no tuple per attribute.
+   */
+  private def appendFastAttrs(attrs: Map[String, String], sb: StringBuilder): Unit =
+    attrs.foreachEntry((name, value) =>
+      if (value ne null) { // removed attributes are dropped from the Map, but don't print one if it's there
+        sb.append(' ').append(name).append("=\"")
+        escape(value, sb)
+        sb.append('"')
+      })
 
   private def isPlainText(node: Node): Boolean = {
     val cls = node.getClass

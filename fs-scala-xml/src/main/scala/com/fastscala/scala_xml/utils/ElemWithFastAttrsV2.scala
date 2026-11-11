@@ -40,8 +40,9 @@ object ElemWithFastAttrsV2 {
       else {
         // Benign race: concurrent callers may compute twice, but the result is the same.
         ElemWithFastAttrsV2.Computations.incrementAndGet()
-        val computed = attrs.foldLeft(Null: MetaData)({
-          case (cur, (name, value)) => new UnprefixedAttribute(name, value, cur)
+        // In the Map's iteration order, the same order XmlStream writes them in without computing this.
+        val computed = attrs.toList.foldRight(Null: MetaData)({
+          case ((name, value), next) => if (value eq null) next else new UnprefixedAttribute(name, value, next)
         })
         ElemWithFastAttrsV2.SetCached.invokeExact(self, computed): Unit
         computed
@@ -104,7 +105,7 @@ object ElemWithFastAttrsV2 {
  * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrsV2]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
  *
- * @param attrs in reverse print order, names unique; a null value is a removed attribute
+ * @param attrs printed in iteration order; a removed attribute is not in the Map
  */
 class ElemWithFastAttrsV2 private(
                                    val attrs: Map[String, String],

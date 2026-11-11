@@ -7,7 +7,7 @@ import com.fastscala.components.form7.fields.html.F7HtmlField
 import com.fastscala.components.form7.fields.layout.F7ContainerFieldBase
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
 

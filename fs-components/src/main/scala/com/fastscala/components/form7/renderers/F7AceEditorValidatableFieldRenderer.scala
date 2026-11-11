@@ -5,7 +5,7 @@ import com.fastscala.components.form7.fields.aceeditor.F7AceEditorField
 import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.js.JS
 
 import scala.xml.{Elem, NodeSeq}

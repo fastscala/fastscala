@@ -5,7 +5,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form6.Form6
 import com.fastscala.utils.Lazy
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 

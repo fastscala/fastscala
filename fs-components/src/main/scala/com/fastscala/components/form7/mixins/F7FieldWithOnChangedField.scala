@@ -5,7 +5,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.components.form7.*
 import com.fastscala.components.utils.Mutable
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 
 
 trait F7FieldWithOnChangedField extends F7Field with Mutable {

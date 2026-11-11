@@ -15,7 +15,7 @@ import scala.xml.*
 
 
 /**
- * [[ScalaXmlElemUtils]], but building [[ElemWithFastAttrsV1]] (attributes as a newest-first list of (name, value))
+ * [[ScalaXmlElemUtilsV2]], but building [[ElemWithFastAttrsV1]] (attributes as a newest-first list of (name, value))
  * instead of [[ElemWithFastAttrsV2]]; kept for comparison (see XmlStreamTablePerfSpec in fs-components).
  */
 trait ScalaXmlElemUtilsV1 extends Any {

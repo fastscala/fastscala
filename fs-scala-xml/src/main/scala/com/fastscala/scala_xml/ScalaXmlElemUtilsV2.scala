@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.ElemWithFastAttrsV2
@@ -15,7 +15,7 @@ import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.xml.*
 
 
-trait ScalaXmlElemUtils extends Any {
+trait ScalaXmlElemUtilsV2 extends Any {
   def elem: Elem
 
   /** Appends `value` to attribute `name` (creating it if missing). */
@@ -132,9 +132,9 @@ trait ScalaXmlElemUtils extends Any {
   def getIdOpt: Option[String] = elem.attributes.get("id").map(_.text)
 }
 
-object ScalaXmlElemUtils {
+object ScalaXmlElemUtilsV2 {
 
-  implicit class RichElem(val elem: Elem) extends AnyVal with ScalaXmlElemUtils
+  implicit class RichElem(val elem: Elem) extends AnyVal with ScalaXmlElemUtilsV2
 
   def showIf(b: Boolean)(ns: => NodeSeq): NodeSeq = if (b) ns else NodeSeq.Empty
 }

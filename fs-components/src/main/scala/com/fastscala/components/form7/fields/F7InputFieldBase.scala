@@ -7,7 +7,7 @@ import com.fastscala.components.form7.mixins.mainelem.{F7FieldWithAdditionalAttr
 import com.fastscala.components.form7.renderers.*
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.js.JS
 
 import scala.util.{Success, Try}

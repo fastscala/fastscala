@@ -1,11 +1,11 @@
 package com.fastscala.scala_xml
 
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
 
-class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
+class ScalaXmlElemUtilsV2Spec extends AnyFlatSpec {
 
   /** The previous implementation: one withAttr call per pair. */
   private def reference(elem: Elem, attrs: (String, String)*): Elem =

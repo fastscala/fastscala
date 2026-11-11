@@ -7,7 +7,7 @@ import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.components.form7.renderers.{F7AceEditorValidatableFieldRenderer, F7ValidatableFieldWithMainElemRenderer}
 import com.fastscala.components.utils.Mutable
 import com.fastscala.core.FSContext
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.js.{inScriptTag, printBeforeExec}
 
 import scala.util.chaining.scalaUtilChainingOps

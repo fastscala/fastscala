@@ -2,7 +2,7 @@ package com.fastscala.scala_xml.rerenderers
 
 import com.fastscala.core.{FSContext, FSPage, FSPageLike}
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.*
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.*
 import com.fastscala.scala_xml.js.{JS, inScriptTag, printBeforeExec}
 import com.fastscala.utils.IdGen
 

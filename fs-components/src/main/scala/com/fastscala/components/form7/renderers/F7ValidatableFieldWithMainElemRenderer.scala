@@ -4,7 +4,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElem
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 

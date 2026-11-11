@@ -5,7 +5,7 @@ import com.fastscala.components.form7.{F7Field, Form7}
 import com.fastscala.components.form7.renderers.F7FormRenderer
 import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.FSContext
-import com.fastscala.scala_xml.ScalaXmlElemUtils
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2
 
 import scala.xml.NodeSeq
 
@@ -30,6 +30,6 @@ abstract class BSModal5WithForm7Base(
   override def modalBodyContents()(implicit fsc: FSContext): NodeSeq = form.render()
 
   override def modalFooterContents()(implicit fsc: FSContext): Option[NodeSeq] = Some {
-    ScalaXmlElemUtils.showIf(cancelBtnEnabled)(cancelBtn.btn.me_2) ++ saveBtn.btn
+    ScalaXmlElemUtilsV2.showIf(cancelBtnEnabled)(cancelBtn.btn.me_2) ++ saveBtn.btn
   }
 }

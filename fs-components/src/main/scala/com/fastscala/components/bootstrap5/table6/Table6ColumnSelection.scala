@@ -6,7 +6,7 @@ import com.fastscala.components.bootstrap5.modals.BSModal5
 import com.fastscala.components.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.Lazy

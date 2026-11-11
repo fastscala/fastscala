@@ -3,7 +3,7 @@ package com.fastscala.components.bootstrap5.form7.renderers
 import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.components.form7.renderers.{F7FormRenderer, F7ValidatableFieldWithMainElemRenderer}
 import com.fastscala.components.utils.Mutable
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}

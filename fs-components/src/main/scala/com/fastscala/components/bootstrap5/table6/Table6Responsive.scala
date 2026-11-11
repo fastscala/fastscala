@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.table6
 
 import com.fastscala.core.FSContext
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 
 trait Table6Responsive extends Table6Base {
 

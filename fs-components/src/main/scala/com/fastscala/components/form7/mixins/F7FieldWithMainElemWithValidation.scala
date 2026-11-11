@@ -3,7 +3,7 @@ package com.fastscala.components.form7.mixins
 import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElem
 import com.fastscala.components.form7.renderers.{F7ValidatableFieldWithMainElemRenderer, ValidationUtils}
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlElemUtilsV2.RichElem
 import com.fastscala.scala_xml.js.JS
 
 import scala.xml.NodeSeq

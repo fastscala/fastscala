@@ -164,4 +164,19 @@ class XmlStreamSpec extends AnyFlatSpec {
     val ns = <root>{(1 to 50).map(_ => build(60))}</root>
     assert(seq(ns) == ns.toString)
   }
+
+  "escape" should "match Utility.escape for every character below 128, alone and inside text" in {
+    (0 until 128).map(_.toChar).foreach { c =>
+      for (text <- Seq(c.toString, s"ab${c}cd", s"$c$c")) {
+        val expected = Utility.escape(text)
+        assert(XmlStream.escape(text, new StringBuilder).toString == expected, s"char ${c.toInt}")
+      }
+    }
+  }
+
+  it should "append text that needs no escaping unchanged" in {
+    val sb = new StringBuilder("x")
+    XmlStream.escape("plain text\n\twith tabs, newlines and ünïcödé", sb)
+    assert(sb.toString == "xplain text\n\twith tabs, newlines and ünïcödé")
+  }
 }

@@ -132,7 +132,6 @@ class FSPage(
       } else {
         logger.trace(s"DELETING CONTEXT ${existing.fullPath} ($existing)")
         existing.delete()
-        key2FSContext.remove(key)
       }
     })
   }

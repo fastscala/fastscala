@@ -1,0 +1,166 @@
+package com.fastscala.scala_xml.utils
+
+import com.fastscala.js.Js
+import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.js.JS
+import net.bytebuddy.ByteBuddy
+import net.bytebuddy.implementation.MethodDelegation
+import net.bytebuddy.matcher.ElementMatchers
+
+import java.lang.reflect.Modifier
+import java.util.regex.Pattern
+import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
+import scala.xml.*
+
+
+object ElemWithFastAttrs {
+  /** How many times the attributes of an [[ElemWithFastAttrs]] were computed; for tests. */
+  private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
+
+  inline def textOfValue(value: Seq[Node]): String = value match {
+    case null => ""
+    case Seq(Text(value)) => value
+    case value => value.text
+  }
+
+  class Interceptor {
+
+    // A single Interceptor is shared by every generated instance (ByteBuddy keeps it in a static field),
+    // so per-instance state, like the cache, must live in fields of the generated class, not here.
+    def intercept(
+                   @net.bytebuddy.implementation.bind.annotation.This self: AnyRef,
+                   @net.bytebuddy.implementation.bind.annotation.FieldValue("orig") orig: Elem,
+                   @net.bytebuddy.implementation.bind.annotation.FieldValue("attrs") attrs: List[(String, String)],
+                   @net.bytebuddy.implementation.bind.annotation.FieldValue("cached") cached: MetaData
+                 ): MetaData = {
+      if (cached ne null) cached
+      else if ((orig eq null) || (attrs eq null)) Null // called before the fields were set: don't cache
+      else {
+        // Benign race: concurrent callers may compute twice, but the result is the same.
+        ElemWithFastAttrs.Computations.incrementAndGet()
+        val computed = attrs.foldLeft((Null: MetaData, Set[String]()))({
+          case ((cur, seenAttrs), (name, value)) if seenAttrs.contains(name) => (cur, seenAttrs)
+          case ((cur, seenAttrs), (name, null)) => (cur, seenAttrs + name)
+          case ((cur, seenAttrs), (name, value)) => (new UnprefixedAttribute(name, value, cur), seenAttrs + name)
+        })._1
+        ElemWithFastAttrs.FieldCached.set(self, computed)
+        computed
+      }
+    }
+
+    // The placeholder (key "", value null) heads the attribute list, with the computed attributes as its `next`.
+    // scala-xml already skips null-valued attributes when iterating, but these two would still count/print it:
+
+    /** MetaData.buildString appends ' ' before each attribute, even a null-valued one: print only the real ones. */
+    def buildString(
+                     @net.bytebuddy.implementation.bind.annotation.This self: MetaData,
+                     @net.bytebuddy.implementation.bind.annotation.Argument(0) sb: StringBuilder
+                   ): StringBuilder = self.next.buildString(sb)
+
+    /** MetaData.length counts every attribute, even a null-valued one. */
+    def length(
+                @net.bytebuddy.implementation.bind.annotation.This self: MetaData,
+                @net.bytebuddy.implementation.bind.annotation.Argument(0) i: Int
+              ): Int = self.next.length(i)
+  }
+
+  private val interceptor = new Interceptor()
+
+  val UnprefixedAttributeClass = new ByteBuddy()
+    .subclass(classOf[UnprefixedAttribute])
+    .defineField("attrs", classOf[List[(String, String)]], Modifier.PUBLIC)
+    .defineField("orig", classOf[Elem], Modifier.PUBLIC)
+    .defineField("cached", classOf[MetaData], Modifier.PUBLIC)
+    .method(ElementMatchers.named("next").and(ElementMatchers.takesArguments(0)))
+    .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("intercept")).to(interceptor))
+    .method(ElementMatchers.named("buildString").and(ElementMatchers.takesArguments(classOf[StringBuilder])))
+    .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("buildString")).to(interceptor))
+    .method(ElementMatchers.named("length").and(ElementMatchers.takesArguments(classOf[Int])))
+    .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("length")).to(interceptor))
+    .make()
+    .load(getClass.getClassLoader)
+    .getLoaded
+  val UnprefixedAttributeClassConstructor =
+    UnprefixedAttributeClass
+      .getDeclaredConstructor(classOf[String], classOf[scala.collection.Seq[Node]], classOf[MetaData])
+  val FieldAttrs = ElemWithFastAttrs.UnprefixedAttributeClass.getField("attrs")
+  val FieldOrig = ElemWithFastAttrs.UnprefixedAttributeClass.getField("orig")
+  val FieldCached = ElemWithFastAttrs.UnprefixedAttributeClass.getField("cached")
+}
+
+/**
+ * An [[Elem]] whose attributes are kept as a list of (name, value), only turned into [[MetaData]] (once, cached) when
+ * read. Transforms are `String => String`: a missing attribute is seen as `""`, and returning `null` removes it.
+ *
+ * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrs]], so a chain of
+ *              transforms doesn't nest wrappers and computes the attributes only once
+ *
+ * @param attrs in reverse print order, names unique; a null value is a removed attribute
+ */
+class ElemWithFastAttrs private(
+                                 val orig: Elem,
+                                 val attrs: List[(String, String)]
+                               ) extends Elem(
+  orig.prefix,
+  orig.label,
+  Null,
+  orig.scope,
+  orig.minimizeEmpty,
+  orig.child *
+) {
+
+  def this(orig: Elem, name: String, transform: String => String) = this(
+    orig, {
+      var found = false
+      val updated = orig.attributes.iterator.map(md => {
+        if (md.key == name) {
+          found = true
+          md.key -> transform(ElemWithFastAttrs.textOfValue(md.value))
+        } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
+      }).toList
+      if (found) updated else (name -> transform("")) :: updated
+    }
+  )
+
+  def this(orig: Elem, transforms: Seq[(String, String => String)]) = this(
+    orig, ({
+      var found = Set[String]()
+      val transformsByKey = transforms.toMap
+      val updated = orig.attributes.iterator.map(md => {
+        if (transformsByKey.contains(md.key)) {
+          found += md.key
+          md.key -> transformsByKey(md.key)(ElemWithFastAttrs.textOfValue(md.value))
+        } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
+      }).toList
+      if (found.size == transforms.size) updated
+      else transforms.filter(t => !found.contains(t._1)).map(t => t._1 -> t._2("")).toList ::: updated
+    }: List[(String, String)])
+  )
+
+  def this(orig: ElemWithFastAttrs, name: String, transform: String => String) = this(
+    orig.orig,
+    (name -> transform(orig.attrs.find(_._1 == name).map(_._2).getOrElse(""))) :: orig.attrs
+  )
+
+  def this(orig: ElemWithFastAttrs, transforms: Seq[(String, String => String)]) = this(
+    orig.orig,
+    {
+      var found = Set[String]()
+      val transformsByKey = transforms.toMap
+      val updated = orig.attrs.collect({
+        case (key, value) if transformsByKey.contains(key) && !found.contains(key) =>
+          found += key
+          key -> transformsByKey(key)(value)
+      }) ::: orig.attrs
+      transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2.apply("")) ::: updated
+    }
+  )
+
+  override val attributes: MetaData = {
+    val ins = ElemWithFastAttrs.UnprefixedAttributeClassConstructor.newInstance("", null, Null)
+    ElemWithFastAttrs.FieldOrig.set(ins, orig)
+    ElemWithFastAttrs.FieldAttrs.set(ins, attrs)
+    ins
+  }
+}

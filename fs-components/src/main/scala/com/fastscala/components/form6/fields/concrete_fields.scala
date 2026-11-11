@@ -331,7 +331,7 @@ class F6SaveButtonField[B](
 //              form.onEvent(ChangedField(this)) &
 //              (if (hints.contains(ShowValidationsHint)) reRender() else Js.void) &
 //              Js.hide(resetButtonId)
-//          }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(NodeSeq.Empty)
+//          }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur else cur + ";display:none;")).getOrElse(NodeSeq.Empty)
 //          }
 //        </form>.pipe(renderer.transformFormElem(this)).pipe(transformFormElem)
 //      }

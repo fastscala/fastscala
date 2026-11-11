@@ -18,9 +18,9 @@ class ContentRerendererP[P](renderFunc: ContentRerendererP[P] => FSContext => P 
 
   val aroundId: String = idOpt.getOrElse(IdGen.id("around"))
 
-  private def renderImpl(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
-    val rendered: NodeSeq = transforms(renderFunc(this)(fsc)(param))
-    val renderedWithTransforms = transforms(rendered)
+  // Does not create a context: callers (render/rerender) are responsible for running this in this rerenderer's context.
+  private def renderImpl(param: P)(implicit fsc: FSContext): Elem = {
+    val renderedWithTransforms: NodeSeq = transforms(renderFunc(this)(fsc)(param))
     val renderedWithId: Elem = outerElem.withIdIfNotSet(aroundId).withContents(renderedWithTransforms)
     RerendererDebugStatusState().render(renderedWithId)
   }

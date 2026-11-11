@@ -129,27 +129,42 @@ class FSContext(
     f(ctx)
   }
 
+  def all: Iterable[FSContext] = Iterable.single(this) ++ children.iterator.flatMap(_.all)
+
   def delete(): Unit = {
     //    logger.trace(s"Delete context $fullPath")
-    deletedAt = Some(System.currentTimeMillis())
+//    println(Thread.currentThread().getStackTrace.mkString("\n")+"\n\n\n")
+    val now = System.currentTimeMillis()
+    val toRemove = all.map(fsc => {
+      fsc.deletedAt = Some(now)
+      if (__fsSystem.debugDeletedContextsFullPath) {
+        val path = fsc.fullPath
+        page.deletedCallbacksContextPath ++= fsc.callbacks.map({
+          case (id, fsFunc) => id -> fsFunc.fullPath
+        })
+      }
+      (key, functionsGenerated, functionsFileUploadGenerated, functionsFileDownloadGenerated)
+    }).toSeq
+    val keysToRemove = toRemove.flatMap(_._1)
+    val functionsGeneratedToRemove = toRemove.flatMap(_._2)
+    val functionsFileUploadGeneratedToRemove = toRemove.flatMap(_._3)
+    val functionsFileDownloadGeneratedToRemove = toRemove.flatMap(_._4)
+
     parentFSContext.foreach(_.children -= this)
-    if (__fsSystem.debugDeletedContextsFullPath) {
-      val path = this.fullPath
-      page.deletedCallbacksContextPath ++= page.callbacks.map({
-        case (id, fsFunc) => id -> fsFunc.fullPath
-      })
-    }
-    key.foreach(page.key2FSContext -= _)
-    page.callbacks --= functionsGenerated
-    if (session.fsSystem.eventsEnableGcCallback) session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGenerated.size)
-    session.fsSystem.stats.currentCallbacks.dec(functionsGenerated.size)
-    page.fileUploadCallbacks --= functionsFileUploadGenerated
-    if (session.fsSystem.eventsEnableGcFileUpload) session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = functionsFileUploadGenerated.size)
-    session.fsSystem.stats.currentFileUploadCallbacks.dec(functionsFileUploadGenerated.size)
-    page.fileDownloadCallbacks --= functionsFileDownloadGenerated
-    if (session.fsSystem.eventsEnableGcFileDownload) session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadGenerated.size)
-    session.fsSystem.stats.currentFileDownloadCallbacks.dec(functionsFileDownloadGenerated.size)
-    children.foreach(_.delete())
+
+    page.key2FSContext --= keysToRemove
+
+    page.callbacks --= functionsGeneratedToRemove
+    page.fileUploadCallbacks --= functionsFileUploadGeneratedToRemove
+    page.fileDownloadCallbacks --= functionsFileDownloadGeneratedToRemove
+
+    session.fsSystem.stats.currentCallbacks.dec(functionsGeneratedToRemove.size)
+    session.fsSystem.stats.currentFileUploadCallbacks.dec(functionsFileUploadGeneratedToRemove.size)
+    session.fsSystem.stats.currentFileDownloadCallbacks.dec(functionsFileDownloadGeneratedToRemove.size)
+
+    if (session.fsSystem.eventsEnableGcCallback) session.fsSystem.stats.event(StatEvent.GC_CALLBACK, n = functionsGeneratedToRemove.size)
+    if (session.fsSystem.eventsEnableGcFileUpload) session.fsSystem.stats.event(StatEvent.GC_FILE_UPLOAD, n = functionsFileUploadGeneratedToRemove.size)
+    if (session.fsSystem.eventsEnableGcFileDownload) session.fsSystem.stats.event(StatEvent.GC_FILE_DOWNLOAD, n = functionsFileDownloadGeneratedToRemove.size)
   }
 
   def callback(func: () => Js): Js = callback(JS.void, _ => func())

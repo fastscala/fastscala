@@ -1725,7 +1725,7 @@ class F5FileUploadField(
               form.onEvent(ChangedField(this)) &
               (if (hints.contains(ShowValidationsHint)) reRender() else JS.void) &
               JS.hide(resetButtonId)
-          }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur.getOrElse("") else cur.getOrElse("") + ";display:none;")).getOrElse(NodeSeq.Empty)
+          }).cmd).withAttr("style")(cur => if (currentValue.isDefined) cur else cur + ";display:none;")).getOrElse(NodeSeq.Empty)
           }
         </form>.pipe(renderer.transformFormElem(this)(_)).pipe(transformFormElem)
       }

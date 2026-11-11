@@ -20,7 +20,8 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
     aroundId.get
   })
 
-  protected def renderImpl(param: P)(implicit fsc: FSContext): Elem = fsc.runInNewOrRenewedChildContextFor(this, debugLabel = debugLabel) { implicit fsc =>
+  // Does not create a context: callers (render/rerender) are responsible for running this in this rerenderer's context.
+  protected def renderImpl(param: P)(implicit fsc: FSContext): Elem = {
     val rendered: Elem = transforms(renderFunc(this)(fsc)(param))
     aroundId = aroundId.orElse(rendered.getIdOpt)
     renderedWithParam = Some(param)
@@ -38,9 +39,8 @@ class RerendererP[P](renderFunc: RerendererP[P] => FSContext => P => Elem, idOpt
     RerendererDebugStatusState().rerender(getOrGenerateAroundId, JS.replaceWithScriptExtraction(getOrGenerateAroundId, renderedWithId))
   }
 
-  def rerenderTransform(modify: P => P)(implicit fsp: FSPageLike): Js = fsp.inContextClearedFor(this) { implicit fsc =>
+  def rerenderTransform(modify: P => P)(implicit fsp: FSPageLike): Js =
     rerender(modify(renderedWithParam.getOrElse(throw new Exception("Called rerender with a function to modify the current params, but hasn't been rendered the first time yet!"))))
-  }
 
   def replaceBy(elem: Elem): Js = JS.replaceWithScriptExtraction(getOrGenerateAroundId, elem.withId(getOrGenerateAroundId))
 

@@ -16,8 +16,8 @@ import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
 import scala.xml.*
 
 
-object ElemWithFastAttrs {
-  /** How many times the attributes of an [[ElemWithFastAttrs]] were computed; for tests. */
+object ElemWithFastAttrsV1 {
+  /** How many times the attributes of an [[ElemWithFastAttrsV1]] were computed; for tests. */
   @static private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
 
   inline def textOfValue(value: Seq[Node]): String = value match {
@@ -39,13 +39,13 @@ object ElemWithFastAttrs {
       else if (attrs eq null) Null // called before the fields were set: don't cache
       else {
         // Benign race: concurrent callers may compute twice, but the result is the same.
-        ElemWithFastAttrs.Computations.incrementAndGet()
+        ElemWithFastAttrsV1.Computations.incrementAndGet()
         val computed = attrs.foldLeft((Null: MetaData, Set[String]()))({
           case ((cur, seenAttrs), (name, value)) if seenAttrs.contains(name) => (cur, seenAttrs)
           case ((cur, seenAttrs), (name, null)) => (cur, seenAttrs + name)
           case ((cur, seenAttrs), (name, value)) => (new UnprefixedAttribute(name, value, cur), seenAttrs + name)
         })._1
-        ElemWithFastAttrs.SetCached.invokeExact(self, computed): Unit
+        ElemWithFastAttrsV1.SetCached.invokeExact(self, computed): Unit
         computed
       }
     }
@@ -103,27 +103,26 @@ object ElemWithFastAttrs {
  * An [[Elem]] whose attributes are kept as a list of (name, value), only turned into [[MetaData]] (once, cached) when
  * read. Transforms are `String => String`: a missing attribute is seen as `""`, and returning `null` removes it.
  *
- * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrs]], so a chain of
+ * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrsV1]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
- *
  * @param attrs in reverse print order, names unique; a null value is a removed attribute
  */
-class ElemWithFastAttrs private(
-                                 val attrs: List[(String, String)],
-                                 prefix: String,
-                                 label: String,
-                                 scope: NamespaceBinding,
-                                 minimizeEmpty: Boolean,
-                                 child: Node*
-                               ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
+class ElemWithFastAttrsV1 private(
+                                   val attrs: List[(String, String)],
+                                   prefix: String,
+                                   label: String,
+                                   scope: NamespaceBinding,
+                                   minimizeEmpty: Boolean,
+                                   child: Node*
+                                 ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
   def this(orig: Elem, name: String, transform: String => String) = this({
     var found = false
     val updated = orig.attributes.iterator.map(md => {
       if (md.key == name) {
         found = true
-        md.key -> transform(ElemWithFastAttrs.textOfValue(md.value))
-      } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
+        md.key -> transform(ElemWithFastAttrsV1.textOfValue(md.value))
+      } else md.key -> ElemWithFastAttrsV1.textOfValue(md.value)
     }).toList
     if (found) updated else (name -> transform("")) :: updated
   },
@@ -140,8 +139,8 @@ class ElemWithFastAttrs private(
     val updated = orig.attributes.iterator.map(md => {
       if (transformsByKey.contains(md.key)) {
         found += md.key
-        md.key -> transformsByKey(md.key)(ElemWithFastAttrs.textOfValue(md.value))
-      } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
+        md.key -> transformsByKey(md.key)(ElemWithFastAttrsV1.textOfValue(md.value))
+      } else md.key -> ElemWithFastAttrsV1.textOfValue(md.value)
     }).toList
     if (found.size == transforms.size) updated
     else transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2("")) ::: updated // last one per name wins
@@ -153,8 +152,26 @@ class ElemWithFastAttrs private(
     orig.child *
   )
 
-  def this(orig: ElemWithFastAttrs, name: String, transform: String => String) = this(
-    (name -> transform(orig.attrs.find(_._1 == name).map(_._2).getOrElse(""))) :: orig.attrs,
+  def this(orig: ElemWithFastAttrsV1, name: String, transform: String => String) = this(orig.attrs match {
+    case (`name`, value) :: rest =>
+      val updated = transform(value)
+      if (updated ne null) (name, transform(value)) :: rest
+      else rest
+    case Nil =>
+      val value = transform("")
+      if (value ne null) List((name, transform("")))
+      else Nil
+    case attrs =>
+      val found = attrs.find(_._1 == name)
+      val updated = transform(found.getOrElse(("", ""))._2)
+      if (updated ne null) {
+        if (found.isDefined) (name -> updated) :: attrs.filter(_._1 != name)
+        else (name -> updated) :: attrs
+      } else {
+        if (found.isDefined) attrs.filter(_._1 != name)
+        else attrs
+      }
+  },
     orig.prefix,
     orig.label,
     orig.scope,
@@ -162,7 +179,7 @@ class ElemWithFastAttrs private(
     orig.child *
   )
 
-  def this(orig: ElemWithFastAttrs, transforms: Seq[(String, String => String)]) = this(
+  def this(orig: ElemWithFastAttrsV1, transforms: Seq[(String, String => String)]) = this(
     {
       var found = Set[String]()
       val transformsByKey = transforms.toMap
@@ -181,8 +198,8 @@ class ElemWithFastAttrs private(
   )
 
   override val attributes: MetaData = {
-    val ins = ElemWithFastAttrs.NewAttribute.invokeExact("", null: scala.collection.Seq[Node], Null: MetaData): UnprefixedAttribute
-    ElemWithFastAttrs.SetAttrs.invokeExact(ins, attrs): Unit
+    val ins = ElemWithFastAttrsV1.NewAttribute.invokeExact("", null: scala.collection.Seq[Node], Null: MetaData): UnprefixedAttribute
+    ElemWithFastAttrsV1.SetAttrs.invokeExact(ins, attrs): Unit
     ins
   }
 }

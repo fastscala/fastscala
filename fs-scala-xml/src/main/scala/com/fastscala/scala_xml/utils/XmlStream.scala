@@ -69,6 +69,7 @@ object XmlStream {
           // Write the attributes straight from its Map: reading e.attributes would build (and cache) the MetaData.
           case fast: ElemWithFastAttrsV3 => appendFastAttrsV3(fast.attrs, sb)
           case fast: ElemWithFastAttrsV2 => appendFastAttrs(fast.attrs, sb)
+          case fast: ElemWithFastAttrsV1 => appendFastAttrsV1(fast.attrs, sb)
           case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
         }
         e.scope.buildString(sb, level.scope)
@@ -171,6 +172,36 @@ object XmlStream {
       escapeOldestFirst(pieces.tail, sb)
       escape(pieces.head, sb)
     }
+
+  /**
+   * The attributes of an [[ElemWithFastAttrsV1]], in the same order and format as its computed MetaData would print,
+   * without computing it. `attrs` is newest first and may repeat a name: only its first (newest) entry counts, and a
+   * null value there means removed. The MetaData is built by prepending while walking from the head, so it prints the
+   * kept entries in reverse list order: walk from the tail (by recursion: no allocation) and write each entry that is
+   * the first for its name.
+   */
+  private def appendFastAttrsV1(attrs: List[(String, String)], sb: StringBuilder): Unit = {
+    def isFirstForName(entry: List[(String, String)]): Boolean = {
+      val name = entry.head._1
+      var cur = attrs
+      while (cur ne entry) { // a handful of entries: a short scan, instead of a Set
+        if (cur.head._1 == name) return false
+        cur = cur.tail
+      }
+      true
+    }
+    def fromTail(rest: List[(String, String)]): Unit =
+      if (rest.nonEmpty) {
+        fromTail(rest.tail)
+        val value = rest.head._2
+        if ((value ne null) && isFirstForName(rest)) {
+          sb.append(' ').append(rest.head._1).append("=\"")
+          escape(value, sb)
+          sb.append('"')
+        }
+      }
+    fromTail(attrs)
+  }
 
   private def isPlainText(node: Node): Boolean = {
     val cls = node.getClass

@@ -4,7 +4,7 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemWithFastAttrs
+import com.fastscala.scala_xml.utils.ElemWithFastAttrsV2
 import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
@@ -19,9 +19,9 @@ trait ScalaXmlElemUtils extends Any {
   def elem: Elem
 
   /** `transform` gets the current value (`""` if missing); returning `null` removes the attribute. */
-  def attributeTransform(name: String, transform: String => String): ElemWithFastAttrs = elem match {
-    case elem: ElemWithFastAttrs => new ElemWithFastAttrs(elem, name, transform)
-    case elem => new ElemWithFastAttrs(elem, name, transform)
+  def attributeTransform(name: String, transform: String => String): ElemWithFastAttrsV2 = elem match {
+    case elem: ElemWithFastAttrsV2 => new ElemWithFastAttrsV2(elem, name, transform)
+    case elem => new ElemWithFastAttrsV2(elem, name, transform)
   }
 
   def addClass(`class`: String): Elem = if (`class` == "") elem else attributeTransform("class", _ + " " + `class`)
@@ -65,8 +65,8 @@ trait ScalaXmlElemUtils extends Any {
    */
   def withAttrs(attrs: (String, String)*): Elem = elem match {
     case elem if attrs.isEmpty => elem
-    case elem: ElemWithFastAttrs => new ElemWithFastAttrs(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
-    case elem => new ElemWithFastAttrs(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
+    case elem: ElemWithFastAttrsV2 => new ElemWithFastAttrsV2(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
+    case elem => new ElemWithFastAttrsV2(elem, attrs.map(kv => kv._1 -> ((_: String) => kv._2)))
   }
 
   def withRole(role: String): Elem = attributeTransform("role", _ => role)

@@ -32,12 +32,11 @@ object ElemWithFastAttrs {
     // so per-instance state, like the cache, must live in fields of the generated class, not here.
     def intercept(
                    @net.bytebuddy.implementation.bind.annotation.This self: AnyRef,
-                   @net.bytebuddy.implementation.bind.annotation.FieldValue("orig") orig: Elem,
                    @net.bytebuddy.implementation.bind.annotation.FieldValue("attrs") attrs: List[(String, String)],
                    @net.bytebuddy.implementation.bind.annotation.FieldValue("cached") cached: MetaData
                  ): MetaData = {
       if (cached ne null) cached
-      else if ((orig eq null) || (attrs eq null)) Null // called before the fields were set: don't cache
+      else if (attrs eq null) Null // called before the fields were set: don't cache
       else {
         // Benign race: concurrent callers may compute twice, but the result is the same.
         ElemWithFastAttrs.Computations.incrementAndGet()
@@ -72,7 +71,6 @@ object ElemWithFastAttrs {
   @static val UnprefixedAttributeClass: Class[? <: UnprefixedAttribute] = new ByteBuddy()
     .subclass(classOf[UnprefixedAttribute])
     .defineField("attrs", classOf[List[(String, String)]], Modifier.PUBLIC)
-    .defineField("orig", classOf[Elem], Modifier.PUBLIC)
     .defineField("cached", classOf[MetaData], Modifier.PUBLIC)
     .method(ElementMatchers.named("next").and(ElementMatchers.takesArguments(0)))
     .intercept(MethodDelegation.withDefaultConfiguration().filter(ElementMatchers.named("intercept")).to(interceptor))
@@ -98,7 +96,6 @@ object ElemWithFastAttrs {
     lookup.unreflectSetter(UnprefixedAttributeClass.getField(name)).asType(MethodType.methodType(Void.TYPE, owner, tpe))
 
   @static val SetAttrs: MethodHandle = setter("attrs", classOf[UnprefixedAttribute], classOf[List[?]])
-  @static val SetOrig: MethodHandle = setter("orig", classOf[UnprefixedAttribute], classOf[Elem])
   @static val SetCached: MethodHandle = setter("cached", classOf[AnyRef], classOf[MetaData])
 }
 
@@ -112,52 +109,60 @@ object ElemWithFastAttrs {
  * @param attrs in reverse print order, names unique; a null value is a removed attribute
  */
 class ElemWithFastAttrs private(
-                                 val orig: Elem,
-                                 val attrs: List[(String, String)]
-                               ) extends Elem(
-  orig.prefix,
-  orig.label,
-  Null,
-  orig.scope,
-  orig.minimizeEmpty,
-  orig.child *
-) {
+                                 val attrs: List[(String, String)],
+                                 prefix: String,
+                                 label: String,
+                                 scope: NamespaceBinding,
+                                 minimizeEmpty: Boolean,
+                                 child: Node*
+                               ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
-  def this(orig: Elem, name: String, transform: String => String) = this(
-    orig, {
-      var found = false
-      val updated = orig.attributes.iterator.map(md => {
-        if (md.key == name) {
-          found = true
-          md.key -> transform(ElemWithFastAttrs.textOfValue(md.value))
-        } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
-      }).toList
-      if (found) updated else (name -> transform("")) :: updated
-    }
+  def this(orig: Elem, name: String, transform: String => String) = this({
+    var found = false
+    val updated = orig.attributes.iterator.map(md => {
+      if (md.key == name) {
+        found = true
+        md.key -> transform(ElemWithFastAttrs.textOfValue(md.value))
+      } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
+    }).toList
+    if (found) updated else (name -> transform("")) :: updated
+  },
+    orig.prefix,
+    orig.label,
+    orig.scope,
+    orig.minimizeEmpty,
+    orig.child *
   )
 
-  def this(orig: Elem, transforms: Seq[(String, String => String)]) = this(
-    orig, ({
-      var found = Set[String]()
-      val transformsByKey = transforms.toMap
-      val updated = orig.attributes.iterator.map(md => {
-        if (transformsByKey.contains(md.key)) {
-          found += md.key
-          md.key -> transformsByKey(md.key)(ElemWithFastAttrs.textOfValue(md.value))
-        } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
-      }).toList
-      if (found.size == transforms.size) updated
-      else transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2("")) ::: updated // last one per name wins
-    }: List[(String, String)])
+  def this(orig: Elem, transforms: Seq[(String, String => String)]) = this(({
+    var found = Set[String]()
+    val transformsByKey = transforms.toMap
+    val updated = orig.attributes.iterator.map(md => {
+      if (transformsByKey.contains(md.key)) {
+        found += md.key
+        md.key -> transformsByKey(md.key)(ElemWithFastAttrs.textOfValue(md.value))
+      } else md.key -> ElemWithFastAttrs.textOfValue(md.value)
+    }).toList
+    if (found.size == transforms.size) updated
+    else transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2("")) ::: updated // last one per name wins
+  }: List[(String, String)]),
+    orig.prefix,
+    orig.label,
+    orig.scope,
+    orig.minimizeEmpty,
+    orig.child *
   )
 
   def this(orig: ElemWithFastAttrs, name: String, transform: String => String) = this(
-    orig.orig,
-    (name -> transform(orig.attrs.find(_._1 == name).map(_._2).getOrElse(""))) :: orig.attrs
+    (name -> transform(orig.attrs.find(_._1 == name).map(_._2).getOrElse(""))) :: orig.attrs,
+    orig.prefix,
+    orig.label,
+    orig.scope,
+    orig.minimizeEmpty,
+    orig.child *
   )
 
   def this(orig: ElemWithFastAttrs, transforms: Seq[(String, String => String)]) = this(
-    orig.orig,
     {
       var found = Set[String]()
       val transformsByKey = transforms.toMap
@@ -167,12 +172,16 @@ class ElemWithFastAttrs private(
           key -> transformsByKey(key)(value)
       }) ::: orig.attrs
       transformsByKey.removedAll(found).toList.map(kv => kv._1 -> kv._2.apply("")) ::: updated
-    }
+    },
+    orig.prefix,
+    orig.label,
+    orig.scope,
+    orig.minimizeEmpty,
+    orig.child *
   )
 
   override val attributes: MetaData = {
     val ins = ElemWithFastAttrs.NewAttribute.invokeExact("", null: scala.collection.Seq[Node], Null: MetaData): UnprefixedAttribute
-    ElemWithFastAttrs.SetOrig.invokeExact(ins, orig): Unit
     ElemWithFastAttrs.SetAttrs.invokeExact(ins, attrs): Unit
     ins
   }

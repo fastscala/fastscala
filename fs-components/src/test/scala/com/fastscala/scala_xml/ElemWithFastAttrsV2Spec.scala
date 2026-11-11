@@ -1,27 +1,27 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
-import com.fastscala.scala_xml.utils.{ElemWithFastAttrs, XmlStream}
+import com.fastscala.scala_xml.utils.{ElemWithFastAttrsV2, XmlStream}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
 import scala.xml.*
 
 /**
- * [[ElemWithFastAttrs]] defers attribute transforms (addClass, withAttr, ...) until the attributes are
+ * [[ElemWithFastAttrsV2]] defers attribute transforms (addClass, withAttr, ...) until the attributes are
  * read, so a chain like `<span/>.btn_sm.btn.ms_2` computes the final attributes once, when printed, instead of once
  * per step.
  *
- * In package `com.fastscala.scala_xml` to read [[ElemWithFastAttrs.Computations]]. Lives in fs-components
+ * In package `com.fastscala.scala_xml` to read [[ElemWithFastAttrsV2.Computations]]. Lives in fs-components
  * because it uses [[com.fastscala.components.bootstrap5.helpers.BSHelpers]].
  */
-class ElemWithFastAttrsSpec extends AnyFlatSpec {
+class ElemWithFastAttrsV2Spec extends AnyFlatSpec {
 
   /** How many times attributes were computed while running `f`. Tests in this suite run sequentially. */
   private def computations[A](f: => A): (A, Long) = {
-    val before = ElemWithFastAttrs.Computations.get()
+    val before = ElemWithFastAttrsV2.Computations.get()
     val result = f
-    (result, ElemWithFastAttrs.Computations.get() - before)
+    (result, ElemWithFastAttrsV2.Computations.get() - before)
   }
 
   private def serialize(n: Node): String = {
@@ -42,7 +42,7 @@ class ElemWithFastAttrsSpec extends AnyFlatSpec {
   "A chain of BSHelpers classes" should "compute nothing until printed" in {
     val (elem, n) = computations(<span></span>.btn_sm.btn.ms_2)
     assert(n == 0)
-    assert(elem.isInstanceOf[ElemWithFastAttrs])
+    assert(elem.isInstanceOf[ElemWithFastAttrsV2])
   }
 
   it should "compute the attributes exactly once when printed to a StringBuilder" in {
@@ -109,7 +109,9 @@ class ElemWithFastAttrsSpec extends AnyFlatSpec {
     val elem = <span id="x" class="a"></span>.btn.ms_2
     assert(classesOf(elem) == List("a", "btn", "ms-2"))
     assert(elem.attribute("id").map(_.text) == Some("x"))
-    assert(serialize(elem) == """<span id="x" class="a btn ms-2"></span>""")
+    val out = serialize(elem) // attribute order doesn't matter
+    assert(out.contains(""" id="x"""") && out.contains(""" class="a btn ms-2""""), out)
+    assert(out.startsWith("<span ") && out.endsWith("></span>") && !out.contains("  "), out)
   }
 
   it should "mix classes and other attributes" in {

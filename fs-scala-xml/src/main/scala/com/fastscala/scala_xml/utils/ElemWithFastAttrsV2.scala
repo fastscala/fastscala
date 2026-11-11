@@ -122,8 +122,8 @@ class ElemWithFastAttrsV2 private(
         found = true
         md.key -> transform(ElemWithFastAttrsV2.textOfValue(md.value))
       } else md.key -> ElemWithFastAttrsV2.textOfValue(md.value)
-    }).filter(_._2 != null).toMap
-    if (found) updated else updated + (name -> transform(""))
+    }).toMap
+    (if (found) updated else updated + (name -> transform(""))).filter(_._2 != null)
   },
     orig.prefix,
     orig.label,
@@ -141,7 +141,9 @@ class ElemWithFastAttrsV2 private(
         md.key -> transformsByKey(md.key)(ElemWithFastAttrsV2.textOfValue(md.value))
       } else md.key -> ElemWithFastAttrsV2.textOfValue(md.value)
     }).toMap
-    orig.attrs.removedAll(updates.filter(_._2 == null)) ++ updates.filter(_._2 != null)
+    // transforms for attributes orig doesn't have yet
+    val added = transformsByKey.removedAll(found).map(kv => kv._1 -> kv._2(""))
+    (updates ++ added).filter(_._2 != null)
   },
     orig.prefix,
     orig.label,
@@ -166,7 +168,7 @@ class ElemWithFastAttrsV2 private(
     val updates = transforms.map({
       case (name, transform) => (name -> orig.attrs.get(name).map(transform).getOrElse(transform("")))
     })
-    orig.attrs.removedAll(updates.filter(_._2 == null)) ++ updates.filter(_._2 != null)
+    orig.attrs.removedAll(updates.collect({ case (name, null) => name })) ++ updates.filter(_._2 != null)
   },
     orig.prefix,
     orig.label,

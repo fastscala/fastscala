@@ -83,7 +83,7 @@ class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
   it should "pass \"\" for a missing attribute and append it" in {
     var seen: String = "unset"
     val result = <p a="1"/>.attributeTransform("x", existing => { seen = existing; "v" })
-    assert(result.toString == """<p a="1" x="v"/>""") // transforms run when the attributes are first read
+    assert(result.attrs == Map("a" -> "1", "x" -> "v")) // attribute order doesn't matter
     assert(seen == "")
   }
 

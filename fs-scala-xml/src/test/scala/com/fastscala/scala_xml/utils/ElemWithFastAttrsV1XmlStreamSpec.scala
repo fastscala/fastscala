@@ -1,6 +1,6 @@
 package com.fastscala.scala_xml.utils
 
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV1.RichElem
+import com.fastscala.scala_xml.testutils.ElemUtilsV1.RichElem
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter

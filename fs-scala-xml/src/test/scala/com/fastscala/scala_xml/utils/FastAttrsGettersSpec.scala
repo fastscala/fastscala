@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.utils
 
 import com.fastscala.scala_xml.{ScalaXmlElemUtilsV1, ScalaXmlElemUtilsV2}
+import com.fastscala.scala_xml.testutils.{ElemUtilsV1, ElemUtilsV2}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
@@ -23,14 +24,14 @@ class FastAttrsGettersSpec extends AnyFlatSpec {
   private def getters(attrs: Seq[String] => Seq[Any], getAttrs: => Any): Seq[Any] = attrs(names) :+ getAttrs
 
   private def v2Getters(e: Elem): Seq[Any] = {
-    val r = new ScalaXmlElemUtilsV2.RichElem(e)
+    val r = new ElemUtilsV2.RichElem(e)
     getters(ns => ns.map(r.attr) ++ Seq(r.getClassAttr, r.getStyleAttr, r.getIdOpt) ++
       ns.map(n => r.hasAttribute(n, r.attr(n).map(Utility.escape).getOrElse("?"))) ++
       Seq(r.hasAttribute("title", "t & u"), r.hasAttribute("title", "t &amp; u"), r.hasAttribute("missing", "")), r.getAttrs)
   }
 
   private def v1Getters(e: Elem): Seq[Any] = {
-    val r = new ScalaXmlElemUtilsV1.RichElem(e)
+    val r = new ElemUtilsV1.RichElem(e)
     getters(ns => ns.map(r.attr) ++ Seq(r.getClassAttr, r.getStyleAttr, r.getIdOpt) ++
       ns.map(n => r.hasAttribute(n, r.attr(n).map(Utility.escape).getOrElse("?"))) ++
       Seq(r.hasAttribute("title", "t & u"), r.hasAttribute("title", "t &amp; u"), r.hasAttribute("missing", "")), r.getAttrs)
@@ -39,7 +40,7 @@ class FastAttrsGettersSpec extends AnyFlatSpec {
   private def notComputed(e: Elem, attributeClass: Class[?]): Boolean = attributeClass.getField("cached").get(e.attributes) == null
 
   {
-    import ScalaXmlElemUtilsV2.RichElem
+    import ElemUtilsV2.RichElem
     val cases: Seq[(String, () => Elem)] = Seq(
       "classes added" -> (() => <td/>.addClass("px-2").addClass("py-1")),
       "existing attributes, escaping" -> (() => <div id="i&amp;d" title="t &amp; u" class="a"/>.addClass("b <c>").withAttr("style" -> "x: \"y\"")),
@@ -53,13 +54,13 @@ class FastAttrsGettersSpec extends AnyFlatSpec {
         val fast = v2Getters(e)
         assert(notComputed(e, ElemWithFastAttrsV2.UnprefixedAttributeClass), "a getter computed the attributes")
         assert(fast == v2Getters(plainCopy(e)))
-        assert(new ScalaXmlElemUtilsV2.RichElem(e).getAttrs.toMap == e.attributes.toList.map(a => a.key -> a.value.toString).toMap)
+        assert(new ElemUtilsV2.RichElem(e).getAttrs.toMap == e.attributes.toList.map(a => a.key -> a.value.toString).toMap)
       }
     }
   }
 
   {
-    import ScalaXmlElemUtilsV1.RichElem
+    import ElemUtilsV1.RichElem
     val cases: Seq[(String, () => Elem)] = Seq(
       "classes added" -> (() => <td/>.addClass("px-2").addClass("py-1")),
       "existing attributes, escaping" -> (() => <div id="i&amp;d" title="t &amp; u" class="a"/>.addClass("b <c>").withAttr("style" -> "x: \"y\"")),
@@ -75,7 +76,7 @@ class FastAttrsGettersSpec extends AnyFlatSpec {
         assert(notComputed(e, ElemWithFastAttrsV1.UnprefixedAttributeClass), "a getter computed the attributes")
         assert(fast == v1Getters(plainCopy(e)))
         // same order as elem.attributes, too
-        assert(new ScalaXmlElemUtilsV1.RichElem(e).getAttrs == e.attributes.toList.map(a => a.key -> a.value.toString))
+        assert(new ElemUtilsV1.RichElem(e).getAttrs == e.attributes.toList.map(a => a.key -> a.value.toString))
       }
     }
   }

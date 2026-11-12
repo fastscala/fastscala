@@ -10,7 +10,7 @@ import net.bytebuddy.matcher.ElementMatchers
 
 import java.lang.invoke.{MethodHandle, MethodHandles, MethodType}
 import java.lang.reflect.Modifier
-import scala.annotation.static
+import scala.annotation.{static, tailrec}
 import java.util.regex.Pattern
 import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
 import scala.xml.*
@@ -113,6 +113,7 @@ object ElemWithFastAttrsV1 {
  *
  * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrsV1]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
+ *
  * @param attrs in reverse print order; names unique, values never null (a removed attribute is not in the list)
  */
 class ElemWithFastAttrsV1(
@@ -171,23 +172,21 @@ class ElemWithFastAttrsV1(
     orig.child *
   )
 
-  def this(orig: ElemWithFastAttrsV1, name: String, transform: String => String) = this(orig.attrs match {
-    case Nil =>
-      val value = transform("")
-      if (value ne null) List((name, value)) else Nil
-    case (`name`, value) :: rest => // names are unique, so rest doesn't have it
-      val updated = transform(value)
-      if (updated ne null) (name, updated) :: rest else rest
-    case attrs =>
-      val found = attrs.find(_._1 == name)
-      val updated = transform(found.getOrElse(("", ""))._2)
-      if (updated ne null) {
-        if (found.isDefined) (name -> updated) :: attrs.filter(_._1 != name)
-        else (name -> updated) :: attrs
-      } else {
-        if (found.isDefined) attrs.filter(_._1 != name)
-        else attrs
-      }
+  def this(orig: ElemWithFastAttrsV1, name: String, transform: String => String) = this({
+    @tailrec def aux(
+                      remaining: List[(String, String)] = orig.attrs,
+                      rslt: List[(String, String)] = Nil,
+                    ): List[(String, String)] = remaining match {
+      case Nil =>
+        val updated = transform("")
+        if (updated eq null) rslt else (name -> updated) :: rslt
+      case (`name`, value) :: rest =>
+        val updated = transform(value)
+        if (updated eq null) rest ::: rslt else (name -> updated) :: rest ::: rslt
+      case entry :: rest => aux(rest, entry :: rslt)
+    }
+
+    aux()
   },
     orig.prefix,
     orig.label,

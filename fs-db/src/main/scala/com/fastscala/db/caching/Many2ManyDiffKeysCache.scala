@@ -81,18 +81,17 @@ class Many2ManyDiffKeysCache[KL, KJ, KR, L <: Row[L] & ObservableRowBase & RowWi
 
   def getJoinForLeftAndRight(left: L, right: R): Option[J] = getJoinForLeftAndRightIds(left.key, right.key)
 
-  def getJoinForLeftAndRightIds(left: KL, right: KR): Option[J] = (for {
-    joinWithTheLeftElement <- left2Join.get(left)
-    joinWithTheRightElement <- right2Join.get(right)
-    intersection = joinWithTheLeftElement & joinWithTheRightElement
-    if intersection.nonEmpty
-    //    _ = if (intersection.size > 1) {
-    //      val query = s"""select * from ${cacheJ.table.tableName} where ${filterLeftOnJoinTable(Seq(left)).value} and ${filterRightOnJoinTable(Seq(right)).value};""".replaceFirst("\\?", s"'${left.key}'").replaceFirst("\\?", s"'${right.key}'")
-    //      logger.warn(s"More than one row for $left => $right: ${intersection.mkString(", ")}! Query:\n$query")
-    //    }
-    //    _ = assert(intersection.size == 1)
-  } yield intersection.head).orElse {
-    cacheJ.select(sqls"${filterLeftOnJoinTable(Seq(left))} and ${filterRightOnJoinTable(Seq(right))}").headOption
+  /**
+   * A hydrated side already holds *all* its joins, so either side alone is enough to answer.
+   * If neither is hydrated, hydrates the left side (one query), so that checking the same left against many rights
+   * (e.g. one checkbox per tag) costs one query in total instead of one per right.
+   */
+  def getJoinForLeftAndRightIds(left: KL, right: KR): Option[J] = {
+    if (!left2Join.contains(left) && !right2Join.contains(right)) hidrateCacheForLeftKeys(Set(left))
+    left2Join.get(left) match {
+      case Some(joinsOfLeft) => joinsOfLeft.find(getRight(_) == right)
+      case None => right2Join(right).find(getLeft(_) == left)
+    }
   }
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()

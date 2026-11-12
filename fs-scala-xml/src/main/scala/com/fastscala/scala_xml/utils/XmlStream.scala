@@ -69,7 +69,7 @@ object XmlStream {
           // Write the attributes straight from its Map: reading e.attributes would build (and cache) the MetaData.
           case fast: ElemWithFastAttrsV3 => appendFastAttrsV3(fast.attrs, sb)
           case fast: ElemWithFastAttrsV2 => appendFastAttrs(fast.attrs, sb)
-          case fast: ElemWithFastAttrsV1 => appendFastAttrsV1(fast.attrs, sb)
+          case fast: ElemOptimized => appendFastAttrsV1(fast.attrs, sb)
           case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
         }
         e.scope.buildString(sb, level.scope)
@@ -174,7 +174,7 @@ object XmlStream {
     }
 
   /**
-   * The attributes of an [[ElemWithFastAttrsV1]], in the same order and format as its computed MetaData would print,
+   * The attributes of an [[ElemOptimized]], in the same order and format as its computed MetaData would print,
    * without computing it. `attrs` is newest first and may repeat a name: only its first (newest) entry counts, and a
    * null value there means removed. The MetaData is built by prepending while walking from the head, so it prints the
    * kept entries in reverse list order: walk from the tail (by recursion: no allocation) and write each entry that is

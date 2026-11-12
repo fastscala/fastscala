@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import scala.xml.*
 
 /**
- * The getters of [[ScalaXmlElemUtilsV1]] / [[ScalaXmlElemUtilsV2]] read an ElemWithFastAttrsV1 / V2's attrs directly:
+ * The getters of [[ScalaXmlElemUtilsV1]] / [[ScalaXmlElemUtilsV2]] read an ElemOptimized / V2's attrs directly:
  * they must not compute the attributes, and must return exactly what they return for a plain Elem with the same ones.
  */
 class FastAttrsGettersSpec extends AnyFlatSpec {
@@ -69,11 +69,11 @@ class FastAttrsGettersSpec extends AnyFlatSpec {
       "withAttrs" -> (() => <p/>.withAttrs("a" -> "1", "b" -> "2").withAttrs("a" -> "3")),
     )
     cases.foreach { case (name, make) =>
-      "ScalaXmlElemUtilsV1's getters" should s"read ElemWithFastAttrsV1 directly, as for a plain Elem ($name)" in {
+      "ScalaXmlElemUtilsV1's getters" should s"read ElemOptimized directly, as for a plain Elem ($name)" in {
         val e = make()
-        assert(e.isInstanceOf[ElemWithFastAttrsV1])
+        assert(e.isInstanceOf[ElemOptimized])
         val fast = v1Getters(e)
-        assert(notComputed(e, ElemWithFastAttrsV1.UnprefixedAttributeClass), "a getter computed the attributes")
+        assert(notComputed(e, ElemOptimized.UnprefixedAttributeClass), "a getter computed the attributes")
         assert(fast == v1Getters(plainCopy(e)))
         // same order as elem.attributes, too
         assert(new ElemUtilsV1.RichElem(e).getAttrs == e.attributes.toList.map(a => a.key -> a.value.toString))

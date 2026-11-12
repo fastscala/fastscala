@@ -5,13 +5,13 @@ import com.fastscala.js.Js
 import com.fastscala.js.JsHelper.RichJs
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemWithFastAttrsV1
+import com.fastscala.scala_xml.utils.ElemOptimized
 import com.fastscala.utils.IdGen
 
 import scala.xml.{Elem, NodeSeq, Text}
 
 /**
- * The elements are built directly as [[ElemWithFastAttrsV1]] (not XML literals): attributes are added with `attr`, in
+ * The elements are built directly as [[ElemOptimized]] (not XML literals): attributes are added with `attr`, in
  * print order, and, like in an XML literal, an attribute whose value is null is left out.
  */
 object ImmediateInputFields {
@@ -26,7 +26,7 @@ object ImmediateInputFields {
   }
 
   /** An element without a closing tag (like `<input/>` in a literal). */
-  private def empty(label: String, attrs: Attrs): Elem = new ElemWithFastAttrsV1(attrs, label = label, minimizeEmpty = true)
+  private def empty(label: String, attrs: Attrs): Elem = ElemOptimized(label = label, minimizeEmpty = true, attrs = attrs)()
 
   /** `content` as a text node; nothing for null (as in an XML literal). */
   private def textNode(content: String): Seq[Text] = if (content eq null) Nil else Seq(Text(content))
@@ -59,11 +59,11 @@ object ImmediateInputFields {
       .attr("tabindex", if (tabindex.isDefined) tabindex.get.toString else null)
       .attr("onchange", submit)
     ).withAttrs(additionalAttrs *)
-    val labelElem = new ElemWithFastAttrsV1(
-      NoAttrs.attr("class", labelClass).attr("style", labelStyle).attr("for", inputId),
-      label = "label", child = textNode(label) *
-    )
-    new ElemWithFastAttrsV1(
+    val labelElem = ElemOptimized(
+      label = "label",
+      attrs = NoAttrs.attr("class", labelClass).attr("style", labelStyle).attr("for", inputId),
+    )(textNode(label) *)
+    new ElemOptimized(
       NoAttrs.attr("class", "form-check form-check-custom form-check-solid " + containerClasses),
       label = "div", child = Seq(input, labelElem) *
     )
@@ -92,9 +92,7 @@ object ImmediateInputFields {
       JS._if(
         if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(Js(s"window.currentValue$inputId"), JS.asJsStr(initialValue))
         else JS._true,
-        _then =
-          JS.consoleLog(value) &
-            onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
+        _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
       )
     }).cmd
     val onkeypress = if (changeOnEnter) s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.blur(inputId).cmd}}" else null
@@ -108,12 +106,12 @@ object ImmediateInputFields {
       .attr("onkeypress", onkeypress)
       .attr("class", classes)
       .attr("style", style)
-      .attr("autocomplete", "autocomplete")
+      .attr("autocomplete", autocomplete)
       .attr("placeholder", if (placeholder == "") null else placeholder)
       .attr("name", if (name == "") null else name)
     )
 
-    if (btn.isDefined) new ElemWithFastAttrsV1(
+    if (btn.isDefined) new ElemOptimized(
       NoAttrs.attr("class", "input-group "),
       label = "div", child = Seq(inputNS, btn.get.addClass("input-group-text").onclick(Js(submit)).btn) *
     )
@@ -184,12 +182,12 @@ object ImmediateInputFields {
 
     val selected = get()
     val options = values.zipWithIndex.map({ case (value, idx) =>
-      new ElemWithFastAttrsV1(
+      new ElemOptimized(
         NoAttrs.attr("value", idx.toString).attr("selected", if (value == selected) "selected" else null),
         label = "option", child = textNode(toString(value)) *
       )
     })
-    new ElemWithFastAttrsV1(
+    new ElemOptimized(
       NoAttrs.attr("id", elemId).attr("class", classes).attr("style", style).attr("onchange", submit),
       label = "select", child = options *
     )
@@ -211,7 +209,7 @@ object ImmediateInputFields {
       onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
     }).cmd
 
-    new ElemWithFastAttrsV1(
+    new ElemOptimized(
       NoAttrs
         .attr("id", inputId)
         .attr("onblur", submit)

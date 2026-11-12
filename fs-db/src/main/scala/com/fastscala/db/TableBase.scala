@@ -46,9 +46,6 @@ trait TableBase extends DataTypeSupport with LazyLogging {
     field.setAccessible(true)
     field
   }).toList
-  lazy val fieldSetters: Seq[(WrappedResultSet, Any) => Unit] = fieldsList.map(field => {
-    createValueSetterForField(field, sampleRowInstance, tableName)
-  }).toVector
 
   def fieldsListNoComputedCols = fieldsList.filter(_.getType != classOf[ComputedCol[?]])
 

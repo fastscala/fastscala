@@ -16,8 +16,8 @@ import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
 import scala.xml.*
 
 
-object ElemWithFastAttrsV1 {
-  /** How many times the attributes of an [[ElemWithFastAttrsV1]] were computed; for tests. */
+object ElemOptimized {
+  /** How many times the attributes of an [[ElemOptimized]] were computed; for tests. */
   @static private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
 
   inline def textOfValue(value: Seq[Node]): String = value match {
@@ -39,13 +39,13 @@ object ElemWithFastAttrsV1 {
       else if (attrs eq null) Null // called before the fields were set: don't cache
       else {
         // Benign race: concurrent callers may compute twice, but the result is the same.
-        ElemWithFastAttrsV1.Computations.incrementAndGet()
+        ElemOptimized.Computations.incrementAndGet()
         val computed = attrs.foldLeft((Null: MetaData, Set[String]()))({
           case ((cur, seenAttrs), (name, value)) if seenAttrs.contains(name) => (cur, seenAttrs)
           case ((cur, seenAttrs), (name, null)) => (cur, seenAttrs + name)
           case ((cur, seenAttrs), (name, value)) => (new UnprefixedAttribute(name, value, cur), seenAttrs + name)
         })._1
-        ElemWithFastAttrsV1.SetCached.invokeExact(self, computed): Unit
+        ElemOptimized.SetCached.invokeExact(self, computed): Unit
         computed
       }
     }
@@ -65,13 +65,6 @@ object ElemWithFastAttrsV1 {
                 @net.bytebuddy.implementation.bind.annotation.Argument(0) i: Int
               ): Int = self.next.length(i)
   }
-
-  /** The attributes `transforms` (for names not on the element yet) add: each applied to "", null results dropped. */
-  private[utils] def added(transforms: Map[String, String => String]): List[(String, String)] =
-    transforms.toList.flatMap({ case (name, transform) =>
-      val value = transform("")
-      if (value eq null) None else Some(name -> value)
-    })
 
   @static private val interceptor = new Interceptor()
 
@@ -104,6 +97,10 @@ object ElemWithFastAttrsV1 {
 
   @static private val SetAttrs: MethodHandle = setter("attrs", classOf[UnprefixedAttribute], classOf[List[?]])
   @static private val SetCached: MethodHandle = setter("cached", classOf[AnyRef], classOf[MetaData])
+
+  def apply(label: String, attrs: List[(String, String)], minimizeEmpty: Boolean = false)(child: Node*): ElemOptimized = new ElemOptimized(
+    attrs = attrs, label = label, minimizeEmpty = minimizeEmpty, child = child *
+  )
 }
 
 /**
@@ -111,23 +108,22 @@ object ElemWithFastAttrsV1 {
  * read. Transforms are `String => String`: a missing attribute is seen as `""`, and returning `null` removes it (in
  * every constructor: the attribute is dropped from `attrs`, never stored with a null value).
  *
- * @param orig  the element whose attributes these replace; never itself an [[ElemWithFastAttrsV1]], so a chain of
+ * @param orig  the element whose attributes these replace; never itself an [[ElemOptimized]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
- *
  * @param attrs in reverse print order; names unique, values never null (a removed attribute is not in the list)
  */
-class ElemWithFastAttrsV1(
-                           val attrs: List[(String, String)],
-                           prefix: String = null,
-                           label: String,
-                           scope: NamespaceBinding = TopScope,
-                           minimizeEmpty: Boolean = false,
-                           child: Node*
-                         ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
+class ElemOptimized(
+                     val attrs: List[(String, String)],
+                     prefix: String = null,
+                     label: String,
+                     scope: NamespaceBinding = TopScope,
+                     minimizeEmpty: Boolean = false,
+                     child: Node*
+                   ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
   def this(orig: Elem, name: String, transform: String => String) = this({
     @tailrec def aux(
-                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemWithFastAttrsV1.textOfValue(md.value)),
+                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemOptimized.textOfValue(md.value)),
                       rslt: List[(String, String)] = Nil,
                     ): List[(String, String)] = if (remaining.hasNext) remaining.next() match {
       case (`name`, value) =>
@@ -150,7 +146,7 @@ class ElemWithFastAttrsV1(
 
   def this(orig: Elem, transforms: Seq[(String, String => String)]) = this({
     @tailrec def aux(
-                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemWithFastAttrsV1.textOfValue(md.value)),
+                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemOptimized.textOfValue(md.value)),
                       transforms: Map[String, String => String] = transforms.toMap,
                       rslt: List[(String, String)] = Nil,
                     ): List[(String, String)] = if (remaining.hasNext) remaining.next() match {
@@ -177,7 +173,7 @@ class ElemWithFastAttrsV1(
     orig.child *
   )
 
-  def this(orig: ElemWithFastAttrsV1, name: String, transform: String => String) = this({
+  def this(orig: ElemOptimized, name: String, transform: String => String) = this({
     @tailrec def aux(
                       remaining: List[(String, String)] = orig.attrs,
                       rslt: List[(String, String)] = Nil,
@@ -200,7 +196,7 @@ class ElemWithFastAttrsV1(
     orig.child *
   )
 
-  def this(orig: ElemWithFastAttrsV1, transforms: Seq[(String, String => String)]) = this({
+  def this(orig: ElemOptimized, transforms: Seq[(String, String => String)]) = this({
     @tailrec def aux(
                       remaining: List[(String, String)] = orig.attrs,
                       transforms: Map[String, String => String] = transforms.toMap,
@@ -232,8 +228,8 @@ class ElemWithFastAttrsV1(
   )
 
   override val attributes: MetaData = {
-    val ins = ElemWithFastAttrsV1.NewAttribute.invokeExact("", null: scala.collection.Seq[Node], Null: MetaData): UnprefixedAttribute
-    ElemWithFastAttrsV1.SetAttrs.invokeExact(ins, attrs): Unit
+    val ins = ElemOptimized.NewAttribute.invokeExact("", null: scala.collection.Seq[Node], Null: MetaData): UnprefixedAttribute
+    ElemOptimized.SetAttrs.invokeExact(ins, attrs): Unit
     ins
   }
 }

@@ -6,7 +6,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.{RichElem, showIf}
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemWithFastAttrsV1
+import com.fastscala.scala_xml.utils.ElemOptimized
 import com.fastscala.utils.IdGen
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -250,7 +250,7 @@ case class BSBtn(
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
-    new ElemWithFastAttrsV1(attrs, label = "button", child = content *)
+    new ElemOptimized(attrs, label = "button", child = content *)
   }
 
   def btnRerender(implicit fsc: FSContext): Js = JS.replace(id, btn)
@@ -261,7 +261,7 @@ case class BSBtn(
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
-    new ElemWithFastAttrsV1(attrs, label = "span", child = content *)
+    new ElemOptimized(attrs, label = "span", child = content *)
   }
 
   def spanRerender(implicit fsc: FSContext): Js = JS.replace(id, span)
@@ -272,7 +272,7 @@ case class BSBtn(
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
-    new ElemWithFastAttrsV1(attrs, label = "a", child = content *)
+    new ElemOptimized(attrs, label = "a", child = content *)
   }
 
   def btnLinkRerender(implicit fsc: FSContext): Js = JS.replace(id, btnLink)

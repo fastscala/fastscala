@@ -132,11 +132,11 @@ trait DataTypeSupport {
     value
   }
 
-  def createValueSetterForField[T](field: java.lang.reflect.Field, sampleRowInstance: T, tableName: String): (WrappedResultSet, T) => Unit =
-    createValueSetterForField(field, field.getType, sampleRowInstance, tableName, false)
+  def createValueSetterForField[T](field: java.lang.reflect.Field, sampleRowInstance: T, tableName: String, prefix: Option[String]): (WrappedResultSet, T) => Unit =
+    createValueSetterForField(field, field.getType, sampleRowInstance, tableName, false, prefix)
 
-  private def createValueSetterForField[T](field: java.lang.reflect.Field, valueType: Class[?], sampleRowInstance: T, tableName: String, nullable: Boolean): (WrappedResultSet, T) => Unit = {
-    val columnName = columnNameForField(field, None)
+  private def createValueSetterForField[T](field: java.lang.reflect.Field, valueType: Class[?], sampleRowInstance: T, tableName: String, nullable: Boolean, prefix: Option[String]): (WrappedResultSet, T) => Unit = {
+    val columnName = columnNameForField(field, prefix)
     val sampleValue = field.get(sampleRowInstance)
 
     def setter(value: (WrappedResultSet, Int) => Any): (WrappedResultSet, T) => Unit = { (rs: WrappedResultSet, instance: T) =>
@@ -227,7 +227,7 @@ trait DataTypeSupport {
 
       case "scala.Option" =>
         if (sampleValue.isInstanceOf[None.type]) throw new Exception(s"Missing sample value for optional column ${columnNameForField(field)} on table ${tableName}")
-        createValueSetterForField(field, sampleValue.asInstanceOf[Some[Any]].get.getClass, sampleRowInstance, tableName, true)
+        createValueSetterForField(field, sampleValue.asInstanceOf[Some[Any]].get.getClass, sampleRowInstance, tableName, true, prefix)
 
       case _ if field.getType.isEnum => setter((rs, idx) => trustMe(field.getType, rs.underlying.getString(idx)))
 

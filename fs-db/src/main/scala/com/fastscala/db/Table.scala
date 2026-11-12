@@ -126,7 +126,7 @@ trait Table[R] extends TableBase with LazyLogging {
         .where(Some(where).filter(_ != SQLSyntax.empty)).append(rest)
     try {
       val setters = fieldsList.map(field => {
-        createValueSetterForField(field, sampleRowInstance, tableName)
+        createValueSetterForField(field, sampleRowInstance, tableName, None)
       })
       sql"${query}".map(rs => (createRowFromWrappedResultSet(rs, setters), additionalCols.map(_._2(rs)))).list()
     } catch {
@@ -159,15 +159,16 @@ trait Table[R] extends TableBase with LazyLogging {
 
   def listFromQuery(query: SQLSyntax): List[R] = DB.readOnly({ implicit session => _listFromQuery(query) })
 
-  def _listFromQuery(query: SQLSyntax)(implicit session: DBSession): List[R] = {
+  def _listFromQuery(query: SQLSyntax)(implicit session: DBSession): List[R] = mapRows(sql"${query}").list()
+
+  def mapRows(sql: SQL[Nothing, NoExtractor], prefix: Option[String] = None): SQL[R, HasExtractor] = {
     val setters = fieldsList.map(field => {
-      createValueSetterForField(field, sampleRowInstance, tableName)
+      createValueSetterForField(field, sampleRowInstance, tableName, prefix)
     })
-    sql"${query}".map(rs => createRowFromWrappedResultSet(rs, setters)).list()
+    sql.map(rs => createRowFromWrappedResultSet(rs, setters))
   }
 
-  // Took 477ms to run
-  def createRowFromWrappedResultSet(rs: WrappedResultSet, setters: Seq[(WrappedResultSet, R) => Unit]): R = {
+  private def createRowFromWrappedResultSet(rs: WrappedResultSet, setters: Seq[(WrappedResultSet, R) => Unit]): R = {
     val instance = createEmptyRowInternal()
     setters.foreach(_(rs, instance))
     instance

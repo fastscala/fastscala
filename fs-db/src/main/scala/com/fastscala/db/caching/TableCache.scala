@@ -128,17 +128,22 @@ class TableCache[K, R <: Row[R] & ObservableRowBase & RowWithId[K, R]](val table
 
   override def preSave(table: TableBase, row: RowBase): Unit = ()
 
-  def processLoadedRows(rows: Seq[R]): Seq[R] = rows.map(row =>
-    entries.get(row.key) match {
-      case Some(existing) =>
-        // Update existing row:
-        existing.copyFrom(row)
-        existing
-      case None =>
-        entries += (row.key -> row)
-        row
-    }
-  )
+  def processLoadedRows(rows: Seq[R]): Seq[R] = {
+    val processed = rows.map(row =>
+      entries.get(row.key) match {
+        case Some(existing) =>
+          // Update existing row:
+          existing.copyFrom(row)
+          existing
+        case None =>
+          entries += (row.key -> row)
+          row
+      }
+    )
+    // Never downgrade ALL_LOADED; callers that load everything (hydrateFully) set ALL_LOADED themselves afterwards.
+    if (status == CacheStatus.NONE_LOADED && entries.nonEmpty) status = CacheStatus.SOME_LOADED
+    processed
+  }
 
   def postSave(t: TableBase, row: RowBase): Unit = (table, row) match {
     case (`table`, row: R) =>

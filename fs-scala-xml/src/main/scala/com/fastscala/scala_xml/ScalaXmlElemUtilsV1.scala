@@ -3,7 +3,7 @@ package com.fastscala.scala_xml
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemWithFastAttrsV1
+import com.fastscala.scala_xml.utils.ElemOptimized
 import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
@@ -15,28 +15,28 @@ import scala.xml.*
 
 
 /**
- * [[ScalaXmlElemUtilsV2]], but building [[ElemWithFastAttrsV1]] (attributes as a newest-first list of (name, value))
+ * [[ScalaXmlElemUtilsV2]], but building [[ElemOptimized]] (attributes as a newest-first list of (name, value))
  * instead of [[ElemWithFastAttrsV2]]; kept for comparison (see XmlStreamTablePerfSpec in fs-components).
  */
 trait ScalaXmlElemUtilsV1 extends Any {
   def elem: Elem
 
   /** Appends `value` to attribute `name` (creating it if missing). */
-  private inline def attributeConcat(name: String, value: String): ElemWithFastAttrsV1 =
+  private inline def attributeConcat(name: String, value: String): ElemOptimized =
     attributeTransform(name, _ + value)
 
   /** Sets attribute `name` to `value`; a null `value` removes it. */
-  private inline def attributeSet(name: String, value: String): ElemWithFastAttrsV1 =
+  private inline def attributeSet(name: String, value: String): ElemOptimized =
     attributeTransform(name, _ => value)
 
   /** Removes attribute `name` (nothing happens if it's missing). */
-  private inline def attributeRemove(name: String): ElemWithFastAttrsV1 =
+  private inline def attributeRemove(name: String): ElemOptimized =
     attributeTransform(name, _ => null)
 
   /** `transform` gets the current value (`""` if missing); returning `null` removes the attribute. */
-  private inline def attributeTransform(name: String, transform: String => String): ElemWithFastAttrsV1 = elem match {
-    case elem: ElemWithFastAttrsV1 => new ElemWithFastAttrsV1(elem, name, transform)
-    case elem => new ElemWithFastAttrsV1(elem, name, transform)
+  private inline def attributeTransform(name: String, transform: String => String): ElemOptimized = elem match {
+    case elem: ElemOptimized => new ElemOptimized(elem, name, transform)
+    case elem => new ElemOptimized(elem, name, transform)
   }
 
   def addClass(`class`: String): Elem = if (`class` == "") elem else attributeConcat("class", " " + `class`)
@@ -80,8 +80,8 @@ trait ScalaXmlElemUtilsV1 extends Any {
    */
   def withAttrs(attrs: (String, String)*): Elem = elem match {
     case elem if attrs.isEmpty => elem
-    case elem: ElemWithFastAttrsV1 => new ElemWithFastAttrsV1(elem, setAll(attrs))
-    case elem => new ElemWithFastAttrsV1(elem, setAll(attrs))
+    case elem: ElemOptimized => new ElemOptimized(elem, setAll(attrs))
+    case elem => new ElemOptimized(elem, setAll(attrs))
   }
 
   /** As [[attributeSet]] for each pair: a null value removes it. */
@@ -118,18 +118,18 @@ trait ScalaXmlElemUtilsV1 extends Any {
 
   def showIf(bool: Boolean): NodeSeq = if (bool) elem else NodeSeq.Empty
 
-  // ---------- getters: read an ElemWithFastAttrsV1's attrs directly, instead of computing its MetaData ----------
+  // ---------- getters: read an ElemOptimized's attrs directly, instead of computing its MetaData ----------
 
   /** The (unescaped) value of attribute `name`; `plain` (the lookup on `elem.attributes`) if `elem` isn't fast. */
   private inline def fastAttr(name: String, inline plain: Option[String]): Option[String] = elem match {
     // attrs is newest first and may repeat a name: its first entry counts, and a null value there means removed
-    case fast: ElemWithFastAttrsV1 => fast.attrs.find(_._1 == name).flatMap(kv => Option(kv._2))
+    case fast: ElemOptimized => fast.attrs.find(_._1 == name).flatMap(kv => Option(kv._2))
     case _ => plain
   }
 
   /** The attributes as (name, unescaped value), in `elem.attributes`' order; null if `elem` isn't fast. */
   private def fastAttrList: List[(String, String)] = elem match {
-    case fast: ElemWithFastAttrsV1 =>
+    case fast: ElemOptimized =>
       // The first entry per name, removed ones dropped; prepending gives the MetaData's order (reverse of attrs).
       var seen = Set.empty[String]
       var result: List[(String, String)] = Nil

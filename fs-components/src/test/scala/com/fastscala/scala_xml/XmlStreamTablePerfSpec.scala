@@ -15,7 +15,7 @@ import scala.xml.*
  * Run for each implementation of the attribute helpers, for comparison:
  *
  *  - V2: [[BSHelpers]], on [[ScalaXmlElemUtilsV2]] ([[com.fastscala.scala_xml.utils.ElemWithFastAttrsV2]])
- *  - V1: the same class helpers on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.utils.ElemWithFastAttrsV1]])
+ *  - V1: the same class helpers on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.utils.ElemOptimized]])
  *
  * The class transforms are computed when the attributes are read, so for implementations XmlStream has no fast path
  * for, the first render includes computing the final `class` attributes.
@@ -186,7 +186,7 @@ object XmlStreamTablePerfSpec {
   }
 
   /**
-   * The same Bootstrap class helpers as BSHelpers, but on [[ScalaXmlElemUtilsV1]] / ElemWithFastAttrsV1 (mixed in, as
+   * The same Bootstrap class helpers as BSHelpers, but on [[ScalaXmlElemUtilsV1]] / ElemOptimized (mixed in, as
    * BSHelpers mixes in ScalaXmlElemUtilsV2, for withId, withStyle, ...).
    */
   object V1Helpers {

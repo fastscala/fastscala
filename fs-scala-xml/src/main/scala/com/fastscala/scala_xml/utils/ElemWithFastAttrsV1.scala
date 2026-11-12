@@ -75,7 +75,7 @@ object ElemWithFastAttrsV1 {
 
   @static private val interceptor = new Interceptor()
 
-  @static val UnprefixedAttributeClass: Class[? <: UnprefixedAttribute] = new ByteBuddy()
+  @static private val UnprefixedAttributeClass: Class[? <: UnprefixedAttribute] = new ByteBuddy()
     .subclass(classOf[UnprefixedAttribute])
     .defineField("attrs", classOf[List[(String, String)]], Modifier.PUBLIC)
     .defineField("cached", classOf[MetaData], Modifier.PUBLIC)
@@ -95,15 +95,15 @@ object ElemWithFastAttrsV1 {
   @static private val lookup = MethodHandles.lookup()
 
   /** (key: String, value: Seq[Node], next: MetaData) => new UnprefixedAttributeClass */
-  @static val NewAttribute: MethodHandle = lookup
+  @static private val NewAttribute: MethodHandle = lookup
     .findConstructor(UnprefixedAttributeClass, MethodType.methodType(classOf[Unit], classOf[String], classOf[scala.collection.Seq[Node]], classOf[MetaData]))
     .asType(MethodType.methodType(classOf[UnprefixedAttribute], classOf[String], classOf[scala.collection.Seq[Node]], classOf[MetaData]))
 
   private def setter(name: String, owner: Class[?], tpe: Class[?]): MethodHandle =
     lookup.unreflectSetter(UnprefixedAttributeClass.getField(name)).asType(MethodType.methodType(Void.TYPE, owner, tpe))
 
-  @static val SetAttrs: MethodHandle = setter("attrs", classOf[UnprefixedAttribute], classOf[List[?]])
-  @static val SetCached: MethodHandle = setter("cached", classOf[AnyRef], classOf[MetaData])
+  @static private val SetAttrs: MethodHandle = setter("attrs", classOf[UnprefixedAttribute], classOf[List[?]])
+  @static private val SetCached: MethodHandle = setter("cached", classOf[AnyRef], classOf[MetaData])
 }
 
 /**

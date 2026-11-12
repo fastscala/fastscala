@@ -5,11 +5,31 @@ import com.fastscala.js.Js
 import com.fastscala.js.JsHelper.RichJs
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.utils.ElemWithFastAttrsV1
 import com.fastscala.utils.IdGen
 
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.{Elem, NodeSeq, Text}
 
+/**
+ * The elements are built directly as [[ElemWithFastAttrsV1]] (not XML literals): attributes are added with `attr`, in
+ * print order, and, like in an XML literal, an attribute whose value is null is left out.
+ */
 object ImmediateInputFields {
+
+  private type Attrs = List[(String, String)]
+
+  private val NoAttrs: Attrs = Nil
+
+  /** Adds the attribute, unless `value` is null or empty (attrs are kept in reverse print order, so it's printed after the others). */
+  extension (attrs: Attrs) {
+    private inline def attr(name: String, value: String): Attrs = if ((value eq null) || value == "") attrs else (name -> value) :: attrs
+  }
+
+  /** An element without a closing tag (like `<input/>` in a literal). */
+  private def empty(label: String, attrs: Attrs): Elem = new ElemWithFastAttrsV1(attrs, label = label, minimizeEmpty = true)
+
+  /** `content` as a text node; nothing for null (as in an XML literal). */
+  private def textNode(content: String): Seq[Text] = if (content eq null) Nil else Seq(Text(content))
 
   def checkbox(
                 get: () => Boolean,
@@ -29,17 +49,24 @@ object ImmediateInputFields {
     val submit = JS.withVarStmt("value", JS.checkboxIsChecked(inputId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, v => set(v.toBoolean))
     }).cmd
-    val input = <input class={inputClass}
-                       style={inputStyle}
-                       type="checkbox"
-                       checked={if (get()) "checked" else null}
-                       id={inputId}
-                       name={name}
-                       tabindex={tabindex.map(_ + "").getOrElse(null)}
-                       onchange={submit}/>.withAttrs(additionalAttrs *)
-    <div class={"form-check form-check-custom form-check-solid " + containerClasses}>
-      {input}<label class={labelClass} style={labelStyle} for={inputId}>{label}</label>
-    </div>
+    val input = empty("input", NoAttrs
+      .attr("class", inputClass)
+      .attr("style", inputStyle)
+      .attr("type", "checkbox")
+      .attr("checked", if (get()) "checked" else null)
+      .attr("id", inputId)
+      .attr("name", name)
+      .attr("tabindex", if (tabindex.isDefined) tabindex.get.toString else null)
+      .attr("onchange", submit)
+    ).withAttrs(additionalAttrs *)
+    val labelElem = new ElemWithFastAttrsV1(
+      NoAttrs.attr("class", labelClass).attr("style", labelStyle).attr("for", inputId),
+      label = "label", child = textNode(label) *
+    )
+    new ElemWithFastAttrsV1(
+      NoAttrs.attr("class", "form-check form-check-custom form-check-solid " + containerClasses),
+      label = "div", child = Seq(input, labelElem) *
+    )
   }
 
   def text(
@@ -73,15 +100,24 @@ object ImmediateInputFields {
     val onkeypress = if (changeOnEnter) s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.blur(inputId).cmd}}" else null
     val onblur = if (btn.isEmpty) submit else null
 
-    val inputNS = <input id={inputId} type={`type`} value={initialValue} onblur={onblur} onkeypress={onkeypress} class={classes} style={style} autocomplete="autocomplete"
-                         placeholder={if (placeholder == "") null else placeholder}
-                         name={if (name == "") null else name}/>
+    val inputNS = empty("input", NoAttrs
+      .attr("id", inputId)
+      .attr("type", `type`)
+      .attr("value", initialValue)
+      .attr("onblur", onblur)
+      .attr("onkeypress", onkeypress)
+      .attr("class", classes)
+      .attr("style", style)
+      .attr("autocomplete", "autocomplete")
+      .attr("placeholder", if (placeholder == "") null else placeholder)
+      .attr("name", if (name == "") null else name)
+    )
 
-    btn.map(btn => {
-      <div class="input-group ">
-        {inputNS}{btn.addClass("input-group-text").onclick(Js(submit)).btn}
-      </div>
-    }).getOrElse(inputNS)
+    if (btn.isDefined) new ElemWithFastAttrsV1(
+      NoAttrs.attr("class", "input-group "),
+      label = "div", child = Seq(inputNS, btn.get.addClass("input-group-text").onclick(Js(submit)).btn) *
+    )
+    else inputNS
   }
 
   def range(
@@ -116,10 +152,18 @@ object ImmediateInputFields {
       )
     }).cmd
 
-    val inputNS = <input min={min.toString} max={max.toString} step={step.map(_.toString).getOrElse(null)} id={inputId} type={`type`} value={initialValue.toString} class={classes} style={style}
-                         name={if (name == "") null else name}
-                         onchange={submit}/>
-    inputNS
+    empty("input", NoAttrs
+      .attr("min", min.toString)
+      .attr("max", max.toString)
+      .attr("step", if (step.isDefined) step.get.toString else null)
+      .attr("id", inputId)
+      .attr("type", `type`)
+      .attr("value", initialValue.toString)
+      .attr("class", classes)
+      .attr("style", style)
+      .attr("name", if (name == "") null else name)
+      .attr("onchange", submit)
+    )
   }
 
   def select[T](
@@ -138,12 +182,17 @@ object ImmediateInputFields {
       onSubmitClientSide(value) & fsc.callback(value, idxStr => set(values(idxStr.toInt)))
     }).cmd
 
-    <select id={elemId} class={classes} style={style} onchange={submit}>{
-      values.zipWithIndex.map({
-        case (value, idx) if value == get() => <option value={idx.toString} selected="selected">{toString(value)}</option>
-        case (value, idx) => <option value={idx.toString}>{toString(value)}</option>
-      })
-    }</select>
+    val selected = get()
+    val options = values.zipWithIndex.map({ case (value, idx) =>
+      new ElemWithFastAttrsV1(
+        NoAttrs.attr("value", idx.toString).attr("selected", if (value == selected) "selected" else null),
+        label = "option", child = textNode(toString(value)) *
+      )
+    })
+    new ElemWithFastAttrsV1(
+      NoAttrs.attr("id", elemId).attr("class", classes).attr("style", style).attr("onchange", submit),
+      label = "select", child = options *
+    )
   }
 
   def textarea(
@@ -162,15 +211,17 @@ object ImmediateInputFields {
       onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
     }).cmd
 
-    val inputNS = <textarea
-    id={inputId} onblur={submit} class={classes} style={style}
-    placeholder={if (placeholder == "") null else placeholder}
-    name={if (name == "") null else name}
-    rows={rows + ""}>
-      {get()}
-    </textarea>
-
-    inputNS
+    new ElemWithFastAttrsV1(
+      NoAttrs
+        .attr("id", inputId)
+        .attr("onblur", submit)
+        .attr("class", classes)
+        .attr("style", style)
+        .attr("placeholder", if (placeholder == "") null else placeholder)
+        .attr("name", if (name == "") null else name)
+        .attr("rows", rows.toString),
+      label = "textarea", child = textNode(get()) *
+    )
   }
 
   def password(

@@ -126,19 +126,20 @@ class ElemWithFastAttrsV1(
                          ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
   def this(orig: Elem, name: String, transform: String => String) = this({
-    val (found, updated) = orig.attributes.iterator.foldLeft((false, List[(String, String)]()))({
-      case ((_, cur), md) if md.key == name =>
-        transform(ElemWithFastAttrsV1.textOfValue(md.value)) match {
-          case null => (true, cur)
-          case value => (true, (name -> value) :: cur)
-        }
-      case ((found, cur), md) => (found, md.key -> ElemWithFastAttrsV1.textOfValue(md.value) :: cur)
-    })
-    if (found) updated
-    else {
-      val value = transform("")
-      if (value eq null) updated else (name -> value) :: updated
+    @tailrec def aux(
+                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemWithFastAttrsV1.textOfValue(md.value)),
+                      rslt: List[(String, String)] = Nil,
+                    ): List[(String, String)] = if (remaining.hasNext) remaining.next() match {
+      case (`name`, value) =>
+        val updated = transform(value)
+        if (updated eq null) remaining ++: rslt else (name -> updated) :: (remaining ++: rslt)
+      case entry => aux(remaining, entry :: rslt)
+    } else {
+      val updated = transform("")
+      if (updated eq null) rslt else (name -> updated) :: rslt
     }
+
+    aux()
   },
     orig.prefix,
     orig.label,
@@ -148,22 +149,26 @@ class ElemWithFastAttrsV1(
   )
 
   def this(orig: Elem, transforms: Seq[(String, String => String)]) = this({
-    val transformsByKey = transforms.toMap
-    val (missing, updated) = orig.attributes.iterator.foldLeft((transformsByKey.keySet, List[(String, String)]()))({
-      case ((missing, cur), md) if transformsByKey.contains(md.key) =>
-        transformsByKey(md.key)(ElemWithFastAttrsV1.textOfValue(md.value)) match {
-          case null => (missing - md.key, cur)
-          case value => (missing - md.key, (md.key -> value) :: cur)
+    @tailrec def aux(
+                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemWithFastAttrsV1.textOfValue(md.value)),
+                      transforms: Map[String, String => String] = transforms.toMap,
+                      rslt: List[(String, String)] = Nil,
+                    ): List[(String, String)] = if (remaining.hasNext) remaining.next() match {
+      case (name, value) if transforms.contains(name) =>
+        val updated = transforms(name)(value)
+        if (transforms.size == 1) {
+          if (updated eq null) remaining ++: rslt else (name -> updated) :: (remaining ++: rslt)
+        } else {
+          if (updated eq null) aux(remaining, transforms.removed(name), rslt) else aux(remaining, transforms.removed(name), (name -> updated) :: rslt)
         }
-      case ((missing, cur), md) => (missing, md.key -> ElemWithFastAttrsV1.textOfValue(md.value) :: cur)
+      case entry => aux(remaining, transforms, entry :: rslt)
+    } else transforms.iterator.foldLeft(rslt)({
+      case (rslt, (name, transform)) =>
+        val updated = transform("")
+        if (updated eq null) rslt else (name -> updated) :: rslt
     })
-    if (missing.isEmpty) updated else {
-      missing.foldLeft(updated)({
-        case (updated, key) =>
-          val value = transformsByKey(key)("")
-          if (value eq null) updated else (key -> value) :: updated
-      })
-    }
+
+    aux()
   },
     orig.prefix,
     orig.label,
@@ -195,23 +200,30 @@ class ElemWithFastAttrsV1(
     orig.child *
   )
 
-  def this(orig: ElemWithFastAttrsV1, transforms: Seq[(String, String => String)]) = this(
-    {
-      var found = Set[String]()
-      val transformsByKey = transforms.toMap
-      // In place, keeping names unique; a null result removes the attribute.
-      val updated = orig.attrs.flatMap({ case (key, value) =>
-        transformsByKey.get(key) match {
-          case Some(transform) =>
-            found += key
-            val transformed = transform(value)
-            if (transformed eq null) None else Some(key -> transformed)
-          case None => Some(key -> value)
+  def this(orig: ElemWithFastAttrsV1, transforms: Seq[(String, String => String)]) = this({
+    @tailrec def aux(
+                      remaining: List[(String, String)] = orig.attrs,
+                      transforms: Map[String, String => String] = transforms.toMap,
+                      rslt: List[(String, String)] = Nil,
+                    ): List[(String, String)] = remaining match {
+      case Nil =>
+        transforms.iterator.foldLeft(rslt)({
+          case (rslt, (name, transform)) =>
+            val updated = transform("")
+            if (updated eq null) rslt else (name -> updated) :: rslt
+        })
+      case (name, value) :: rest if transforms.contains(name) =>
+        val updated = transforms(name)(value)
+        if (transforms.size == 1) {
+          if (updated eq null) rest ::: rslt else (name -> updated) :: rest ::: rslt
+        } else {
+          if (updated eq null) aux(rest, transforms.removed(name), rslt) else aux(rest, transforms.removed(name), (name -> updated) :: rslt)
         }
-      })
-      if (found.size == transformsByKey.size) updated
-      else ElemWithFastAttrsV1.added(transformsByKey.removedAll(found)) ::: updated
-    },
+      case entry :: rest => aux(rest, transforms, entry :: rslt)
+    }
+
+    aux()
+  },
     orig.prefix,
     orig.label,
     orig.scope,

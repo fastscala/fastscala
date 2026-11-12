@@ -6,6 +6,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.{RichElem, showIf}
 import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.utils.ElemWithFastAttrsV1
 import com.fastscala.utils.IdGen
 
 import java.util.concurrent.atomic.AtomicBoolean
@@ -91,7 +92,7 @@ case class BSBtn(
   def ns(ns: NodeSeq): BSBtn = copy(content = ns)
 
   def onclick(js: Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(Js.Void) & js))
-  
+
   def onclick(js: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(Js.Void) & js(fsc)))
 
   def callback(func: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(JS.void) & fsc.callback(() => func(fsc))))
@@ -243,15 +244,36 @@ case class BSBtn(
 
   // ================================== RENDERING ==================================
 
-  def btn(implicit fsc: FSContext): Elem = <button class={cls} id={id} type="button" style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</button>.withAttrs(additionalAttrs *)
+  def btn(implicit fsc: FSContext): Elem = {
+    var attrs = ("class" -> cls) :: ("type" -> "button") :: additionalAttrs.toList
+    if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
+    if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
+    if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
+    new ElemWithFastAttrsV1(attrs, label = "button", child = content *)
+  }
 
   def btnRerender(implicit fsc: FSContext): Js = JS.replace(id, btn)
 
-  def span(implicit fsc: FSContext): Elem = <span class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</span>.withAttrs(additionalAttrs *)
+  def span(implicit fsc: FSContext): Elem = {
+    var attrs = ("class" -> cls) :: additionalAttrs.toList
+    if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
+    if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
+    if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
+    new ElemWithFastAttrsV1(attrs, label = "span", child = content *)
+  }
 
   def spanRerender(implicit fsc: FSContext): Js = JS.replace(id, span)
 
-  def btnLink(implicit fsc: FSContext): Elem = <a class={cls} id={id} style={styleOpt.orNull} title={titleOpt.orNull} href={hrefOpt.getOrElse("javascript:void(0)")} onclick={onclickOpt.map(_(fsc).cmd).orNull}>{content}</a>.withAttrs(additionalAttrs *)
+  def btnLink(implicit fsc: FSContext): Elem = {
+    var attrs = ("class" -> cls) :: ("href" -> hrefOpt.getOrElse("javascript:void(0)")) :: additionalAttrs.toList
+    if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
+    if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
+    if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
+    new ElemWithFastAttrsV1(attrs, label = "a", child = content *)
+  }
 
   def btnLinkRerender(implicit fsc: FSContext): Js = JS.replace(id, btnLink)
 }

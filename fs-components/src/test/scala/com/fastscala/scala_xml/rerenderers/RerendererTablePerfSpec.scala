@@ -5,7 +5,7 @@ import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.core.*
 import com.fastscala.scala_xml.XmlStreamTablePerfSpec.{Cols, Rows, TdStyle}
 import com.fastscala.scala_xml.utils.XmlStream
-import com.fastscala.testutils.AsyncProf
+import com.fastscala.testutils.{AsyncProf, PerfFS}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
@@ -91,17 +91,7 @@ class RerendererTablePerfSpec extends AnyFlatSpec {
 
 object RerendererTablePerfSpec {
 
-  // FSStats registers its metrics globally, so there's a single FSSystem (and session) per JVM; each table gets its
-  // own page, so callbacks and contexts don't pile up across iterations.
-  lazy val system: FSSystem = new FSSystem(appName = "rerenderer-perf")
-  lazy val session: FSSession = new FSSession("rerenderer-perf-session", system)
-
-  private object NoImpl extends FSPageImpl[Unit] {
-    override def render()(implicit fsc: FSContext): Unit = ()
-  }
-
-  /** A page, as FSSession.createPage creates it (the request is only stored, so null is fine here). */
-  def newPage(): FSPage = new FSPage(session.nextID(), session, null, NoImpl)
+  def newPage(): FSPage = PerfFS.newPage()
 
   final class Built(val page: FSPage, val table: Elem, val rows: IndexedSeq[Rerenderer])
 

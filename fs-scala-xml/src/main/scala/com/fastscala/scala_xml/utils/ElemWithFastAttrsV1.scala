@@ -115,14 +115,14 @@ object ElemWithFastAttrsV1 {
  *              transforms doesn't nest wrappers and computes the attributes only once
  * @param attrs in reverse print order; names unique, values never null (a removed attribute is not in the list)
  */
-class ElemWithFastAttrsV1 private(
-                                   val attrs: List[(String, String)],
-                                   prefix: String,
-                                   label: String,
-                                   scope: NamespaceBinding,
-                                   minimizeEmpty: Boolean,
-                                   child: Node*
-                                 ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
+class ElemWithFastAttrsV1(
+                           val attrs: List[(String, String)],
+                           prefix: String = null,
+                           label: String,
+                           scope: NamespaceBinding = TopScope,
+                           minimizeEmpty: Boolean = false,
+                           child: Node*
+                         ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
   def this(orig: Elem, name: String, transform: String => String) = this({
     val (found, updated) = orig.attributes.iterator.foldLeft((false, List[(String, String)]()))({

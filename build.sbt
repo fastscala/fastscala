@@ -48,12 +48,15 @@ scalacOptions += "-Ypartial-unification"
 
 val FSRoot = "./"
 
+// ---------- FastScala modules ----------
 lazy val fs_core = (project in file(FSRoot + "fs-core"))
   .settings(
     commonSettings,
     name := "fs-core",
     version := Version,
     organization := "com.fastscala",
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
+    scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
     libraryDependencies ++= Seq(
       "ch.qos.logback" % "logback-classic" % "1.5.6",
       // "net.logstash.logback" % "logstash-logback-encoder" % "8.0",
@@ -67,8 +70,8 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "org.apache.commons" % "commons-rng-simple" % "1.7",
       "org.eclipse.jetty" % "jetty-server" % "12.0.12",
       "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
-      "it.unimi.dsi" % "dsiutils" % "2.7.3",
-      "commons-io" % "commons-io" % "2.21.0",
+      "org.apache.commons" % "commons-rng-simple" % "1.7",
+      "commons-io" % "commons-io" % "2.22.0",
       "org.owasp.encoder" % "encoder" % "1.6.0",
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
       "com.google.guava" % "guava" % "33.8.0-jre",
@@ -77,13 +80,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   )
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
-  .settings(
-    commonSettings,
-    name := "fs-circe",
-    version := Version,
-    organization := "com.fastscala",
-    libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.10", "io.circe" %% "circe-generic" % "0.14.10", "io.circe" %% "circe-parser" % "0.14.10")
-  )
+  .settings(commonSettings, name := "fs-circe", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.10", "io.circe" %% "circe-generic" % "0.14.10", "io.circe" %% "circe-parser" % "0.14.10"))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
@@ -96,6 +93,8 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
     name := "fs-db",
     version := Version,
     organization := "com.fastscala",
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
+    scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
     libraryDependencies ++= Seq(
       "io.circe" %% "circe-core" % "0.14.15",
       "io.circe" %% "circe-generic" % "0.14.15",
@@ -118,7 +117,10 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
     version := Version,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
-    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.12.7", "com.lihaoyi" %% "upickle" % "4.1.0", "com.softwaremill.quicklens" %% "quicklens" % "1.9.11", "org.scalatest" %% "scalatest" % "3.2.19" % Test),
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
+    scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
+    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.12.7", "com.lihaoyi" %% "upickle" % "4.1.0", "com.softwaremill.quicklens" %% "quicklens" % "1.9.11", "org.scalatest" %% "scalatest" % "3.2.19" % Test,
+      "me.bechberger" % "ap-loader-all" % "4.6-14" % Test), // async-profiler, for profiling in perf tests (see AsyncProf)
     javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
     Compile / run / fork := true,
     Compile / run / connectInput := true
@@ -126,3 +128,4 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .dependsOn(fs_core)
   .dependsOn(fs_circe)
   .dependsOn(fs_scala_xml)
+// ---------- end of FastScala modules ----------

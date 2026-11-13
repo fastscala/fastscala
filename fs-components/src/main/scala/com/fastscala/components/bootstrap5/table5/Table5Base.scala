@@ -98,7 +98,8 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
 
   def rows(hints: Seq[RowsHint] = rowsHints()): Seq[R]
 
-  def idForRow(row: R, rowIdx: Int): String = "rowId" + rowIdx
+  /** The row's id: from the table's id, so it's unique in the page even with several tables in it. */
+  def idForRow(row: R, rowIdx: Int): String = s"${tableId.id}-row$rowIdx"
 
   def idForColumn(col: C): String = "colId" + UUID.randomUUID()
 

@@ -2,7 +2,7 @@ package com.fastscala.scala_xml
 
 import com.fastscala.components.bootstrap5.helpers.{BSClassesHelper, BSHelpers}
 import com.fastscala.scala_xml.utils.XmlStream
-import com.fastscala.testutils.AsyncProf
+import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.{StringWriter, Writer}
@@ -30,7 +30,7 @@ import scala.xml.*
  * The second test of each variant profiles building the table with [[AsyncProf]] (JFR + HTML flame graph in
  * [[AsyncProf.OutDir]], named `XmlStreamTable-build-<variant>-...`).
  */
-class XmlStreamTablePerfSpec extends AnyFlatSpec {
+class XmlStreamTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
   import XmlStreamTablePerfSpec.*
 
@@ -140,11 +140,12 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec {
       (1 to WarmupIterations).foreach(_ => buildTable())
       // Several builds in one recording, for more samples; tables are discarded, so GC shows up too.
       var built = 0
-      AsyncProf.profile(s"XmlStreamTable-build-$variant", threshold = 0) {
+      val (_, files) = AsyncProf.profileWithFiles(s"XmlStreamTable-build-$variant", threshold = 0) {
         (1 to ProfiledIterations).foreach(_ => if (buildTable() ne null) built += 1)
       }
       assert(built == ProfiledIterations)
-      info(s"[$variant] Profiled $ProfiledIterations builds; JFR + flame graph in ${AsyncProf.OutDir}")
+      assertProfileWritten(files)
+      info(s"[$variant] Profiled $ProfiledIterations builds: ${files.mkString(", ")}")
     }
   }
 }

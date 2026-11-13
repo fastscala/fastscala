@@ -1,6 +1,8 @@
 package com.fastscala.testutils
 
-import one.profiler.{AsyncProfiler, AsyncProfilerLoader}
+import one.profiler.AsyncProfilerLoader
+
+import java.lang.reflect.InvocationTargetException
 
 import java.nio.file.{Files, Path, Paths}
 import java.time.LocalDateTime
@@ -8,28 +10,62 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Test copy of reconciliacao_app's `pt.reconciliacao.app.util.AsyncProf` (fs-components can't depend on the app, and
- * async-profiler is only a Test dependency here). Same behaviour, except the flame graph is converted synchronously,
- * so it's written before the test JVM can exit.
  *
  * Profiles the calling thread with async-profiler (event=wall) while `code` runs and, if that took longer than
  * `threshold` ms, writes to [[OutDir]] a JFR recording (with the timeline; open it in IntelliJ or JDK Mission Control)
  * and an HTML flame graph converted from it. One profiling session per JVM: calls that start while another is being
- * profiled just run `code` unprofiled.
+ * profiled (sbt runs test suites in parallel) wait for it to finish.
+ *
+ * Tests run in sbt's JVM (they aren't forked), with a new classloader on every run, and a JVM can load the native
+ * library only once: so the profiler loaded first is kept in the JVM-wide system properties, and later runs use it
+ * through reflection (its class is from the classloader of the run that loaded it).
  */
 object AsyncProf {
 
-  val OutDir: Path = Paths.get("/home/david/projs/async-profiler")
+  val OutDir: Path = Paths.get("./async-profiler")
 
-  private lazy val profiler: Option[AsyncProfiler] =
-    try Some(AsyncProfilerLoader.load())
-    catch {
-      case t: Throwable =>
-        println(s"[AsyncProf] async-profiler unavailable, not profiling: $t")
-        None
+  private val ProfilerKey = "com.fastscala.testutils.AsyncProf.profiler"
+  private val BusyKey = "com.fastscala.testutils.AsyncProf.busy"
+
+  /** The JVM's profiler (an `AsyncProfiler`, maybe from another run's classloader), called through reflection. */
+  private final class Profiler(instance: AnyRef) {
+    private val executeMethod = instance.getClass.getMethod("execute", classOf[String])
+    private val addThreadMethod = instance.getClass.getMethod("addThread", classOf[Thread])
+
+    private def call(f: => AnyRef): AnyRef =
+      try f
+      catch {case e: InvocationTargetException if e.getCause != null => throw e.getCause}
+
+    def execute(command: String): String = call(executeMethod.invoke(instance, command)).asInstanceOf[String]
+
+    def addThread(thread: Thread): Unit = call(addThreadMethod.invoke(instance, thread))
+  }
+
+  /** The profiler, loading it if no run in this JVM has; `Left` with the reason if it can't be loaded. */
+  private def profiler: Either[String, Profiler] = {
+    val props = System.getProperties
+    props.synchronized {
+      Option(props.get(ProfilerKey)) match {
+        case Some(instance) => Right(new Profiler(instance))
+        case None =>
+          try {
+            val instance = AsyncProfilerLoader.load()
+            props.put(ProfilerKey, instance)
+            Right(new Profiler(instance))
+          } catch {
+            case t: Throwable => Left(t.toString)
+          }
+      }
     }
+  }
 
-  private val busy = new AtomicBoolean(false)
+  /** Whether a profiling session is running, for the whole JVM (shared by every run's classloader). */
+  private def busy: AtomicBoolean = {
+    val props = System.getProperties
+    props.synchronized {
+      props.computeIfAbsent(BusyKey, _ => new AtomicBoolean(false)).asInstanceOf[AtomicBoolean]
+    }
+  }
 
   private val TimestampFormat = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss.SSS")
 
@@ -37,8 +73,17 @@ object AsyncProf {
    * @param threshold  keep the recording only if `code` took longer than this, in ms
    * @param intervalMs sampling interval, in ms
    */
-  def profile[T](name: String, threshold: Long, intervalMs: Long = 1)(code: => T): T = profiler match {
-    case Some(p) if busy.compareAndSet(false, true) =>
+  def profile[T](name: String, threshold: Long, intervalMs: Long = 1)(code: => T): T =
+    profileWithFiles(name, threshold, intervalMs)(code)._1
+
+  /**
+   * Like [[profile]], but also returns the files written: the JFR recording and the HTML flame graph, or none (if
+   * async-profiler isn't available, couldn't start or stop, or `code` took less than
+   * `threshold` ms; the reason is printed).
+   */
+  def profileWithFiles[T](name: String, threshold: Long, intervalMs: Long = 1)(code: => T): (T, Seq[Path]) = profiler match {
+    case Right(p) =>
+      acquire(name)
       try {
         val recording: Option[Path] =
           try {
@@ -53,13 +98,28 @@ object AsyncProf {
               None
           }
         val start = System.nanoTime()
-        try code
-        finally recording.foreach(stop(p, _, name, (System.nanoTime() - start) / 1000000, threshold))
+        var files: Seq[Path] = Nil
+        val result =
+          try code
+          finally recording.foreach(r => files = stop(p, r, name, (System.nanoTime() - start) / 1000000, threshold))
+        (result, files)
       } finally busy.set(false)
-    case _ => code
+    case Left(reason) =>
+      println(s"[AsyncProf] async-profiler unavailable, not profiling '$name': $reason")
+      (code, Nil)
   }
 
-  private def stop(p: AsyncProfiler, recording: Path, name: String, tookMs: Long, threshold: Long): Unit =
+  /** Waits until no other profiling session is running in the JVM (sbt runs test suites in parallel), and takes it. */
+  private def acquire(name: String): Unit = {
+    val b = busy
+    if (!b.compareAndSet(false, true)) {
+      println(s"[AsyncProf] another profiling session is running: '$name' waits for it to finish")
+      while (!b.compareAndSet(false, true)) Thread.sleep(20)
+    }
+  }
+
+  /** Stops profiling; returns the files written. */
+  private def stop(p: Profiler, recording: Path, name: String, tookMs: Long, threshold: Long): Seq[Path] =
     try {
       p.execute("stop")
       if (tookMs > threshold) {
@@ -72,8 +132,14 @@ object AsyncProf {
         one.convert.Main.convert(jfr.toString, html.toString,
           new one.convert.Arguments("--wall", "-o", "html", "--title", s"${safeName}_${tookMs}ms"))
         println(s"[AsyncProf] '$name' flame graph: $html")
-      } else Files.deleteIfExists(recording)
+        Seq(jfr, html)
+      } else {
+        Files.deleteIfExists(recording)
+        Nil
+      }
     } catch {
-      case t: Throwable => println(s"[AsyncProf] could not stop profiling '$name': $t")
+      case t: Throwable =>
+        println(s"[AsyncProf] could not stop profiling '$name': $t")
+        Nil
     }
 }

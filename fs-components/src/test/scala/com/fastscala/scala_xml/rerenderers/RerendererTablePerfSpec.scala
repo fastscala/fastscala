@@ -5,7 +5,7 @@ import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.core.*
 import com.fastscala.scala_xml.XmlStreamTablePerfSpec.{Cols, Rows, TdStyle}
 import com.fastscala.scala_xml.utils.XmlStream
-import com.fastscala.testutils.{AsyncProf, PerfFS}
+import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
@@ -23,7 +23,7 @@ import scala.xml.*
  * The last test profiles the build with [[AsyncProf]] (JFR + HTML flame graph in [[AsyncProf.OutDir]], named
  * `RerendererTable-build-...`).
  */
-class RerendererTablePerfSpec extends AnyFlatSpec {
+class RerendererTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
   import RerendererTablePerfSpec.*
 
@@ -81,11 +81,12 @@ class RerendererTablePerfSpec extends AnyFlatSpec {
     (1 to WarmupIterations).foreach(_ => build())
     // Several builds in one recording, for more samples; tables are discarded, so GC shows up too.
     var built = 0
-    AsyncProf.profile("RerendererTable-build", threshold = 0) {
+    val (_, files) = AsyncProf.profileWithFiles("RerendererTable-build", threshold = 0) {
       (1 to ProfiledIterations).foreach(_ => if (build().table ne null) built += 1)
     }
     assert(built == ProfiledIterations)
-    info(s"Profiled $ProfiledIterations builds; JFR + flame graph in ${AsyncProf.OutDir}")
+    assertProfileWritten(files)
+    info(s"Profiled $ProfiledIterations builds: ${files.mkString(", ")}")
   }
 }
 

@@ -1,18 +1,35 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.components.bootstrap5.alerts.SimpleAlert
+import com.fastscala.components.bootstrap5.form7.BSForm7Renderers
+import com.fastscala.components.bootstrap5.form7.layout.F7BSFormInputGroup
+import com.fastscala.components.bootstrap5.form7.renderermodifiers.{CheckboxAlignment, CheckboxSide, CheckboxStyle}
 import com.fastscala.components.bootstrap5.helpers.{BSClassesHelper, BSColorsHelper, BSDataHelper}
 import com.fastscala.components.bootstrap5.modals.BSModal5Base
 import com.fastscala.components.bootstrap5.progress.BSProgress
+import com.fastscala.components.bootstrap5.table6.{RowsHint, Table6Base, Table6BootrapStyling, Table6StandardColumns}
 import com.fastscala.components.bootstrap5.utils.{BSBtn, BsIcn, ImmediateInputFields}
 import com.fastscala.components.bootstrap5.utils.BsIcn.RichIcn
+import com.fastscala.components.form7.fields.checkbox.F7CheckboxField
+import com.fastscala.components.form7.fields.date.F7LocalDateField
+import com.fastscala.components.form7.fields.html.F7HtmlField
+import com.fastscala.components.form7.fields.layout.F7VerticalField
+import com.fastscala.components.form7.fields.multiselect.F7MultiSelectField
+import com.fastscala.components.form7.fields.number.{F7DoubleField, F7IntField}
+import com.fastscala.components.form7.fields.radio.F7RadioField
+import com.fastscala.components.form7.fields.select.F7SelectField
+import com.fastscala.components.form7.fields.submit.F7SubmitButtonField
+import com.fastscala.components.form7.fields.text.{F7StringField, F7StringTextareaField}
+import com.fastscala.components.form7.{DefaultForm7, F7Field}
+import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.*
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.utils.XmlStream
-import com.fastscala.testutils.{AsyncProf, PerfFS}
+import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.{StringWriter, Writer}
+import java.time.LocalDate
 import scala.xml.*
 
 /**
@@ -25,10 +42,14 @@ import scala.xml.*
  *  - [[ImmediateInputFields]]: text (with and without a button), password, checkbox, select, range and textarea;
  *  - a [[BSModal5Base]] rendered in the page (its Rerenderers, an ImmediateInputFields field in the body, and footer
  *    buttons), with a literal button that opens it;
- *  - a small table, a list group, a [[BSProgress]] bar and a [[SimpleAlert]].
+ *  - a small table, a list group, a [[BSProgress]] bar and a [[SimpleAlert]];
+ *  - [[XmlStreamPagePerfSpec.FormsPerSection]] Form7 forms ([[DefaultForm7]], Bootstrap renderers) with text, number,
+ *    date, select, multi-select, checkbox, radio, textarea, input group and submit button fields;
+ *  - [[XmlStreamPagePerfSpec.Table6sPerSection]] Table6 tables (Bootstrap styling, standard columns, a column of
+ *    buttons with callbacks).
  *
  * Each page is built on a new FastScala page (see [[PerfFS]]), so building it includes registering every callback and
- * the modals' child contexts. Measured: building the page, writing it the first time (when the class transforms of the
+ * the modals' child contexts, and the forms' and tables' rerenderers. Measured: building the page, writing it the first time (when the class transforms of the
  * helpers are computed) and writing it again.
  *
  * Run with: `sbt -J-Xmx8g "fs_components/testOnly com.fastscala.scala_xml.XmlStreamPagePerfSpec"`
@@ -36,7 +57,7 @@ import scala.xml.*
  * The profiling tests write a JFR + HTML flame graph to [[AsyncProf.OutDir]], named `XmlStreamPage-build-...` and
  * `XmlStreamPage-write-...`.
  */
-class XmlStreamPagePerfSpec extends AnyFlatSpec {
+class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
   import XmlStreamPagePerfSpec.*
 
@@ -78,15 +99,27 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec {
     assert(one.page.callbacks.size >= 15, one.page.callbacks.size)
     assert(built.page.callbacks.size == Sections * one.page.callbacks.size)
 
-    val w = new StringWriter
-    XmlStream.writeNode(built.html, w)
-    val out = w.toString
-    // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-    assert(out == built.html.toString, "XmlStream output differs from toString")
+    {
+      val w = new StringWriter
+      XmlStream.writeNode(built.html, w)
+      // (Compare as Booleans so a failure doesn't print the multi-MB output.)
+      assert(w.toString == built.html.toString, "XmlStream output differs from toString")
+    }
+
+    // The contents are checked on a smaller page: parsing every tag of the full one takes too much memory.
+    val n = SanitySections
+    val small = build(n)
+    val out = {
+      val w = new StringWriter
+      XmlStream.writeNode(small.html, w)
+      w.toString
+    }
+    assert(out == small.html.toString, "XmlStream output differs from toString")
 
     // The start tags, as (label, attributes); the attributes' order isn't fixed, so they're compared as a Map.
+    val AttrRegex = """ ([\w-]+)="([^"]*)"""".r
     val tags: Vector[(String, Map[String, String])] = """<(\w+)((?: [\w-]+="[^"]*")*)\s*/?>""".r.findAllMatchIn(out).map { m =>
-      m.group(1) -> """ ([\w-]+)="([^"]*)"""".r.findAllMatchIn(m.group(2)).map(a => a.group(1) -> a.group(2)).toMap
+      m.group(1) -> AttrRegex.findAllMatchIn(m.group(2)).map(a => a.group(1) -> a.group(2)).toMap
     }.toVector
 
     def classesOf(attrs: Map[String, String]): Set[String] = attrs.get("class").map(_.trim.split("\\s+").toSet).getOrElse(Set())
@@ -96,27 +129,32 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec {
 
     def countAttr(name: String, value: String): Int = tags.count(_._2.get(name).contains(value))
 
-    assert(countTags("div", "card") == Sections, out.take(2000))
-    assert(countTags("div", "modal", "fade") == Sections, out.take(2000))
-    assert(countTags("button") == Sections * ButtonsPerSection, out.take(2000))
-    assert(countTags("input") == Sections * InputsPerSection, out.take(2000))
-    assert(countTags("select") == Sections, out.take(2000))
-    assert(countTags("textarea") == Sections, out.take(2000))
-    assert(countTags("tr", "data-row", "border", "border-primary") == Sections * TableRows, out.take(2000))
-    assert(countTags("td", "data-cell", "px-2", "py-1", "text-center", "align-middle") == Sections * TableRows * TableCols, out.take(2000))
-    assert(countTags("i") == Sections * IconsPerSection, out.take(2000))
-    assert(countAttr("role", "progressbar") == Sections, out.take(2000))
-    assert(countAttr("role", "alert") == Sections, out.take(2000))
-    assert(countAttr("data-bs-toggle", "modal") == Sections, out.take(2000))
-    assert(countAttr("style", TdStyle) == Sections * TableRows * TableCols, out.take(2000))
-    assert(count(out, "window._fs.callback(") >= Sections * one.page.callbacks.size, out.take(2000))
+    assert(countTags("div", "card") == n, out.take(2000))
+    assert(countTags("div", "modal", "fade") == n, out.take(2000))
+    assert(countTags("button") == n * ButtonsPerSection, out.take(2000))
+    assert(countTags("input") == n * InputsPerSection, out.take(2000))
+    assert(countTags("select") == n * SelectsPerSection, out.take(2000))
+    assert(countTags("textarea") == n * TextareasPerSection, out.take(2000))
+    assert(countTags("div", "form") == n * FormsPerSection, out.take(2000))
+    assert(countTags("table", "table") == n * (1 + Table6sPerSection), out.take(2000))
+    assert(countTags("td") == n * (TableRows * TableCols + Table6sPerSection * Table6Rows * Table6Cols), out.take(2000))
+    assert(countTags("th") == n * Table6sPerSection * Table6Cols, out.take(2000))
+    assert(out.contains(">Person 3 of s2 t1</"), out.take(2000))
+    assert(countTags("tr", "data-row", "border", "border-primary") == n * TableRows, out.take(2000))
+    assert(countTags("td", "data-cell", "px-2", "py-1", "text-center", "align-middle") == n * TableRows * TableCols, out.take(2000))
+    assert(countTags("i") == n * IconsPerSection, out.take(2000))
+    assert(countAttr("role", "progressbar") == n, out.take(2000))
+    assert(countAttr("role", "alert") == n, out.take(2000))
+    assert(countAttr("data-bs-toggle", "modal") == n, out.take(2000))
+    assert(countAttr("style", TdStyle) == n * TableRows * TableCols, out.take(2000))
+    assert(count(out, "window._fs.callback(") >= n * one.page.callbacks.size, out.take(2000))
     assert(out.contains(""">s1 r1 c1</td>"""), out.take(2000))
     // No helper calls ended up as text (as `<a/>.b` in XML content would).
     assert("""</\w+>\.\w""".r.findFirstIn(out).isEmpty, """</\w+>\.\w""".r.findFirstMatchIn(out).map(m => out.slice(m.start - 200, m.end + 200)))
 
     // Every id is different (from the counter, and the ones the components generate).
     val ids = """ id="([^"]*)"""".r.findAllMatchIn(out).map(_.group(1)).toVector
-    assert(ids.size > Sections * TableRows * TableCols)
+    assert(ids.size > n * TableRows * TableCols)
     assert(ids.distinct.size == ids.size, "duplicate ids")
   }
 
@@ -159,11 +197,12 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec {
     (1 to WarmupIterations).foreach(_ => build(Sections))
     // Several builds in one recording, for more samples; pages are discarded, so GC shows up too.
     var built = 0
-    AsyncProf.profile("XmlStreamPage-build", threshold = 0) {
+    val (_, files) = AsyncProf.profileWithFiles("XmlStreamPage-build", threshold = 0) {
       (1 to ProfiledIterations).foreach(_ => if (build(Sections).html ne null) built += 1)
     }
     assert(built == ProfiledIterations)
-    info(s"Profiled $ProfiledIterations builds; JFR + flame graph in ${AsyncProf.OutDir}")
+    assertProfileWritten(files)
+    info(s"Profiled $ProfiledIterations builds: ${files.mkString(", ")}")
   }
 
   it should "profile writing it with async-profiler" in {
@@ -171,17 +210,21 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec {
     val pages = (1 to ProfiledIterations).map(_ => build(Sections).html)
     (1 to WarmupIterations).foreach(_ => write(build(Sections).html))
     var chars = 0L
-    AsyncProf.profile("XmlStreamPage-write", threshold = 0) {
+    val (_, files) = AsyncProf.profileWithFiles("XmlStreamPage-write", threshold = 0) {
       pages.foreach(p => chars += write(p))
     }
     assert(chars > 0)
-    info(s"Profiled $ProfiledIterations writes; JFR + flame graph in ${AsyncProf.OutDir}")
+    assertProfileWritten(files)
+    info(s"Profiled $ProfiledIterations writes: ${files.mkString(", ")}")
   }
 }
 
 object XmlStreamPagePerfSpec {
 
-  val Sections = 10_000
+  val Sections = 1_000
+
+  /** Sections of the page whose contents are checked in detail (see the first test). */
+  val SanitySections = 200
 
   val TableRows = 5
   val TableCols = 4
@@ -189,12 +232,29 @@ object XmlStreamPagePerfSpec {
   /** Items in each section's list group (declared before the counts that use it, so it's initialized first). */
   val ListItems = 3
 
-  /** `<button>`s per section: 7 in the toolbar, 1 in the text field, 3 in the modal (header close, 2 in the footer),
-   * 1 that opens the modal, 1 closing the alert and 1 per table row. */
-  val ButtonsPerSection: Int = 7 + 1 + 3 + 1 + 1 + TableRows
+  /** Form7 forms per section. */
+  val FormsPerSection = 3
 
-  /** `<input>`s per section: text (x2), password, checkbox, range, and the text field in the modal. */
-  val InputsPerSection = 6
+  /** Table6 tables per section, each with [[Table6Rows]] rows and [[Table6Cols]] columns. */
+  val Table6sPerSection = 3
+  val Table6Rows = 8
+  val Table6Cols = 5
+
+  val Colors: Seq[String] = Seq("red", "green", "blue", "yellow", "black")
+
+  /** `<button>`s per section: 7 in the toolbar, 1 in the text field, 3 in the modal (header close, 2 in the footer),
+   * 1 that opens the modal, 1 closing the alert, 1 per table row, 1 submit per form and 1 per Table6 row. */
+  val ButtonsPerSection: Int = 7 + 1 + 3 + 1 + 1 + TableRows + FormsPerSection + Table6sPerSection * Table6Rows
+
+  /** `<input>`s per section: text (x2), password, checkbox, range, and the text field in the modal; in each form:
+   * text, int, double, date, checkbox, a radio per color and the input group's text. */
+  val InputsPerSection: Int = 6 + FormsPerSection * (6 + Colors.size)
+
+  /** `<select>`s per section: 1, and a select and a multi-select per form. */
+  val SelectsPerSection: Int = 1 + FormsPerSection * 2
+
+  /** `<textarea>`s per section: 1, and 1 per form. */
+  val TextareasPerSection: Int = 1 + FormsPerSection
 
   /** `<i class="bi ...">` icons per section: header, 3 in the toolbar, and 1 per list group item. */
   val IconsPerSection: Int = 1 + 3 + ListItems
@@ -215,6 +275,14 @@ object XmlStreamPagePerfSpec {
 
   import V1Helpers.*
 
+  /** The Bootstrap 5 Form7 renderers the forms use. */
+  object FormRenderers extends BSForm7Renderers()(using CheckboxAlignment.Vertical, CheckboxStyle.Checkbox, CheckboxSide.Normal) {
+    override def defaultRequiredFieldLabel: String = "Required"
+  }
+
+  /** A row of the Table6 tables. */
+  final case class Person(id: Int, name: String, age: Int, city: String)
+
   final class Built(val page: FSPage, val html: Elem)
 
   /** The state the section's fields edit. */
@@ -225,9 +293,12 @@ object XmlStreamPagePerfSpec {
     var enabled: Boolean = s % 2 == 0
     var level: Double = (s % 10).toDouble
     var color: String = Colors(s % Colors.size)
+    var age: Int = 20 + s % 50
+    var date: LocalDate = LocalDate.of(2026, 1, 1).plusDays(s % 365)
+    var favorites: Set[String] = Set(Colors(s % Colors.size), Colors((s + 1) % Colors.size))
+    var favorite: String = Colors((s + 2) % Colors.size)
+    var username: String = s"user$s"
   }
-
-  val Colors: Seq[String] = Seq("red", "green", "blue", "yellow", "black")
 
   /** A modal with a field and footer buttons, rendered in the page. */
   final class SectionModal(s: Int, state: SectionState) extends BSModal5Base {
@@ -307,6 +378,49 @@ object XmlStreamPagePerfSpec {
         }
       }</ul>.withId(nextId()).list_group.mb_3
 
+    def form7(s: Int, f: Int, st: SectionState): Elem = {
+      import FormRenderers.*
+      new DefaultForm7() {
+        override lazy val rootField: F7Field = F7VerticalField()(
+          new F7StringField().label("Name").placeholder("Name").rw(st.name, st.name = _),
+          new F7IntField().label("Age").rw(st.age, st.age = _),
+          new F7DoubleField().label("Level").rw(st.level, st.level = _),
+          new F7LocalDateField().label("Date").rw(st.date, st.date = _),
+          new F7SelectField[String](Colors).label("Color").rw(st.color, st.color = _).inputSizeSm,
+          new F7MultiSelectField[String]().options(Colors).label("Colors").size(3).rw(st.favorites, st.favorites = _),
+          new F7CheckboxField().label("Enabled").rw(st.enabled, st.enabled = _),
+          new F7RadioField[String](() => Colors).label("Favorite color").rw(st.favorite, st.favorite = _),
+          new F7StringTextareaField().label("Notes").numRows(3).rw(st.notes, st.notes = _),
+          new F7BSFormInputGroup()(F7HtmlField.label("@"), new F7StringField().placeholder("Username").rw(st.username, st.username = _)).inputSizeLg,
+          new F7SubmitButtonField(implicit fsc => BSBtn().BtnPrimary.lbl(s"Save form $f").btn),
+        )
+      }.render()
+    }
+
+    def table6(s: Int, t: Int): Elem = {
+      import FSComponentsLangPack.Default.EN
+      new Table6Base with Table6BootrapStyling with Table6StandardColumns {
+        override type R = Person
+
+        override def tableStriped: Boolean = true
+
+        override def tableHoverable: Boolean = true
+
+        override def tableSmall: Boolean = t % 2 == 0
+
+        val ColId = ColStr("Id", _.id.toString)
+        val ColName = ColStr("Name", _.name)
+        val ColAge = ColStr("Age", _.age.toString)
+        val ColCity = ColStr("City", _.city)
+        val ColActions = ColNs("Actions", implicit fsc => p => BSBtn().BtnOutlinePrimary.sm.lbl(s"View ${p.id}").callback(implicit fsc => Js.Void).btn)
+
+        override def columns(): List[C] = List(ColId, ColName, ColAge, ColCity, ColActions)
+
+        override def rows(hints: Seq[RowsHint]): Seq[Person] =
+          (1 to Table6Rows).map(r => Person(r, s"Person $r of s$s t$t", 20 + (r * s) % 60, Colors(r % Colors.size).capitalize + " City"))
+      }.render()
+    }
+
     def section(s: Int): Elem = {
       val state = new SectionState(s)
       val modal = new SectionModal(s, state)
@@ -324,7 +438,13 @@ object XmlStreamPagePerfSpec {
               SimpleAlert(<span>{s"Section $s was updated."}</span>, <button></button>).alert_info.mt_3 ++
               <button type="button">{s"Open modal $s"}</button>.withId(nextId()).btn.btn_outline_primary.mt_3.dataBsToggleAsModal
                 .withAttr("data-bs-target" -> s"#${modal.modalId}") ++
-              modal.modalRenderer.render()
+              modal.modalRenderer.render() ++
+              <div class="section-forms">{
+                (1 to FormsPerSection).map(f => <div>{form7(s, f, state)}</div>.withId(nextId()).col_md_4.border.rounded.p_2)
+              }</div>.withId(nextId()).row.g_3.mt_3 ++
+              <div class="section-tables">{
+                (1 to Table6sPerSection).map(t => table6(s, t))
+              }</div>.withId(nextId()).mt_3
           }</div>.withId(nextId()).card_body
       }</div>.withId(nextId()).withStyle("border-width: 2px").shadow_sm.mb_4.addClassIf(state.enabled, "border-success")
     }

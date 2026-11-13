@@ -3,7 +3,7 @@ package com.fastscala.components.bootstrap5.utils
 import com.fastscala.core.FSContext
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.XmlStream
-import com.fastscala.testutils.{AsyncProf, PerfFS}
+import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.{StringWriter, Writer}
@@ -20,7 +20,7 @@ import scala.xml.*
  *
  * The profiling tests write a JFR + HTML flame graph per method to [[AsyncProf.OutDir]], named `BSBtn-<method>-...`.
  */
-class BSBtnPerfSpec extends AnyFlatSpec {
+class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
   import BSBtnPerfSpec.*
 
@@ -180,11 +180,12 @@ class BSBtnPerfSpec extends AnyFlatSpec {
       }
       (1 to WarmupIterations).foreach(_ => renderAll())
       var rendered = 0
-      AsyncProf.profile(s"BSBtn-$method", threshold = 0) {
+      val (_, files) = AsyncProf.profileWithFiles(s"BSBtn-$method", threshold = 0) {
         (1 to ProfiledIterations).foreach(_ => rendered += renderAll().size)
       }
       assert(rendered == N * ProfiledIterations)
-      info(s"[$method] Profiled $ProfiledIterations x $N renders; JFR + flame graph in ${AsyncProf.OutDir}")
+      assertProfileWritten(files)
+      info(s"[$method] Profiled $ProfiledIterations x $N renders: ${files.mkString(", ")}")
     }
   }
 }

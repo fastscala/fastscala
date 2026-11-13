@@ -268,7 +268,8 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
 
   def knownTotalNumberOfRows(): KnownTotalNumberOfRowsMaterialized = KnownTotalNumberOfRowsMaterialized(None)
 
-  def idForRow(row: R, rowIdx: Int): String = "rowId" + rowIdx
+  /** The row's id: from the table's id, so it's unique in the page even with several tables in it. */
+  def idForRow(row: R, rowIdx: Int): String = s"${tableId}-row$rowIdx"
 
   def idForColumn(col: C, colIdx: Int): String = "colId" + UUID.randomUUID()
 

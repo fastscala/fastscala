@@ -35,7 +35,8 @@ abstract class F7SelectFieldBase[T]()(implicit val renderer: F7SelectFieldRender
     with F7FieldWithMainElemId
     with F7FieldWithAdditionalAttrs
     with F7FieldWithDependencies
-    with F7FieldWithOptionsNsLabel[T] {
+    with F7FieldWithOptionsNsLabel[T]
+    with F7FieldWithInputSize {
 
   override def loadFromString(str: String): Seq[(F7Field, NodeSeq)] = {
     val all = options

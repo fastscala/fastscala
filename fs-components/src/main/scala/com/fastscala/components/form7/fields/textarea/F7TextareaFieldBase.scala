@@ -34,7 +34,8 @@ abstract class F7TextareaFieldBase[T]()(implicit val renderer: F7TextareaFieldRe
     with F7FieldWithMaxlength
     with F7FieldWithInputElemType
     with F7FieldWithAdditionalAttrs
-    with F7FieldWithDependencies {
+    with F7FieldWithDependencies
+    with F7FieldWithInputSize {
 
   def toString(value: T): String
 

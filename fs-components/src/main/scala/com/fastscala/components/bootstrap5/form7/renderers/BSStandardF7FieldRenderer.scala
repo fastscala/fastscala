@@ -1,6 +1,6 @@
 package com.fastscala.components.bootstrap5.form7.renderers
 
-import com.fastscala.components.bootstrap5.form7.BSStandardModifiableF7InputElemFieldRenderer
+import com.fastscala.components.bootstrap5.form7.{BSInputSize, BSStandardModifiableF7InputElemFieldRenderer}
 import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.components.form7.mixins.mainelem.F7FieldWithMainElem
 import com.fastscala.components.form7.renderers.F7ValidatableFieldWithMainElemRenderer
@@ -32,7 +32,9 @@ trait BSStandardF7FieldRenderer extends F7ValidatableFieldWithMainElemRenderer w
 
     div.mb_3.withId(aroundId).apply {
       (label.map(_.withIdIfNotSet(labelId).form_label.withFor(mainElemId).pipe(onLabelTransforms)).getOrElse(Empty) ++
-        mainElem.withIdIfNotSet(field.mainElemId).form_control.pipe(elem => {
+        mainElem.withIdIfNotSet(field.mainElemId).form_control
+          .pipe(elem => BSInputSize.formControlClassOf(field).map(elem.addClass).getOrElse(elem))
+          .pipe(elem => {
           if (invalidFeedback.isDefined) elem.is_invalid
           else if (validFeedback.isDefined) elem.is_valid
           else elem

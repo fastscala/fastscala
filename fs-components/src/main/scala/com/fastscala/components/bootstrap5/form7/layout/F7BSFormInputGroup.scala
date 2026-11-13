@@ -1,10 +1,10 @@
 package com.fastscala.components.bootstrap5.form7.layout
 
-import com.fastscala.components.bootstrap5.form7.mixins.F7FieldWithInputGroupSize
 import com.fastscala.components.bootstrap5.form7.renderers.BSFormInputGroupF7FieldRenderer
 import com.fastscala.components.form7.*
 import com.fastscala.components.form7.fields.html.F7HtmlField
 import com.fastscala.components.form7.fields.layout.F7ContainerFieldBase
+import com.fastscala.components.form7.mixins.F7FieldWithInputSize
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
@@ -15,7 +15,7 @@ import scala.xml.{Elem, Node, NodeSeq}
 
 case class F7BSFormInputGroupRenderedChild(field: F7Field, inputField: Elem, nodesBefore: Seq[Node], nodesAfter: Seq[Node])
 
-class F7BSFormInputGroup()(groupChildren: F7Field*)(implicit renderer: BSFormInputGroupF7FieldRenderer) extends F7ContainerFieldBase with F7FieldWithInputGroupSize {
+class F7BSFormInputGroup()(groupChildren: F7Field*)(implicit renderer: BSFormInputGroupF7FieldRenderer) extends F7ContainerFieldBase with F7FieldWithInputSize {
 
   import com.fastscala.components.bootstrap5.helpers.BSHelpers.*
 
@@ -68,7 +68,7 @@ class F7BSFormInputGroup()(groupChildren: F7Field*)(implicit renderer: BSFormInp
     }).flatten
     val nodesAfterInputGroup = renderedChildren.map(_._4).flatten.map(adaptNodes)
 
-    renderer.render(this)(nodesBeforeInputGroup, elemsInsideInputGroup, nodesAfterInputGroup, inputGroupSize, showErrors)
+    renderer.render(this)(nodesBeforeInputGroup, elemsInsideInputGroup, nodesAfterInputGroup, inputSize, showErrors)
   }
 
   def adaptNodes(node: Node): Node = node match {

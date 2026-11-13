@@ -1,11 +1,12 @@
 package com.fastscala.components.bootstrap5.form7.renderers
 
 import com.fastscala.components.bootstrap5.form7.BSStandardModifiableF7InputElemFieldRenderer
+import com.fastscala.components.bootstrap5.form7.BSInputSize
 import com.fastscala.components.bootstrap5.form7.layout.F7BSFormInputGroup
-import com.fastscala.components.bootstrap5.form7.mixins.InputGroupSize
 import com.fastscala.components.bootstrap5.helpers.BSHelpers.{div, is_invalid}
 import com.fastscala.components.form7.RenderHint
 import com.fastscala.components.form7.fields.submit.F7SubmitButtonField
+import com.fastscala.components.form7.mixins.InputSize
 import com.fastscala.components.utils.Mutable
 
 import scala.util.chaining.scalaUtilChainingOps
@@ -35,14 +36,14 @@ trait BSFormInputGroupF7FieldRenderer extends Mutable {
     nodesBeforeInputGroup: Seq[Node],
     nodesInsideInputGroup: Seq[Node],
     nodesAfterInputGroup: Seq[Node],
-    inputGroupSize: InputGroupSize.Value,
+    inputSize: InputSize.Value,
     showErrors: Boolean
   ): Elem = {
     div.withId(field.aroundId).mb_3.apply {
       (nodesBeforeInputGroup ++
         input_group.withId(field.inputGroupId)
           .addClassIf(showErrors, is_invalid.getClassAttr)
-          .addClass(inputGroupSize.`class`)
+          .pipe(elem => BSInputSize.inputGroupClass(inputSize).map(elem.addClass).getOrElse(elem))
           .apply(nodesInsideInputGroup.map({
             case elem: Elem if elem.label == "input" => onInputElemTransforms(elem)
             case node => node

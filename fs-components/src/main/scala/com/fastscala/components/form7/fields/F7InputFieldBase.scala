@@ -35,7 +35,8 @@ trait F7InputFieldBase[T]()(implicit val renderer: F7ValidatableFieldWithMainEle
     with F7FieldWithSyncToServerOnChange
     with F7FieldWithInputElemType
     with F7FieldWithAdditionalAttrs
-    with F7FieldWithDependencies {
+    with F7FieldWithDependencies
+    with F7FieldWithInputSize {
 
   def toString(value: T): String
 

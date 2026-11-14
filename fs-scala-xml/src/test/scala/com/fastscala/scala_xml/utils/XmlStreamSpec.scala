@@ -11,6 +11,16 @@ class XmlStreamSpec extends AnyFlatSpec {
 
   private def node(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
 
+  /** `prefix` + `text` escaped by [[XmlEscape]], into a [[StringBuilderLike]] (other than XmlStream's buffers). */
+  private def escaped(text: String, prefix: String = ""): String = {
+    val sb = new java.lang.StringBuilder(prefix)
+    XmlEscape.escape(text, new StringBuilderLike {
+      override def append(s: String): Unit = sb.append(s)
+      override def append(s: String, start: Int, end: Int): Unit = sb.append(s, start, end)
+    })
+    sb.toString
+  }
+
   private val samples: Seq[(String, NodeSeq)] = Seq(
     "text element" -> <p>hello</p>,
     "nested elements with attributes" -> <div class="a b" id="x"><span data-v="1">t</span><b/></div>,
@@ -88,9 +98,9 @@ class XmlStreamSpec extends AnyFlatSpec {
 
   // ---------- escape / attributes ----------
 
-  "escape" should "match Utility.escape for every char" in {
+  "XmlEscape.escape" should "match Utility.escape for every char" in {
     val all = (0 until 0x10000).map(_.toChar).mkString
-    assert(XmlStream.escape(all, new StringBuilder).toString == Utility.escape(all))
+    assert(escaped(all) == Utility.escape(all))
   }
 
   it should "match Utility.escape for random strings" in {
@@ -98,13 +108,13 @@ class XmlStreamSpec extends AnyFlatSpec {
     val alphabet = "ab &<>\"'\n\r\t\u0000\u0001\u001f\u007f é€😀"
     (1 to 2_000).foreach { _ =>
       val str = Seq.fill(rnd.nextInt(40))(alphabet(rnd.nextInt(alphabet.length))).mkString
-      assert(XmlStream.escape(str, new StringBuilder).toString == Utility.escape(str), s"for ${str.toList}")
+      assert(escaped(str) == Utility.escape(str), s"for ${str.toList}")
     }
   }
 
   it should "handle empty strings and strings with nothing to escape" in {
-    assert(XmlStream.escape("", new StringBuilder).toString == "")
-    assert(XmlStream.escape("plain", new StringBuilder("x")).toString == "xplain")
+    assert(escaped("") == "")
+    assert(escaped("plain", prefix = "x") == "xplain")
   }
 
   private val attributeSamples: Seq[(String, Elem)] = Seq(
@@ -165,18 +175,79 @@ class XmlStreamSpec extends AnyFlatSpec {
     assert(seq(ns) == ns.toString)
   }
 
-  "escape" should "match Utility.escape for every character below 128, alone and inside text" in {
+  // ---------- namespaces (NamespaceBinding) ----------
+  //
+  // An element's namespace declarations (xmlns, xmlns:p) are its scope, a NamespaceBinding chain, not its attributes:
+  // each element writes only the bindings of its scope that aren't in its parent's (up to the parent's scope).
+
+  private val namespaceSamples: Seq[(String, NodeSeq)] = Seq(
+    "default namespace" -> <a xmlns="urn:a"><b><c/></b></a>,
+    "several prefixes on one element" -> <r xmlns:p="urn:p" xmlns:q="urn:q"><p:a q:k="v"/><q:b/></r>,
+    "a prefix redeclared with another URI (shadowing)" -> <a xmlns:p="urn:1"><p:b xmlns:p="urn:2"><p:c/></p:b><p:d/></a>,
+    // (`xmlns=""` can't be written in a Scala 3 XML literal: built with its NamespaceBinding.)
+    "the default namespace undeclared" -> {
+      val outer = NamespaceBinding(null, "urn:a", TopScope)
+      val undeclared = NamespaceBinding(null, "", outer)
+      Elem(null, "a", Null, outer, true, Elem(null, "b", Null, undeclared, true, Elem(null, "c", Null, undeclared, true)), Elem(null, "d", Null, outer, true))
+    },
+    "declarations added at several depths" -> <a xmlns:p="urn:p"><b xmlns:q="urn:q"><c xmlns:r="urn:r"><p:x q:y="1" r:z="2"/></c></b></a>,
+    "siblings: the second doesn't repeat the first's declarations" -> <a><b xmlns:p="urn:p"><p:c/></b><d><e xmlns:p="urn:p"/></d></a>,
+    "top-level siblings, each with its own declarations" -> (<a xmlns:p="urn:p"><p:b/></a> ++ <c xmlns:p="urn:p"/> ++ <d/>),
+    // (As toString, a Group's nodes are written in its own scope, TopScope: they redeclare the element's namespaces.)
+    "groups inside a namespaced element" ->
+      <a xmlns:p="urn:p">{Group(Seq(<p:b/>, <c xmlns:q="urn:q"><q:d/></c>, Group(Seq(<p:e/>))))}</a>,
+    "inline SVG" ->
+      <div><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16"><use xlink:href="#icon"/><path d="M0 0h16"/></svg><p>after</p></div>,
+    "prefixed attribute values that need escaping" -> <a xmlns:p="urn:p" p:t={"x < \"y\" & z"}/>,
+    "namespace URI that needs escaping" -> Elem(null, "a", Null, NamespaceBinding("p", "urn:a&b?c=\"d\"", TopScope), true),
+    // A child built on its own (its scope chain doesn't go through the parent's): it writes its whole chain.
+    "a namespaced element built separately, inside another scope" -> {
+      val icon: Elem = (<svg xmlns="http://www.w3.org/2000/svg"><path d="M1 1"/></svg>) // (in parens: two literals in a row would be one NodeBuffer)
+      <a xmlns:p="urn:p"><p:b>{icon}</p:b>{icon}</a>
+    },
+  )
+
+  namespaceSamples.foreach { case (name, ns) =>
+    "writeSeq" should s"write namespace declarations as toString ($name)" in {
+      assert(seq(ns) == ns.toString)
+    }
+  }
+
+  it should "write each declaration only on the element that adds it" in {
+    val out = seq(<a xmlns:p="urn:p"><p:b><p:c/></p:b><d xmlns:q="urn:q"/></a>)
+    assert(out == """<a xmlns:p="urn:p"><p:b><p:c/></p:b><d xmlns:q="urn:q"/></a>""")
+  }
+
+  {
+    import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
+    import com.fastscala.scala_xml.testutils.ElemUtilsV1
+
+    val svg = <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16"><use xlink:href="#icon"/></svg>
+    // ElemOptimized has its own attribute writing, and keeps the original's scope: check it's written too.
+    val fastCases: Seq[(String, Elem)] = Seq(
+      "ElemOptimized" -> { import ElemUtilsV1.RichElem; svg.addClass("icon").withAttr("width" -> "16") },
+    )
+    fastCases.foreach { case (name, e) =>
+      "writeNode" should s"write the namespace declarations of a $name (attributes in any order)" in {
+        assert(!e.getClass.eq(classOf[Elem]), e.getClass)
+        val out = node(<div>{e}</div>)
+        assert(normalized(out) == normalized(<div>{e}</div>.toString), out)
+        assert(out.contains("""xmlns="http://www.w3.org/2000/svg"""") && out.contains("""xmlns:xlink="http://www.w3.org/1999/xlink""""), out)
+        assert(out.contains("""<use xlink:href="#icon"/>"""), out)
+      }
+    }
+  }
+
+  "XmlEscape.escape" should "match Utility.escape for every character below 128, alone and inside text" in {
     (0 until 128).map(_.toChar).foreach { c =>
       for (text <- Seq(c.toString, s"ab${c}cd", s"$c$c")) {
         val expected = Utility.escape(text)
-        assert(XmlStream.escape(text, new StringBuilder).toString == expected, s"char ${c.toInt}")
+        assert(escaped(text) == expected, s"char ${c.toInt}")
       }
     }
   }
 
   it should "append text that needs no escaping unchanged" in {
-    val sb = new StringBuilder("x")
-    XmlStream.escape("plain text\n\twith tabs, newlines and ünïcödé", sb)
-    assert(sb.toString == "xplain text\n\twith tabs, newlines and ünïcödé")
+    assert(escaped("plain text\n\twith tabs, newlines and ünïcödé", prefix = "x") == "xplain text\n\twith tabs, newlines and ünïcödé")
   }
 }

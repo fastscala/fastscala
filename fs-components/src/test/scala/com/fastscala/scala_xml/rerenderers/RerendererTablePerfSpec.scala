@@ -6,6 +6,7 @@ import com.fastscala.core.*
 import com.fastscala.scala_xml.XmlStreamTablePerfSpec.{Cols, Rows, TdStyle}
 import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
+import com.fastscala.testutils.AttributeOrder.normalized
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
@@ -51,7 +52,7 @@ class RerendererTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     XmlStream.writeNode(built.table, w)
     val out = w.toString
     // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-    assert(out == built.table.toString, "XmlStream output differs from toString")
+    assert(normalized(out) == normalized(built.table.toString), "XmlStream output differs from toString (attributes in any order)")
     assert(out.split("<tr ", -1).length - 1 == Rows)
     assert(out.split("<td ", -1).length - 1 == Rows * (Cols + 1))
     assert(out.split("<button ", -1).length - 1 == Rows)

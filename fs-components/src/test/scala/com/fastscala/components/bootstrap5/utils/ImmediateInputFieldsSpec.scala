@@ -5,17 +5,18 @@ import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.PerfFS
+import com.fastscala.testutils.AttributeOrder.normalized
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
 import scala.xml.*
 
 /**
- * [[ImmediateInputFields]] builds its elements directly (as ElemWithFastAttrsV1), instead of with XML literals. Checked:
+ * [[ImmediateInputFields]] builds its elements directly (as ElemOptimized), instead of with XML literals. Checked:
  *  - against the previous, XML-literal implementations ([[ImmediateInputFieldsSpec.Literal]]): the same elements,
  *    attributes and text, apart from what the direct version intentionally drops (empty attributes, and whitespace-only
  *    text between elements) and the generated ids (input ids, callback ids);
- *  - that toString and [[XmlStream]] write the same, that no attribute is empty, and each field registers one callback;
+ *  - that toString and [[XmlStream]] write the same (attributes in any order), that no attribute is empty, and each field registers one callback;
  *  - a few behaviours directly (checked, additionalAttrs, the selected option, the button's input group, ...).
  *
  * Run with: `sbt "fs_components/testOnly com.fastscala.components.bootstrap5.utils.ImmediateInputFieldsSpec"`
@@ -104,9 +105,9 @@ class ImmediateInputFieldsSpec extends AnyFlatSpec {
       assert(canon(c) == canon(l), s"\n current: ${canon(c)}\n literal: ${canon(l)}")
     }
 
-    it should "write the same with toString and XmlStream, without empty or duplicate attributes" in {
+    it should "write the same with toString and XmlStream (attributes in any order), without empty or duplicate attributes" in {
       val e = current(newFsc())
-      assert(written(e) == e.toString)
+      assert(normalized(written(e)) == normalized(e.toString))
       for (el <- allElems(e)) {
         val attrs = el.attributes.toList.map(m => m.key -> m.value.text)
         assert(attrs.forall(_._2 != ""), s"empty attribute in <${el.label}>: $attrs")
@@ -262,9 +263,7 @@ object ImmediateInputFieldsSpec {
         JS._if(
           if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(Js(s"window.currentValue$inputId"), JS.asJsStr(initialValue))
           else JS._true,
-          _then =
-            JS.consoleLog(value) &
-              onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
+          _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
         )
       }).cmd
       val onkeypress = if (changeOnEnter) s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.blur(inputId).cmd}}" else null

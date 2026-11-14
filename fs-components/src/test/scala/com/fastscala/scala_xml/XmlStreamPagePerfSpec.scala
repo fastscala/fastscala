@@ -26,6 +26,7 @@ import com.fastscala.core.*
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
+import com.fastscala.testutils.AttributeOrder.normalized
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.{StringWriter, Writer}
@@ -103,7 +104,8 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       val w = new StringWriter
       XmlStream.writeNode(built.html, w)
       // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-      assert(w.toString == built.html.toString, "XmlStream output differs from toString")
+      val same = normalized(w.toString) == normalized(built.html.toString)
+      assert(same, "XmlStream output differs from toString (attributes in any order)")
     }
 
     // The contents are checked on a smaller page: parsing every tag of the full one takes too much memory.
@@ -114,7 +116,8 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       XmlStream.writeNode(small.html, w)
       w.toString
     }
-    assert(out == small.html.toString, "XmlStream output differs from toString")
+    val same = normalized(out) == normalized(small.html.toString)
+    assert(same, "XmlStream output differs from toString (attributes in any order)")
 
     // The start tags, as (label, attributes); the attributes' order isn't fixed, so they're compared as a Map.
     val AttrRegex = """ ([\w-]+)="([^"]*)"""".r

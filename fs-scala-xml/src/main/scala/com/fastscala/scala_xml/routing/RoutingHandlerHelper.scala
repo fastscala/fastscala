@@ -22,7 +22,7 @@ abstract class ScalaXmlRoutingHandlerHelper(implicit fss: FSSystem) extends Rout
 
   def servePageWithImpl(page: FSPageImplWithFSContext, debugLbl: Option[String] = None)(implicit req: Request, session: FSSession): Response = {
     val rendered: NodeSeq = session.createAndRenderPageWithImpl(page, debugLbl = debugLbl.orElse(Some(req.getHttpURI.getPath)))
-    Ok.html(rendered).addHeaders(
+    Ok.htmlStreaming(rendered).addHeaders(
       "Cache-Control" -> "no-cache, max-age=0, no-store"
       , "Pragma" -> "no-cache"
       , "Expires" -> "-1"

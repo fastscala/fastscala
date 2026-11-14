@@ -4,6 +4,7 @@ import com.fastscala.core.FSContext
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
+import com.fastscala.testutils.AttributeOrder.normalized
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.{StringWriter, Writer}
@@ -122,7 +123,7 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       val w = new StringWriter
       XmlStream.writeNode(elem, w)
       val out = w.toString
-      assert(out == elem.toString, "XmlStream output differs from toString")
+      assert(normalized(out) == normalized(elem.toString), "XmlStream output differs from toString (attributes in any order)")
       val (tag, attrs) = startTag(out)
       assert(tag == ExpectedTag(method), out)
       assert(attrs.get("class").map(_.trim.split("\\s+").toSet).contains(Set("btn", "btn-primary", "btn-sm")), out)

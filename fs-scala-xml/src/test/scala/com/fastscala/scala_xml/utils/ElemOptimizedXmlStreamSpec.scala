@@ -1,17 +1,21 @@
 package com.fastscala.scala_xml.utils
 
+import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
 import com.fastscala.scala_xml.testutils.ElemUtilsV1.RichElem
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
 import scala.xml.*
 
-/** XmlStream's fast path for [[ElemOptimized]] must print exactly what toString prints, without computing it. */
+/**
+ * XmlStream's fast path for [[ElemOptimized]] must print what toString prints (attributes in any order), without
+ * computing the attributes.
+ */
 class ElemWithFastAttrsV1XmlStreamSpec extends AnyFlatSpec {
 
   private def stream(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
 
-  private def cached(e: Elem): AnyRef = ElemOptimized.UnprefixedAttributeClass.getField("cached").get(e.attributes)
+  private def cached(e: Elem): AnyRef = e.attributes.getClass.getField("cached").get(e.attributes) // (the generated attribute class)
 
   private val cases: Seq[(String, () => Elem)] = Seq(
     "classes added in a chain" -> (() => <td/>.addClass("px-2").addClass("py-1").addClass("text-center")),
@@ -26,12 +30,12 @@ class ElemWithFastAttrsV1XmlStreamSpec extends AnyFlatSpec {
   )
 
   cases.foreach { case (name, make) =>
-    "XmlStream" should s"write an ElemOptimized like toString, without computing its attributes ($name)" in {
+    "XmlStream" should s"write an ElemOptimized like toString (attributes in any order), without computing its attributes ($name)" in {
       val e = make()
       assert(e.isInstanceOf[ElemOptimized])
       val streamed = stream(e)
       assert(cached(e) == null, "XmlStream computed the attributes")
-      assert(streamed == e.toString, s"\n  stream:   $streamed\n  toString: ${e.toString}")
+      assert(normalized(streamed) == normalized(e.toString), s"\n  stream:   $streamed\n  toString: ${e.toString}")
     }
   }
 }

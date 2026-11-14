@@ -3,6 +3,7 @@ package com.fastscala.scala_xml
 import com.fastscala.components.bootstrap5.helpers.{BSClassesHelper, BSHelpers}
 import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions}
+import com.fastscala.testutils.AttributeOrder.normalized
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.{StringWriter, Writer}
@@ -14,8 +15,8 @@ import scala.xml.*
  * counter) and 4 classes added via Bootstrap class helpers; each `<td>` also gets a style ([[XmlStreamTablePerfSpec.TdStyle]]).
  * Run for each implementation of the attribute helpers, for comparison:
  *
- *  - V2: [[BSHelpers]], on [[ScalaXmlElemUtilsV2]] ([[com.fastscala.scala_xml.utils.ElemWithFastAttrsV2]])
- *  - V1: the same class helpers on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.utils.ElemOptimized]])
+ *  - V2: [[BSHelpers]] (which is on [[ScalaXmlElemUtilsV1]] too, with all its helpers)
+ *  - V1: only the class helpers, on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.utils.ElemOptimized]])
  *
  * The class transforms are computed when the attributes are read, so for implementations XmlStream has no fast path
  * for, the first render includes computing the final `class` attributes.
@@ -80,7 +81,7 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       XmlStream.writeNode(small, w)
       val out = w.toString
       // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-      assert(out == small.toString, "XmlStream output differs from toString")
+      assert(normalized(out) == normalized(small.toString), "XmlStream output differs from toString (attributes in any order)")
       assert(out.split("<tr ", -1).length - 1 == Rows)
       assert(out.split("<td ", -1).length - 1 == Rows * Cols)
 
@@ -160,7 +161,7 @@ object XmlStreamTablePerfSpec {
 
   // Each table is built in its own object, importing only its own helpers, so the implicit conversions don't clash.
 
-  /** With [[BSHelpers]], i.e. [[ScalaXmlElemUtilsV2]] / ElemWithFastAttrsV2. */
+  /** With [[BSHelpers]] (on [[ScalaXmlElemUtilsV1]] / ElemOptimized). */
   object V2Table {
 
     import BSHelpers.*
@@ -187,8 +188,8 @@ object XmlStreamTablePerfSpec {
   }
 
   /**
-   * The same Bootstrap class helpers as BSHelpers, but on [[ScalaXmlElemUtilsV1]] / ElemOptimized (mixed in, as
-   * BSHelpers mixes in ScalaXmlElemUtilsV2, for withId, withStyle, ...).
+   * The same Bootstrap class helpers as BSHelpers, mixed in with [[ScalaXmlElemUtilsV1]] / ElemOptimized directly
+   * (for withId, withStyle, ...).
    */
   object V1Helpers {
     implicit class RichElemV1(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with ScalaXmlElemUtilsV1

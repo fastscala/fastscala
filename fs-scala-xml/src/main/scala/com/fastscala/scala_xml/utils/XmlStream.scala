@@ -5,240 +5,236 @@ import scala.annotation.tailrec
 import scala.xml.*
 
 /**
- * Writes XML to a [[Writer]] exactly as `Node.toString` would (MinimizeMode.Default), without building the whole
- * string: output goes through one reused buffer, handed to the writer in chunks of about [[ChunkSize]] chars.
- * Element names, attributes and text are written straight into that buffer (see [[appendAttributes]] and [[escape]]).
- * The writer is not flushed or closed.
+ * Writes XML to a [[Writer]] as `Node.toString` would (MinimizeMode.Default), without building the whole
+ * string: output is written straight into one fixed `char[]` of [[ChunkSize]] chars (see [[Out]]), handed to the
+ * writer each time it fills up. Element names, attributes and text are copied (and escaped) directly into it: no
+ * StringBuilder in between (no resizing checks, no Latin-1/UTF-16 coder branches, no copy out of it), except for the
+ * rare nodes only scala-xml knows how to write. The writer is not flushed or closed.
+ *
+ * The output is the same as toString's, except that the attributes of an [[ElemOptimized]] are written straight from
+ * its list, which can be in a different order (toString computes them into MetaData first).
  */
 object XmlStream {
 
   val ChunkSize = 8192
 
-  def writeSeq(ns: NodeSeq, w: Writer, pscope: NamespaceBinding = TopScope): Unit = {
+  def writeSeq(ns: NodeSeq, w: Writer): Unit = {
     val out = new Out(w)
-    write(new Level(ns.iterator, pscope, null) :: Nil, out)
-    out.drain()
+    writeAll(ns, out)
+    out.flush()
   }
 
-  def writeNode(n: Node, w: Writer, pscope: NamespaceBinding = TopScope): Unit = {
+  def writeNode(n: Node, w: Writer): Unit = {
     val out = new Out(w)
-    write(new Level(Iterator.single(n), pscope, null) :: Nil, out)
-    out.drain()
-  }
-
-  /** The buffer everything is written to, handed to `w` once it reaches [[ChunkSize]] chars. */
-  private final class Out(w: Writer) {
-    val sb = new StringBuilder(ChunkSize * 2)
-    private var chars = new Array[Char](ChunkSize * 2)
-
-    inline def drainIfFull(): Unit = if (sb.length >= ChunkSize) drain()
-
-    def drain(): Unit = {
-      val n = sb.length
-      if (n > 0) {
-        if (chars.length < n) chars = new Array[Char](n) // a single node bigger than the buffer
-        sb.underlying.getChars(0, n, chars, 0)
-        w.write(chars, 0, n)
-        sb.setLength(0)
-      }
-    }
+    writeAll(Seq(n), out)
+    out.flush()
   }
 
   /**
-   * Nodes still to write at one level of the tree: the children of an element (or of a Group, or the top-level
-   * nodes), the namespace scope they're written in, and the element to close once they're done (null if none).
+   * The output buffer: a fixed `char[]` of [[ChunkSize]] chars, written to `w` (and reused) whenever it's full, and by
+   * [[flush]] at the end. Strings are copied in with String.getChars, split over several chunks if needed.
+   * (`buf` and `pos` are public so the inline methods use them directly, without accessors.)
    */
-  private final class Level(val nodes: Iterator[Node], val scope: NamespaceBinding, val closing: Elem)
+  private final class Out(w: Writer) extends StringBuilderLike {
+    val buf = new Array[Char](ChunkSize)
+    var pos = 0
 
-  /** Depth-first, in document order, with an explicit stack of levels, so it's tail recursive. */
-  @tailrec private def write(stack: List[Level], out: Out): Unit = stack match {
-    case Nil =>
-    case level :: rest if !level.nodes.hasNext =>
-      if (level.closing ne null) {
-        out.sb.append("</")
-        appendName(level.closing.prefix, level.closing.label, out.sb).append('>')
-        out.drainIfFull()
-      }
-      write(rest, out)
-    case level :: _ => level.nodes.next() match {
-      case e: Elem =>
-        val sb = out.sb
-        sb.append('<')
-        appendName(e.prefix, e.label, sb)
-        e match {
-          // Write the attributes straight from its Map: reading e.attributes would build (and cache) the MetaData.
-          case fast: ElemWithFastAttrsV3 => appendFastAttrsV3(fast.attrs, sb)
-          case fast: ElemWithFastAttrsV2 => appendFastAttrs(fast.attrs, sb)
-          case fast: ElemOptimized => appendFastAttrsV1(fast.attrs, sb)
-          case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
-        }
-        e.scope.buildString(sb, level.scope)
+    /** For the rare nodes only scala-xml can write (into a StringBuilder): reused, then copied into `buf`. */
+    val scratch = new StringBuilder(256)
 
-        // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
-        // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
-        if (e.child.isEmpty && e.minimizeEmpty) {
-          sb.append("/>")
-          out.drainIfFull()
-          write(stack, out)
-        } else {
-          sb.append('>')
-          out.drainIfFull()
-          write(new Level(e.child.iterator, e.scope, e) :: stack, out)
-        }
-
-      case g: Group => // a Group is just a container of nodes
-        write(new Level(g.nodes.iterator, level.scope, null) :: stack, out)
-
-        // Exactly Text, or exactly Atom (what `{value}` in an XML literal becomes when value isn't a Node): both serialize
-        // as Utility.escape(data.toString). Subclasses (PCData, Unparsed, ...) override buildString, so they go below.
-      case atom: Atom[?] if isPlainText(atom) =>
-        escape(atom.data.toString, out.sb)
-        out.drainIfFull()
-        write(stack, out)
-
-      case special: SpecialNode => // Text subclasses, Comment, PCData, Unparsed, EntityRef, ProcInstr
-        special.buildString(out.sb) // what Utility.serialize does for these, minus its own StringBuilder
-        out.drainIfFull()
-        write(stack, out)
-
-      case other => // any other Node subclass
-        out.sb.append(Utility.serialize(other, level.scope))
-        out.drainIfFull()
-        write(stack, out)
-    }
-  }
-
-  // ---------- allocation-free equivalents of scala-xml's own serialization ----------
-
-  /** As Node.nameToString, which builds an interpolated String for every name. */
-  private def appendName(prefix: String, label: String, sb: StringBuilder): StringBuilder = {
-    if (prefix ne null) sb.append(prefix).append(':')
-    sb.append(label)
-  }
-
-  /**
-   * As MetaData.buildString, which for each attribute creates two interpolated Strings, a temporary StringBuilder and
-   * its String. Attributes whose value is a single [[Text]] or [[Atom]] (nearly all) are written directly; anything else
-   * (other value nodes, other MetaData types) goes through scala-xml for that one attribute.
-   */
-  private def appendAttributes(attributes: MetaData, sb: StringBuilder): Unit = {
-    var md = attributes
-    while (md ne Null) {
-      md match {
-        case a: Attribute if a.value eq null => // not an attribute (Elem's normalize drops these), e.g. the placeholder
-                                                // heading an ElemWithPendingAttrTransforms' attributes: write nothing
-        case a: Attribute if isSinglePlainText(a.value) =>
-          sb.append(' ') // like MetaData.buildString
-          if (a.isPrefixed) sb.append(a.pre).append(':')
-          sb.append(a.key).append("=\"")
-          // The escaped text can't contain '"' (it becomes &quot;), so Utility.appendQuoted would pick '"' too.
-          escape(a.value.head.asInstanceOf[Atom[?]].data.toString, sb)
-          sb.append('"')
-        case other =>
-          other.copy(Null).buildString(sb) // just this attribute, including its leading ' '
-      }
-      md = md.next
-    }
-  }
-
-  /**
-   * The attributes of an [[ElemWithFastAttrsV2]], in the same order and format as its computed MetaData would print
-   * (see its Interceptor): ` name="escaped value"` for each entry. foreachEntry: no tuple per attribute.
-   */
-  private def appendFastAttrs(attrs: Map[String, String], sb: StringBuilder): Unit =
-    attrs.foreachEntry((name, value) =>
-      if (value ne null) { // removed attributes are dropped from the Map, but don't print one if it's there
-        sb.append(' ').append(name).append("=\"")
-        escape(value, sb)
-        sb.append('"')
-      })
-
-  /**
-   * The attributes of an [[ElemWithFastAttrsV3]], in the same order and format as its computed MetaData would print:
-   * ` name="..."`, with each of the value's pieces escaped straight into the buffer, so the value is never joined.
-   * Pieces are stored newest first, so they're written from the end of the list.
-   */
-  private def appendFastAttrsV3(attrs: Map[String, List[String]], sb: StringBuilder): Unit =
-    attrs.foreachEntry((name, pieces) =>
-      if (pieces.nonEmpty) { // an empty list is a removed attribute (never in the Map, but don't print one if it is)
-        sb.append(' ').append(name).append("=\"")
-        escapeOldestFirst(pieces, sb)
-        sb.append('"')
-      })
-
-  /** Escapes `pieces` (newest first) oldest first. Recursion depth is the number of pieces, a handful per value. */
-  private def escapeOldestFirst(pieces: List[String], sb: StringBuilder): Unit =
-    if (pieces.nonEmpty) {
-      escapeOldestFirst(pieces.tail, sb)
-      escape(pieces.head, sb)
+    def flush(): Unit = if (pos > 0) {
+      w.write(buf, 0, pos)
+      pos = 0
     }
 
-  /**
-   * The attributes of an [[ElemOptimized]], in the same order and format as its computed MetaData would print,
-   * without computing it. `attrs` is newest first and may repeat a name: only its first (newest) entry counts, and a
-   * null value there means removed. The MetaData is built by prepending while walking from the head, so it prints the
-   * kept entries in reverse list order: walk from the tail (by recursion: no allocation) and write each entry that is
-   * the first for its name.
-   */
-  private def appendFastAttrsV1(attrs: List[(String, String)], sb: StringBuilder): Unit = {
-    def isFirstForName(entry: List[(String, String)]): Boolean = {
-      val name = entry.head._1
-      var cur = attrs
-      while (cur ne entry) { // a handful of entries: a short scan, instead of a Set
-        if (cur.head._1 == name) return false
-        cur = cur.tail
-      }
-      true
+    inline def append(c: Char): Unit = {
+      if (pos == ChunkSize) flush()
+      buf(pos) = c
+      pos += 1
     }
-    def fromTail(rest: List[(String, String)]): Unit =
-      if (rest.nonEmpty) {
-        fromTail(rest.tail)
-        val value = rest.head._2
-        if ((value ne null) && isFirstForName(rest)) {
-          sb.append(' ').append(rest.head._1).append("=\"")
-          escape(value, sb)
-          sb.append('"')
+
+    override def append(s: String): Unit = append(s, 0, s.length)
+
+    /** `s` from `from` (inclusive) to `to` (exclusive). */
+    override def append(s: String, from: Int, to: Int): Unit = {
+      val n = to - from
+      if (n <= ChunkSize - pos) { // the usual case: it fits
+        s.getChars(from, to, buf, pos)
+        pos += n
+      } else {
+        var start = from
+        while (start < to) {
+          if (pos == ChunkSize) flush()
+          val chunk = math.min(to - start, ChunkSize - pos)
+          s.getChars(start, start + chunk, buf, pos)
+          pos += chunk
+          start += chunk
         }
       }
-    fromTail(attrs)
+    }
+
+    /** What's in `scratch` (then cleared). */
+    def appendScratch(): Unit = {
+      val sb = scratch.underlying
+      val len = sb.length
+      var start = 0
+      while (start < len) {
+        if (pos == ChunkSize) flush()
+        val chunk = math.min(len - start, ChunkSize - pos)
+        sb.getChars(start, start + chunk, buf, pos)
+        pos += chunk
+        start += chunk
+      }
+      sb.setLength(0)
+    }
+
+    /** `text`, escaped (see [[XmlEscape]]). */
+    def escape(text: String): Unit = XmlEscape.escape(text, this)
   }
 
-  private def isPlainText(node: Node): Boolean = {
+  inline private def writeClosingTag(closing: Elem, out: Out): Unit = {
+    out.append('<')
+    out.append('/')
+    appendName(closing.prefix, closing.label, out)
+    out.append('>')
+  }
+
+  private final class Level(val nodes: Seq[Node], var index: Int, val scope: NamespaceBinding, val closing: Elem) {
+    @inline def hasNext: Boolean = index < nodes.length
+
+    @inline def next(): Node = {
+      val n = nodes(index)
+      index += 1
+      n
+    }
+  }
+
+  /** Initial size of the stack of levels; it's doubled whenever a deeper tree needs it. */
+  private val InitialStackSize = 64
+
+  private def writeAll(rootNodes: Seq[Node], out: Out): Unit = {
+    // The levels being written, an explicit stack (so any depth works, without recursion): stack(stackTop) is current.
+    var stack = new Array[Level](InitialStackSize)
+    var stackTop = 0
+    stack(0) = new Level(rootNodes, 0, TopScope, null)
+
+    inline def push(level: Level): Unit = {
+      stackTop += 1
+      if (stackTop == stack.length) stack = java.util.Arrays.copyOf(stack, stack.length * 2)
+      stack(stackTop) = level
+    }
+
+    while (stackTop >= 0) {
+      val level = stack(stackTop)
+      if (!level.hasNext) {
+        if (level.closing ne null) {
+          writeClosingTag(level.closing, out)
+        }
+        stackTop -= 1 // Pop level
+      } else {
+        level.next() match {
+          case e: Elem =>
+            out.append('<')
+            appendName(e.prefix, e.label, out)
+            e match {
+              case fast: ElemOptimized =>
+                @tailrec def aux(remaining: List[(String, String)] = fast.attrs): Unit = remaining match {
+                  case (key, value) :: rest =>
+                    appendAttribute(null, key, value, out)
+                    aux(rest)
+                  case _ =>
+                }
+
+                aux()
+              case _ => if (e.attributes ne null) appendAttributes(e.attributes, out)
+            }
+            if (e.scope != TopScope) {
+              e.scope.buildString(out.scratch, level.scope)
+              out.appendScratch()
+            }
+
+            // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
+            // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
+            if (e.child.isEmpty && e.minimizeEmpty) {
+              out.append('/')
+              out.append('>')
+            } else {
+              if (e.child.isEmpty) {
+                out.append('>')
+                writeClosingTag(e, out)
+              } else {
+                out.append('>')
+                push(new Level(e.child, 0, e.scope, e))
+              }
+            }
+
+            // Exactly Text, or exactly Atom (what `{value}` in an XML literal becomes when value isn't a Node): both serialize
+            // as Utility.escape(data.toString). Subclasses (PCData, Unparsed, ...) override buildString, so they go below.
+          case atom: Atom[?] if isPlainText(atom) =>
+            out.escape(atom.data.toString)
+
+            // Exactly Unparsed (the JavaScript in <script> tags): written as is, as its buildString does.
+          case u: Unparsed if u.getClass eq classOf[Unparsed] =>
+            out.append(u.data)
+
+          case special: SpecialNode => // Text subclasses, Comment, PCData, other Unparsed, EntityRef, ProcInstr
+            special.buildString(out.scratch) // what Utility.serialize does for these, minus its own StringBuilder
+            out.appendScratch()
+
+          case g: Group => // a Group is just a container of nodes
+            // Its nodes are written in the Group's own scope (TopScope), as Utility.serialize does: so they redeclare the
+            // namespaces they use, even ones the enclosing element declared.
+            push(new Level(g.nodes, 0, g.scope, null))
+          case other => // any other Node subclass
+            Utility.serialize(other, level.scope, out.scratch)
+            out.appendScratch()
+        }
+      }
+    }
+  }
+
+  private inline def appendName(prefix: String, label: String, out: Out): Unit = {
+    if (prefix ne null) {
+      out.append(prefix)
+      out.append(':')
+    }
+    out.append(label)
+  }
+
+  /** ` pre:key="escaped value"` (` key="..."` if `pre` is null). */
+  private def appendAttribute(pre: String, key: String, value: String, out: Out): Unit = {
+    out.append(' ')
+    appendName(pre, key, out)
+    out.append('=')
+    out.append('"')
+    out.escape(value)
+    out.append('"')
+  }
+
+  /**
+   * The attributes of a plain Elem, as MetaData.buildString writes them. Values that are a single plain [[Text]] or
+   * [[Atom]] (nearly all) are escaped straight into the buffer; any other value (Unparsed, PCData, entity refs, several
+   * nodes) or other MetaData type goes through scala-xml for that one attribute, which writes those its own way (e.g.
+   * a value with a `"` in single quotes, PCData as CDATA).
+   */
+  @tailrec private def appendAttributes(attributes: MetaData, out: Out): Unit = attributes match {
+    case Null =>
+    case a: Attribute if a.value eq null => // not a real attribute (e.g. the placeholder heading a fast Elem's)
+      appendAttributes(a.next, out)
+    case a: Attribute if isSinglePlainText(a.value) =>
+      appendAttribute(if (a.isPrefixed) a.pre else null, a.key, a.value.head.asInstanceOf[Atom[?]].data.toString, out)
+      appendAttributes(a.next, out)
+    case other =>
+      other.copy(Null).buildString(out.scratch) // just this attribute, including its leading ' '
+      out.appendScratch()
+      appendAttributes(other.next, out)
+  }
+
+  private def isSinglePlainText(value: collection.Seq[Node]): Boolean =
+    value.lengthCompare(1) == 0 && isPlainText(value.head)
+
+  private inline def isPlainText(node: Node): Boolean = {
     val cls = node.getClass
     (cls eq classOf[Text]) || (cls eq classOf[Atom[?]])
-  }
-
-  private def isSinglePlainText(value: Seq[Node]): Boolean =
-    (value ne null) && value.lengthCompare(1) == 0 && isPlainText(value.head)
-
-  /**
-   * Same output as [[Utility.escape]] (`&`, `<`, `>` and `"` become entities; control characters other than \n, \r
-   * and \t are dropped), but appending unchanged runs in bulk instead of a Map lookup per character.
-   */
-  def escape(text: String, sb: StringBuilder): StringBuilder = {
-    val jsb = sb.underlying
-    val len = text.length
-    var runStart = 0
-    var i = 0
-    while (i < len) {
-      val c = text.charAt(i)
-      val replacement: String =
-        if (c >= ' ') c match {
-          case '&' => "&amp;"
-          case '<' => "&lt;"
-          case '>' => "&gt;"
-          case '"' => "&quot;"
-          case _ => null
-        }
-        else if (c == '\n' || c == '\r' || c == '\t') null
-        else "" // dropped
-      if (replacement ne null) {
-        jsb.append(text, runStart, i).append(replacement)
-        runStart = i + 1
-      }
-      i += 1
-    }
-    jsb.append(text, runStart, len)
-    sb
   }
 }

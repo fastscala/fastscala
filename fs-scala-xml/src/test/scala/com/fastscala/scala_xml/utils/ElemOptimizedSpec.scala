@@ -1,5 +1,6 @@
 package com.fastscala.scala_xml.utils
 
+import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.StringWriter
@@ -12,11 +13,11 @@ class ElemOptimizedSpec extends AnyFlatSpec {
 
   private def stream(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
 
-  /** attrs never holds a null value nor a repeated name, and toString / XmlStream agree. */
+  /** attrs never holds a null value nor a repeated name, and toString / XmlStream agree (attributes in any order). */
   private def wellFormed(e: ElemOptimized): Unit = {
     assert(e.attrs.forall(_._2 ne null), e.attrs)
     assert(e.attrs.map(_._1).distinct.size == e.attrs.size, e.attrs)
-    assert(stream(e) == e.toString)
+    assert(normalized(stream(e)) == normalized(e.toString))
   }
 
   private def names(e: Elem): Set[String] = e.attributes.toList.map(_.key).toSet

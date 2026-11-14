@@ -15,8 +15,8 @@ import scala.xml.*
 
 
 /**
- * [[ScalaXmlElemUtilsV2]], but building [[ElemOptimized]] (attributes as a newest-first list of (name, value))
- * instead of [[ElemWithFastAttrsV2]]; kept for comparison (see XmlStreamTablePerfSpec in fs-components).
+ * The Elem attribute helpers (withAttr, addClass, withId, ...), building [[ElemOptimized]]: the attributes are kept as
+ * a list of (name, value), only turned into MetaData when read (XmlStream writes them straight from the list).
  */
 trait ScalaXmlElemUtilsV1 extends Any {
   def elem: Elem

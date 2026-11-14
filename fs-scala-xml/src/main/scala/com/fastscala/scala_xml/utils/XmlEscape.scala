@@ -28,12 +28,13 @@ object XmlEscape {
     arr
   }
 
-  /** Fast path when the caller statically holds `XmlStream2.Out`. */
+  /** Escapes `text` into XmlStream2's byte buffer, in UTF-8. */
   def escape(text: String, out: XmlStream2.Out): Unit = {
     val len = text.length
     if (len == 0) return
 
-    val maxUnchecked = XmlStream2.ChunkSize / 6 // 1,365 chars for 8,192-char buffer
+    // Room for 6 bytes per char: the longest entity (`&quot;`), and more than UTF-8's 3 bytes per char.
+    val maxUnchecked = XmlStream2.ChunkSize / 6 // 1,365 chars for an 8,192-byte buffer
     if (len <= (XmlStream2.ChunkSize - out.pos) / 6) {
       escapeUnchecked(text, len, out)
     } else if (len <= maxUnchecked) {
@@ -44,40 +45,30 @@ object XmlEscape {
     }
   }
 
-  /** Polymorphic entry point for `StringBuilderLike` (e.g., `StringBuilder` or `Out`). */
-  def escape(text: String, out: StringBuilderLike): Unit = out match {
-    case direct: XmlStream2.Out => escape(text, direct)
-    case _ => escapeGeneric(text, out)
-  }
-
-  /**
-   * Zero-bounds-check loop: caller guarantees `(ChunkSize - out.pos) >= text.length * 6`,
-   * so even worst-case expansion (`"` -> `&quot;`) cannot overflow `out.buf`.
-   */
   // (The scans test `c < 128` and then look the char up. Testing `c > '>'` first, to skip most chars with one
   // comparison, measured ~35% slower on a page with a lot of JavaScript in attributes: that branch is mispredicted
   // whenever letters and digits / punctuation alternate, while `c < 128` is almost always true.)
+
+  /**
+   * Zero-bounds-check loop: caller guarantees `(ChunkSize - out.pos) >= text.length * 6`,
+   * so even worst-case expansion (`"` -> `&quot;`, or 3 UTF-8 bytes per char) cannot overflow `out.buf`.
+   *
+   * One pass: each char is written (as a byte, an entity, or encoded to UTF-8) as it's read. (Scanning for the next
+   * escape and then copying the run in between, with String.getBytes, measured ~25% slower: most runs between
+   * escapes, e.g. in JavaScript in attributes, are a few chars, so each char was read twice plus a call per run.)
+   */
   private def escapeUnchecked(text: String, len: Int, out: XmlStream2.Out): Unit = {
     val buf = out.buf
     val actions = EscapeActions
     var p = out.pos
-    var runStart = 0
     var i = 0
-
     while (i < len) {
       val c = text.charAt(i)
-      val action = if (c < 128) actions(c) else ActionKeep
-      if (action != ActionKeep) {
-        val runLen = i - runStart
-        if (runLen == 1) {
-          buf(p) = text.charAt(runStart)
-          p += 1
-        } else if (runLen > 1) {
-          text.getChars(runStart, i, buf, p)
-          p += runLen
-        }
-
-        (action: @switch) match {
+      if (c < 128) {
+        (actions(c): @switch) match {
+          case ActionKeep =>
+            buf(p) = c.toByte
+            p += 1
           case ActionAmp =>
             buf(p) = '&'; buf(p + 1) = 'a'; buf(p + 2) = 'm'; buf(p + 3) = 'p'; buf(p + 4) = ';'
             p += 5
@@ -92,18 +83,13 @@ object XmlEscape {
             p += 6
           case _ => // ActionDrop
         }
-        runStart = i + 1
+      } else {
+        // Not ASCII: this char (or surrogate pair) encoded.
+        val end = if (Character.isHighSurrogate(c) && i + 1 < len) i + 2 else i + 1
+        p = XmlStream2.encodeUtf8(text, i, end, buf, p)
+        i = end - 1
       }
       i += 1
-    }
-
-    val tailLen = len - runStart
-    if (tailLen == 1) {
-      buf(p) = text.charAt(runStart)
-      p += 1
-    } else if (tailLen > 1) {
-      text.getChars(runStart, len, buf, p)
-      p += tailLen
     }
     out.pos = p
   }
@@ -125,31 +111,16 @@ object XmlEscape {
           var p = out.pos
           (action: @switch) match {
             case ActionAmp =>
-              buf(p) = '&';
-              buf(p + 1) = 'a';
-              buf(p + 2) = 'm';
-              buf(p + 3) = 'p';
-              buf(p + 4) = ';'
+              buf(p) = '&'; buf(p + 1) = 'a'; buf(p + 2) = 'm'; buf(p + 3) = 'p'; buf(p + 4) = ';'
               p += 5
             case ActionLt =>
-              buf(p) = '&';
-              buf(p + 1) = 'l';
-              buf(p + 2) = 't';
-              buf(p + 3) = ';'
+              buf(p) = '&'; buf(p + 1) = 'l'; buf(p + 2) = 't'; buf(p + 3) = ';'
               p += 4
             case ActionGt =>
-              buf(p) = '&';
-              buf(p + 1) = 'g';
-              buf(p + 2) = 't';
-              buf(p + 3) = ';'
+              buf(p) = '&'; buf(p + 1) = 'g'; buf(p + 2) = 't'; buf(p + 3) = ';'
               p += 4
             case ActionQuot =>
-              buf(p) = '&';
-              buf(p + 1) = 'q';
-              buf(p + 2) = 'u';
-              buf(p + 3) = 'o';
-              buf(p + 4) = 't';
-              buf(p + 5) = ';'
+              buf(p) = '&'; buf(p + 1) = 'q'; buf(p + 2) = 'u'; buf(p + 3) = 'o'; buf(p + 4) = 't'; buf(p + 5) = ';'
               p += 6
             case _ =>
           }

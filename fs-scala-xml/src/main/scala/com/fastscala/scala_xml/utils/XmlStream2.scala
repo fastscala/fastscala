@@ -1,11 +1,23 @@
 package com.fastscala.scala_xml.utils
 
-import java.io.Writer
+import org.eclipse.jetty.io.Content
+import org.eclipse.jetty.util.Blocker
+
+import java.nio.ByteBuffer
 import java.util.Arrays
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.IndexedSeq
 import scala.xml.*
 
+/**
+ * Writes XML, as `Node.toString` would (attributes of an [[ElemOptimized]] in its own order), encoded in UTF-8,
+ * straight into a Jetty [[Content.Sink]] (e.g. a Response): no String, char[] or encoder in between.
+ *
+ * Output goes into one fixed `byte[]` of [[ChunkSize]] bytes (see [[Out]]), written to the sink each time it fills
+ * up; the last chunk is written with `last = true`, so the content ends with it (a page that fits in one chunk is a
+ * single write). Each write blocks until the sink has taken it. Most of a page is ASCII (Java stores it as Latin-1
+ * bytes): ASCII runs are copied as they are, in bulk; anything else is encoded to UTF-8 char by char.
+ */
 object XmlStream2 {
 
   val ChunkSize = 8192
@@ -18,16 +30,19 @@ object XmlStream2 {
   /** The level is a single node (writeNode's root, or a Node used as its own child seq): nodesStack holds the node. */
   private final val SingleNodeCursor = -3
 
+  /** Strings (and runs) up to this long are copied char by char: for a few bytes, a String.getBytes call costs more. */
+  private final val ShortString = 32
+
   private val cachedOut = new ThreadLocal[Out]
 
-  private def acquireOut(w: Writer): Out = {
+  private def acquireOut(sink: Content.Sink): Out = {
     val out = cachedOut.get()
     if (out ne null) {
       cachedOut.set(null)
-      out.init(w)
+      out.init(sink)
       out
     } else {
-      new Out(w)
+      new Out(sink)
     }
   }
 
@@ -36,31 +51,91 @@ object XmlStream2 {
     cachedOut.set(out)
   }
 
-  def writeSeq(ns: NodeSeq, w: Writer): Unit = {
-    val out = acquireOut(w)
+  /** Writes `prefix` (e.g. a doctype; it isn't escaped) and then `ns`, and ends the sink's content. */
+  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String = ""): Unit = {
+    val out = acquireOut(sink)
     try {
+      out.append(prefix)
       out.pushSeq(ns, TopScope, null)
       writeAll(out)
-      out.flush()
+      out.finish()
     } finally {
       releaseOut(out)
     }
   }
 
-  def writeNode(n: Node, w: Writer): Unit = {
-    val out = acquireOut(w)
+  /** Writes `n`, and ends the sink's content. */
+  def writeNode(n: Node, sink: Content.Sink): Unit = {
+    val out = acquireOut(sink)
     try {
       out.pushSingle(n, TopScope)
       writeAll(out)
-      out.flush()
+      out.finish()
     } finally {
       releaseOut(out)
     }
   }
 
-  private[utils] final class Out(private var w: Writer) extends StringBuilderLike {
-    val buf = new Array[Char](ChunkSize)
+  /**
+   * Encodes `s(from until to)` to UTF-8 into `buf` at `p`, returning the position after it. The caller guarantees
+   * room for 3 bytes per char (a surrogate pair is 4 bytes for 2 chars). A lone surrogate is written as `?`, as
+   * String.getBytes(UTF_8) and the JDK's UTF-8 encoder do.
+   */
+  private[utils] def encodeUtf8(s: String, from: Int, to: Int, buf: Array[Byte], pos: Int): Int = {
+    var p = pos
+    var i = from
+    while (i < to) {
+      val c = s.charAt(i)
+      if (c < 0x80) {
+        buf(p) = c.toByte
+        p += 1
+      } else if (c < 0x800) {
+        buf(p) = (0xC0 | (c >> 6)).toByte
+        buf(p + 1) = (0x80 | (c & 0x3F)).toByte
+        p += 2
+      } else if (Character.isSurrogate(c)) {
+        if (Character.isHighSurrogate(c) && i + 1 < to && Character.isLowSurrogate(s.charAt(i + 1))) {
+          val cp = Character.toCodePoint(c, s.charAt(i + 1))
+          buf(p) = (0xF0 | (cp >> 18)).toByte
+          buf(p + 1) = (0x80 | ((cp >> 12) & 0x3F)).toByte
+          buf(p + 2) = (0x80 | ((cp >> 6) & 0x3F)).toByte
+          buf(p + 3) = (0x80 | (cp & 0x3F)).toByte
+          p += 4
+          i += 1
+        } else {
+          buf(p) = '?'
+          p += 1
+        }
+      } else {
+        buf(p) = (0xE0 | (c >> 12)).toByte
+        buf(p + 1) = (0x80 | ((c >> 6) & 0x3F)).toByte
+        buf(p + 2) = (0x80 | (c & 0x3F)).toByte
+        p += 3
+      }
+      i += 1
+    }
+    p
+  }
+
+  /**
+   * Copies `s(from until to)`, which must be all ASCII, into `buf` at `p`: for a Latin-1 String this is an array copy
+   * of its bytes. (String.getBytes(int, int, byte[], int) keeps the low 8 bits of each char: deprecated, as that's
+   * only right for ASCII, which is all it's used for here.)
+   */
+  @nowarn("cat=deprecation")
+  private inline def copyAscii(s: String, from: Int, to: Int, buf: Array[Byte], p: Int): Unit =
+    s.getBytes(from, to, buf, p)
+
+  /**
+   * The output: a fixed `byte[]` of [[ChunkSize]] bytes, written to the sink (and reused) whenever it's full, and by
+   * [[finish]] at the end, with `last = true`. (`buf` and `pos` are public so the inline methods use them directly.)
+   */
+  private[utils] final class Out(private var sink: Content.Sink) {
+    val buf = new Array[Byte](ChunkSize)
     var pos = 0
+
+    /** Wraps `buf`, for the sink: its position and limit are set for each write. */
+    private val bufAsByteBuffer = ByteBuffer.wrap(buf)
 
     private var _scratch: StringBuilder = null
 
@@ -80,15 +155,15 @@ object XmlStream2 {
     var scopeStack = new Array[NamespaceBinding](64)
     var closingStack = new Array[Elem](64)
 
-    def init(writer: Writer): Unit = {
-      w = writer
+    def init(s: Content.Sink): Unit = {
+      sink = s
       pos = 0
       depth = 0
       maxDepthUsed = 0
     }
 
     def reset(): Unit = {
-      w = null
+      sink = null
       pos = 0
       depth = 0
       if (maxDepthUsed > 0) {
@@ -100,61 +175,107 @@ object XmlStream2 {
       if ((_scratch ne null) && _scratch.length > 0) _scratch.setLength(0)
     }
 
-    def flush(): Unit = if (pos > 0) {
-      w.write(buf, 0, pos)
+    /** Writes what's in the buffer (if anything), not ending the content. */
+    def flush(): Unit = if (pos > 0) write(last = false)
+
+    /** Writes what's in the buffer (even nothing) as the last content. */
+    def finish(): Unit = write(last = true)
+
+    /** Writes `buf(0 until pos)` to the sink, waiting until it's taken (then `buf` can be reused). */
+    private def write(last: Boolean): Unit = {
+      bufAsByteBuffer.limit(pos).position(0)
+      val callback = Blocker.callback()
+      try {
+        sink.write(last, bufAsByteBuffer, callback)
+        callback.block()
+      } finally callback.close()
       pos = 0
     }
 
+    /** An ASCII char (the markup's own: `<`, `>`, `/`, `=`, `"`, ` `, `:`). */
     inline def append(c: Char): Unit = {
       if (pos == ChunkSize) flush()
-      buf(pos) = c
+      buf(pos) = c.toByte
       pos += 1
     }
 
+    /** Two ASCII chars. */
     inline def append2(c1: Char, c2: Char): Unit = {
       if (pos + 2 > ChunkSize) flush()
       val p = pos
-      buf(p) = c1
-      buf(p + 1) = c2
+      buf(p) = c1.toByte
+      buf(p + 1) = c2.toByte
       pos = p + 2
     }
 
-    override def append(s: String): Unit = append(s, 0, s.length)
+    def append(s: String): Unit = append(s, 0, s.length)
 
-    override def append(s: String, from: Int, to: Int): Unit = {
+    /**
+     * `s(from until to)`, encoded in UTF-8. A short one (names: tags, attributes) is copied char by char as it's
+     * checked, in one pass (cheaper than a String.getBytes call for a few bytes); a longer one is checked, and then
+     * copied in bulk if it's all ASCII.
+     */
+    def append(s: String, from: Int, to: Int): Unit = {
       val n = to - from
-      if (n <= ChunkSize - pos) {
-        if (n > 0) {
-          s.getChars(from, to, buf, pos)
-          pos += n
+      if (n <= ShortString && n <= ChunkSize - pos) {
+        var p = pos
+        var i = from
+        while (i < to) {
+          val c = s.charAt(i)
+          if (c >= 0x80) { // not ASCII: the rest is encoded
+            pos = p
+            appendUtf8(s, i, to)
+            return
+          }
+          buf(p) = c.toByte
+          p += 1
+          i += 1
         }
-      } else if (n >= ChunkSize) {
-        flush()
-        w.write(s, from, n)
-      } else {
-        var start = from
-        while (start < to) {
-          if (pos == ChunkSize) flush()
-          val chunk = math.min(to - start, ChunkSize - pos)
-          s.getChars(start, start + chunk, buf, pos)
-          pos += chunk
-          start += chunk
-        }
+        pos = p
+      } else appendLong(s, from, to)
+    }
+
+    private def appendLong(s: String, from: Int, to: Int): Unit = {
+      var bits = 0
+      var i = from
+      while (i < to) {
+        bits |= s.charAt(i)
+        i += 1
+      }
+      if (bits < 0x80) appendAscii(s, from, to) else appendUtf8(s, from, to)
+    }
+
+    /** `s(from until to)`, all ASCII, in as few copies as the buffer allows. */
+    def appendAscii(s: String, from: Int, to: Int): Unit = {
+      var start = from
+      while (start < to) {
+        if (pos == ChunkSize) flush()
+        val chunk = math.min(to - start, ChunkSize - pos)
+        copyAscii(s, start, start + chunk, buf, pos)
+        pos += chunk
+        start += chunk
       }
     }
 
+    /** `s(from until to)`, encoded char by char (a few at a time, so a char's bytes are never split over two chunks). */
+    def appendUtf8(s: String, from: Int, to: Int): Unit = {
+      var start = from
+      while (start < to) {
+        if (ChunkSize - pos < 8) flush()
+        // As many chars as surely fit (3 bytes each); a surrogate pair isn't split: it's 4 bytes for 2 chars.
+        var end = math.min(to, start + (ChunkSize - pos) / 3)
+        if (end < to && Character.isHighSurrogate(s.charAt(end - 1))) end -= 1
+        if (end == start) end = math.min(to, start + 2)
+        pos = encodeUtf8(s, start, end, buf, pos)
+        start = end
+      }
+    }
+
+    /** What's in `scratch` (then cleared): for the rare nodes only scala-xml knows how to write. */
     def appendScratch(): Unit = {
       val sb = _scratch.underlying
-      val len = sb.length
-      if (len > 0) {
-        var start = 0
-        while (start < len) {
-          if (pos == ChunkSize) flush()
-          val chunk = math.min(len - start, ChunkSize - pos)
-          sb.getChars(start, start + chunk, buf, pos)
-          pos += chunk
-          start += chunk
-        }
+      if (sb.length > 0) {
+        append(sb.toString)
         sb.setLength(0)
       }
     }
@@ -293,7 +414,10 @@ object XmlStream2 {
               }
             } else {
               out.append('>')
-              out.pushSeq(children, e.scope, e)
+              if (spacedAtoms(children)) {
+                writeSpacedAtoms(children, e.scope, out)
+                writeClosingTag(e, out)
+              } else out.pushSeq(children, e.scope, e)
             }
 
           case t: Text if t.getClass eq classOf[Text] =>
@@ -311,6 +435,30 @@ object XmlStream2 {
           case other =>
             writeRareNode(other, levelScope, out)
         }
+      }
+    }
+  }
+
+  /**
+   * As toString (Utility.serialize): when all of an element's children are Atoms but not Text (e.g. several `{value}`s
+   * next to each other in a literal), they're written separated by spaces. Checked fully only when the first child is
+   * one, and there are several.
+   */
+  private def spacedAtoms(children: collection.Seq[Node]): Boolean =
+    isAtomNotText(children.head) && children.lengthCompare(1) > 0 && children.forall(isAtomNotText)
+
+  private def isAtomNotText(n: Node): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
+
+  /** Atoms (see [[spacedAtoms]]), separated by spaces. */
+  @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Out): Unit = {
+    var first = true
+    children.foreach { n =>
+      if (!first) out.append(' ')
+      first = false
+      n match {
+        case atom: Atom[?] if atom.getClass eq classOf[Atom[?]] => out.escape(atom.data.toString)
+        case u: Unparsed if u.getClass eq classOf[Unparsed] => out.append(u.data)
+        case other => writeRareNode(other, scope, out)
       }
     }
   }

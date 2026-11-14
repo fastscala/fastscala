@@ -164,7 +164,10 @@ object XmlStream {
                 writeClosingTag(e, out)
               } else {
                 out.append('>')
-                push(new Level(e.child, 0, e.scope, e))
+                if (spacedAtoms(e.child)) {
+                  writeSpacedAtoms(e.child, e.scope, out)
+                  writeClosingTag(e, out)
+                } else push(new Level(e.child, 0, e.scope, e))
               }
             }
 
@@ -189,6 +192,35 @@ object XmlStream {
             Utility.serialize(other, level.scope, out.scratch)
             out.appendScratch()
         }
+      }
+    }
+  }
+
+  /**
+   * As toString (Utility.serialize): when all of an element's children are Atoms but not Text (e.g. several `{value}`s
+   * next to each other in a literal), they're written separated by spaces. Checked fully only when the first child is
+   * one, and there are several.
+   */
+  private def spacedAtoms(children: collection.Seq[Node]): Boolean =
+    isAtomNotText(children.head) && children.lengthCompare(1) > 0 && children.forall(isAtomNotText)
+
+  private def isAtomNotText(n: Node): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
+
+  /** Atoms (see [[spacedAtoms]]), separated by spaces. */
+  private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Out): Unit = {
+    var first = true
+    children.foreach { n =>
+      if (!first) out.append(' ')
+      first = false
+      n match {
+        case atom: Atom[?] if isPlainText(atom) => out.escape(atom.data.toString)
+        case u: Unparsed if u.getClass eq classOf[Unparsed] => out.append(u.data)
+        case special: SpecialNode =>
+          special.buildString(out.scratch)
+          out.appendScratch()
+        case other =>
+          Utility.serialize(other, scope, out.scratch)
+          out.appendScratch()
       }
     }
   }

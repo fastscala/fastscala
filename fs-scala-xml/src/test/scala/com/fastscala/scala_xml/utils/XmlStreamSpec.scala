@@ -31,6 +31,11 @@ class XmlStreamSpec extends AnyFlatSpec {
     "several top-level nodes" -> (<b>1</b> ++ Text(" & ") ++ <i>2</i>),
     "groups, nested" -> <div>{Group(Seq(<b>g</b>, Group(Seq(Text("t"), <i/>))))}</div>,
     "namespaces" -> <a:x xmlns:a="urn:a"><a:y><z xmlns="urn:z"><w/></z></a:y></a:x>,
+    "only Atoms (not Text) as children: separated by spaces, as toString" -> <p>{"a"}{"b"}{42}{"c < d"}</p>,
+    "Atoms, Unparsed and PCData as the only children" -> <p>{"a"}{Unparsed("<u/>")}{PCData("c")}{1.5}</p>,
+    "Atoms with Text in between: not spaced" -> <p>{"a"}-{"b"}</p>,
+    "a single Atom child: no space" -> <p>{"only"}</p>,
+    "Atoms in a Group: not spaced" -> <p>{Group(Seq(new Atom("a"), new Atom("b")))}</p>,
     "siblings after a closed element" -> <ul><li>1</li><li><b>2</b></li><li>3</li></ul>,
   )
 

@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.utils.ElemWithJsInScript
 import org.owasp.encoder.Encode
 import org.scalatest.flatspec.AnyFlatSpec
 

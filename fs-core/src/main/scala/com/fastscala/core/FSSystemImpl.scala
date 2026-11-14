@@ -177,31 +177,55 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
               if (session.fsSystem.eventsEnableUseCallback) stats.event(StatEvent.USE_CALLBACK, additionalFields = Seq("func_name" -> fsFunc.fullPath))
 
               Content.Source.asStringAsync(req, Request.getCharset(req)).whenComplete((arg, failure) => {
-                val rslt: Js = Option(failure) match {
+                val execStart = System.currentTimeMillis()
+                val (rslt: Js, execTook) = Option(failure) match {
                   case Some(failure) =>
-                    handleCallbackException(failure)
+                    (handleCallbackException(failure), 0L)
                   case None =>
                     val start = System.currentTimeMillis()
                     try {
                       stats.callbacksInProcessing.inc()
                       logger.trace(s"Running callback${fsFunc.debugLbl.map(lbl => s" '$lbl'").getOrElse("")} on thread ${Thread.currentThread()}...")
                       val rslt = executeCallback(arg)
-                      logger.trace(s"Finished creating JS response in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()})")
-                      rslt
+                      val execTook = System.currentTimeMillis() - start
+                      logger.trace(s"Finished creating JS response in ${execTook}ms (thread ${Thread.currentThread()})")
+                      (rslt, execTook)
                     } catch {
                       case trowable =>
                         logger.trace(s"Finished with EXCEPTION in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}): $trowable")
-                        handleCallbackException(trowable)
+                        (handleCallbackException(trowable), System.currentTimeMillis() - start)
                     } finally {
                       stats.callbackTimeTotal.inc(io.prometheus.metrics.model.snapshots.Unit.millisToSeconds(System.currentTimeMillis() - start))
                       stats.callbacksInProcessing.dec()
                     }
                 }
-                // TODO: print only after the response finished. Use getContentBytesWritten to get the number of bytes written?
-                logger.trace(
-                  s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.lengthUtf8Enc}, response_size_human=${Bytes.humanReadableBytes(rslt.lengthUtf8Enc, true)}, evt_type=invk_func"
-                )
-                respondWithJs(rslt).respond(response, callback)
+                // Logged once the response is written: with the bytes actually written (not rslt.lengthUtf8Enc, which
+                // for a Js with HTML in it would serialize the HTML once more, just to count), and the time until then.
+                val writeStart = System.currentTimeMillis()
+                val responseCallback =
+                  if (!logger.underlying.isTraceEnabled) callback
+                  else new Callback.Nested(callback) {
+                    private def logInvocation(failure: Option[Throwable]): Unit = {
+                      val writeTook = System.currentTimeMillis() - writeStart
+                      val bytes = JettyServerResponse.getContentBytesWritten(response)
+                      logger.trace(
+                        s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, exec_ms=$execTook, write_ms=${writeTook}, " +
+                          s"response_size_bytes=$bytes, response_size_human=${Bytes.humanReadableBytes(bytes, true)}" +
+                          failure.map(t => s", response_failed=$t").getOrElse("") + ", evt_type=invk_func"
+                      )
+                    }
+
+                    override def succeeded(): Unit = {
+                      logInvocation(None)
+                      super.succeeded()
+                    }
+
+                    override def failed(x: Throwable): Unit = {
+                      logInvocation(Some(x))
+                      super.failed(x)
+                    }
+                  }
+                respondWithJs(rslt).respond(response, responseCallback)
               })
               VoidResponse
             }).getOrElse(respondWithJs(onCallbackNotFound(Missing.CallbackFunction, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = Some(page))))

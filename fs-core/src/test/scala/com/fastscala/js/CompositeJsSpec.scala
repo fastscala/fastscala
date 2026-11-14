@@ -185,4 +185,34 @@ class CompositeJsSpec extends AnyFlatSpec {
     }
     assert(parts(js) == Seq("f()"))
   }
+
+  // ---------- JsFunc ----------
+
+  "JsFunc0..3" should "be functions of the body, as JavaScript" in {
+    assert(new JsFunc0(Js("x()")).cmd == "function(){x()}")
+    assert(new JsFunc1(a => Js(s"f(${a.cmd})")).cmd == "function(arg1){f(arg1)}")
+    assert(new JsFunc2((a, b) => Js(s"f(${a.cmd}, ${b.cmd})")).cmd == "function(arg1, arg2){f(arg1, arg2)}")
+    assert(new JsFunc3((a, b, c) => Js(s"f(${a.cmd}, ${b.cmd}, ${c.cmd})")).cmd == "function(arg1, arg2, arg3){f(arg1, arg2, arg3)}")
+    assert(JsFunc1(a => Js(s"g(${a.cmd})")).cmd == "function(arg1){g(arg1)}") // (without `new`)
+  }
+
+  it should "call the body once (it can have side effects, e.g. registering a callback)" in {
+    var calls = 0
+    new JsFunc1(a => { calls += 1; a })
+    assert(calls == 1)
+    calls = 0
+    new JsFunc2((a, _) => { calls += 1; a })
+    assert(calls == 1)
+    calls = 0
+    new JsFunc3((a, _, _) => { calls += 1; a })
+    assert(calls == 1)
+  }
+
+  it should "still be subtypes of each other" in {
+    val f0: JsFunc1 = new JsFunc0(Js("x()"))
+    val f1: JsFunc2 = new JsFunc1(a => a)
+    val f2: JsFunc3 = new JsFunc2((a, _) => a)
+    val f3: CompositeJs = new JsFunc3((a, _, _) => a)
+    assert(Seq(f0, f1, f2, f3).forall(_.cmd.startsWith("function(")))
+  }
 }

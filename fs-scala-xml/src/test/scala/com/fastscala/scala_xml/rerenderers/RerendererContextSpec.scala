@@ -45,6 +45,6 @@ class RerendererContextSpec extends AnyFlatSpec {
 
 object RerendererContextSpec {
   // FSStats registers its metrics globally: a single FSSystem per JVM.
-  lazy val system: FSSystem = new FSSystem(appName = "rerenderer-context-spec")
+  lazy val system: FSSystem = new FSSystemImpl(appName = "rerenderer-context-spec")
   lazy val session: FSSession = new FSSession("rerenderer-context-spec-session", system)
 }

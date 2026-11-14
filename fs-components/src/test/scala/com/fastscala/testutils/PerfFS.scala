@@ -8,7 +8,7 @@ import com.fastscala.core.*
  */
 object PerfFS {
 
-  lazy val system: FSSystem = new FSSystem(appName = "perf-tests")
+  lazy val system: FSSystem = new FSSystemImpl(appName = "perf-tests")
   lazy val session: FSSession = new FSSession("perf-tests-session", system)
 
   private object NoImpl extends FSPageImpl[Unit] {

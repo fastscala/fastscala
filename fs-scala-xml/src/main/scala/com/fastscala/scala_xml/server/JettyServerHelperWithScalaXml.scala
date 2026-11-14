@@ -1,0 +1,11 @@
+package com.fastscala.scala_xml.server
+
+import com.fastscala.core.{FSSystem, FSSystemImpl}
+import com.fastscala.scala_xml.code.FSSystemWithScalaXmlImpl
+import com.fastscala.server.JettyServerHelper
+
+abstract class JettyServerHelperWithScalaXml extends JettyServerHelper {
+
+  override def buildFSSystem(): FSSystem = new FSSystemImpl(appName = appName)
+
+}

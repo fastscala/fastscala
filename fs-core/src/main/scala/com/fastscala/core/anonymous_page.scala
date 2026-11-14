@@ -27,13 +27,13 @@ import scala.util.chaining.scalaUtilChainingOps
 class FSAnonymousPage(
                        val id: String,
                        val session: FSSession,
-                       val render: FSContext => String,
+                       val render: FSContext => AnyRef,
                        val createdAt: Long = System.currentTimeMillis(),
                        var keepAliveAt: Long = System.currentTimeMillis(),
                        var debugLbl: Option[String] = None
                      ) extends FSSessionLike {
 
-  def renderAsString()(implicit fsc: FSContext): String = render(fsc)
+  def rendered()(implicit fsc: FSContext): AnyRef = render(fsc)
 
   def keepAlive(): Unit = {
     keepAliveAt = System.currentTimeMillis()

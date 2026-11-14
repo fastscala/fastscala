@@ -5,7 +5,7 @@ import com.fastscala.server.JettyServerHelper
 import org.eclipse.jetty.server.Handler
 import org.eclipse.jetty.server.handler.ContextHandler
 
-trait JettyServerHelperWithFSOptimizedResourceHandler extends JettyServerHelper {
+trait JettyServerHelperWithFSOptimizedResourceHandler extends com.fastscala.scala_xml.server.JettyServerHelperWithScalaXml {
 
   val jettyStaticFilesHandler = new FSOptimizedResourceHandler(resourceRoots)
 

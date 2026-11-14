@@ -1,6 +1,6 @@
 package com.fastscala.server
 
-import com.fastscala.core.FSSystem
+import com.fastscala.core.{FSSystem, FSSystemImpl}
 import com.fastscala.utils.Jetty12StatisticsCollector
 import com.fastscala.websockets.FSWebsocketJettyContextHandler
 import com.typesafe.config.ConfigFactory
@@ -22,7 +22,7 @@ abstract class JettyServerHelper extends LazyLogging {
 
   def appName: String
 
-  def buildFSSystem(): FSSystem = new FSSystem(appName = appName)
+  def buildFSSystem(): FSSystem = new FSSystemImpl(appName = appName)
 
   implicit lazy val fss: FSSystem = buildFSSystem()
 

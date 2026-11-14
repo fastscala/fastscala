@@ -3,10 +3,9 @@ package com.fastscala.routing.resp
 import com.fastscala.js.Js
 import org.eclipse.jetty.http.HttpHeader
 import org.eclipse.jetty.server.Response as JettyServerResponse
-import org.eclipse.jetty.util.Callback
+import org.eclipse.jetty.util.{BufferUtil, Callback}
 
 import java.io.OutputStream
-import java.nio.ByteBuffer
 import java.nio.file.{Files, Path}
 
 object Ok {
@@ -16,22 +15,48 @@ object Ok {
 
   def css(css: String) = new OkTextBased(css, "text/css;charset=utf-8")
 
-  def js(js: Js) = new Response {
-    val ContentType: String = "text/javascript;charset=utf-8"
+  private val JsContentType: String = "text/javascript;charset=utf-8"
 
+  /** JavaScript, with its Content-Length (computed first: see [[jsStreaming]] to skip that). */
+  def js(js: Js) = new Response {
     override def status: HttpStatus = HttpStatuses.OK
 
     override def respond(response: JettyServerResponse, callback: Callback): Boolean = {
       super.respond(response, callback)
       val responseHeaders = response.getHeaders
-      responseHeaders.put(HttpHeader.CONTENT_TYPE, ContentType)
+      responseHeaders.put(HttpHeader.CONTENT_TYPE, JsContentType)
       // Known length: lets Jetty skip chunked transfer encoding.
       responseHeaders.put(HttpHeader.CONTENT_LENGTH, js.lengthUtf8Enc)
-      js.writeUtf8Enc(response, callback)
-      response.write(true, ByteBuffer.allocate(0), callback)
+      writeJs(js, response, callback)
       true
     }
   }
+
+  /**
+   * JavaScript, written as it's produced, without a Content-Length (so Jetty sends it chunked). Computing the length
+   * ([[Js.lengthUtf8Enc]], as [[js]] does) can cost as much as writing it: e.g. a Js with HTML in it (a rerender's)
+   * serializes and escapes the HTML once just to count its bytes, and then again to write it; here, only once.
+   */
+  def jsStreaming(js: Js) = new Response {
+    override def status: HttpStatus = HttpStatuses.OK
+
+    override def respond(response: JettyServerResponse, callback: Callback): Boolean = {
+      super.respond(response, callback)
+      response.getHeaders.put(HttpHeader.CONTENT_TYPE, JsContentType)
+      writeJs(js, response, callback)
+      true
+    }
+  }
+
+  /**
+   * Writes `js`, then ends the content (an empty last write), once it's all written; completes `callback` once, after
+   * that (or fails it, on the first failure).
+   */
+  private def writeJs(js: Js, response: JettyServerResponse, callback: Callback): Unit =
+    js.writeUtf8Enc(response, Callback.from(
+      () => response.write(true, BufferUtil.EMPTY_BUFFER, callback),
+      (t: Throwable) => callback.failed(t)
+    ))
 
   def utf8WithContentType(text: String, contentType: String, attachmentFileName: Option[String] = None) = {
     val _contentType = contentType

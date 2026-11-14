@@ -24,9 +24,12 @@ import scala.collection.convert.ImplicitConversions.`iterator asScala`
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsScala}
 import scala.util.chaining.scalaUtilChainingOps
 
-
-class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
-  extends RoutingHandlerNoSessionHelper with LazyLogging {
+/**
+ * The implementation of [[FSSystem]]: configured from `com.fastscala.core.*` (see reference.conf). Apps extend it to
+ * override the hooks, e.g. `new FSSystemImpl(appName = "my-app") { override def callbackClientSideBefore(...) = ... }`.
+ */
+class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats())
+  extends RoutingHandlerNoSessionHelper with FSSystem with LazyLogging {
 
   val config = ConfigFactory.load()
 
@@ -159,9 +162,9 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
           session.pages.get(pageId).map(implicit page => {
             stats.keepAliveInvocationsTotal.inc()
             page.autoKeepAliveAt = System.currentTimeMillis()
-            Ok.js(JS.void)
-          }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, session = Some(session), page = None)))
-        }).getOrElse(Ok.js(onKeepAliveNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, session = sessionOpt, page = None)))
+            respondWithJs(JS.void)
+          }).getOrElse(respondWithJs(onKeepAliveNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, session = Some(session), page = None)))
+        }).getOrElse(respondWithJs(onKeepAliveNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, session = sessionOpt, page = None)))
 
         // Callback invocation:
       case Post(FSPrefix, "cb", pageId, funcId) =>
@@ -197,12 +200,12 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                 logger.trace(
                   s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.lengthUtf8Enc}, evt_type=invk_func"
                 )
-                Ok.js(rslt).respond(response, callback)
+                respondWithJs(rslt).respond(response, callback)
               })
               VoidResponse
-            }).getOrElse(Ok.js(onCallbackNotFound(Missing.CallbackFunction, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = Some(page))))
-          }).getOrElse(Ok.js(onCallbackNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None)))
-        }).getOrElse(Ok.js(onCallbackNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = sessionOpt, page = None)))
+            }).getOrElse(respondWithJs(onCallbackNotFound(Missing.CallbackFunction, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = Some(page))))
+          }).getOrElse(respondWithJs(onCallbackNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None)))
+        }).getOrElse(respondWithJs(onCallbackNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = sessionOpt, page = None)))
 
       case Post(FSPrefix, "file-upload", pageId, funcId) =>
         sessionOpt.map(implicit session => {
@@ -257,15 +260,15 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
                         })
                       }
                   }
-                  Ok.js(rslt).respond(response, callback)
+                  respondWithJs(rslt).respond(response, callback)
                 })
                 VoidResponse
               } else {
-                Ok.js(JS.alert("Not multipart form data"))
+                respondWithJs(JS.alert("Not multipart form data"))
               }
-            }).getOrElse(Ok.js(onFileUploadNotFound(Missing.FileUploadFunction, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = Some(page))))
-          }).getOrElse(Ok.js(onFileUploadNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None)))
-        }).getOrElse(Ok.js(onFileUploadNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = sessionOpt, page = None)))
+            }).getOrElse(respondWithJs(onFileUploadNotFound(Missing.FileUploadFunction, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = Some(page))))
+          }).getOrElse(respondWithJs(onFileUploadNotFound(Missing.Page, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = Some(session), page = None)))
+        }).getOrElse(respondWithJs(onFileUploadNotFound(Missing.Session, sessionId = sessionIdOpt, pageId = pageId, functionId = funcId, session = sessionOpt, page = None)))
 
         // File downloads:
       case Get(FSPrefix, "file-download", pageId, funcId, _) =>
@@ -302,18 +305,22 @@ class FSSystem(val appName: String = "app", val stats: FSStats = new FSStats())
         sessionOpt.map(implicit session => {
           session.anonymousPages.get(anonymousPageId).map(implicit anonymousPage => {
             anonymousPage.keepAlive()
-            val nodeSeq = session.createPage(
-              implicit fsc => anonymousPage.renderAsString(),
+            val rendered = session.createPage(
+              implicit fsc => anonymousPage.rendered(),
               onPageUnload = () => {
                 anonymousPage.onPageUnload()
               },
               debugLbl = Some(s"page for anon page ${anonymousPage.debugLbl.getOrElse(s"with id ${anonymousPage.id}")}")
             )
-            Ok.html(nodeSeq)
+            respondWithAnonymousPage(rendered)
           }).getOrElse(onAnonymousPageNotFound(Missing.AnonPage, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = Some(session), page = None))
         }).getOrElse(onAnonymousPageNotFound(Missing.Session, sessionId = sessionIdOpt, anonPageId = anonymousPageId, session = sessionOpt, page = None))
     }
   }
+
+  def respondWithJs(js: Js): Response = Ok.jsStreaming(js)
+
+  def respondWithAnonymousPage(rendered: AnyRef): Response = Ok.html(rendered.toString)
 
   def executeKeepAlive()(implicit page: FSPage): Js = Js.Void
 

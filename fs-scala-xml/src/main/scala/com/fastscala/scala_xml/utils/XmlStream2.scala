@@ -16,17 +16,16 @@ object XmlStream2 {
 
   def writeSeq(ns: NodeSeq, w: Writer, pscope: NamespaceBinding = TopScope): Unit = {
     val out = new Out(w)
-    write(new Level(ns.iterator, pscope, null) :: Nil, out)
+    writeAll(ns, out)
     out.drain()
   }
 
   def writeNode(n: Node, w: Writer, pscope: NamespaceBinding = TopScope): Unit = {
     val out = new Out(w)
-    write(new Level(Iterator.single(n), pscope, null) :: Nil, out)
+    writeAll(Seq(n), out)
     out.drain()
   }
 
-  /** The buffer everything is written to, handed to `w` once it reaches [[ChunkSize]] chars. */
   private final class Out(w: Writer) {
     val sb = new StringBuilder(ChunkSize * 2)
     private var chars = new Array[Char](ChunkSize * 2)
@@ -44,96 +43,104 @@ object XmlStream2 {
     }
   }
 
-  /**
-   * Nodes still to write at one level of the tree: the children of an element (or of a Group, or the top-level
-   * nodes), the namespace scope they're written in, and the element to close once they're done (null if none).
-   */
-  private final class Level(val nodes: Iterator[Node], val scope: NamespaceBinding, val closing: Elem)
+  inline private def writeClosingTag(closing: Elem, sb: StringBuilder): Unit = {
+    sb.append("</")
+    val prefix = closing.prefix
+    if (prefix ne null) {
+      sb.append(prefix).append(':')
+    }
+    sb.append(closing.label).append('>')
+  }
 
-  /** Depth-first, in document order, with an explicit stack of levels, so it's tail recursive. */
-  @tailrec private def write(stack: List[Level], out: Out): Unit = stack match {
-    case Nil =>
-    case level :: rest if !level.nodes.hasNext =>
-      if (level.closing ne null) {
-        out.sb.append("</")
-        if (level.closing.prefix ne null) {
-          out.sb.append(level.closing.prefix)
-          out.sb.append(':')
-        }
-        out.sb.append(level.closing.label)
-        out.sb.append('>')
-        out.drainIfFull()
-      }
-      write(rest, out)
-    case level :: rest => level.nodes.next() match {
-      case e: Elem =>
-        val sb = out.sb
-        sb.append('<')
-        appendName(e.prefix, e.label, sb)
-        e match {
-          case fast: ElemOptimized =>
-            @tailrec def aux(rest: List[(String, String)] = fast.attrs): Unit = if (rest.nonEmpty) {
-              sb.append(' ').append(rest.head._1).append("=\"")
-              XmlEscape.escape(rest.head._2, sb.underlying)
-              sb.append('"')
-              aux(rest.tail)
-            }
+  private final class Level(val nodes: Seq[Node], var index: Int, val scope: NamespaceBinding, val closing: Elem) {
+    @inline def hasNext: Boolean = index < nodes.length
 
-            aux()
-          case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
-        }
-        if (e.scope != TopScope) e.scope.buildString(sb, level.scope)
-
-        // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
-        // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
-        if (e.child.isEmpty && e.minimizeEmpty) {
-          sb.append("/>")
-          out.drainIfFull()
-          write(stack, out)
-        } else {
-          if (e.child.isEmpty) {
-            sb.append('>')
-            sb.append("</")
-            if (e.prefix ne null) {
-              sb.append(e.prefix)
-              sb.append(':')
-            }
-            sb.append(e.label)
-            sb.append('>')
-            out.drainIfFull()
-            write(stack, out) // (not rest: this level's remaining siblings, and its closing tag, are still to write)
-          } else {
-            sb.append('>')
-            out.drainIfFull()
-            write(new Level(e.child.iterator, e.scope, e) :: stack, out)
-          }
-        }
-
-        // Exactly Text, or exactly Atom (what `{value}` in an XML literal becomes when value isn't a Node): both serialize
-        // as Utility.escape(data.toString). Subclasses (PCData, Unparsed, ...) override buildString, so they go below.
-      case atom: Atom[?] if isPlainText(atom) =>
-        XmlEscape.escape(atom.data.toString, out.sb.underlying)
-        out.drainIfFull()
-        write(stack, out)
-
-      case special: SpecialNode => // Text subclasses, Comment, PCData, Unparsed, EntityRef, ProcInstr
-        special.buildString(out.sb) // what Utility.serialize does for these, minus its own StringBuilder
-        out.drainIfFull()
-        write(stack, out)
-
-      case g: Group => // a Group is just a container of nodes
-        write(new Level(g.nodes.iterator, level.scope, null) :: stack, out)
-
-      case other => // any other Node subclass
-        out.sb.append(Utility.serialize(other, level.scope))
-        out.drainIfFull()
-        write(stack, out)
+    @inline def next(): Node = {
+      val n = nodes(index)
+      index += 1
+      n
     }
   }
 
-  // ---------- allocation-free equivalents of scala-xml's own serialization ----------
+  private def writeAll(rootNodes: Seq[Node], out: Out): Unit = {
+    // Pre-allocate a fixed-size stack array (e.g., depth 256 is usually plenty for XML)
+    val stack = new Array[Level](256)
+    var stackTop = -1
 
-  /** As Node.nameToString, which builds an interpolated String for every name. */
+    // Push initial level
+    stackTop = 0
+    stack(0) = new Level(rootNodes, 0, TopScope, null)
+
+    while (stackTop >= 0) {
+      val level = stack(stackTop)
+      if (!level.hasNext) {
+        if (level.closing ne null) {
+          writeClosingTag(level.closing, out.sb)
+          out.drainIfFull()
+        }
+        stackTop -= 1 // Pop level
+      } else {
+        level.next() match {
+          case e: Elem =>
+            val sb = out.sb
+            sb.append('<')
+            appendName(e.prefix, e.label, sb)
+            e match {
+              case fast: ElemOptimized =>
+                @tailrec def aux(remaining: List[(String, String)] = fast.attrs): Unit = remaining match {
+                  case (key, value) :: rest =>
+                    sb.append(' ').append(key).append("=\"")
+                    XmlEscape.escape(value, sb.underlying)
+                    sb.append('"')
+                    aux(rest)
+                  case _ =>
+                }
+
+                aux()
+              case _ => if (e.attributes ne null) appendAttributes(e.attributes, sb)
+            }
+            if (e.scope != TopScope) e.scope.buildString(sb, level.scope)
+
+            // Same rule as Utility.serialize with MinimizeMode.Default (i.e. Node.toString): only minimize elements written as
+            // `<x/>`. Otherwise an empty `<div></div>` would become `<div/>`, which HTML parses as an unclosed <div>.
+            if (e.child.isEmpty && e.minimizeEmpty) {
+              sb.append("/>")
+              out.drainIfFull()
+            } else {
+              if (e.child.isEmpty) {
+                sb.append('>')
+                writeClosingTag(e, sb)
+                out.drainIfFull()
+              } else {
+                sb.append('>')
+                out.drainIfFull()
+                // Push child level to mutable stack
+                stackTop += 1
+                stack(stackTop) = new Level(e.child, 0, e.scope, e)
+              }
+            }
+
+            // Exactly Text, or exactly Atom (what `{value}` in an XML literal becomes when value isn't a Node): both serialize
+            // as Utility.escape(data.toString). Subclasses (PCData, Unparsed, ...) override buildString, so they go below.
+          case atom: Atom[?] if isPlainText(atom) =>
+            XmlEscape.escape(atom.data.toString, out.sb.underlying)
+            out.drainIfFull()
+
+          case special: SpecialNode => // Text subclasses, Comment, PCData, Unparsed, EntityRef, ProcInstr
+            special.buildString(out.sb) // what Utility.serialize does for these, minus its own StringBuilder
+            out.drainIfFull()
+
+          case g: Group => // a Group is just a container of nodes
+            stackTop += 1
+            stack(stackTop) = new Level(g.nodes, 0, level.scope, null)
+          case other => // any other Node subclass
+            out.sb.append(Utility.serialize(other, level.scope))
+            out.drainIfFull()
+        }
+      }
+    }
+  }
+
   private inline def appendName(prefix: String, label: String, sb: StringBuilder): StringBuilder = {
     if (prefix ne null) sb.append(prefix).append(':')
     sb.append(label)

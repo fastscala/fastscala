@@ -54,6 +54,9 @@ object XmlEscape {
    * Zero-bounds-check loop: caller guarantees `(ChunkSize - out.pos) >= text.length * 6`,
    * so even worst-case expansion (`"` -> `&quot;`) cannot overflow `out.buf`.
    */
+  // (The scans test `c < 128` and then look the char up. Testing `c > '>'` first, to skip most chars with one
+  // comparison, measured ~35% slower on a page with a lot of JavaScript in attributes: that branch is mispredicted
+  // whenever letters and digits / punctuation alternate, while `c < 128` is almost always true.)
   private def escapeUnchecked(text: String, len: Int, out: XmlStream2.Out): Unit = {
     val buf = out.buf
     val actions = EscapeActions
@@ -76,31 +79,16 @@ object XmlEscape {
 
         (action: @switch) match {
           case ActionAmp =>
-            buf(p) = '&';
-            buf(p + 1) = 'a';
-            buf(p + 2) = 'm';
-            buf(p + 3) = 'p';
-            buf(p + 4) = ';'
+            buf(p) = '&'; buf(p + 1) = 'a'; buf(p + 2) = 'm'; buf(p + 3) = 'p'; buf(p + 4) = ';'
             p += 5
           case ActionLt =>
-            buf(p) = '&';
-            buf(p + 1) = 'l';
-            buf(p + 2) = 't';
-            buf(p + 3) = ';'
+            buf(p) = '&'; buf(p + 1) = 'l'; buf(p + 2) = 't'; buf(p + 3) = ';'
             p += 4
           case ActionGt =>
-            buf(p) = '&';
-            buf(p + 1) = 'g';
-            buf(p + 2) = 't';
-            buf(p + 3) = ';'
+            buf(p) = '&'; buf(p + 1) = 'g'; buf(p + 2) = 't'; buf(p + 3) = ';'
             p += 4
           case ActionQuot =>
-            buf(p) = '&';
-            buf(p + 1) = 'q';
-            buf(p + 2) = 'u';
-            buf(p + 3) = 'o';
-            buf(p + 4) = 't';
-            buf(p + 5) = ';'
+            buf(p) = '&'; buf(p + 1) = 'q'; buf(p + 2) = 'u'; buf(p + 3) = 'o'; buf(p + 4) = 't'; buf(p + 5) = ';'
             p += 6
           case _ => // ActionDrop
         }

@@ -10,6 +10,14 @@ object XmlStream2 {
 
   val ChunkSize = 8192
 
+  // The special values of Out.indexStack (a value >= 0 is the cursor into an indexed seq):
+  /** The level's nodes are a non-empty `::` (List), read head by head: nodesStack holds the remaining list. */
+  private final val ListCursor = -1
+  /** The level's nodes are read with an Iterator (any other kind of seq): nodesStack holds the iterator. */
+  private final val IteratorCursor = -2
+  /** The level is a single node (writeNode's root, or a Node used as its own child seq): nodesStack holds the node. */
+  private final val SingleNodeCursor = -3
+
   private val cachedOut = new ThreadLocal[Out]
 
   private def acquireOut(w: Writer): Out = {
@@ -62,15 +70,13 @@ object XmlStream2 {
     }
 
     // Parallel stack arrays: zero Level object allocations, O(N) for both IndexedSeq and List.
-    // indexStack encoding:
-    //   >= 0 : IndexedSeq cursor
-    //   -1   : non-empty ::[Node] (head/tail mode)
-    //   -2   : Iterator[Node] fallback
-    //   -3   : single root Node (avoids Seq(n) allocation in writeNode)
+    // indexStack: >= 0, the cursor into an indexed seq; or ListCursor, IteratorCursor or SingleNodeCursor.
     var depth = 0
     var maxDepthUsed = 0
     var nodesStack = new Array[AnyRef](64)
     var indexStack = new Array[Int](64)
+    /** For an indexed level: its length (read once, instead of calling length through the Seq interface per node). */
+    var lengthStack = new Array[Int](64)
     var scopeStack = new Array[NamespaceBinding](64)
     var closingStack = new Array[Elem](64)
 
@@ -157,7 +163,7 @@ object XmlStream2 {
 
     def pushSingle(n: Node, scope: NamespaceBinding): Unit = {
       nodesStack(0) = n
-      indexStack(0) = -3
+      indexStack(0) = SingleNodeCursor
       scopeStack(0) = scope
       closingStack(0) = null
       depth = 1
@@ -167,20 +173,7 @@ object XmlStream2 {
     def pushSeq(nodes: collection.Seq[Node], scope: NamespaceBinding, closing: Elem): Unit = {
       val d = depth
       if (d == nodesStack.length) growStacks()
-      nodes match {
-        case iseq: IndexedSeq[Node] =>
-          nodesStack(d) = iseq
-          indexStack(d) = 0
-        case cons: ::[Node] =>
-          nodesStack(d) = cons
-          indexStack(d) = -1
-        case Nil =>
-          nodesStack(d) = IndexedSeq.empty
-          indexStack(d) = 0
-        case other =>
-          nodesStack(d) = other.iterator
-          indexStack(d) = -2
-      }
+      setLevel(d, nodes)
       scopeStack(d) = scope
       closingStack(d) = closing
       val nextDepth = d + 1
@@ -188,10 +181,36 @@ object XmlStream2 {
       if (nextDepth > maxDepthUsed) maxDepthUsed = nextDepth
     }
 
+    /**
+     * Sets level `d` to read `nodes`, in the cheapest way for its kind. A Node is the NodeSeq of just itself (common:
+     * e.g. an element's single child); any other NodeSeq is a wrapper, so its underlying seq is classified instead.
+     */
+    @tailrec private def setLevel(d: Int, nodes: collection.Seq[Node]): Unit = nodes match {
+      case node: Node =>
+        nodesStack(d) = node
+        indexStack(d) = SingleNodeCursor
+      case iseq: collection.IndexedSeq[Node] =>
+        nodesStack(d) = iseq
+        indexStack(d) = 0
+        lengthStack(d) = iseq.length
+      case ns: NodeSeq => setLevel(d, ns.theSeq)
+      case cons: ::[Node] =>
+        nodesStack(d) = cons
+        indexStack(d) = ListCursor
+      case Nil =>
+        nodesStack(d) = IndexedSeq.empty
+        indexStack(d) = 0
+        lengthStack(d) = 0
+      case other =>
+        nodesStack(d) = other.iterator
+        indexStack(d) = IteratorCursor
+    }
+
     private def growStacks(): Unit = {
       val newCap = nodesStack.length * 2
       nodesStack = Arrays.copyOf(nodesStack, newCap)
       indexStack = Arrays.copyOf(indexStack, newCap)
+      lengthStack = Arrays.copyOf(lengthStack, newCap)
       scopeStack = Arrays.copyOf(scopeStack, newCap)
       closingStack = Arrays.copyOf(closingStack, newCap)
     }
@@ -210,28 +229,29 @@ object XmlStream2 {
       var nextNode: Node = null
 
       if (idx >= 0) {
-        val seq = out.nodesStack(d).asInstanceOf[IndexedSeq[Node]]
-        if (idx < seq.length) {
+        if (idx < out.lengthStack(d)) {
           out.indexStack(d) = idx + 1
-          nextNode = seq(idx)
+          nextNode = out.nodesStack(d).asInstanceOf[collection.IndexedSeq[Node]](idx)
         }
-      } else if (idx == -1) {
+      } else if (idx == ListCursor) {
         val cons = out.nodesStack(d).asInstanceOf[::[Node]]
         nextNode = cons.head
         val tail = cons.tail
         if (tail.isEmpty) {
           out.nodesStack(d) = IndexedSeq.empty
           out.indexStack(d) = 0
+          out.lengthStack(d) = 0
         } else {
           out.nodesStack(d) = tail
         }
-      } else if (idx == -2) {
+      } else if (idx == IteratorCursor) {
         val it = out.nodesStack(d).asInstanceOf[Iterator[Node]]
         if (it.hasNext) nextNode = it.next()
-      } else { // idx == -3 (single root node)
+      } else { // SingleNodeCursor
         nextNode = out.nodesStack(d).asInstanceOf[Node]
         out.nodesStack(d) = IndexedSeq.empty
         out.indexStack(d) = 0
+        out.lengthStack(d) = 0
       }
 
       if (nextNode eq null) {

@@ -186,7 +186,7 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
                       stats.callbacksInProcessing.inc()
                       logger.trace(s"Running callback${fsFunc.debugLbl.map(lbl => s" '$lbl'").getOrElse("")} on thread ${Thread.currentThread()}...")
                       val rslt = executeCallback(arg)
-                      logger.trace(s"Finished in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()}) with result JS with ${Bytes.humanReadableBytes(rslt.lengthUtf8Enc, true)}")
+                      logger.trace(s"Finished creating JS response in ${System.currentTimeMillis() - start}ms (thread ${Thread.currentThread()})")
                       rslt
                     } catch {
                       case trowable =>
@@ -197,8 +197,9 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
                       stats.callbacksInProcessing.dec()
                     }
                 }
+                // TODO: print only after the response finished. Use getContentBytesWritten to get the number of bytes written?
                 logger.trace(
-                  s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.lengthUtf8Enc}, evt_type=invk_func"
+                  s"Invoke func: session_id=${session.id}, page_id=$pageId, func_id=$funcId, took_ms=${System.currentTimeMillis() - start}, response_size_bytes=${rslt.lengthUtf8Enc}, response_size_human=${Bytes.humanReadableBytes(rslt.lengthUtf8Enc, true)}, evt_type=invk_func"
                 )
                 respondWithJs(rslt).respond(response, callback)
               })

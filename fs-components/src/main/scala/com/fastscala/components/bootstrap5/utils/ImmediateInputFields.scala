@@ -16,13 +16,19 @@ import scala.xml.{Elem, NodeSeq, Text}
  */
 object ImmediateInputFields {
 
-  private type Attrs = List[(String, String)]
+  private type Attrs = List[(String, ElemOptimized.AttrValue)]
 
   private val NoAttrs: Attrs = Nil
 
   /** Adds the attribute, unless `value` is null or empty (attrs are kept in reverse print order, so it's printed after the others). */
   extension (attrs: Attrs) {
     private inline def attr(name: String, value: String): Attrs = if ((value eq null) || value == "") attrs else (name -> value) :: attrs
+
+    /**
+     * Adds the attribute with `js` as its value, kept as a Js (XmlStream writes it part by part, without building its
+     * text), unless `js` is null or Js.Void. (Not `js.isVoid`: that builds the text.)
+     */
+    private inline def attr(name: String, js: Js): Attrs = if ((js eq null) || (js eq Js.Void)) attrs else (name -> js) :: attrs
   }
 
   /** An element without a closing tag (like `<input/>` in a literal). */
@@ -48,7 +54,7 @@ object ImmediateInputFields {
     val inputId = "input" + fsc.session.nextID()
     val submit = JS.withVarStmt("value", JS.checkboxIsChecked(inputId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, v => set(v.toBoolean))
-    }).cmd
+    }) // (a Js: kept as it is in the attribute)
     val input = empty("input", NoAttrs
       .attr("class", inputClass)
       .attr("style", inputStyle)
@@ -94,8 +100,10 @@ object ImmediateInputFields {
         else JS._true,
         _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
       )
-    }).cmd
-    val onkeypress = if (changeOnEnter) s"event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {${JS.blur(inputId).cmd}}" else null
+    }) // (a Js: kept as it is in the attribute)
+    val onkeypress: Js =
+      if (changeOnEnter) Js(Js("event = event || window.event; if ((event.keyCode ? event.keyCode : event.which) == 13) {"), JS.blur(inputId), Js("}"))
+      else null
     val onblur = if (btn.isEmpty) submit else null
 
     val inputNS = empty("input", NoAttrs
@@ -114,7 +122,7 @@ object ImmediateInputFields {
     if (btn.isDefined) ElemOptimized(
       label = "div",
       attrs = NoAttrs.attr("class", "input-group "),
-    )(Seq(inputNS, btn.get.addClass("input-group-text").onclick(Js(submit)).btn) *)
+    )(Seq(inputNS, btn.get.addClass("input-group-text").onclick(submit).btn) *)
     else inputNS
   }
 
@@ -139,16 +147,19 @@ object ImmediateInputFields {
 
     val submit = JS.withVarStmt("value", JS.elementValueById(inputId))(value => {
       Js(
-        s"""try {
-           |  window.clearTimeout(window.timeout$inputId);
-           |} catch(err) { }
-           |window.timeout$inputId = window.setTimeout(function () { """.stripMargin + JS._if(
+        Js(
+          s"""try {
+             |  window.clearTimeout(window.timeout$inputId);
+             |} catch(err) { }
+             |window.timeout$inputId = window.setTimeout(function () { """.stripMargin),
+        JS._if(
           if (ignoreUnchangedValue) value `_!=` JS.varOrElseUpdate(Js(s"window.currentValue$inputId"), JS.asJsStr(initialValue.toString))
           else JS._true,
           _then = onSubmitClientSide(value) & fsc.callback(value, str => set(str.toDouble))
-        ).cmd + s"}, $timeBeforeChangeMs);"
+        ),
+        Js(s"}, $timeBeforeChangeMs);")
       )
-    }).cmd
+    }) // (a Js: kept as it is in the attribute)
 
     empty("input", NoAttrs
       .attr("min", min.toString)
@@ -178,7 +189,7 @@ object ImmediateInputFields {
 
     val submit = JS.withVarStmt("value", JS.elementValueById(elemId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, idxStr => set(values(idxStr.toInt)))
-    }).cmd
+    }) // (a Js: kept as it is in the attribute)
 
     val selected = get()
     val options = values.zipWithIndex.map({ case (value, idx) =>
@@ -207,7 +218,7 @@ object ImmediateInputFields {
 
     val submit = JS.withVarStmt("value", JS.elementValueById(inputId))(value => {
       onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
-    }).cmd
+    }) // (a Js: kept as it is in the attribute)
 
     ElemOptimized(
       label = "textarea",

@@ -245,10 +245,10 @@ case class BSBtn(
   // ================================== RENDERING ==================================
 
   def btn(implicit fsc: FSContext): Elem = {
-    var attrs = ("class" -> cls) :: ("type" -> "button") :: additionalAttrs.toList
+    var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: ("type" -> "button") :: additionalAttrs.toList
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
-    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlStream writes it part by part)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
     ElemOptimized("button", attrs)(content *)
   }
@@ -256,10 +256,10 @@ case class BSBtn(
   def btnRerender(implicit fsc: FSContext): Js = JS.replace(id, btn)
 
   def span(implicit fsc: FSContext): Elem = {
-    var attrs = ("class" -> cls) :: additionalAttrs.toList
+    var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: additionalAttrs.toList
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
-    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlStream writes it part by part)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
     ElemOptimized("span", attrs)(content *)
   }
@@ -267,10 +267,10 @@ case class BSBtn(
   def spanRerender(implicit fsc: FSContext): Js = JS.replace(id, span)
 
   def btnLink(implicit fsc: FSContext): Elem = {
-    var attrs = ("class" -> cls) :: ("href" -> hrefOpt.getOrElse("javascript:void(0)")) :: additionalAttrs.toList
+    var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: ("href" -> hrefOpt.getOrElse("javascript:void(0)")) :: additionalAttrs.toList
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
-    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlStream writes it part by part)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
     ElemOptimized("a", attrs)(content *)
   }

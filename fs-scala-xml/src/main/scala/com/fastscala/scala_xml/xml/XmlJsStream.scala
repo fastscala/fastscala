@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.{CompositeJs, Js, JsWriter}
+import com.fastscala.scala_xml.js.NodeSeqJs
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
@@ -25,7 +26,8 @@ import scala.xml.*
  * a thread, and only a few chunks are kept (more only for a single node bigger than that, e.g. a huge text).
  *
  * JavaScript ([[writeJs]]) goes through the same stack as the XML (a level's items can be Nodes or Js), so it's written
- * iteratively, not recursively (as Js.writeUtf8Enc does): a [[CompositeJs]]'s children are a level; any other Js is written as its `cmd`, as it is (not escaped).
+ * iteratively, not recursively (as Js.writeUtf8Enc does): a [[CompositeJs]]'s children are a level, and so is a
+ * [[NodeSeqJs]]'s XML (written as XML, raw: it's its code); any other Js is written as its `cmd`, as it is (not escaped).
  */
 object XmlJsStream extends JsWriter {
 
@@ -585,12 +587,18 @@ object XmlJsStream extends JsWriter {
   }
 
   /**
-   * A Js: a [[CompositeJs]]'s children are pushed, as a level; any other is written as its `cmd` (for now: specific
-   * kinds can be written without building it).
+   * A Js:
+   *  - a [[CompositeJs]]'s children are pushed, as a level;
+   *  - a [[NodeSeqJs]]'s nodes are pushed, as a level of XML: its code is the XML as it is (as its writeUtf8Enc writes
+   *    it), in its own scope (TopScope, as its `cmd`, toString, does), whatever XML the Js is in;
+   *  - any other is written as its `cmd` (for now: specific kinds can be written without building it). That includes
+   *    an [[com.fastscala.js.EncJs]]: what's in it (e.g. a NodeSeqJs) is escaped by its cmd, never written raw here.
    */
   private def writeJsItem(js: Js, scope: NamespaceBinding, out: Out): Unit = js match {
     case composite: CompositeJs =>
       out.pushSeq(composite.children, scope, null)
+    case nodes: NodeSeqJs =>
+      out.pushSeq(nodes.ns, TopScope, null)
     case other =>
       out.append(other.cmd)
   }

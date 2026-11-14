@@ -12,7 +12,7 @@ import scala.xml.NodeSeq
  * true)`). Written by [[XmlJsStream]], without blocking, as a part of the content: the XML is never one String (only
  * [[cmd]] builds it).
  */
-class NodeSeqJs(ns: NodeSeq) extends Js {
+class NodeSeqJs(val ns: NodeSeq) extends Js {
   override def cmd: String = ns.toString
 
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit =

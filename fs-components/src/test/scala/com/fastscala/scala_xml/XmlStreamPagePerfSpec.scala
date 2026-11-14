@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.xml.XmlJsStream
 import com.fastscala.components.bootstrap5.alerts.SimpleAlert
 import com.fastscala.components.bootstrap5.form7.BSForm7Renderers
 import com.fastscala.components.bootstrap5.form7.layout.F7BSFormInputGroup
@@ -91,6 +92,19 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     outcome.foreach(t => throw t)
   }
 
+  /** Writes `js` with XmlJsStream (iteratively; EncJs's escaped in one pass), discarding the bytes: how many. */
+  private def countJsStream(js: Js): Long = {
+    var count = 0L
+    XmlJsStream.writeJs(js, new Content.Sink {
+      override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
+        count += bb.remaining()
+        bb.position(bb.limit())
+        cb.succeeded()
+      }
+    })
+    count
+  }
+
   /** Writes `js`, discarding the bytes: returns how many were written. */
   private def countJs(js: Js): Long = {
     var count = 0L
@@ -155,6 +169,18 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       assert(streamed.startsWith(s"""(document.getElementById("${JS.escapeStr(PageId)}") ? """), streamed.take(200))
       assert(streamed.endsWith(s"""console.error("Element with id ${JS.escapeStr(PageId)} not found"));"""), streamed.takeRight(200))
       assert(!streamed.contains("<html") && streamed.contains(JS.escapeStr("<html id=\"main-content\">")), "the page, escaped")
+      // And with XmlJsStream (escaping as it's written, in one pass): the same.
+      val viaStream = {
+        val bytes = new ByteArrayOutputStream()
+        XmlJsStream.writeJs(js, new Content.Sink {
+          override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
+            while (bb.hasRemaining) bytes.write(bb.get())
+            cb.succeeded()
+          }
+        })
+        bytes.toString(UTF_8)
+      }
+      assert(viaStream == streamed, "XmlJsStream's JS.replace differs from Js.writeUtf8Enc's")
     }
 
     // The start tags, as (label, attributes); the attributes' order isn't fixed, so they're compared as a Map.
@@ -245,12 +271,27 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       System.nanoTime() - t0
     }
 
+    (1 to WarmupIterations).foreach(_ => countJsStream(replaceJs(build(Sections).html)))
+    val streamFirstTimes = (1 to MeasuredIterations).map { _ =>
+      val page = build(Sections).html
+      val t0 = System.nanoTime()
+      countJsStream(replaceJs(page))
+      System.nanoTime() - t0
+    }
+    val streamAgainTimes = (1 to MeasuredIterations).map { _ =>
+      val t0 = System.nanoTime()
+      countJsStream(replaceJs(prebuilt))
+      System.nanoTime() - t0
+    }
+
     info(s"Page: $Sections sections; $callbacks callbacks; $chars chars of output; JS.replace: $jsBytes bytes")
     info(stats("Build (page, callbacks, modals)", buildTimes.result()))
     info(stats("Write (first, XmlJsStream)       ", writeTimes.result()))
     info(stats("Write again (XmlJsStream)        ", rewriteTimes))
     info(stats("JS.replace (first)             ", replaceFirstTimes))
     info(stats("JS.replace (again)             ", replaceAgainTimes))
+    info(stats("JS.replace, XmlJsStream (first)", streamFirstTimes))
+    info(stats("JS.replace, XmlJsStream (again)", streamAgainTimes))
   }
 
   it should "profile building it with async-profiler" in {

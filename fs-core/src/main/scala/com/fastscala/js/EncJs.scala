@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets
  * [[EncodedWriter]] (JavaScript) on an OutputStreamWriter (UTF-8) on the sink. So `js`'s code is never one String
  * (only [[cmd]] builds it). The sink's writes block until each is taken.
  */
-class EncJs(js: Js, inString: Boolean = false) extends Js {
+class EncJs(val js: Js, val inString: Boolean = false) extends Js {
 
   override def cmd: String = {
     if (inString) '"' + Encode.forJavaScript(js.cmd) + '"'

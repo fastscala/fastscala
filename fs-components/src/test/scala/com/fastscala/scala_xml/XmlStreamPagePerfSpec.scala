@@ -25,11 +25,17 @@ import com.fastscala.components.form7.{DefaultForm7, F7Field}
 import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.*
 import com.fastscala.js.Js
+import com.fastscala.scala_xml.js.JS
+import org.eclipse.jetty.io.Content
+import org.eclipse.jetty.util.Callback
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
 import com.fastscala.testutils.AttributeOrder.normalized
 import com.fastscala.testutils.XmlStreamWrite.{writtenNode, countWritten}
 import org.scalatest.flatspec.AnyFlatSpec
 
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time.LocalDate
 import scala.xml.*
 
@@ -71,6 +77,33 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     countWritten(page)
   }
 
+  /** The id of the page's `<html>`: what [[replaceJs]] replaces. */
+  private val PageId = "main-content"
+
+  /** The JavaScript a rerender of the whole page sends: replacing the `<html>` with `page` (escaped in a string). */
+  private def replaceJs(page: Elem): Js = JS.replace(PageId, page)
+
+  /** Writes `js` (as a response would: Js.writeUtf8Enc) into `sink`, checking it completed, successfully. */
+  private def writeJs(js: Js, sink: Content.Sink): Unit = {
+    var outcome: Option[Throwable] = null
+    js.writeUtf8Enc(sink, Callback.from(() => outcome = None, (t: Throwable) => outcome = Some(t)))
+    assert(outcome != null, "the Js's write wasn't completed")
+    outcome.foreach(t => throw t)
+  }
+
+  /** Writes `js`, discarding the bytes: returns how many were written. */
+  private def countJs(js: Js): Long = {
+    var count = 0L
+    writeJs(js, new Content.Sink {
+      override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
+        count += bb.remaining()
+        bb.position(bb.limit())
+        cb.succeeded()
+      }
+    })
+    count
+  }
+
   private def ms(nanos: Long): String = f"${nanos / 1e6}%.2f ms"
 
   private def stats(name: String, times: Seq[Long]): String = {
@@ -101,6 +134,28 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     val out = writtenNode(small.html)
     val same = normalized(out) == normalized(small.html.toString)
     assert(same, "XmlStream output differs from toString (attributes in any order)")
+
+    // JS.replace of the page (a rerender's response): streamed (written by XmlStream, escaped by EncJs as it's written),
+    // as cmd (which serializes with toString, so the attributes' order may differ: the lengths are compared).
+    {
+      val js = replaceJs(small.html)
+      val streamed = {
+        val bytes = new ByteArrayOutputStream()
+        writeJs(js, new Content.Sink {
+          override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
+            assert(!last, "a Js mustn't end the response")
+            while (bb.hasRemaining) bytes.write(bb.get())
+            cb.succeeded()
+          }
+        })
+        bytes.toString(UTF_8)
+      }
+      val cmd = js.cmd
+      assert(streamed.length == cmd.length && streamed.getBytes(UTF_8).length == cmd.getBytes(UTF_8).length, (streamed.length, cmd.length))
+      assert(streamed.startsWith(s"""(document.getElementById("${JS.escapeStr(PageId)}") ? """), streamed.take(200))
+      assert(streamed.endsWith(s"""console.error("Element with id ${JS.escapeStr(PageId)} not found"));"""), streamed.takeRight(200))
+      assert(!streamed.contains("<html") && streamed.contains(JS.escapeStr("<html id=\"main-content\">")), "the page, escaped")
+    }
 
     // The start tags, as (label, attributes); the attributes' order isn't fixed, so they're compared as a Map.
     val AttrRegex = """ ([\w-]+)="([^"]*)"""".r
@@ -173,10 +228,29 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       System.nanoTime() - t0
     }
 
-    info(s"Page: $Sections sections; $callbacks callbacks; $chars chars of output")
+    // JS.replace("main-content", page): building the Js and writing it all (the page written by XmlStream and escaped
+    // as it's written by EncJs), as a rerender of the whole page does. On fresh pages (as a rerender: the first write
+    // computes the class transforms), and on the already-written one.
+    (1 to WarmupIterations).foreach(_ => countJs(replaceJs(build(Sections).html)))
+    var jsBytes = 0L
+    val replaceFirstTimes = (1 to MeasuredIterations).map { _ =>
+      val page = build(Sections).html
+      val t0 = System.nanoTime()
+      jsBytes = countJs(replaceJs(page))
+      System.nanoTime() - t0
+    }
+    val replaceAgainTimes = (1 to MeasuredIterations).map { _ =>
+      val t0 = System.nanoTime()
+      countJs(replaceJs(prebuilt))
+      System.nanoTime() - t0
+    }
+
+    info(s"Page: $Sections sections; $callbacks callbacks; $chars chars of output; JS.replace: $jsBytes bytes")
     info(stats("Build (page, callbacks, modals)", buildTimes.result()))
     info(stats("Write (first, XmlStream)       ", writeTimes.result()))
     info(stats("Write again (XmlStream)        ", rewriteTimes))
+    info(stats("JS.replace (first)             ", replaceFirstTimes))
+    info(stats("JS.replace (again)             ", replaceAgainTimes))
   }
 
   it should "profile building it with async-profiler" in {
@@ -436,7 +510,7 @@ object XmlStreamPagePerfSpec {
     }
 
     val html =
-      <html>
+      <html id="main-content">
         <head><title>Big page</title></head>
         <body>{
           <div class="page">{

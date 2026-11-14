@@ -45,6 +45,14 @@ object XmlStream {
   private final val ResumeAtQueuedChunks = 1
 
   /**
+   * At most this many written chunks' buffers are kept for reuse: as many as can be in use at once otherwise (the
+   * queued ones and the one being written). More are only allocated while a single node bigger than that is written
+   * (serializing doesn't pause inside a node); once written, they're dropped (left to the GC), instead of being kept
+   * until the end of the response.
+   */
+  private final val MaxFreeBuffers = MaxQueuedChunks + 1
+
+  /**
    * Writes `prefix` (e.g. a doctype; it isn't escaped) and then `ns`, and ends the sink's content, without blocking:
    * returns at once (possibly having written everything, if the sink takes the writes at once), and completes
    * `callback` once, after the last write (or fails it, on the first failure: a write's, or serializing's).
@@ -253,7 +261,7 @@ object XmlStream {
       var resume = false
       lock.synchronized {
         writing = false
-        if (chunk.bytes.length == ChunkSize) freeBuffers.add(chunk.bytes)
+        if (chunk.bytes.length == ChunkSize && freeBuffers.size < MaxFreeBuffers) freeBuffers.add(chunk.bytes)
         if ((t ne null) && (failure eq null)) failure = t
         if ((failure eq null) && paused && queued.size <= ResumeAtQueuedChunks) {
           paused = false

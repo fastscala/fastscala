@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.scala_xml.xml
 
 import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
 import org.eclipse.jetty.io.Content

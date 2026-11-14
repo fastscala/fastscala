@@ -6,7 +6,7 @@ import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.components.form6.fields.*
 import com.fastscala.components.utils.ElemWithRandomId
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 

@@ -1,5 +1,6 @@
 package com.fastscala.scala_xml
 
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
 import com.fastscala.components.bootstrap5.alerts.SimpleAlert
 import com.fastscala.components.bootstrap5.form7.BSForm7Renderers
 import com.fastscala.components.bootstrap5.form7.layout.F7BSFormInputGroup

@@ -1,6 +1,6 @@
 package com.fastscala.scala_xml.js
 
-import com.fastscala.scala_xml.utils.NodeSeqInStringEscapedJs
+import com.fastscala.js.EncJs
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 import org.owasp.encoder.Encode
@@ -11,7 +11,14 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import scala.xml.*
 
-class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
+/**
+ * [[NodeSeqJs]] (a NodeSeq's XML, as JavaScript), and escaped for a string literal in an [[EncJs]] (as for innerHTML):
+ * both written as they're serialized, as a part of the content.
+ */
+class NodeSeqJsSpec extends AnyFlatSpec {
+
+  /** The NodeSeq's XML, escaped for a JS string literal (not quoted). */
+  private def escaped(ns: NodeSeq): EncJs = new EncJs(new NodeSeqJs(ns))
 
   /** A [[Content.Sink]] that collects everything written to it. */
   private class CapturingSink extends Content.Sink {
@@ -65,7 +72,8 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
   private def streamed(ns: NodeSeq): (String, Array[Byte], RecordingCallback) = {
     val sink = new CapturingSink
     val cb = new RecordingCallback
-    new NodeSeqInStringEscapedJs(ns).writeUtf8Enc(sink, cb)
+    escaped(ns).writeUtf8Enc(sink, cb)
+    assert(!sink.lastSeen, "a part of the content: it mustn't end it")
     (sink.asString, sink.bytes.toByteArray, cb)
   }
 
@@ -89,15 +97,15 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
 
   "cmd" should "be the NodeSeq's XML, escaped for a JS string" in {
     val ns = <p title="x">a 'b' "c"</p>
-    assert(new NodeSeqInStringEscapedJs(ns).cmd == Encode.forJavaScript(ns.toString()))
+    assert(escaped(ns).cmd == Encode.forJavaScript(ns.toString()))
   }
 
   it should "be empty for an empty NodeSeq" in {
-    assert(new NodeSeqInStringEscapedJs(NodeSeq.Empty).cmd == "")
+    assert(escaped(NodeSeq.Empty).cmd == "")
   }
 
   it should "not contain unescaped quotes, backslashes, newlines or '</script'" in {
-    val cmd = new NodeSeqInStringEscapedJs(<p a={"\""}>{"' \\ \n </script>"}</p>).cmd
+    val cmd = escaped(<p a={"\""}>{"' \\ \n </script>"}</p>).cmd
     assert(!cmd.matches("""(?s).*(?<!\\)["'].*"""))
     assert(!cmd.contains("\n"))
     assert(!cmd.toLowerCase.contains("</script"))
@@ -108,7 +116,7 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
   samples.foreach { case (name, ns) =>
     "writeUtf8Enc" should s"stream exactly what cmd returns ($name)" in {
       val (out, _, _) = streamed(ns)
-      assert(out == new NodeSeqInStringEscapedJs(ns).cmd)
+      assert(out == escaped(ns).cmd)
     }
   }
 
@@ -128,6 +136,32 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
     val ns = <p a={"\""}>{"' \\ \n </script> é"}</p>
     val (out, _, _) = streamed(ns)
     assert(unescapeJsString(out) == ns.toString())
+  }
+
+  // ---------- quoted, and NodeSeqJs itself ----------
+
+  "EncJs with inString" should "be the escaped XML in quotes, streamed as cmd" in {
+    samples.foreach { case (name, ns) =>
+      val js = new EncJs(new NodeSeqJs(ns), inString = true)
+      assert(js.cmd == "\"" + Encode.forJavaScript(ns.toString()) + "\"", name)
+      val sink = new CapturingSink
+      val cb = new RecordingCallback
+      js.writeUtf8Enc(sink, cb)
+      assert(sink.asString == js.cmd, name)
+      assert(cb.successes == 1 && cb.failure.isEmpty && !sink.lastSeen, name)
+    }
+  }
+
+  "NodeSeqJs" should "be the XML (as toString), streamed by XmlStream, not ending the content" in {
+    samples.foreach { case (name, ns) =>
+      val js = new NodeSeqJs(ns)
+      assert(js.cmd == ns.toString(), name)
+      val sink = new CapturingSink
+      val cb = new RecordingCallback
+      js.writeUtf8Enc(sink, cb)
+      assert(sink.asString == ns.toString(), name)
+      assert(cb.successes == 1 && cb.failure.isEmpty && !sink.lastSeen, name)
+    }
   }
 
   // ---------- composition ----------

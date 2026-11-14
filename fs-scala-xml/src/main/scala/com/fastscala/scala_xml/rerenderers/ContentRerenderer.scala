@@ -2,7 +2,7 @@ package com.fastscala.scala_xml.rerenderers
 
 import com.fastscala.core.*
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.*
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.*
 import com.fastscala.scala_xml.js.{JS, inScriptTag}
 import com.fastscala.scala_xml.rerenderers.RerendererDebugStatus.RichValue
 import com.fastscala.utils.IdGen

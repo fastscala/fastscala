@@ -199,7 +199,7 @@ object BSBtnPerfSpec {
 
   /** The previous implementations, with XML literals, for comparison. */
   val Literal: Map[String, BSBtn => FSContext => Elem] = {
-    import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+    import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
     Map(
       "btn" -> (b => implicit fsc => <button class={b.cls} id={b.id} type="button" style={b.styleOpt.orNull} title={b.titleOpt.orNull} onclick={b.onclickOpt.map(_(fsc).cmd).orNull}>{b.content}</button>.withAttrs(b.additionalAttrs *)),
       "span" -> (b => implicit fsc => <span class={b.cls} id={b.id} style={b.styleOpt.orNull} title={b.titleOpt.orNull} onclick={b.onclickOpt.map(_(fsc).cmd).orNull}>{b.content}</span>.withAttrs(b.additionalAttrs *)),

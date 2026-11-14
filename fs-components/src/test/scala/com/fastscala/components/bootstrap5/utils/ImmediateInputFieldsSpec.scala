@@ -205,7 +205,7 @@ object ImmediateInputFieldsSpec {
   object Literal {
 
     import com.fastscala.js.JsHelper.RichJs
-    import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+    import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
     import com.fastscala.utils.IdGen
 
     def checkbox(

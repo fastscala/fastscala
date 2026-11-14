@@ -3,7 +3,7 @@ package com.fastscala.scala_xml.testutils
 import java.util.regex.Pattern
 
 /**
- * For comparing XML output where attribute order doesn't matter: [[com.fastscala.scala_xml.utils.XmlStream]] writes an
+ * For comparing XML output where attribute order doesn't matter: [[com.fastscala.scala_xml.xml.XmlStream]] writes an
  * ElemOptimized's attributes in its own order, which can differ from toString's.
  */
 object AttributeOrder {

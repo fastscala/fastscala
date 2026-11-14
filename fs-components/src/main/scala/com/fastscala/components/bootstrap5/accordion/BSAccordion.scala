@@ -3,7 +3,7 @@ package com.fastscala.components.bootstrap5.accordion
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.utils.IdGen
 

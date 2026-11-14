@@ -1,6 +1,6 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.scala_xml.xml
 
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
 import com.fastscala.scala_xml.testutils.ElemUtilsV1
 import org.scalatest.flatspec.AnyFlatSpec
 

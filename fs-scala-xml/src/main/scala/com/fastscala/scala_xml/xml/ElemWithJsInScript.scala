@@ -1,8 +1,8 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.Js
 
-import scala.xml.{Elem, Null, TopScope, Unparsed, UnprefixedAttribute}
+import scala.xml.*
 
 /**
  * A `<script type="{scriptType}">` element wrapping `js` in a CDATA-commented block, which keeps a reference to the

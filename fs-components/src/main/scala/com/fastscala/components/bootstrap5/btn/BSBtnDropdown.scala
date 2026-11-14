@@ -2,8 +2,8 @@ package com.fastscala.components.bootstrap5.components
 
 import com.fastscala.core.FSContext
 import com.fastscala.components.bootstrap5.utils.BSBtn
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 
 import scala.xml.Elem
 

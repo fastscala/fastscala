@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.utils.ElemWithJsInScript
+import com.fastscala.scala_xml.xml.ElemWithJsInScript
 import org.owasp.encoder.Encode
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -164,7 +164,7 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   "htmlToElement" should "create a template with the given id and the escaped HTML" in {
     val html = <p class="a">"x" &amp; 'y'</p>
     val cmd = JS.htmlToElement(html, "tpl-id").cmd
-    assert(cmd.contains("""template.setAttribute("id", "tpl-id")"""))
+    assert(cmd.contains(s"""template.setAttribute("id", "${Encode.forJavaScript("tpl-id")}")""")) // (the id escaped too)
     assert(cmd.contains("\"" + Encode.forJavaScript(html.toString) + "\""))
     assert(!cmd.contains("<p")) // no raw HTML inside the JS string
     assert(cmd.endsWith(".content"))
@@ -173,9 +173,9 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   "append2Body" should "append to the body and remove the temporary template" in {
     val cmd = JS.append2Body(<p>x</p>).cmd
     assert(cmd.startsWith("document.body.appendChild("))
+    // (the template id is escaped, as a JavaScript string literal, in both: e.g. its '-' as \x2d)
     val templateId = """template.setAttribute\("id", "([^"]+)"\)""".r.findFirstMatchIn(cmd).get.group(1)
-    // (removeId escapes the id, as a JavaScript string literal: e.g. its '-' as \x2d)
-    assert(cmd.endsWith(s"""document.getElementById("${Encode.forJavaScript(templateId)}").remove();"""))
+    assert(cmd.endsWith(s"""document.getElementById("$templateId").remove();"""))
   }
 
   "append2" should "append to the element with the (escaped) id" in {

@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.routing.resp
 
 import com.fastscala.routing.resp.{HttpStatus, HttpStatuses, Response}
-import com.fastscala.scala_xml.utils.XmlStream
+import com.fastscala.scala_xml.xml.XmlStream
 import org.eclipse.jetty.http.HttpHeader
 import org.eclipse.jetty.server.Response as JettyServerResponse
 import org.eclipse.jetty.util.Callback

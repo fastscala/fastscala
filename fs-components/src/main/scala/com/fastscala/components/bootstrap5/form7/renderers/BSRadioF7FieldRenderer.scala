@@ -6,8 +6,8 @@ import com.fastscala.components.form7.fields.radio.F7RadioFieldBase
 import com.fastscala.components.form7.renderers.F7RadioFieldRenderer
 import com.fastscala.components.utils.Mutable
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
 

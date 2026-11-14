@@ -7,7 +7,7 @@ import com.fastscala.components.form7.fields.*
 import com.fastscala.components.form7.fields.submit.F7SubmitButtonField
 import com.fastscala.components.form7.mixins.F7FieldWithValidation
 import com.fastscala.components.form7.renderers.*
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.{Elem, NodeSeq}
 

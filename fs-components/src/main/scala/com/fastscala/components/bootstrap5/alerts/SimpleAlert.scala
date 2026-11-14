@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.alerts
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.rerenderers.Rerenderer
 

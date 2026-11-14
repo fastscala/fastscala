@@ -4,9 +4,9 @@ import com.fastscala.components.bootstrap5.helpers.{AttrEnrichableImmutable, Cla
 import com.fastscala.components.bootstrap5.utils.IcnFA.RichIcn
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.{RichElem, showIf}
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.{RichElem, showIf}
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemOptimized
+import com.fastscala.scala_xml.xml.ElemOptimized
 import com.fastscala.utils.IdGen
 
 import java.util.concurrent.atomic.AtomicBoolean

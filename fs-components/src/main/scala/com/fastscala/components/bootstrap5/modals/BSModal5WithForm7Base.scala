@@ -5,7 +5,7 @@ import com.fastscala.components.form7.{F7Field, Form7}
 import com.fastscala.components.form7.renderers.F7FormRenderer
 import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.FSContext
-import com.fastscala.scala_xml.ScalaXmlElemUtils
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils
 import com.fastscala.scala_xml.js.JS
 
 import scala.xml.NodeSeq

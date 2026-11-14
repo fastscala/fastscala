@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.utils
 
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
@@ -39,21 +39,28 @@ final class Utf8ToWriterSink(writer: Writer) extends Content.Sink {
         decode(bytes, endOfInput = last)
         if (bytes.hasRemaining) carry.put(bytes) // an incomplete sequence at the end: decoded with the next write
       }
-      if (last) {
-        if (carry.position() > 0) { // the content ended in the middle of a sequence: decoded as malformed
-          carry.flip()
-          decode(carry, endOfInput = true)
-        }
-        decoder.flush(chars)
-        drain()
-        decoder.reset()
-        carry.clear()
-        writer.flush()
-      }
+      if (last) finish()
       callback.succeeded()
     } catch {
       case t: Throwable => callback.failed(t)
     }
+
+  /**
+   * Ends the input: decodes what's left (an incomplete sequence, as malformed), and flushes the writer (never closing
+   * it). Done by the last write; call it when the content is written without one (e.g. a Js part of a response, whose
+   * writes never end the content). Then the sink can be written to again, as new content.
+   */
+  def finish(): Unit = {
+    // The end of the input (the decoder must be told before it's flushed): with what's left, if anything (the content
+    // ended in the middle of a sequence: decoded as malformed).
+    carry.flip()
+    decode(carry, endOfInput = true)
+    decoder.flush(chars)
+    drain()
+    decoder.reset()
+    carry.clear()
+    writer.flush()
+  }
 
   private def decode(in: ByteBuffer, endOfInput: Boolean): Unit = {
     var overflow = true

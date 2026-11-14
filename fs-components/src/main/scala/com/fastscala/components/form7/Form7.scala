@@ -6,7 +6,7 @@ import com.fastscala.components.form7.renderers.F7FormRenderer
 import com.fastscala.components.utils.ElemWithRandomId
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.scala_xml.utils.RenderableWithFSContext
 import com.fastscala.utils.Lazy

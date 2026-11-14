@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.scala_xml.xml
 
 import scala.annotation.switch
 
@@ -77,16 +77,31 @@ object XmlEscape {
             buf(p) = c.toByte
             p += 1
           case ActionAmp =>
-            buf(p) = '&'; buf(p + 1) = 'a'; buf(p + 2) = 'm'; buf(p + 3) = 'p'; buf(p + 4) = ';'
+            buf(p) = '&';
+            buf(p + 1) = 'a';
+            buf(p + 2) = 'm';
+            buf(p + 3) = 'p';
+            buf(p + 4) = ';'
             p += 5
           case ActionLt =>
-            buf(p) = '&'; buf(p + 1) = 'l'; buf(p + 2) = 't'; buf(p + 3) = ';'
+            buf(p) = '&';
+            buf(p + 1) = 'l';
+            buf(p + 2) = 't';
+            buf(p + 3) = ';'
             p += 4
           case ActionGt =>
-            buf(p) = '&'; buf(p + 1) = 'g'; buf(p + 2) = 't'; buf(p + 3) = ';'
+            buf(p) = '&';
+            buf(p + 1) = 'g';
+            buf(p + 2) = 't';
+            buf(p + 3) = ';'
             p += 4
           case ActionQuot =>
-            buf(p) = '&'; buf(p + 1) = 'q'; buf(p + 2) = 'u'; buf(p + 3) = 'o'; buf(p + 4) = 't'; buf(p + 5) = ';'
+            buf(p) = '&';
+            buf(p + 1) = 'q';
+            buf(p + 2) = 'u';
+            buf(p + 3) = 'o';
+            buf(p + 4) = 't';
+            buf(p + 5) = ';'
             p += 6
           case _ => // ActionDrop
         }
@@ -94,7 +109,9 @@ object XmlEscape {
         // Its low surrogate may come after chars that are dropped: they're removed by the escaping, before the UTF-8
         // encoding (as toString's output is encoded), so then it's a pair. Otherwise it's a lone surrogate: '?'.
         var j = i + 1
-        while (j < len && { val d = text.charAt(j); d < 128 && actions(d) == ActionDrop }) j += 1
+        while (j < len && {
+          val d = text.charAt(j); d < 128 && actions(d) == ActionDrop
+        }) j += 1
         if (j < len && Character.isLowSurrogate(text.charAt(j))) {
           val cp = Character.toCodePoint(c, text.charAt(j))
           buf(p) = (0xF0 | (cp >> 18)).toByte

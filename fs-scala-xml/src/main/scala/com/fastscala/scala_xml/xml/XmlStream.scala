@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.Js
 import org.eclipse.jetty.io.Content
@@ -58,8 +58,16 @@ object XmlStream {
    * returns at once (possibly having written everything, if the sink takes the writes at once), and completes
    * `callback` once, after the last write (or fails it, on the first failure: a write's, or serializing's).
    */
-  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String, callback: Callback): Unit = {
-    val out = new Out(sink, callback)
+  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String, callback: Callback): Unit =
+    writeSeq(ns, sink, prefix, callback, endContent = true)
+
+  /**
+   * As the other [[writeSeq]], but the last write ends the sink's content only if `endContent`: with false, the XML is
+   * a part of the content (e.g. JavaScript with the XML in it, written to a response), so the last write is an ordinary
+   * one (and `callback` is still completed after it).
+   */
+  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String, callback: Callback, endContent: Boolean): Unit = {
+    val out = new Out(sink, callback, endContent)
     try {
       out.append(prefix)
       out.pushSeq(ns, TopScope, null)
@@ -71,7 +79,7 @@ object XmlStream {
 
   /** As [[writeSeq]], for one node. */
   def writeNode(n: Node, sink: Content.Sink, callback: Callback): Unit = {
-    val out = new Out(sink, callback)
+    val out = new Out(sink, callback, endContent = true)
     out.pushSingle(n, TopScope)
     out.drive()
   }
@@ -96,7 +104,7 @@ object XmlStream {
    * room for 3 bytes per char (a surrogate pair is 4 bytes for 2 chars). A lone surrogate is written as `?`, as
    * String.getBytes(UTF_8) and the JDK's UTF-8 encoder do.
    */
-  private[utils] def encodeUtf8(s: String, from: Int, to: Int, buf: Array[Byte], pos: Int): Int = {
+  private[xml] def encodeUtf8(s: String, from: Int, to: Int, buf: Array[Byte], pos: Int): Int = {
     var p = pos
     var i = from
     while (i < to) {
@@ -142,7 +150,7 @@ object XmlStream {
     s.getBytes(from, to, buf, p)
 
   /** A filled chunk, waiting to be written (or being written). */
-  private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean)
+  private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean, val endsContent: Boolean)
 
   /**
    * The output, and the state of one write. Serializing fills `buf` (a `byte[]` of [[ChunkSize]] bytes); when it's
@@ -154,7 +162,7 @@ object XmlStream {
    * failure) is shared with the writes' callbacks, so it is (with `lock`). (`buf` and `pos` are public so the inline
    * methods use them directly.)
    */
-  private[utils] final class Out(sink: Content.Sink, callback: Callback) {
+  private[xml] final class Out(sink: Content.Sink, callback: Callback, endContent: Boolean) {
     var buf = new Array[Byte](ChunkSize)
     var pos = 0
 
@@ -207,8 +215,9 @@ object XmlStream {
     /** Queues what's in the buffer (even nothing) as the last content. */
     def finish(): Unit = queue(last = true)
 
+    /** (`last`: the last chunk, after which the callback is completed; it ends the sink's content if `endContent`.) */
     private def queue(last: Boolean): Unit = {
-      val chunk = new Chunk(buf, pos, last)
+      val chunk = new Chunk(buf, pos, last, endsContent = last && endContent)
       lock.synchronized {
         queued.add(chunk)
         if (!last) {
@@ -245,7 +254,7 @@ object XmlStream {
       }
       if (next ne null) {
         val chunk = next
-        sink.write(chunk.last, ByteBuffer.wrap(chunk.bytes, 0, chunk.length), new Callback {
+        sink.write(chunk.endsContent, ByteBuffer.wrap(chunk.bytes, 0, chunk.length), new Callback {
           override def succeeded(): Unit = written(chunk, null)
 
           override def failed(t: Throwable): Unit = written(chunk, t)

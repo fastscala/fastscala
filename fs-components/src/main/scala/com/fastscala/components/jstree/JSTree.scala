@@ -4,7 +4,7 @@ import com.fastscala.components.jstree.config.{Core, Data, JSTreeConfig, Themes}
 import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.core.FSContext
 import com.fastscala.js.{Js, JsFunc2}
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromElems
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromElems
 import com.fastscala.scala_xml.fsc.anonymousPageURLScalaXml
 import com.fastscala.scala_xml.js.{JS, inScriptTag, printBeforeExec}
 import org.eclipse.jetty.server.Request

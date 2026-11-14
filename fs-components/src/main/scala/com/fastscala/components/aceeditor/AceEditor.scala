@@ -5,7 +5,7 @@ import com.fastscala.components.utils.{ElemWithId, ElemWithRandomId}
 import com.fastscala.core.FSContext
 import com.fastscala.core.circe.CirceSupport.FSContextWithCirceSupport
 import com.fastscala.js.{Js, JsFunc0, JsFunc1}
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.{JS, print2Console, printBeforeExec}
 import com.fastscala.utils.Lazy
 

@@ -1,9 +1,8 @@
-package com.fastscala.scala_xml
+package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.ElemOptimized
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
@@ -12,7 +11,6 @@ import java.lang.reflect.Modifier
 import java.util.regex.Pattern
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.xml.*
-
 
 /**
  * The Elem attribute helpers (withAttr, addClass, withId, ...), building [[ElemOptimized]]: the attributes are kept as
@@ -123,7 +121,7 @@ trait ScalaXmlElemUtilsV1 extends Any {
 
   def apply(value: NodeSeq): Elem = elem.copy(child = value)
 
-  def apply(values: NodeSeq*): Elem = elem.copy(child = values.mkNS)
+  def apply(values: NodeSeq*): Elem = elem.copy(child = values.flatten)
 
   def apply(value: scala.xml.NodeBuffer): Elem = elem.copy(child = value)
 

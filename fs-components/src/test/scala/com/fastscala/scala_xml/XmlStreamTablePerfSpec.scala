@@ -1,5 +1,6 @@
 package com.fastscala.scala_xml
 
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
 import com.fastscala.components.bootstrap5.helpers.{BSClassesHelper, BSHelpers}
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions}
 import com.fastscala.testutils.AttributeOrder.normalized
@@ -15,7 +16,7 @@ import scala.xml.*
  * Run for each implementation of the attribute helpers, for comparison:
  *
  *  - V2: [[BSHelpers]] (which is on [[ScalaXmlElemUtilsV1]] too, with all its helpers)
- *  - V1: only the class helpers, on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.utils.ElemOptimized]])
+ *  - V1: only the class helpers, on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.xml.ElemOptimized]])
  *
  * The class transforms are computed when the attributes are read, so for implementations XmlStream has no fast path
  * for, the first render includes computing the final `class` attributes.

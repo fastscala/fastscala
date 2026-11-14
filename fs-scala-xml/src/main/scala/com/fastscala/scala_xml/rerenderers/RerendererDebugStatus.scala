@@ -3,7 +3,7 @@ package com.fastscala.scala_xml.rerenderers
 import com.fastscala.core.FSSessionVar
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.{JS, JsXmlUtils}
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 

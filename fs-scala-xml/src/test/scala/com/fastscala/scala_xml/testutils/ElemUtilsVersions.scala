@@ -1,6 +1,6 @@
 package com.fastscala.scala_xml.testutils
 
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
 
 import scala.xml.Elem
 

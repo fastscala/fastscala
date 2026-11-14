@@ -4,8 +4,8 @@ import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.components.utils.ElemWithRandomId
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 
 import scala.xml.NodeSeq
 

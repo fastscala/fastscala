@@ -5,7 +5,7 @@ import com.fastscala.routing.method.GET
 import com.fastscala.routing.req.{Get, Req}
 import com.fastscala.routing.resp.{ClientError, Ok, Response}
 import com.fastscala.server.*
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 import org.eclipse.jetty.server.{Request, Response as JettyServerResponse}
 import org.eclipse.jetty.util.{Callback, IO}
 

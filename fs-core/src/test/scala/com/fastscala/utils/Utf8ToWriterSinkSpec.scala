@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.utils
 
 import org.eclipse.jetty.util.Callback
 import org.scalatest.flatspec.AnyFlatSpec

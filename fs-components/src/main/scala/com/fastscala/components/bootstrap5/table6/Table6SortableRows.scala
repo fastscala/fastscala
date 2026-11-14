@@ -4,7 +4,7 @@ import com.fastscala.components.bootstrap5.helpers.BSHelpers.RichElemBootstrapCl
 import com.fastscala.components.bootstrap5.utils.{BSBtn, ImmediateInputFields}
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, inScriptTag}
 
 import scala.util.chaining.scalaUtilChainingOps

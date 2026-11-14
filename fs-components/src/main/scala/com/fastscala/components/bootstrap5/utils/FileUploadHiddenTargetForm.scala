@@ -2,7 +2,7 @@ package com.fastscala.components.bootstrap5.utils
 
 import com.fastscala.core.{FSContext, FSUploadedFile}
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils
 import com.fastscala.scala_xml.js.JS
 import com.fastscala.utils.IdGen
 import ScalaXmlElemUtils.RichElem

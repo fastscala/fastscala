@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml
+package com.fastscala.scala_xml.xml
 
 import scala.xml.{Elem, Node, NodeSeq, Unparsed}
 

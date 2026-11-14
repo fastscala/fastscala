@@ -1,7 +1,7 @@
 package com.fastscala.components.bootstrap5.helpers
 
-import com.fastscala.scala_xml.ScalaXmlElemUtilsV1
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 
 import scala.xml.Elem
 

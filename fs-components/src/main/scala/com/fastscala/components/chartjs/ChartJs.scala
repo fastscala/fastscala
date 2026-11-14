@@ -1,7 +1,7 @@
 package com.fastscala.components.chartjs
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils.RichElem
 import com.fastscala.scala_xml.js.{JS, printBeforeExec}
 import com.fastscala.utils.IdGen
 import io.circe.generic.semiauto

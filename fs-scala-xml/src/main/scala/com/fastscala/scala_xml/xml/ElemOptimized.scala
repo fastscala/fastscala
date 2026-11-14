@@ -1,8 +1,6 @@
-package com.fastscala.scala_xml.utils
+package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.ScalaXmlElemUtils.RichElem
-import com.fastscala.scala_xml.ScalaXmlNodeSeqUtils.MkNSFromNodeSeq
 import com.fastscala.scala_xml.js.JS
 import net.bytebuddy.ByteBuddy
 import net.bytebuddy.implementation.MethodDelegation
@@ -10,8 +8,8 @@ import net.bytebuddy.matcher.ElementMatchers
 
 import java.lang.invoke.{MethodHandle, MethodHandles, MethodType}
 import java.lang.reflect.Modifier
-import scala.annotation.{static, tailrec}
 import java.util.regex.Pattern
+import scala.annotation.{static, tailrec}
 import scala.collection.immutable.{AbstractSeq, LinearSeq, ListMap}
 import scala.xml.*
 
@@ -32,7 +30,7 @@ object ElemOptimized {
   }
 
   /** A transform of the text of a value (a Js becomes its `cmd`), as a transform of values. */
-  private[utils] def onText(transform: String => String): AttrValue => AttrValue = value => transform(textOf(value))
+  private[xml] def onText(transform: String => String): AttrValue => AttrValue = value => transform(textOf(value))
 
   /** How many times the attributes of an [[ElemOptimized]] were computed; for tests. */
   @static private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()

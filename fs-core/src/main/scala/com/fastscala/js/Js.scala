@@ -16,13 +16,23 @@ import org.owasp.encoder.Encode
 
 import java.nio.ByteBuffer
 
-class CompositeJs private(val children: Js*)(separator: Js = Js.Void) extends Js {
+class CompositeJs private(val children: Js*)(val separator: Js = Js.Void) extends Js {
 
   def this(children: Js*) = this(children *)(Js.Void)
 
   def withSeparator(sep: Js) = new CompositeJs(children *)(sep)
 
   override def cmd: String = children.map(_.cmd).mkString(separator.cmd)
+
+  /** The children's parts, with the separator's between them: `cmd`, without joining it. */
+  override def foreachPart(f: String => Unit): Unit = {
+    var first = true
+    children.foreach { child =>
+      if (!first && (separator ne Js.Void)) separator.foreachPart(f)
+      first = false
+      child.foreachPart(f)
+    }
+  }
 
   override def lengthUtf8Enc: Long =
     children.map(_.lengthUtf8Enc).sum + separator.lengthUtf8Enc * math.max(0, children.size - 1)
@@ -54,6 +64,8 @@ class CompositeJs private(val children: Js*)(separator: Js = Js.Void) extends Js
 class StringJs(str: String) extends Js {
   override def cmd: String = str
 
+  override def foreachPart(f: String => Unit): Unit = f(str)
+
   lazy val lengthUtf8Enc: Long = com.google.common.base.Utf8.encodedLength(str)
 
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = sink.write(false, ByteBuffer.wrap(str.getBytes("UTF-8")), callback)
@@ -66,6 +78,12 @@ trait Js {
   def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit
 
   def cmd: String
+
+  /**
+   * Calls `f` with the parts of [[cmd]], in order: `cmd` is them concatenated. So `cmd` can be written (e.g. escaped,
+   * by XmlStream, into an attribute) without being built. By default, `cmd` itself, as one part.
+   */
+  def foreachPart(f: String => Unit): Unit = f(cmd)
 
   def &(js: Js) = (this, js) match {
     case (Js.Void, Js.Void) => Js.Void

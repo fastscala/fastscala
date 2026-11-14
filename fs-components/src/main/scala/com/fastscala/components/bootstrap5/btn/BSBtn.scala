@@ -250,7 +250,7 @@ case class BSBtn(
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
-    new ElemOptimized(attrs, label = "button", child = content *)
+    ElemOptimized("button", attrs)(content *)
   }
 
   def btnRerender(implicit fsc: FSContext): Js = JS.replace(id, btn)
@@ -261,7 +261,7 @@ case class BSBtn(
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
-    new ElemOptimized(attrs, label = "span", child = content *)
+    ElemOptimized("span", attrs)(content *)
   }
 
   def spanRerender(implicit fsc: FSContext): Js = JS.replace(id, span)
@@ -272,7 +272,7 @@ case class BSBtn(
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc).cmd)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
-    new ElemOptimized(attrs, label = "a", child = content *)
+    ElemOptimized("a", attrs)(content *)
   }
 
   def btnLinkRerender(implicit fsc: FSContext): Js = JS.replace(id, btnLink)

@@ -1,5 +1,6 @@
 package com.fastscala.scala_xml.utils
 
+import com.fastscala.js.Js
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
@@ -497,7 +498,10 @@ object XmlStream {
                 var cur = fast.attrs
                 while (cur.nonEmpty) {
                   val attr = cur.head
-                  appendAttribute(null, attr._1, attr._2, out)
+                  attr._2 match {
+                    case value: String => appendAttribute(null, attr._1, value, out)
+                    case js: Js => appendJsAttribute(attr._1, js, out)
+                  }
                   cur = cur.tail
                 }
               case _ =>
@@ -587,6 +591,15 @@ object XmlStream {
       out.append(':')
     }
     out.append(label)
+  }
+
+  /** ` key="..."`, with the parts of `js` (see [[Js.foreachPart]]) escaped straight into the buffer: never joined. */
+  private def appendJsAttribute(key: String, js: Js, out: Out): Unit = {
+    out.append(' ')
+    out.append(key)
+    out.append2('=', '"')
+    js.foreachPart(part => XmlEscape.escape(part, out))
+    out.append('"')
   }
 
   private def appendAttribute(pre: String, key: String, value: String, out: Out): Unit = {

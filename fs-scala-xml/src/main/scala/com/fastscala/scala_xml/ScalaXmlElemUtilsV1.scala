@@ -33,10 +33,16 @@ trait ScalaXmlElemUtilsV1 extends Any {
   private inline def attributeRemove(name: String): ElemOptimized =
     attributeTransform(name, _ => null)
 
-  /** `transform` gets the current value (`""` if missing); returning `null` removes the attribute. */
+  /** `transform` gets the current value's text (`""` if missing); returning `null` removes the attribute. */
   private inline def attributeTransform(name: String, transform: String => String): ElemOptimized = elem match {
-    case elem: ElemOptimized => new ElemOptimized(elem, name, transform)
-    case elem => new ElemOptimized(elem, name, transform)
+    case elem: ElemOptimized => ElemOptimized.transform(elem, name, transform)
+    case elem => ElemOptimized.transform(elem, name, transform)
+  }
+
+  /** As [[attributeTransform]], but `transform` gets the value as it is (a String or a Js), so it can keep a Js. */
+  private inline def attributeTransformOptimized(name: String, transform: ElemOptimized.AttrValue => ElemOptimized.AttrValue): ElemOptimized = elem match {
+    case elem: ElemOptimized => ElemOptimized.transformOptimized(elem, name, transform)
+    case elem => ElemOptimized.transformOptimized(elem, name, transform)
   }
 
   def addClass(`class`: String): Elem = if (`class` == "") elem else attributeConcat("class", " " + `class`)
@@ -47,9 +53,16 @@ trait ScalaXmlElemUtilsV1 extends Any {
 
   def removeClass(`class`: String): Elem = attributeTransform("class", _.replaceAll("(?i)" + Pattern.quote(`class`), ""))
 
-  def addOnClick(js: String): Elem = attributeConcat("onclick", ";" + js)
+  def addOnClick(js: String): Elem = addOnClick(Js(js))
 
-  def addOnClick(js: Js): Elem = addOnClick(js.cmd)
+  /**
+   * Appends `;` and `js` to the `onclick`, keeping it a [[Js]] (a [[com.fastscala.js.CompositeJs]] of the existing value
+   * and `js`): so it isn't turned into one String, and XmlStream writes it part by part.
+   */
+  def addOnClick(js: Js): Elem = attributeTransformOptimized("onclick", {
+    case existing: Js => Js(existing, Js(";"), js)
+    case existing: String => Js(Js(existing), Js(";"), js) // ("" if there was none: Js("") is Js.Void)
+  })
 
   def withAttrIf(bool: Boolean, kv: (String, String)): Elem = if (bool) withAttr(kv) else elem
 
@@ -80,8 +93,8 @@ trait ScalaXmlElemUtilsV1 extends Any {
    */
   def withAttrs(attrs: (String, String)*): Elem = elem match {
     case elem if attrs.isEmpty => elem
-    case elem: ElemOptimized => new ElemOptimized(elem, setAll(attrs))
-    case elem => new ElemOptimized(elem, setAll(attrs))
+    case elem: ElemOptimized => ElemOptimized.transform(elem, setAll(attrs))
+    case elem => ElemOptimized.transform(elem, setAll(attrs))
   }
 
   /** As [[attributeSet]] for each pair: a null value removes it. */
@@ -123,7 +136,7 @@ trait ScalaXmlElemUtilsV1 extends Any {
   /** The (unescaped) value of attribute `name`; `plain` (the lookup on `elem.attributes`) if `elem` isn't fast. */
   private inline def fastAttr(name: String, inline plain: Option[String]): Option[String] = elem match {
     // attrs is newest first and may repeat a name: its first entry counts, and a null value there means removed
-    case fast: ElemOptimized => fast.attrs.find(_._1 == name).flatMap(kv => Option(kv._2))
+    case fast: ElemOptimized => fast.attrs.find(_._1 == name).flatMap(kv => Option(ElemOptimized.textOf(kv._2)))
     case _ => plain
   }
 
@@ -138,7 +151,7 @@ trait ScalaXmlElemUtilsV1 extends Any {
         val (name, value) = rest.head
         if (!seen.contains(name)) {
           seen += name
-          if (value ne null) result = (name, value) :: result
+          if (value ne null) result = (name, ElemOptimized.textOf(value)) :: result
         }
         rest = rest.tail
       }

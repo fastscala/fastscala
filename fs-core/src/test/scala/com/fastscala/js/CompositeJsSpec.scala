@@ -138,4 +138,51 @@ class CompositeJsSpec extends AnyFlatSpec {
     assert(new String(sink.out.toByteArray, StandardCharsets.UTF_8) == js.cmd)
     assert(cb.successes == 1)
   }
+
+  // ---------- foreachPart ----------
+
+  private def parts(js: Js): Seq[String] = {
+    val b = Seq.newBuilder[String]
+    js.foreachPart(b += _)
+    b.result()
+  }
+
+  "foreachPart" should "give parts that, concatenated, are exactly cmd" in {
+    val cases: Seq[Js] = Seq(
+      Js("a()"),
+      Js.Void,
+      Js(""),
+      new CompositeJs(Js("a()"), Js("b()")),
+      new CompositeJs(Js("a()"), Js("b()"), Js("c()")).withSeparator(Js(";")),
+      new CompositeJs(Js("a()")).withSeparator(Js(";")),
+      new CompositeJs().withSeparator(Js(";")),
+      new CompositeJs(Js("x"), Js.Void, Js("y")).withSeparator(Js(", ")),
+      new CompositeJs(new CompositeJs(Js("a"), Js("b")).withSeparator(Js("|")), Js("c")).withSeparator(Js(";")),
+      Js("a()") & Js("b()") & Js("c()") & Js.Void & Js("d()"),
+      new JsFunc0(Js("x()")),
+      new JsFunc1(arg => Js(s"f(${arg.cmd})")),
+      new JsFunc3((a, b, c) => Js(a, Js(","), b, Js(","), c)),
+      new CompositeJs(Js("é"), Js("€")).withSeparator(Js("/*😀*/")),
+    )
+    cases.foreach(js => assert(parts(js).mkString == js.cmd, js.cmd))
+  }
+
+  it should "give a StringJs's string, and a CompositeJs's parts, without building cmd" in {
+    assert(parts(Js("abc")) == Seq("abc"))
+    assert(parts(new CompositeJs(Js("a"), Js("b"), Js("c")).withSeparator(Js(";"))) == Seq("a", ";", "b", ";", "c"))
+    // A Js whose cmd isn't called (it would throw): only its parts are.
+    val noCmd = new CompositeJs(Js("a"), Js("b")) {
+      override def cmd: String = throw new IllegalStateException("cmd was built")
+    }
+    assert(parts(noCmd) == Seq("a", "b"))
+  }
+
+  it should "give a Js's cmd, as one part, by default" in {
+    val js = new Js {
+      override def lengthUtf8Enc: Long = 3
+      override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = callback.succeeded()
+      override def cmd: String = "f()"
+    }
+    assert(parts(js) == Seq("f()"))
+  }
 }

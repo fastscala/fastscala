@@ -63,10 +63,10 @@ object ImmediateInputFields {
       label = "label",
       attrs = NoAttrs.attr("class", labelClass).attr("style", labelStyle).attr("for", inputId),
     )(textNode(label) *)
-    new ElemOptimized(
-      NoAttrs.attr("class", "form-check form-check-custom form-check-solid " + containerClasses),
-      label = "div", child = Seq(input, labelElem) *
-    )
+    ElemOptimized(
+      label = "div",
+      attrs = NoAttrs.attr("class", "form-check form-check-custom form-check-solid " + containerClasses),
+    )(Seq(input, labelElem) *)
   }
 
   def text(
@@ -111,10 +111,10 @@ object ImmediateInputFields {
       .attr("name", if (name == "") null else name)
     )
 
-    if (btn.isDefined) new ElemOptimized(
-      NoAttrs.attr("class", "input-group "),
-      label = "div", child = Seq(inputNS, btn.get.addClass("input-group-text").onclick(Js(submit)).btn) *
-    )
+    if (btn.isDefined) ElemOptimized(
+      label = "div",
+      attrs = NoAttrs.attr("class", "input-group "),
+    )(Seq(inputNS, btn.get.addClass("input-group-text").onclick(Js(submit)).btn) *)
     else inputNS
   }
 
@@ -182,15 +182,15 @@ object ImmediateInputFields {
 
     val selected = get()
     val options = values.zipWithIndex.map({ case (value, idx) =>
-      new ElemOptimized(
-        NoAttrs.attr("value", idx.toString).attr("selected", if (value == selected) "selected" else null),
-        label = "option", child = textNode(toString(value)) *
-      )
+      ElemOptimized(
+        label = "option",
+        attrs = NoAttrs.attr("value", idx.toString).attr("selected", if (value == selected) "selected" else null),
+      )(textNode(toString(value)) *)
     })
-    new ElemOptimized(
-      NoAttrs.attr("id", elemId).attr("class", classes).attr("style", style).attr("onchange", submit),
-      label = "select", child = options *
-    )
+    ElemOptimized(
+      label = "select",
+      attrs = NoAttrs.attr("id", elemId).attr("class", classes).attr("style", style).attr("onchange", submit),
+    )(options *)
   }
 
   def textarea(
@@ -209,8 +209,9 @@ object ImmediateInputFields {
       onSubmitClientSide(value) & fsc.callback(value, str => set(str.trim))
     }).cmd
 
-    new ElemOptimized(
-      NoAttrs
+    ElemOptimized(
+      label = "textarea",
+      attrs = NoAttrs
         .attr("id", inputId)
         .attr("onblur", submit)
         .attr("class", classes)
@@ -218,8 +219,7 @@ object ImmediateInputFields {
         .attr("placeholder", if (placeholder == "") null else placeholder)
         .attr("name", if (name == "") null else name)
         .attr("rows", rows.toString),
-      label = "textarea", child = textNode(get()) *
-    )
+    )(textNode(get()) *)
   }
 
   def password(

@@ -96,7 +96,7 @@ class XmlStreamSinkSpec extends AnyFlatSpec {
   }
 
   it should "write an ElemOptimized's attributes (in its own order)" in {
-    val e = new ElemOptimized(new ElemOptimized(<td id="i" title="t"/>, "class", (_: String) => "a b"), "data-x", (_: String) => "é \"€\"")
+    val e = ElemOptimized.transform(ElemOptimized.transform(<td id="i" title="t"/>, "class", (_: String) => "a b"), "data-x", (_: String) => "é \"€\"")
     val out = node(e)
     assert(normalized(out) == normalized(e.toString), out)
   }

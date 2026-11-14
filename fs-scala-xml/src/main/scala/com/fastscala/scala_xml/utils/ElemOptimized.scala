@@ -17,6 +17,23 @@ import scala.xml.*
 
 
 object ElemOptimized {
+
+  /**
+   * An attribute's value: a String, or a [[Js]] (e.g. an `onclick`), kept as it is, so it isn't turned into one String
+   * until it's needed (see [[textOf]]), and [[XmlStream]] can write it part by part.
+   */
+  type AttrValue = String | Js
+
+  /** The value as text (a Js's `cmd`); null stays null. */
+  inline def textOf(value: AttrValue): String = value match {
+    case js: Js => js.cmd
+    case s: String => s
+    case null => null
+  }
+
+  /** A transform of the text of a value (a Js becomes its `cmd`), as a transform of values. */
+  private[utils] def onText(transform: String => String): AttrValue => AttrValue = value => transform(textOf(value))
+
   /** How many times the attributes of an [[ElemOptimized]] were computed; for tests. */
   @static private[scala_xml] val Computations = new java.util.concurrent.atomic.AtomicLong()
 
@@ -32,7 +49,7 @@ object ElemOptimized {
     // so per-instance state, like the cache, must live in fields of the generated class, not here.
     def intercept(
                    @net.bytebuddy.implementation.bind.annotation.This self: AnyRef,
-                   @net.bytebuddy.implementation.bind.annotation.FieldValue("attrs") attrs: List[(String, String)],
+                   @net.bytebuddy.implementation.bind.annotation.FieldValue("attrs") attrs: List[(String, AttrValue)],
                    @net.bytebuddy.implementation.bind.annotation.FieldValue("cached") cached: MetaData
                  ): MetaData = {
       if (cached ne null) cached
@@ -43,7 +60,7 @@ object ElemOptimized {
         val computed = attrs.foldLeft((Null: MetaData, Set[String]()))({
           case ((cur, seenAttrs), (name, value)) if seenAttrs.contains(name) => (cur, seenAttrs)
           case ((cur, seenAttrs), (name, null)) => (cur, seenAttrs + name)
-          case ((cur, seenAttrs), (name, value)) => (new UnprefixedAttribute(name, value, cur), seenAttrs + name)
+          case ((cur, seenAttrs), (name, value)) => (new UnprefixedAttribute(name, textOf(value), cur), seenAttrs + name)
         })._1
         ElemOptimized.SetCached.invokeExact(self, computed): Unit
         computed
@@ -98,34 +115,58 @@ object ElemOptimized {
   @static private val SetAttrs: MethodHandle = setter("attrs", classOf[UnprefixedAttribute], classOf[List[?]])
   @static private val SetCached: MethodHandle = setter("cached", classOf[AnyRef], classOf[MetaData])
 
-  def apply(label: String, attrs: List[(String, String)], minimizeEmpty: Boolean = false)(child: Node*): ElemOptimized = new ElemOptimized(
+  def apply(label: String, attrs: List[(String, AttrValue)], minimizeEmpty: Boolean = false)(child: Node*): ElemOptimized = new ElemOptimized(
     attrs = attrs, label = label, minimizeEmpty = minimizeEmpty, child = child *
   )
+
+  def transform(orig: Elem, name: String, transform: String => String) =
+    new ElemOptimized(orig, name, ElemOptimized.onText(transform))
+
+  def transform(orig: Elem, transforms: Seq[(String, String => String)]) =
+    new ElemOptimized(orig, transforms.map(t => t._1 -> ElemOptimized.onText(t._2)))
+
+  def transform(orig: ElemOptimized, name: String, transform: String => String) =
+    new ElemOptimized(orig, name, ElemOptimized.onText(transform))
+
+  def transform(orig: ElemOptimized, transforms: Seq[(String, String => String)]) =
+    new ElemOptimized(orig, transforms.map(t => t._1 -> ElemOptimized.onText(t._2)))
+
+  def transformOptimized(orig: Elem, name: String, transform: AttrValue => AttrValue) = new ElemOptimized(orig, name, transform)
+
+  def transformOptimized(orig: Elem, transforms: Seq[(String, AttrValue => AttrValue)]) = new ElemOptimized(orig, transforms)
+
+  def transformOptimized(orig: ElemOptimized, name: String, transform: AttrValue => AttrValue) = new ElemOptimized(orig, name, transform)
+
+  def transformOptimized(orig: ElemOptimized, transforms: Seq[(String, AttrValue => AttrValue)]) = new ElemOptimized(orig, transforms)
+
 }
 
 /**
  * An [[Elem]] whose attributes are kept as a list of (name, value), only turned into [[MetaData]] (once, cached) when
- * read. Transforms are `String => String`: a missing attribute is seen as `""`, and returning `null` removes it (in
- * every constructor: the attribute is dropped from `attrs`, never stored with a null value).
+ * read. A value is a String or a [[Js]] (see [[ElemOptimized.AttrValue]]): a Js is kept as it is, until its text is
+ * needed. Transforms get the current value (`""` if the attribute is missing), and returning `null` removes it (in
+ * every constructor: the attribute is dropped from `attrs`, never stored with a null value). Those that are
+ * `String => String` get the value's text (a Js's `cmd`); those that are `AttrValue => AttrValue` (with a
+ * `DummyImplicit`, so they're told apart) get the value as it is, so they can keep a Js.
  *
  * @param orig  the element whose attributes these replace; never itself an [[ElemOptimized]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
  * @param attrs in reverse print order; names unique, values never null (a removed attribute is not in the list)
  */
-class ElemOptimized(
-                     val attrs: List[(String, String)],
-                     prefix: String = null,
-                     label: String,
-                     scope: NamespaceBinding = TopScope,
-                     minimizeEmpty: Boolean = false,
-                     child: Node*
-                   ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
+class ElemOptimized private(
+                             val attrs: List[(String, ElemOptimized.AttrValue)],
+                             prefix: String = null,
+                             label: String,
+                             scope: NamespaceBinding = TopScope,
+                             minimizeEmpty: Boolean = false,
+                             child: Node*
+                           ) extends Elem(prefix, label, Null, scope, minimizeEmpty, child *) {
 
-  def this(orig: Elem, name: String, transform: String => String) = this({
+  private def this(orig: Elem, name: String, transform: ElemOptimized.AttrValue => ElemOptimized.AttrValue) = this({
     @tailrec def aux(
-                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemOptimized.textOfValue(md.value)),
-                      rslt: List[(String, String)] = Nil,
-                    ): List[(String, String)] = if (remaining.hasNext) remaining.next() match {
+                      remaining: Iterator[(String, ElemOptimized.AttrValue)] = orig.attributes.iterator.map(md => md.key -> ElemOptimized.textOfValue(md.value)),
+                      rslt: List[(String, ElemOptimized.AttrValue)] = Nil,
+                    ): List[(String, ElemOptimized.AttrValue)] = if (remaining.hasNext) remaining.next() match {
       case (`name`, value) =>
         val updated = transform(value)
         if (updated eq null) remaining ++: rslt else (name -> updated) :: (remaining ++: rslt)
@@ -144,12 +185,12 @@ class ElemOptimized(
     orig.child *
   )
 
-  def this(orig: Elem, transforms: Seq[(String, String => String)]) = this({
+  private def this(orig: Elem, transforms: Seq[(String, ElemOptimized.AttrValue => ElemOptimized.AttrValue)]) = this({
     @tailrec def aux(
-                      remaining: Iterator[(String, String)] = orig.attributes.iterator.map(md => md.key -> ElemOptimized.textOfValue(md.value)),
-                      transforms: Map[String, String => String] = transforms.toMap,
-                      rslt: List[(String, String)] = Nil,
-                    ): List[(String, String)] = if (remaining.hasNext) remaining.next() match {
+                      remaining: Iterator[(String, ElemOptimized.AttrValue)] = orig.attributes.iterator.map(md => md.key -> ElemOptimized.textOfValue(md.value)),
+                      transforms: Map[String, ElemOptimized.AttrValue => ElemOptimized.AttrValue] = transforms.toMap,
+                      rslt: List[(String, ElemOptimized.AttrValue)] = Nil,
+                    ): List[(String, ElemOptimized.AttrValue)] = if (remaining.hasNext) remaining.next() match {
       case (name, value) if transforms.contains(name) =>
         val updated = transforms(name)(value)
         if (transforms.size == 1) {
@@ -173,11 +214,11 @@ class ElemOptimized(
     orig.child *
   )
 
-  def this(orig: ElemOptimized, name: String, transform: String => String) = this({
+  private def this(orig: ElemOptimized, name: String, transform: ElemOptimized.AttrValue => ElemOptimized.AttrValue) = this({
     @tailrec def aux(
-                      remaining: List[(String, String)] = orig.attrs,
-                      rslt: List[(String, String)] = Nil,
-                    ): List[(String, String)] = remaining match {
+                      remaining: List[(String, ElemOptimized.AttrValue)] = orig.attrs,
+                      rslt: List[(String, ElemOptimized.AttrValue)] = Nil,
+                    ): List[(String, ElemOptimized.AttrValue)] = remaining match {
       case Nil =>
         val updated = transform("")
         if (updated eq null) rslt else (name -> updated) :: rslt
@@ -196,12 +237,12 @@ class ElemOptimized(
     orig.child *
   )
 
-  def this(orig: ElemOptimized, transforms: Seq[(String, String => String)]) = this({
+  private def this(orig: ElemOptimized, transforms: Seq[(String, ElemOptimized.AttrValue => ElemOptimized.AttrValue)]) = this({
     @tailrec def aux(
-                      remaining: List[(String, String)] = orig.attrs,
-                      transforms: Map[String, String => String] = transforms.toMap,
-                      rslt: List[(String, String)] = Nil,
-                    ): List[(String, String)] = remaining match {
+                      remaining: List[(String, ElemOptimized.AttrValue)] = orig.attrs,
+                      transforms: Map[String, ElemOptimized.AttrValue => ElemOptimized.AttrValue] = transforms.toMap,
+                      rslt: List[(String, ElemOptimized.AttrValue)] = Nil,
+                    ): List[(String, ElemOptimized.AttrValue)] = remaining match {
       case Nil =>
         transforms.iterator.foldLeft(rslt)({
           case (rslt, (name, transform)) =>

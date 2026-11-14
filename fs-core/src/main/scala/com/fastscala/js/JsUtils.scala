@@ -6,7 +6,7 @@ import java.util.Date
 
 /**
  * Helpers that build JavaScript. Written with `js"..."` ([[RawJs]]): the Js values in them stay parts of the result
- * (so they're never turned into one String, e.g. when XmlStream writes them into an attribute), and Strings are
+ * (so they're never turned into one String, e.g. when XmlJsStream writes them into an attribute), and Strings are
  * inserted as JavaScript string literals with [[asJsStr]] (quoted, and escaped with OWASP's `Encode.forJavaScript`).
  */
 trait JsUtils {
@@ -77,7 +77,7 @@ trait JsUtils {
   def removeAttr(id: String, name: String): Js = js"${elementById(id)}.removeAttribute(${asJsStr(name)})"
 
   /** The classes in `clas` (separated by spaces), as JavaScript string literals separated by `, `. */
-  private def classesAsJsStrs(clas: String): Js = new CompositeJs(clas.split(" +").toSeq.map(asJsStr) *).withSeparator(Js(", "))
+  private def classesAsJsStrs(clas: String): Js = CompositeJs.joined(clas.split(" +").toSeq.map(asJsStr), Js(", "))
 
   def addClass(id: String, clas: String): Js = js"${elementById(id)}.classList.add(${classesAsJsStrs(clas)})"
 

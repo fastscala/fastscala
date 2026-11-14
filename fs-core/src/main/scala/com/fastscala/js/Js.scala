@@ -23,7 +23,7 @@ trait Js {
 
   /**
    * Calls `f` with the parts of [[cmd]], in order: `cmd` is them concatenated. So `cmd` can be written (e.g. escaped,
-   * by XmlStream, into an attribute) without being built. By default, `cmd` itself, as one part.
+   * by XmlJsStream, into an attribute) without being built. By default, `cmd` itself, as one part.
    */
   def foreachPart(f: String => Unit): Unit = f(cmd)
 

@@ -130,7 +130,7 @@ class OkHtmlStreamingSpec extends AnyFlatSpec with BeforeAndAfterAll {
   }
 
   it should "abort the response (not end it normally) and fail the callback if writing fails midway" in {
-    // XmlStream (as toString) throws on unknown Node subclasses: here after ~1 MB has been sent.
+    // XmlJsStream (as toString) throws on unknown Node subclasses: here after ~1 MB has been sent.
     val failing = new Node {
       override def label: String = "custom"
       override def child: Seq[Node] = Nil

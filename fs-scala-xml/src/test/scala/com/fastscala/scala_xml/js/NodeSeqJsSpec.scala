@@ -152,7 +152,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
     }
   }
 
-  "NodeSeqJs" should "be the XML (as toString), streamed by XmlStream, not ending the content" in {
+  "NodeSeqJs" should "be the XML (as toString), streamed by XmlJsStream, not ending the content" in {
     samples.foreach { case (name, ns) =>
       val js = new NodeSeqJs(ns)
       assert(js.cmd == ns.toString(), name)

@@ -25,7 +25,7 @@ object ImmediateInputFields {
     private inline def attr(name: String, value: String): Attrs = if ((value eq null) || value == "") attrs else (name -> value) :: attrs
 
     /**
-     * Adds the attribute with `js` as its value, kept as a Js (XmlStream writes it part by part, without building its
+     * Adds the attribute with `js` as its value, kept as a Js (XmlJsStream writes it part by part, without building its
      * text), unless `js` is null or Js.Void. (Not `js.isVoid`: that builds the text.)
      */
     private inline def attr(name: String, js: Js): Attrs = if ((js eq null) || (js eq Js.Void)) attrs else (name -> js) :: attrs

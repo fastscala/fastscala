@@ -15,7 +15,7 @@ import scala.xml.*
  *  - against the previous, XML-literal implementations ([[ImmediateInputFieldsSpec.Literal]]): the same elements,
  *    attributes and text, apart from what the direct version intentionally drops (empty attributes, and whitespace-only
  *    text between elements) and the generated ids (input ids, callback ids);
- *  - that toString and [[XmlStream]] write the same (attributes in any order), that no attribute is empty, and each field registers one callback;
+ *  - that toString and [[XmlJsStream]] write the same (attributes in any order), that no attribute is empty, and each field registers one callback;
  *  - a few behaviours directly (checked, additionalAttrs, the selected option, the button's input group, ...).
  *
  * Run with: `sbt "fs_components/testOnly com.fastscala.components.bootstrap5.utils.ImmediateInputFieldsSpec"`
@@ -104,7 +104,7 @@ class ImmediateInputFieldsSpec extends AnyFlatSpec {
       assert(canon(c) == canon(l), s"\n current: ${canon(c)}\n literal: ${canon(l)}")
     }
 
-    it should "write the same with toString and XmlStream (attributes in any order), without empty or duplicate attributes" in {
+    it should "write the same with toString and XmlJsStream (attributes in any order), without empty or duplicate attributes" in {
       val e = current(newFsc())
       assert(normalized(written(e)) == normalized(e.toString))
       for (el <- allElems(e)) {

@@ -9,7 +9,7 @@ import java.nio.{ByteBuffer, CharBuffer}
 
 /**
  * A [[Content.Sink]] that decodes the UTF-8 bytes written to it and writes the chars to `writer`: so what writes to
- * a Sink (e.g. [[XmlStream]]) can write through a Writer (e.g. an encoding one). The last write only flushes the
+ * a Sink (e.g. [[XmlJsStream]]) can write through a Writer (e.g. an encoding one). The last write only flushes the
  * writer: it's never closed, so whatever is under it isn't ended.
  *
  * Each write is done (decoded and written) before its callback is completed, and before it returns.
@@ -22,7 +22,7 @@ final class Utf8ToWriterSink(writer: Writer) extends Content.Sink {
 
   private val chars = CharBuffer.allocate(8192)
 
-  /** The start of a UTF-8 sequence split between two writes (at most 3 bytes; XmlStream never splits one). */
+  /** The start of a UTF-8 sequence split between two writes (at most 3 bytes; XmlJsStream never splits one). */
   private val carry = ByteBuffer.allocate(8)
 
   override def write(last: Boolean, bytes: ByteBuffer, callback: Callback): Unit =

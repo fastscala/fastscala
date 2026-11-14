@@ -11,14 +11,14 @@ import scala.xml.*
 
 /**
  * Performance test: a `<table>` with [[XmlStreamTablePerfSpec.Rows]] `<tr>`, each with [[XmlStreamTablePerfSpec.Cols]]
- * `<td>`, rendered with [[XmlStream]]. Every element already has a class in its literal, and gets a unique id (from a
+ * `<td>`, rendered with [[XmlJsStream]]. Every element already has a class in its literal, and gets a unique id (from a
  * counter) and 4 classes added via Bootstrap class helpers; each `<td>` also gets a style ([[XmlStreamTablePerfSpec.TdStyle]]).
  * Run for each implementation of the attribute helpers, for comparison:
  *
  *  - V2: [[BSHelpers]] (which is on [[ScalaXmlElemUtilsV1]] too, with all its helpers)
  *  - V1: only the class helpers, on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.xml.ElemOptimized]])
  *
- * The class transforms are computed when the attributes are read, so for implementations XmlStream has no fast path
+ * The class transforms are computed when the attributes are read, so for implementations XmlJsStream has no fast path
  * for, the first render includes computing the final `class` attributes.
  *
  * Lives in fs-components because it uses BSHelpers. Run with:
@@ -62,12 +62,12 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
   variants.foreach { case (variant, buildTable) =>
 
-    s"XmlStream ($variant)" should s"render a $Rows-row x $Cols-col table with Bootstrap classes" in {
+    s"XmlJsStream ($variant)" should s"render a $Rows-row x $Cols-col table with Bootstrap classes" in {
       // Sanity check: output matches toString and the classes are there.
       val small = buildTable()
       val out = writtenNode(small)
       // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-      assert(normalized(out) == normalized(small.toString), "XmlStream output differs from toString (attributes in any order)")
+      assert(normalized(out) == normalized(small.toString), "XmlJsStream output differs from toString (attributes in any order)")
       assert(out.split("<tr ", -1).length - 1 == Rows)
       assert(out.split("<td ", -1).length - 1 == Rows * Cols)
 
@@ -119,8 +119,8 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
       info(s"[$variant] Table: $Rows rows x $Cols cols; each element has a class, gets an id and 4 more classes (<td>s also a style); $chars chars of output")
       info(stats(s"[$variant] Build                     ", buildTimes.result()))
-      info(stats(s"[$variant] Render (first, XmlStream) ", renderTimes.result()))
-      info(stats(s"[$variant] Re-render (XmlStream)     ", rerenderTimes))
+      info(stats(s"[$variant] Render (first, XmlJsStream) ", renderTimes.result()))
+      info(stats(s"[$variant] Re-render (XmlJsStream)     ", rerenderTimes))
     }
 
     it should s"profile building the table with async-profiler ($variant)" in {

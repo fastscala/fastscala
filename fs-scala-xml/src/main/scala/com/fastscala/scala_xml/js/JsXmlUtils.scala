@@ -95,7 +95,7 @@ class JsXmlUtils extends JsUtils {
         val children = extractJsFromScriptTagsSeq(nodes, scripts)
         if (children eq nodes) nodes else NodeSeq.fromSeq(children)
     }
-    (cleaned, if (scripts.isEmpty) Js.Void else new CompositeJs(scripts.toSeq *).withSeparator(Js(";")))
+    (cleaned, if (scripts.isEmpty) Js.Void else CompositeJs.joined(scripts.toSeq, Js(";")))
   }
 
   /** `node` without its scripts (`node` itself, by reference, if it has none), appending their JS to `scripts`. */
@@ -175,7 +175,7 @@ class JsXmlUtils extends JsUtils {
     if (!hasJsInScriptTags(ns)) return Js.Void
     val scripts = collection.mutable.ListBuffer[Js]()
     collectJsInScriptTags(ns.iterator :: Nil, scripts)
-    if (scripts.size == 0) Js.Void else new CompositeJs(scripts.toSeq *).withSeparator(Js(";"))
+    if (scripts.size == 0) Js.Void else CompositeJs.joined(scripts.toSeq, Js(";"))
   }
 
   /**

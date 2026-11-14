@@ -1,6 +1,6 @@
 package com.fastscala.core
 
-import com.fastscala.js.Js
+import com.fastscala.js.{Js, JsWriter}
 import com.fastscala.routing.resp.Response
 import com.fastscala.stats.FSStats
 import com.fastscala.utils.Missing
@@ -108,6 +108,9 @@ trait FSSystem extends Handler {
   def executeCallback(arg: String)(implicit func: FSFunc): Js
 
   def executeFileUpload(files: Seq[FSUploadedFile])(implicit fileUpload: FSFileUpload): Js
+
+  /** How [[respondWithJs]] writes the JavaScript. */
+  def jsWriter: JsWriter
 
   /** The response with a callback's (or keep-alive's, file upload's) Js. */
   def respondWithJs(js: Js): Response

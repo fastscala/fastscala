@@ -14,7 +14,7 @@ import scala.xml.*
 
 /**
  * The Elem attribute helpers (withAttr, addClass, withId, ...), building [[ElemOptimized]]: the attributes are kept as
- * a list of (name, value), only turned into MetaData when read (XmlStream writes them straight from the list).
+ * a list of (name, value), only turned into MetaData when read (XmlJsStream writes them straight from the list).
  */
 trait ScalaXmlElemUtilsV1 extends Any {
   def elem: Elem
@@ -55,7 +55,7 @@ trait ScalaXmlElemUtilsV1 extends Any {
 
   /**
    * Appends `;` and `js` to the `onclick`, keeping it a [[Js]] (a [[com.fastscala.js.CompositeJs]] of the existing value
-   * and `js`): so it isn't turned into one String, and XmlStream writes it part by part.
+   * and `js`): so it isn't turned into one String, and XmlJsStream writes it part by part.
    */
   def addOnClick(js: Js): Elem = attributeTransformOptimized("onclick", {
     case existing: Js => Js(existing, Js(";"), js)

@@ -1,6 +1,6 @@
 package com.fastscala.scala_xml.xml
 
-import com.fastscala.js.Js
+import com.fastscala.js.{CompositeJs, Js, JsWriter}
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
@@ -11,7 +11,7 @@ import scala.collection.immutable.IndexedSeq
 import scala.xml.*
 
 /**
- * Writes XML, as `Node.toString` would (attributes of an [[ElemOptimized]] in its own order), encoded in UTF-8,
+ * Writes XML and JavaScript ([[Js]]): XML as `Node.toString` would (attributes of an [[ElemOptimized]] in its own order), encoded in UTF-8,
  * straight into a Jetty [[Content.Sink]] (e.g. a Response): no String, char[] or encoder in between.
  *
  * Output goes into `byte[]` chunks of [[ChunkSize]] bytes (see [[Out]]), each written to the sink once full; the last
@@ -23,8 +23,11 @@ import scala.xml.*
  * serializing goes on into the next chunk; once [[MaxQueuedChunks]] chunks are waiting for their turn, serializing
  * pauses (between nodes), and the write that drains the queue resumes it, on its thread. So a slow client doesn't hold
  * a thread, and only a few chunks are kept (more only for a single node bigger than that, e.g. a huge text).
+ *
+ * JavaScript ([[writeJs]]) goes through the same stack as the XML (a level's items can be Nodes or Js), so it's written
+ * iteratively, not recursively (as Js.writeUtf8Enc does): a [[CompositeJs]]'s children are a level; any other Js is written as its `cmd`, as it is (not escaped).
  */
-object XmlStream {
+object XmlJsStream extends JsWriter {
 
   val ChunkSize = 8192
 
@@ -76,6 +79,22 @@ object XmlStream {
     }
     out.drive()
   }
+
+  /**
+   * Writes `js` (its code, as it is: not escaped), and ends the sink's content, without blocking: as [[writeSeq]] (the
+   * callback completed once, after the last write, or failed on the first failure).
+   */
+  def writeJs(js: Js, sink: Content.Sink, callback: Callback): Unit = writeJs(js, sink, callback, endContent = true)
+
+  /** As the other [[writeJs]], but the last write ends the sink's content only if `endContent` (see [[writeSeq]]). */
+  override def writeJs(js: Js, sink: Content.Sink, callback: Callback, endContent: Boolean): Unit = {
+    val out = new Out(sink, callback, endContent)
+    out.pushSingle(js, TopScope)
+    out.drive()
+  }
+
+  /** As the non-blocking [[writeJs]], but returns once everything is written, and throws if writing fails. */
+  def writeJs(js: Js, sink: Content.Sink): Unit = blocking(writeJs(js, sink, _))
 
   /** As [[writeSeq]], for one node. */
   def writeNode(n: Node, sink: Content.Sink, callback: Callback): Unit = {
@@ -397,7 +416,8 @@ object XmlStream {
 
     inline def escape(text: String): Unit = XmlEscape.escape(text, this)
 
-    def pushSingle(n: Node, scope: NamespaceBinding): Unit = {
+    /** The first level: a single item (a Node or a Js). */
+    def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {
       nodesStack(0) = n
       indexStack(0) = SingleNodeCursor
       scopeStack(0) = scope
@@ -405,7 +425,8 @@ object XmlStream {
       depth = 1
     }
 
-    def pushSeq(nodes: collection.Seq[Node], scope: NamespaceBinding, closing: Elem): Unit = {
+    /** A level of items: Nodes, or Js (a CompositeJs's children). */
+    def pushSeq(nodes: collection.Seq[AnyRef], scope: NamespaceBinding, closing: Elem): Unit = {
       val d = depth
       if (d == nodesStack.length) growStacks()
       setLevel(d, nodes)
@@ -418,16 +439,16 @@ object XmlStream {
      * Sets level `d` to read `nodes`, in the cheapest way for its kind. A Node is the NodeSeq of just itself (common:
      * e.g. an element's single child); any other NodeSeq is a wrapper, so its underlying seq is classified instead.
      */
-    @tailrec private def setLevel(d: Int, nodes: collection.Seq[Node]): Unit = nodes match {
+    @tailrec private def setLevel(d: Int, nodes: collection.Seq[AnyRef]): Unit = nodes match {
       case node: Node =>
         nodesStack(d) = node
         indexStack(d) = SingleNodeCursor
-      case iseq: collection.IndexedSeq[Node] =>
+      case iseq: collection.IndexedSeq[?] =>
         nodesStack(d) = iseq
         indexStack(d) = 0
         lengthStack(d) = iseq.length
       case ns: NodeSeq => setLevel(d, ns.theSeq)
-      case cons: ::[Node] =>
+      case cons: ::[AnyRef] =>
         nodesStack(d) = cons
         indexStack(d) = ListCursor
       case Nil =>
@@ -462,15 +483,15 @@ object XmlStream {
 
       val d = out.depth - 1
       val idx = out.indexStack(d)
-      var nextNode: Node = null
+      var nextNode: AnyRef = null // a Node or a Js
 
       if (idx >= 0) {
         if (idx < out.lengthStack(d)) {
           out.indexStack(d) = idx + 1
-          nextNode = out.nodesStack(d).asInstanceOf[collection.IndexedSeq[Node]](idx)
+          nextNode = out.nodesStack(d).asInstanceOf[collection.IndexedSeq[AnyRef]](idx)
         }
       } else if (idx == ListCursor) {
-        val cons = out.nodesStack(d).asInstanceOf[::[Node]]
+        val cons = out.nodesStack(d).asInstanceOf[::[AnyRef]]
         nextNode = cons.head
         val tail = cons.tail
         if (tail.isEmpty) {
@@ -481,10 +502,10 @@ object XmlStream {
           out.nodesStack(d) = tail
         }
       } else if (idx == IteratorCursor) {
-        val it = out.nodesStack(d).asInstanceOf[Iterator[Node]]
+        val it = out.nodesStack(d).asInstanceOf[Iterator[AnyRef]]
         if (it.hasNext) nextNode = it.next()
       } else { // SingleNodeCursor
-        nextNode = out.nodesStack(d).asInstanceOf[Node]
+        nextNode = out.nodesStack(d)
         out.nodesStack(d) = IndexedSeq.empty
         out.indexStack(d) = 0
         out.lengthStack(d) = 0
@@ -552,12 +573,26 @@ object XmlStream {
             // the namespaces they use, even ones the enclosing element declared.
             out.pushSeq(g.nodes, g.scope, null)
 
-          case other =>
+          case js: Js =>
+            writeJsItem(js, levelScope, out)
+
+          case other: Node =>
             writeRareNode(other, levelScope, out)
         }
       }
     }
     true
+  }
+
+  /**
+   * A Js: a [[CompositeJs]]'s children are pushed, as a level; any other is written as its `cmd` (for now: specific
+   * kinds can be written without building it).
+   */
+  private def writeJsItem(js: Js, scope: NamespaceBinding, out: Out): Unit = js match {
+    case composite: CompositeJs =>
+      out.pushSeq(composite.children, scope, null)
+    case other =>
+      out.append(other.cmd)
   }
 
   /**

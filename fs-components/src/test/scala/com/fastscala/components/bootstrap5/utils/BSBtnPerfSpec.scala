@@ -13,7 +13,7 @@ import scala.xml.*
  * Performance test for rendering a [[BSBtn]] with each of [[BSBtn.btn]], [[BSBtn.span]] and [[BSBtn.btnLink]]:
  * [[BSBtnPerfSpec.N]] buttons (classes, label, title, id and a callback, as `BSBtn().BtnPrimary.sm.lbl(...)...`),
  * rendered on a new page each time (so rendering also registers each button's callback), then written with
- * [[XmlStream]].
+ * [[XmlJsStream]].
  *
  * Run with: `sbt -J-Xmx8g "fs_components/testOnly com.fastscala.components.bootstrap5.utils.BSBtnPerfSpec"`
  * (one method only: add `-- -z btnLink`, for example).
@@ -111,7 +111,7 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       implicit val fsc: FSContext = PerfFS.newPage().rootFSContext
       val elem = render(button(1))(fsc)
       val out = writtenNode(elem)
-      assert(normalized(out) == normalized(elem.toString), "XmlStream output differs from toString (attributes in any order)")
+      assert(normalized(out) == normalized(elem.toString), "XmlJsStream output differs from toString (attributes in any order)")
       val (tag, attrs) = startTag(out)
       assert(tag == ExpectedTag(method), out)
       assert(attrs.get("class").map(_.trim.split("\\s+").toSet).contains(Set("btn", "btn-primary", "btn-sm")), out)
@@ -124,7 +124,7 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       assert(fsc.page.callbacks.size == 1, "rendering should register the button's callback")
     }
 
-    it should s"be measured: rendering $N buttons, then writing them with XmlStream ($method)" in {
+    it should s"be measured: rendering $N buttons, then writing them with XmlJsStream ($method)" in {
       val buttons = (1 to N).map(button)
       def renderAll(): Seq[Elem] = {
         implicit val fsc: FSContext = PerfFS.newPage().rootFSContext
@@ -157,7 +157,7 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
       info(f"[$method] $N buttons, ${chars / N} chars each")
       info(stats(s"[$method] Render (with callbacks)   ", renderTimes.result()))
-      info(stats(s"[$method] Write (XmlStream)         ", writeTimes.result()))
+      info(stats(s"[$method] Write (XmlJsStream)         ", writeTimes.result()))
       info(stats(s"[$method] (Creating the BSBtn values)", buildTimes))
     }
 

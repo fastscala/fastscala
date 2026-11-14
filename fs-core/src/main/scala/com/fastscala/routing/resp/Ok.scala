@@ -1,9 +1,9 @@
 package com.fastscala.routing.resp
 
-import com.fastscala.js.Js
+import com.fastscala.js.{Js, JsWriter}
 import org.eclipse.jetty.http.HttpHeader
 import org.eclipse.jetty.server.Response as JettyServerResponse
-import org.eclipse.jetty.util.{BufferUtil, Callback}
+import org.eclipse.jetty.util.Callback
 
 import java.io.OutputStream
 import java.nio.file.{Files, Path}
@@ -18,20 +18,18 @@ object Ok {
   private val JsContentType: String = "text/javascript;charset=utf-8"
 
   /**
-   * JavaScript, written as it's produced, without a Content-Length (so Jetty sends it chunked). Computing the length
-   * ([[Js.lengthUtf8Enc]], as [[js]] does) can cost as much as writing it: e.g. a Js with HTML in it (a rerender's)
-   * serializes and escapes the HTML once just to count its bytes, and then again to write it; here, only once.
+   * JavaScript, written as it's produced, by `writer` (e.g. fs-scala-xml's `XmlJsStream`), which ends the content. No
+   * Content-Length is computed (it'd cost as much as writing it: e.g. a rerender's, with HTML in it): Jetty sets one only
+   * if the whole JavaScript is written at once, with the last write (a short one, with XmlJsStream); otherwise it's sent
+   * chunked.
    */
-  def js(js: Js) = new Response {
+  def js(js: Js, writer: JsWriter = JsWriter.Recursive) = new Response {
     override def status: HttpStatus = HttpStatuses.OK
 
     override def respond(response: JettyServerResponse, callback: Callback): Boolean = {
       super.respond(response, callback)
       response.getHeaders.put(HttpHeader.CONTENT_TYPE, JsContentType)
-      js.writeUtf8Enc(response, Callback.from(
-        () => response.write(true, BufferUtil.EMPTY_BUFFER, callback),
-        (t: Throwable) => callback.failed(t)
-      ))
+      writer.writeJs(js, response, callback, endContent = true)
       true
     }
   }

@@ -32,20 +32,20 @@ object XmlEscape {
   private final val MinSlice = 64
 
   /**
-   * Escapes `text` into XmlStream's byte buffer, in UTF-8, as Utility.escape does (`&`, `<`, `>` and `"` become
+   * Escapes `text` into XmlJsStream's byte buffer, in UTF-8, as Utility.escape does (`&`, `<`, `>` and `"` become
    * entities; control chars other than \n, \r and \t are dropped) and then UTF-8 encoding (a lone surrogate is `?`).
    *
    * In slices that surely fit in the buffer (6 bytes per char: the longest entity, `&quot;`, and more than UTF-8's 3
    * bytes per char), each written without any bounds check; usually the whole text is one slice.
    */
-  def escape(text: String, out: XmlStream.Out): Unit = {
+  def escape(text: String, out: XmlJsStream.Out): Unit = {
     val len = text.length
     var i = 0
     while (i < len) {
-      var room = (XmlStream.ChunkSize - out.pos) / 6
+      var room = (XmlJsStream.ChunkSize - out.pos) / 6
       if (room < len - i && room < MinSlice) {
         out.flush()
-        room = XmlStream.ChunkSize / 6 // 1,365 chars for an 8,192-byte buffer
+        room = XmlJsStream.ChunkSize / 6 // 1,365 chars for an 8,192-byte buffer
       }
       i = escapeSlice(text, i, math.min(len, i + room), out)
     }
@@ -63,7 +63,7 @@ object XmlEscape {
    * escape and then copying the run in between, with String.getBytes, measured ~25% slower: most runs between
    * escapes, e.g. in JavaScript in attributes, are a few chars, so each char was read twice plus a call per run.)
    */
-  private def escapeSlice(text: String, from: Int, to: Int, out: XmlStream.Out): Int = {
+  private def escapeSlice(text: String, from: Int, to: Int, out: XmlJsStream.Out): Int = {
     val buf = out.buf
     val actions = EscapeActions
     val len = text.length
@@ -125,7 +125,7 @@ object XmlEscape {
           p += 1
         }
       } else {
-        p = XmlStream.encodeUtf8(text, i, i + 1, buf, p) // (a lone low surrogate: '?')
+        p = XmlJsStream.encodeUtf8(text, i, i + 1, buf, p) // (a lone low surrogate: '?')
       }
       i += 1
     }

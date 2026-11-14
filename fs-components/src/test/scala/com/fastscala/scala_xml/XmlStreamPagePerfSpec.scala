@@ -40,7 +40,7 @@ import java.time.LocalDate
 import scala.xml.*
 
 /**
- * Performance test: a big page using many parts of the library, rendered with [[XmlStream]]. The page has
+ * Performance test: a big page using many parts of the library, rendered with [[XmlJsStream]]. The page has
  * [[XmlStreamPagePerfSpec.Sections]] sections (Bootstrap cards), each with:
  *
  *  - literal XML with Bootstrap class helpers on [[ScalaXmlElemUtilsV1]] (see [[XmlStreamPagePerfSpec.V1Helpers]]):
@@ -114,7 +114,7 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
   private def count(out: String, s: String): Int = out.split(java.util.regex.Pattern.quote(s), -1).length - 1
 
-  "A big page using many parts of the library" should "be written by XmlStream as by toString, with everything in it" in {
+  "A big page using many parts of the library" should "be written by XmlJsStream as by toString, with everything in it" in {
     val one = build(1)
     val built = build(Sections)
     // Every section registers the same callbacks, and the page nothing else.
@@ -125,7 +125,7 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       val written = writtenNode(built.html)
       // (Compare as Booleans so a failure doesn't print the multi-MB output.)
       val same = normalized(written) == normalized(built.html.toString)
-      assert(same, "XmlStream output differs from toString (attributes in any order)")
+      assert(same, "XmlJsStream output differs from toString (attributes in any order)")
     }
 
     // The contents are checked on a smaller page: parsing every tag of the full one takes too much memory.
@@ -133,9 +133,9 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     val small = build(n)
     val out = writtenNode(small.html)
     val same = normalized(out) == normalized(small.html.toString)
-    assert(same, "XmlStream output differs from toString (attributes in any order)")
+    assert(same, "XmlJsStream output differs from toString (attributes in any order)")
 
-    // JS.replace of the page (a rerender's response): streamed (written by XmlStream, escaped by EncJs as it's written),
+    // JS.replace of the page (a rerender's response): streamed (written by XmlJsStream, escaped by EncJs as it's written),
     // as cmd (which serializes with toString, so the attributes' order may differ: the lengths are compared).
     {
       val js = replaceJs(small.html)
@@ -228,7 +228,7 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       System.nanoTime() - t0
     }
 
-    // JS.replace("main-content", page): building the Js and writing it all (the page written by XmlStream and escaped
+    // JS.replace("main-content", page): building the Js and writing it all (the page written by XmlJsStream and escaped
     // as it's written by EncJs), as a rerender of the whole page does. On fresh pages (as a rerender: the first write
     // computes the class transforms), and on the already-written one.
     (1 to WarmupIterations).foreach(_ => countJs(replaceJs(build(Sections).html)))
@@ -247,8 +247,8 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
 
     info(s"Page: $Sections sections; $callbacks callbacks; $chars chars of output; JS.replace: $jsBytes bytes")
     info(stats("Build (page, callbacks, modals)", buildTimes.result()))
-    info(stats("Write (first, XmlStream)       ", writeTimes.result()))
-    info(stats("Write again (XmlStream)        ", rewriteTimes))
+    info(stats("Write (first, XmlJsStream)       ", writeTimes.result()))
+    info(stats("Write again (XmlJsStream)        ", rewriteTimes))
     info(stats("JS.replace (first)             ", replaceFirstTimes))
     info(stats("JS.replace (again)             ", replaceAgainTimes))
   }

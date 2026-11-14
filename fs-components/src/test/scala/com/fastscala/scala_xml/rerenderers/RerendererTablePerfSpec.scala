@@ -49,7 +49,7 @@ class RerendererTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     // Sanity check of the output (not measured).
     val out = writtenNode(built.table)
     // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-    assert(normalized(out) == normalized(built.table.toString), "XmlStream output differs from toString (attributes in any order)")
+    assert(normalized(out) == normalized(built.table.toString), "XmlJsStream output differs from toString (attributes in any order)")
     assert(out.split("<tr ", -1).length - 1 == Rows)
     assert(out.split("<td ", -1).length - 1 == Rows * (Cols + 1))
     assert(out.split("<button ", -1).length - 1 == Rows)

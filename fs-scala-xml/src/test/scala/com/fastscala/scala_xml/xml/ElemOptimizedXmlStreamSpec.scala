@@ -8,7 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import scala.xml.*
 
 /**
- * XmlStream's fast path for [[ElemOptimized]] must print what toString prints (attributes in any order), without
+ * XmlJsStream's fast path for [[ElemOptimized]] must print what toString prints (attributes in any order), without
  * computing the attributes.
  */
 class ElemWithFastAttrsV1XmlStreamSpec extends AnyFlatSpec {
@@ -30,11 +30,11 @@ class ElemWithFastAttrsV1XmlStreamSpec extends AnyFlatSpec {
   )
 
   cases.foreach { case (name, make) =>
-    "XmlStream" should s"write an ElemOptimized like toString (attributes in any order), without computing its attributes ($name)" in {
+    "XmlJsStream" should s"write an ElemOptimized like toString (attributes in any order), without computing its attributes ($name)" in {
       val e = make()
       assert(e.isInstanceOf[ElemOptimized])
       val streamed = stream(e)
-      assert(cached(e) == null, "XmlStream computed the attributes")
+      assert(cached(e) == null, "XmlJsStream computed the attributes")
       assert(normalized(streamed) == normalized(e.toString), s"\n  stream:   $streamed\n  toString: ${e.toString}")
     }
   }

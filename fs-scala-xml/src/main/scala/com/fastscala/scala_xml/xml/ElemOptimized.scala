@@ -18,7 +18,7 @@ object ElemOptimized {
 
   /**
    * An attribute's value: a String, or a [[Js]] (e.g. an `onclick`), kept as it is, so it isn't turned into one String
-   * until it's needed (see [[textOf]]), and [[XmlStream]] can write it part by part.
+   * until it's needed (see [[textOf]]), and [[XmlJsStream]] can write it part by part.
    */
   type AttrValue = String | Js
 

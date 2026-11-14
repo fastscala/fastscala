@@ -248,7 +248,7 @@ case class BSBtn(
     var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: ("type" -> "button") :: additionalAttrs.toList
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
-    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlStream writes it part by part)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlJsStream writes it part by part)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
     ElemOptimized("button", attrs)(content *)
   }
@@ -259,7 +259,7 @@ case class BSBtn(
     var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: additionalAttrs.toList
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
-    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlStream writes it part by part)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlJsStream writes it part by part)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
     ElemOptimized("span", attrs)(content *)
   }
@@ -270,7 +270,7 @@ case class BSBtn(
     var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: ("href" -> hrefOpt.getOrElse("javascript:void(0)")) :: additionalAttrs.toList
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
-    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlStream writes it part by part)
+    if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlJsStream writes it part by part)
     if (titleOpt.isDefined) attrs ::= ("title" -> titleOpt.get)
     ElemOptimized("a", attrs)(content *)
   }

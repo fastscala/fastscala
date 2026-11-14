@@ -5,7 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
 
-/** [[XmlStream]] writes what toString writes (see also [[XmlStreamSinkSpec]]: UTF-8, and the writes to the sink). */
+/** [[XmlJsStream]] writes what toString writes (see also [[XmlStreamSinkSpec]]: UTF-8, and the writes to the sink). */
 class XmlStreamSpec extends AnyFlatSpec {
 
   private def seq(ns: NodeSeq): String = writtenSeq(ns)
@@ -13,7 +13,7 @@ class XmlStreamSpec extends AnyFlatSpec {
   private def node(n: Node): String = writtenNode(n)
 
   /**
-   * `prefix` + `text` escaped by [[XmlEscape]] (which writes into XmlStream's buffer only: so as text, in a `<p>`),
+   * `prefix` + `text` escaped by [[XmlEscape]] (which writes into XmlJsStream's buffer only: so as text, in a `<p>`),
    * decoded from UTF-8.
    */
   private def escaped(text: String, prefix: String = ""): String = {
@@ -66,7 +66,7 @@ class XmlStreamSpec extends AnyFlatSpec {
   }
 
   it should "write a single text node bigger than the chunk size" in {
-    val big = "x&<" * (XmlStream.ChunkSize * 3)
+    val big = "x&<" * (XmlJsStream.ChunkSize * 3)
     val ns = <p>{big}</p>
     assert(seq(ns) == ns.toString)
   }
@@ -79,10 +79,10 @@ class XmlStreamSpec extends AnyFlatSpec {
   it should "write everything before returning, in chunks of up to ChunkSize bytes, the last one ending the content" in {
     val sink = new RecordingSink
     val ns = <div>{(1 to 5_000).map(i => <p>{i.toString}</p>)}</div>
-    XmlStream.writeSeq(ns, sink)
+    XmlJsStream.writeSeq(ns, sink)
     assert(sink.asString == ns.toString)
-    assert(sink.writes.size > 1 && sink.writes.size < ns.toString.length / (XmlStream.ChunkSize / 2))
-    assert(sink.writes.forall(_._1 <= XmlStream.ChunkSize) && sink.writes.init.forall(!_._2) && sink.writes.last._2)
+    assert(sink.writes.size > 1 && sink.writes.size < ns.toString.length / (XmlJsStream.ChunkSize / 2))
+    assert(sink.writes.forall(_._1 <= XmlJsStream.ChunkSize) && sink.writes.init.forall(!_._2) && sink.writes.last._2)
   }
 
   it should "fail like Utility.serialize (and so toString) for unknown Node subclasses" in {

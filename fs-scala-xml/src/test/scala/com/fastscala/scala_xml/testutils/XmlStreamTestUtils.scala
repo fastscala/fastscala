@@ -1,6 +1,6 @@
 package com.fastscala.scala_xml.testutils
 
-import com.fastscala.scala_xml.xml.XmlStream
+import com.fastscala.scala_xml.xml.XmlJsStream
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 
@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 import scala.xml.{Node, NodeSeq}
 
-/** Writing with [[XmlStream]] (which writes UTF-8 into a Content.Sink) in tests. */
+/** Writing with [[XmlJsStream]] (which writes UTF-8 into a Content.Sink) in tests. */
 object XmlStreamTestUtils {
 
   /** Records what's written: the bytes, and each write's size and `last`. Each write completes at once. */
@@ -32,12 +32,12 @@ object XmlStreamTestUtils {
     def asString: String = bytes.toString(UTF_8)
   }
 
-  /** `ns` written by XmlStream, decoded from UTF-8. */
-  def writtenSeq(ns: NodeSeq, prefix: String = ""): String = { val s = new RecordingSink; XmlStream.writeSeq(ns, s, prefix); s.asString }
+  /** `ns` written by XmlJsStream, decoded from UTF-8. */
+  def writtenSeq(ns: NodeSeq, prefix: String = ""): String = { val s = new RecordingSink; XmlJsStream.writeSeq(ns, s, prefix); s.asString }
 
-  /** `n` written by XmlStream, decoded from UTF-8. */
-  def writtenNode(n: Node): String = { val s = new RecordingSink; XmlStream.writeNode(n, s); s.asString }
+  /** `n` written by XmlJsStream, decoded from UTF-8. */
+  def writtenNode(n: Node): String = { val s = new RecordingSink; XmlJsStream.writeNode(n, s); s.asString }
 
-  /** `s` through UTF-8 and back: as `s` comes out of XmlStream (a lone surrogate becomes '?', as String.getBytes does). */
+  /** `s` through UTF-8 and back: as `s` comes out of XmlJsStream (a lone surrogate becomes '?', as String.getBytes does). */
   def utf8RoundTrip(s: String): String = new String(s.getBytes(UTF_8), UTF_8)
 }

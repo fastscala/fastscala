@@ -1,7 +1,7 @@
 package com.fastscala.core
 
 import com.fastscala.core.FSContext.logger
-import com.fastscala.js.{Js, JsUtils}
+import com.fastscala.js.{Js, JsUtils, JsWriter}
 import com.fastscala.routing.RoutingHandlerNoSessionHelper
 import com.fastscala.routing.req.{Get, Post}
 import com.fastscala.routing.resp.*
@@ -343,7 +343,10 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
     }
   }
 
-  def respondWithJs(js: Js): Response = Ok.js(js)
+  /** How responses' JavaScript is written: each Js writing itself (fs-scala-xml's FSSystem uses its XmlJsStream). */
+  def jsWriter: JsWriter = JsWriter.Recursive
+
+  def respondWithJs(js: Js): Response = Ok.js(js, jsWriter)
 
   def respondWithAnonymousPage(rendered: AnyRef): Response = Ok.html(rendered.toString)
 

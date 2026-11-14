@@ -64,24 +64,24 @@ class CompositeJsSpec extends AnyFlatSpec {
     check(new CompositeJs(Js("a()"), Js("b()")), "a()b()")
   }
 
-  "withSeparator" should "put the separator only between children" in {
-    check(new CompositeJs(Js("a()"), Js("b()"), Js("c()")).withSeparator(Js(";")), "a();b();c()")
+  "CompositeJs.joined" should "put the separator only between children" in {
+    check(CompositeJs.joined(Seq(Js("a()"), Js("b()"), Js("c()")), Js(";")), "a();b();c()")
   }
 
   it should "add no separator for a single child" in {
-    check(new CompositeJs(Js("a()")).withSeparator(Js(";")), "a()")
+    check(CompositeJs.joined(Seq(Js("a()")), Js(";")), "a()")
   }
 
   it should "be empty with no children" in {
-    check(new CompositeJs().withSeparator(Js(";")), "")
+    check(CompositeJs.joined(Seq(), Js(";")), "")
   }
 
   it should "count multi-byte separators correctly" in {
-    check(new CompositeJs(Js("é"), Js("€")).withSeparator(Js("/*😀*/")), "é/*😀*/€")
+    check(CompositeJs.joined(Seq(Js("é"), Js("€")), Js("/*😀*/")), "é/*😀*/€")
   }
 
   "writeUtf8Enc" should "not start a write before the previous one completed, and complete the callback once at the end" in {
-    val js = new CompositeJs(Js("a()"), Js("b()"), Js("c()")).withSeparator(Js(";"))
+    val js = CompositeJs.joined(Seq(Js("a()"), Js("b()"), Js("c()")), Js(";"))
     val sink = new AsyncSink
     val cb = new RecordingCallback
     js.writeUtf8Enc(sink, cb)
@@ -97,7 +97,7 @@ class CompositeJsSpec extends AnyFlatSpec {
 
   it should "complete the callback once, synchronously, for a synchronous sink" in {
     val cb = new RecordingCallback
-    new CompositeJs(Js("a()"), Js("b()")).withSeparator(Js(";")).writeUtf8Enc(new Content.Sink {
+    CompositeJs.joined(Seq(Js("a()"), Js("b()")), Js(";")).writeUtf8Enc(new Content.Sink {
       override def write(last: Boolean, bb: ByteBuffer, c: Callback): Unit = c.succeeded()
     }, cb)
     assert(cb.successes == 1)
@@ -127,7 +127,7 @@ class CompositeJsSpec extends AnyFlatSpec {
   }
 
   it should "sequence the parts of nested CompositeJs" in {
-    val js = Js(Js("a("), new CompositeJs(Js("b"), Js("c")).withSeparator(Js(", ")), Js(")"))
+    val js = Js(Js("a("), CompositeJs.joined(Seq(Js("b"), Js("c")), Js(", ")), Js(")"))
     val sink = new AsyncSink
     val cb = new RecordingCallback
     js.writeUtf8Enc(sink, cb)
@@ -152,23 +152,23 @@ class CompositeJsSpec extends AnyFlatSpec {
       Js.Void,
       Js(""),
       new CompositeJs(Js("a()"), Js("b()")),
-      new CompositeJs(Js("a()"), Js("b()"), Js("c()")).withSeparator(Js(";")),
-      new CompositeJs(Js("a()")).withSeparator(Js(";")),
-      new CompositeJs().withSeparator(Js(";")),
-      new CompositeJs(Js("x"), Js.Void, Js("y")).withSeparator(Js(", ")),
-      new CompositeJs(new CompositeJs(Js("a"), Js("b")).withSeparator(Js("|")), Js("c")).withSeparator(Js(";")),
+      CompositeJs.joined(Seq(Js("a()"), Js("b()"), Js("c()")), Js(";")),
+      CompositeJs.joined(Seq(Js("a()")), Js(";")),
+      CompositeJs.joined(Seq(), Js(";")),
+      CompositeJs.joined(Seq(Js("x"), Js.Void, Js("y")), Js(", ")),
+      CompositeJs.joined(Seq(CompositeJs.joined(Seq(Js("a"), Js("b")), Js("|")), Js("c")), Js(";")),
       Js("a()") & Js("b()") & Js("c()") & Js.Void & Js("d()"),
       new JsFunc0(Js("x()")),
       new JsFunc1(arg => Js(s"f(${arg.cmd})")),
       new JsFunc3((a, b, c) => Js(a, Js(","), b, Js(","), c)),
-      new CompositeJs(Js("é"), Js("€")).withSeparator(Js("/*😀*/")),
+      CompositeJs.joined(Seq(Js("é"), Js("€")), Js("/*😀*/")),
     )
     cases.foreach(js => assert(parts(js).mkString == js.cmd, js.cmd))
   }
 
   it should "give a StringJs's string, and a CompositeJs's parts, without building cmd" in {
     assert(parts(Js("abc")) == Seq("abc"))
-    assert(parts(new CompositeJs(Js("a"), Js("b"), Js("c")).withSeparator(Js(";"))) == Seq("a", ";", "b", ";", "c"))
+    assert(parts(CompositeJs.joined(Seq(Js("a"), Js("b"), Js("c")), Js(";"))) == Seq("a", ";", "b", ";", "c"))
     // A Js whose cmd isn't called (it would throw): only its parts are.
     val noCmd = new CompositeJs(Js("a"), Js("b")) {
       override def cmd: String = throw new IllegalStateException("cmd was built")

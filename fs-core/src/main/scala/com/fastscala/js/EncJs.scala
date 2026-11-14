@@ -13,10 +13,13 @@ import java.nio.ByteBuffer
 import java.security.SecureRandom
 import java.util.Date
 
-class EncJs(js: Js) extends Js {
-  override def cmd: String = Encode.forJavaScript(js.cmd)
+class EncJs(js: Js, inString: Boolean = false) extends Js {
+  override def cmd: String = {
+    if (inString) '"' + Encode.forJavaScript(js.cmd) + '"'
+    else Encode.forJavaScript(js.cmd)
+  }
 
-  override def foreachPart(f: String => Unit): Unit = f(Encode.forJavaScript(js.cmd))
+  override def foreachPart(f: String => Unit): Unit = f(cmd)
 
-  override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = sink.write(false, ByteBuffer.wrap(Encode.forJavaScript(js.cmd).getBytes("UTF-8")), callback)
+  override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = sink.write(false, ByteBuffer.wrap(cmd.getBytes("UTF-8")), callback)
 }

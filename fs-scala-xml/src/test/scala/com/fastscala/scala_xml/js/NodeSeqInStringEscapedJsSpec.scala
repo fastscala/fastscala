@@ -103,22 +103,12 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
     assert(!cmd.toLowerCase.contains("</script"))
   }
 
-  // ---------- writeUtf8Enc / lengthUtf8Enc ----------
+  // ---------- writeUtf8Enc ----------
 
   samples.foreach { case (name, ns) =>
     "writeUtf8Enc" should s"stream exactly what cmd returns ($name)" in {
       val (out, _, _) = streamed(ns)
       assert(out == new NodeSeqInStringEscapedJs(ns).cmd)
-    }
-
-    "lengthUtf8Enc" should s"equal the number of bytes streamed ($name)" in {
-      val (_, bytes, _) = streamed(ns)
-      assert(new NodeSeqInStringEscapedJs(ns).lengthUtf8Enc == bytes.length)
-    }
-
-    it should s"equal the UTF-8 length of cmd ($name)" in {
-      val js = new NodeSeqInStringEscapedJs(ns)
-      assert(js.lengthUtf8Enc == js.cmd.getBytes(StandardCharsets.UTF_8).length)
     }
   }
 
@@ -140,10 +130,6 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
     assert(unescapeJsString(out) == ns.toString())
   }
 
-  "lengthUtf8Enc" should "be 0 for an empty NodeSeq" in {
-    assert(new NodeSeqInStringEscapedJs(NodeSeq.Empty).lengthUtf8Enc == 0)
-  }
-
   // ---------- composition ----------
 
   "JS.setContents" should "embed the escaped NodeSeq consistently in cmd and the stream" in {
@@ -151,6 +137,5 @@ class NodeSeqInStringEscapedJsSpec extends AnyFlatSpec {
     val sink = new CapturingSink
     js.writeUtf8Enc(sink, Callback.NOOP)
     assert(sink.asString == js.cmd)
-    assert(js.lengthUtf8Enc == sink.bytes.size())
   }
 }

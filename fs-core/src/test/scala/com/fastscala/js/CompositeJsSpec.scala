@@ -24,7 +24,6 @@ class CompositeJsSpec extends AnyFlatSpec {
     assert(js.cmd == expectedCmd)
     val bytes = streamed(js)
     assert(new String(bytes, StandardCharsets.UTF_8) == expectedCmd)
-    assert(js.lengthUtf8Enc == bytes.length)
   }
 
   /** A sink that completes writes only when `completeNext` is called, and fails if a write starts while one is pending. */
@@ -179,7 +178,6 @@ class CompositeJsSpec extends AnyFlatSpec {
 
   it should "give a Js's cmd, as one part, by default" in {
     val js = new Js {
-      override def lengthUtf8Enc: Long = 3
       override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = callback.succeeded()
       override def cmd: String = "f()"
     }

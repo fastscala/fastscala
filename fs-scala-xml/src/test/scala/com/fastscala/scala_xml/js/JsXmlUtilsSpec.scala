@@ -174,7 +174,8 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
     val cmd = JS.append2Body(<p>x</p>).cmd
     assert(cmd.startsWith("document.body.appendChild("))
     val templateId = """template.setAttribute\("id", "([^"]+)"\)""".r.findFirstMatchIn(cmd).get.group(1)
-    assert(cmd.endsWith(s"""document.getElementById("$templateId").remove();"""))
+    // (removeId escapes the id, as a JavaScript string literal: e.g. its '-' as \x2d)
+    assert(cmd.endsWith(s"""document.getElementById("${Encode.forJavaScript(templateId)}").remove();"""))
   }
 
   "append2" should "append to the element with the (escaped) id" in {

@@ -1,52 +1,43 @@
 package com.fastscala.js
 
-import com.fastscala.core.FSContext
-import com.fastscala.utils.IdGen
-import org.apache.commons.text.StringEscapeUtils
-import org.eclipse.jetty.http.{HttpHeader, MimeTypes}
-import org.eclipse.jetty.io.Content
-import org.eclipse.jetty.server.Response
-import org.eclipse.jetty.util.{BufferUtil, Callback, IteratingCallback}
-import org.owasp.encoder.Encode
-
-import java.nio.ByteBuffer
 import java.security.SecureRandom
-import java.util.Date
 
 
 object JsHelper {
 
   val secureRandom = new SecureRandom()
 
+  /** JavaScript operators on Js (with `js"..."`: the operands stay parts of the result). */
   implicit class RichJs(val js: Js) extends AnyVal {
 
-    def `_==`(other: Js): Js = Js(s"${js.cmd} == ${other.cmd}")
+    def `_==`(other: Js): Js = js"$js == $other"
 
-    def `_!=`(other: Js): Js = Js(s"${js.cmd} != ${other.cmd}")
+    def `_!=`(other: Js): Js = js"$js != $other"
 
-    def `_===`(other: Js): Js = Js(s"${js.cmd} === ${other.cmd}")
+    def `_===`(other: Js): Js = js"$js === $other"
 
-    def `_!==`(other: Js): Js = Js(s"${js.cmd} !== ${other.cmd}")
+    def `_!==`(other: Js): Js = js"$js !== $other"
 
-    def `_>`(other: Js): Js = Js(s"${js.cmd} > ${other.cmd}")
+    def `_>`(other: Js): Js = js"$js > $other"
 
-    def `_>=`(other: Js): Js = Js(s"${js.cmd} >= ${other.cmd}")
+    def `_>=`(other: Js): Js = js"$js >= $other"
 
-    def `_<`(other: Js): Js = Js(s"${js.cmd} < ${other.cmd}")
+    def `_<`(other: Js): Js = js"$js < $other"
 
-    def `_<=`(other: Js): Js = Js(s"${js.cmd} <= ${other.cmd}")
+    def `_<=`(other: Js): Js = js"$js <= $other"
 
-    def `_&&`(other: Js): Js = Js(s"${js.cmd} && ${other.cmd}")
+    def `_&&`(other: Js): Js = js"$js && $other"
 
-    def `_||`(other: Js): Js = Js(s"${js.cmd} || ${other.cmd}")
+    def `_||`(other: Js): Js = js"$js || $other"
 
-    def `_=`(other: Js): Js = Js(s"${js.cmd} = ${other.cmd};")
+    def `_=`(other: Js): Js = js"$js = $other;"
 
-    def `_===null`: Js = Js(s"${js.cmd} === null")
+    def `_===null`: Js = js"$js === null"
 
+    /** `code`, with `js`'s value in a new variable (with a random name), given to `code`. */
     def asVar(code: Js => Js): Js = {
       val name = "v_" + "%04X".formatted(secureRandom.nextInt())
-      Js(s"var $name = (${js.cmd}); " + code(Js(name)))
+      js"var $name = ($js); ${code(Js(name))}"
     }
   }
 

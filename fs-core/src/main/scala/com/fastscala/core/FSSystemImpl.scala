@@ -343,7 +343,7 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
     }
   }
 
-  def respondWithJs(js: Js): Response = Ok.jsStreaming(js)
+  def respondWithJs(js: Js): Response = Ok.js(js)
 
   def respondWithAnonymousPage(rendered: AnyRef): Response = Ok.html(rendered.toString)
 

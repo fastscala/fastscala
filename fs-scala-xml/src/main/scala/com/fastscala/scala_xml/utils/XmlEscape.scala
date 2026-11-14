@@ -28,41 +28,48 @@ object XmlEscape {
     arr
   }
 
-  /** Escapes `text` into XmlStream2's byte buffer, in UTF-8. */
-  def escape(text: String, out: XmlStream2.Out): Unit = {
-    val len = text.length
-    if (len == 0) return
+  /** Text escaped in slices of at least this many chars: rather than a tiny one, the buffer is written out first. */
+  private final val MinSlice = 64
 
-    // Room for 6 bytes per char: the longest entity (`&quot;`), and more than UTF-8's 3 bytes per char.
-    val maxUnchecked = XmlStream2.ChunkSize / 6 // 1,365 chars for an 8,192-byte buffer
-    if (len <= (XmlStream2.ChunkSize - out.pos) / 6) {
-      escapeUnchecked(text, len, out)
-    } else if (len <= maxUnchecked) {
-      out.flush()
-      escapeUnchecked(text, len, out)
-    } else {
-      escapeStreaming(text, len, out)
+  /**
+   * Escapes `text` into XmlStream's byte buffer, in UTF-8, as Utility.escape does (`&`, `<`, `>` and `"` become
+   * entities; control chars other than \n, \r and \t are dropped) and then UTF-8 encoding (a lone surrogate is `?`).
+   *
+   * In slices that surely fit in the buffer (6 bytes per char: the longest entity, `&quot;`, and more than UTF-8's 3
+   * bytes per char), each written without any bounds check; usually the whole text is one slice.
+   */
+  def escape(text: String, out: XmlStream.Out): Unit = {
+    val len = text.length
+    var i = 0
+    while (i < len) {
+      var room = (XmlStream.ChunkSize - out.pos) / 6
+      if (room < len - i && room < MinSlice) {
+        out.flush()
+        room = XmlStream.ChunkSize / 6 // 1,365 chars for an 8,192-byte buffer
+      }
+      i = escapeSlice(text, i, math.min(len, i + room), out)
     }
   }
 
-  // (The scans test `c < 128` and then look the char up. Testing `c > '>'` first, to skip most chars with one
+  // (The loop tests `c < 128` and then looks the char up. Testing `c > '>'` first, to skip most chars with one
   // comparison, measured ~35% slower on a page with a lot of JavaScript in attributes: that branch is mispredicted
   // whenever letters and digits / punctuation alternate, while `c < 128` is almost always true.)
 
   /**
-   * Zero-bounds-check loop: caller guarantees `(ChunkSize - out.pos) >= text.length * 6`,
-   * so even worst-case expansion (`"` -> `&quot;`, or 3 UTF-8 bytes per char) cannot overflow `out.buf`.
+   * Escapes `text(from until to)` without bounds checks (the caller guarantees room for 6 bytes per char); returns
+   * where it stopped: `to`, or after it if a surrogate pair started just before `to`.
    *
    * One pass: each char is written (as a byte, an entity, or encoded to UTF-8) as it's read. (Scanning for the next
    * escape and then copying the run in between, with String.getBytes, measured ~25% slower: most runs between
    * escapes, e.g. in JavaScript in attributes, are a few chars, so each char was read twice plus a call per run.)
    */
-  private def escapeUnchecked(text: String, len: Int, out: XmlStream2.Out): Unit = {
+  private def escapeSlice(text: String, from: Int, to: Int, out: XmlStream.Out): Int = {
     val buf = out.buf
     val actions = EscapeActions
+    val len = text.length
     var p = out.pos
-    var i = 0
-    while (i < len) {
+    var i = from
+    while (i < to) {
       val c = text.charAt(i)
       if (c < 128) {
         (actions(c): @switch) match {
@@ -83,81 +90,29 @@ object XmlEscape {
             p += 6
           case _ => // ActionDrop
         }
+      } else if (Character.isHighSurrogate(c)) {
+        // Its low surrogate may come after chars that are dropped: they're removed by the escaping, before the UTF-8
+        // encoding (as toString's output is encoded), so then it's a pair. Otherwise it's a lone surrogate: '?'.
+        var j = i + 1
+        while (j < len && { val d = text.charAt(j); d < 128 && actions(d) == ActionDrop }) j += 1
+        if (j < len && Character.isLowSurrogate(text.charAt(j))) {
+          val cp = Character.toCodePoint(c, text.charAt(j))
+          buf(p) = (0xF0 | (cp >> 18)).toByte
+          buf(p + 1) = (0x80 | ((cp >> 12) & 0x3F)).toByte
+          buf(p + 2) = (0x80 | ((cp >> 6) & 0x3F)).toByte
+          buf(p + 3) = (0x80 | (cp & 0x3F)).toByte
+          p += 4 // (4 bytes for 2 or more chars: within the room for this one)
+          i = j
+        } else {
+          buf(p) = '?'
+          p += 1
+        }
       } else {
-        // Not ASCII: this char (or surrogate pair) encoded.
-        val end = if (Character.isHighSurrogate(c) && i + 1 < len) i + 2 else i + 1
-        p = XmlStream2.encodeUtf8(text, i, end, buf, p)
-        i = end - 1
+        p = XmlStream.encodeUtf8(text, i, i + 1, buf, p) // (a lone low surrogate: '?')
       }
       i += 1
     }
     out.pos = p
-  }
-
-  /** Streaming path for large text nodes (> 1,365 chars): copies runs in bulk and writes entities directly. */
-  private def escapeStreaming(text: String, len: Int, out: XmlStream2.Out): Unit = {
-    val actions = EscapeActions
-    var runStart = 0
-    var i = 0
-
-    while (i < len) {
-      val c = text.charAt(i)
-      val action = if (c < 128) actions(c) else ActionKeep
-      if (action != ActionKeep) {
-        if (i > runStart) out.append(text, runStart, i)
-        if (action != ActionDrop) {
-          if (out.pos + 6 > XmlStream2.ChunkSize) out.flush()
-          val buf = out.buf
-          var p = out.pos
-          (action: @switch) match {
-            case ActionAmp =>
-              buf(p) = '&'; buf(p + 1) = 'a'; buf(p + 2) = 'm'; buf(p + 3) = 'p'; buf(p + 4) = ';'
-              p += 5
-            case ActionLt =>
-              buf(p) = '&'; buf(p + 1) = 'l'; buf(p + 2) = 't'; buf(p + 3) = ';'
-              p += 4
-            case ActionGt =>
-              buf(p) = '&'; buf(p + 1) = 'g'; buf(p + 2) = 't'; buf(p + 3) = ';'
-              p += 4
-            case ActionQuot =>
-              buf(p) = '&'; buf(p + 1) = 'q'; buf(p + 2) = 'u'; buf(p + 3) = 'o'; buf(p + 4) = 't'; buf(p + 5) = ';'
-              p += 6
-            case _ =>
-          }
-          out.pos = p
-        }
-        runStart = i + 1
-      }
-      i += 1
-    }
-
-    if (len > runStart) out.append(text, runStart, len)
-  }
-
-  /** Fallback for non-`Out` `StringBuilderLike` targets. */
-  private def escapeGeneric(text: String, out: StringBuilderLike): Unit = {
-    val len = text.length
-    val actions = EscapeActions
-    var runStart = 0
-    var i = 0
-
-    while (i < len) {
-      val c = text.charAt(i)
-      val action = if (c < 128) actions(c) else ActionKeep
-      if (action != ActionKeep) {
-        if (i > runStart) out.append(text, runStart, i)
-        (action: @switch) match {
-          case ActionAmp => out.append("&amp;")
-          case ActionLt => out.append("&lt;")
-          case ActionGt => out.append("&gt;")
-          case ActionQuot => out.append("&quot;")
-          case _ => // ActionDrop
-        }
-        runStart = i + 1
-      }
-      i += 1
-    }
-
-    if (len > runStart) out.append(text, runStart, len)
+    i
   }
 }

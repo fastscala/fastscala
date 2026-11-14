@@ -3,7 +3,7 @@ package com.fastscala.scala_xml.js
 import com.fastscala.core.FSContext
 import com.fastscala.js.{CompositeJs, Js, JsUtils}
 import com.fastscala.scala_xml.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
-import com.fastscala.scala_xml.utils.XmlStream
+import com.fastscala.scala_xml.utils.{Utf8ToWriterSink, XmlStream}
 import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.io.Content
@@ -17,9 +17,18 @@ import java.nio.ByteBuffer
 
 object JS extends JsXmlUtils
 
+/**
+ * `ns`'s XML, escaped for a JavaScript string. Streamed: [[XmlStream]] writes the XML (as UTF-8 bytes) into a
+ * [[Utf8ToWriterSink]], which decodes it into an [[EncodedWriter]] (JavaScript escaping) on an OutputStreamWriter
+ * (UTF-8) on the output. The XML is never a single String; nor is the content ended (it's inside a JS response).
+ */
 class NodeSeqInStringEscapedJs(ns: NodeSeq) extends Js {
   private def encodedWriter(out: OutputStream): EncodedWriter =
     new EncodedWriter(new OutputStreamWriter(out, "UTF-8"), Encoders.JAVASCRIPT)
+
+  /** Writes the escaped XML to `out` (flushed, not closed). */
+  private def writeEscaped(out: OutputStream): Unit =
+    XmlStream.writeSeq(ns, new Utf8ToWriterSink(encodedWriter(out))) // its last write flushes the writers
 
   override lazy val lengthUtf8Enc: Long = {
     var length = 0L
@@ -28,18 +37,14 @@ class NodeSeqInStringEscapedJs(ns: NodeSeq) extends Js {
 
       override def write(b: Array[Byte], off: Int, len: Int): Unit = length += len
     }
-    val writer = encodedWriter(counter)
-    XmlStream.writeSeq(ns, writer)
-    writer.flush() // the encoder and OutputStreamWriter both buffer
+    writeEscaped(counter)
     length
   }
 
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = {
     // Not closed: closing the sink's OutputStream would write last=true and end the response.
     try {
-      val writer = encodedWriter(Content.Sink.asOutputStream(sink))
-      XmlStream.writeSeq(ns, writer)
-      writer.flush() // must happen before signalling completion
+      writeEscaped(Content.Sink.asOutputStream(sink)) // flushed before signalling completion
     } catch {
       case t: Throwable =>
         callback.failed(t)

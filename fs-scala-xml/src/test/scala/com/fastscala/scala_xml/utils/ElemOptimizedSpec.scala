@@ -1,9 +1,9 @@
 package com.fastscala.scala_xml.utils
 
 import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
+import com.fastscala.scala_xml.testutils.XmlStreamTestUtils.writtenNode
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.StringWriter
 import scala.xml.*
 
 /** In every constructor of [[ElemOptimized]], a transform returning null removes the attribute. */
@@ -11,7 +11,7 @@ class ElemOptimizedSpec extends AnyFlatSpec {
 
   private type T = String => String
 
-  private def stream(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
+  private def stream(n: Node): String = writtenNode(n)
 
   /** attrs never holds a null value nor a repeated name, and toString / XmlStream agree (attributes in any order). */
   private def wellFormed(e: ElemOptimized): Unit = {

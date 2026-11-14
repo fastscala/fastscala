@@ -24,12 +24,11 @@ import com.fastscala.components.form7.{DefaultForm7, F7Field}
 import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.*
 import com.fastscala.js.Js
-import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
 import com.fastscala.testutils.AttributeOrder.normalized
+import com.fastscala.testutils.XmlStreamWrite.{writtenNode, countWritten}
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.{StringWriter, Writer}
 import java.time.LocalDate
 import scala.xml.*
 
@@ -66,21 +65,9 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
   private val MeasuredIterations = 20
   private val ProfiledIterations = 10
 
-  /** Discards output, so only writing is measured (no growing buffer to copy). */
-  private final class CountingWriter extends Writer {
-    var count = 0L
-
-    override def write(cbuf: Array[Char], off: Int, len: Int): Unit = count += len
-
-    override def flush(): Unit = ()
-
-    override def close(): Unit = ()
-  }
 
   private def write(page: Elem): Long = {
-    val w = new CountingWriter
-    XmlStream.writeNode(page, w)
-    w.count
+    countWritten(page)
   }
 
   private def ms(nanos: Long): String = f"${nanos / 1e6}%.2f ms"
@@ -101,21 +88,16 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     assert(built.page.callbacks.size == Sections * one.page.callbacks.size)
 
     {
-      val w = new StringWriter
-      XmlStream.writeNode(built.html, w)
+      val written = writtenNode(built.html)
       // (Compare as Booleans so a failure doesn't print the multi-MB output.)
-      val same = normalized(w.toString) == normalized(built.html.toString)
+      val same = normalized(written) == normalized(built.html.toString)
       assert(same, "XmlStream output differs from toString (attributes in any order)")
     }
 
     // The contents are checked on a smaller page: parsing every tag of the full one takes too much memory.
     val n = SanitySections
     val small = build(n)
-    val out = {
-      val w = new StringWriter
-      XmlStream.writeNode(small.html, w)
-      w.toString
-    }
+    val out = writtenNode(small.html)
     val same = normalized(out) == normalized(small.html.toString)
     assert(same, "XmlStream output differs from toString (attributes in any order)")
 

@@ -2,12 +2,11 @@ package com.fastscala.components.bootstrap5.utils
 
 import com.fastscala.core.FSContext
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
 import com.fastscala.testutils.AttributeOrder.normalized
+import com.fastscala.testutils.XmlStreamWrite.{writtenNode, countWritten}
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.{StringWriter, Writer}
 import scala.xml.*
 
 /**
@@ -29,18 +28,9 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
   private val MeasuredIterations = 20
   private val ProfiledIterations = 10
 
-  /** Discards output, so only writing is measured (no growing buffer to copy). */
-  private final class CountingWriter extends Writer {
-    var count = 0L
-    override def write(cbuf: Array[Char], off: Int, len: Int): Unit = count += len
-    override def flush(): Unit = ()
-    override def close(): Unit = ()
-  }
 
   private def write(elems: Seq[Elem]): Long = {
-    val w = new CountingWriter
-    XmlStream.writeNode(<div>{elems}</div>, w)
-    w.count
+    countWritten(<div>{elems}</div>)
   }
 
   private def ms(nanos: Long): String = f"${nanos / 1e6}%.2f ms"
@@ -74,7 +64,7 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
         assert(current.child.toList == previous.child.toList, (current.child, previous.child))
         // and the written output: the same tag, attributes (ignoring their order and the callback ids) and content
         def written(e: Elem): (String, Set[String], String) = {
-          val out = { val w = new StringWriter; XmlStream.writeNode(e, w); w.toString }
+          val out = writtenNode(e)
           val m = """^<(\w+)((?: [\w-]+="[^"]*")*)>(.*)$""".r.findFirstMatchIn(out).getOrElse(fail(out))
           val attrs = """ [\w-]+="[^"]*"""".r.findAllIn(m.group(2)).toSet.map(_.replaceAll("&quot;\\d+&quot;", "&quot;ID&quot;"))
           (m.group(1), attrs, m.group(3))
@@ -120,9 +110,7 @@ class BSBtnPerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     s"BSBtn.$method" should "render the button's tag, classes, id, title, onclick and label" in {
       implicit val fsc: FSContext = PerfFS.newPage().rootFSContext
       val elem = render(button(1))(fsc)
-      val w = new StringWriter
-      XmlStream.writeNode(elem, w)
-      val out = w.toString
+      val out = writtenNode(elem)
       assert(normalized(out) == normalized(elem.toString), "XmlStream output differs from toString (attributes in any order)")
       val (tag, attrs) = startTag(out)
       assert(tag == ExpectedTag(method), out)

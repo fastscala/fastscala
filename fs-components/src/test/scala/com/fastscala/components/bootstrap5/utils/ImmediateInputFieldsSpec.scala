@@ -3,12 +3,11 @@ package com.fastscala.components.bootstrap5.utils
 import com.fastscala.core.FSContext
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.js.JS
-import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.PerfFS
 import com.fastscala.testutils.AttributeOrder.normalized
+import com.fastscala.testutils.XmlStreamWrite.{writtenNode}
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.StringWriter
 import scala.xml.*
 
 /**
@@ -30,7 +29,7 @@ class ImmediateInputFieldsSpec extends AnyFlatSpec {
 
   private def newFsc(): FSContext = PerfFS.newPage().rootFSContext
 
-  private def written(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
+  private def written(n: Node): String = writtenNode(n)
 
   /** The generated ids replaced by placeholders, so two renders (registering different callbacks) can be compared. */
   private def normIds(s: String): String = s

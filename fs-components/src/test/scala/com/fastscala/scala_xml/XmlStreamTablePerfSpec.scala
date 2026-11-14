@@ -1,12 +1,11 @@
 package com.fastscala.scala_xml
 
 import com.fastscala.components.bootstrap5.helpers.{BSClassesHelper, BSHelpers}
-import com.fastscala.scala_xml.utils.XmlStream
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions}
 import com.fastscala.testutils.AttributeOrder.normalized
+import com.fastscala.testutils.XmlStreamWrite.{writtenNode, countWritten}
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.{StringWriter, Writer}
 import scala.xml.*
 
 /**
@@ -47,21 +46,9 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     }
   }
 
-  /** Discards output, so only rendering is measured (no growing buffer to copy). */
-  private final class CountingWriter extends Writer {
-    var count = 0L
-
-    override def write(cbuf: Array[Char], off: Int, len: Int): Unit = count += len
-
-    override def flush(): Unit = ()
-
-    override def close(): Unit = ()
-  }
 
   private def render(table: Elem): Long = {
-    val w = new CountingWriter
-    XmlStream.writeNode(table, w)
-    w.count
+    countWritten(table)
   }
 
   private def ms(nanos: Long): String = f"${nanos / 1e6}%.2f ms"
@@ -77,9 +64,7 @@ class XmlStreamTablePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     s"XmlStream ($variant)" should s"render a $Rows-row x $Cols-col table with Bootstrap classes" in {
       // Sanity check: output matches toString and the classes are there.
       val small = buildTable()
-      val w = new StringWriter
-      XmlStream.writeNode(small, w)
-      val out = w.toString
+      val out = writtenNode(small)
       // (Compare as Booleans so a failure doesn't print the multi-MB output.)
       assert(normalized(out) == normalized(small.toString), "XmlStream output differs from toString (attributes in any order)")
       assert(out.split("<tr ", -1).length - 1 == Rows)

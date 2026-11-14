@@ -2,9 +2,9 @@ package com.fastscala.scala_xml.utils
 
 import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
 import com.fastscala.scala_xml.testutils.ElemUtilsV1.RichElem
+import com.fastscala.scala_xml.testutils.XmlStreamTestUtils.writtenNode
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.StringWriter
 import scala.xml.*
 
 /**
@@ -13,7 +13,7 @@ import scala.xml.*
  */
 class ElemWithFastAttrsV1XmlStreamSpec extends AnyFlatSpec {
 
-  private def stream(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
+  private def stream(n: Node): String = writtenNode(n)
 
   private def cached(e: Elem): AnyRef = e.attributes.getClass.getField("cached").get(e.attributes) // (the generated attribute class)
 

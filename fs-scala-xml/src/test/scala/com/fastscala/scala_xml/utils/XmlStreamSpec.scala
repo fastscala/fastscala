@@ -1,24 +1,24 @@
 package com.fastscala.scala_xml.utils
 
+import com.fastscala.scala_xml.testutils.XmlStreamTestUtils.{RecordingSink, utf8RoundTrip, writtenNode, writtenSeq}
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.StringWriter
 import scala.xml.*
 
+/** [[XmlStream]] writes what toString writes (see also [[XmlStreamSinkSpec]]: UTF-8, and the writes to the sink). */
 class XmlStreamSpec extends AnyFlatSpec {
 
-  private def seq(ns: NodeSeq): String = { val w = new StringWriter; XmlStream.writeSeq(ns, w); w.toString }
+  private def seq(ns: NodeSeq): String = writtenSeq(ns)
 
-  private def node(n: Node): String = { val w = new StringWriter; XmlStream.writeNode(n, w); w.toString }
+  private def node(n: Node): String = writtenNode(n)
 
-  /** `prefix` + `text` escaped by [[XmlEscape]], into a [[StringBuilderLike]] (other than XmlStream's buffers). */
+  /**
+   * `prefix` + `text` escaped by [[XmlEscape]] (which writes into XmlStream's buffer only: so as text, in a `<p>`),
+   * decoded from UTF-8.
+   */
   private def escaped(text: String, prefix: String = ""): String = {
-    val sb = new java.lang.StringBuilder(prefix)
-    XmlEscape.escape(text, new StringBuilderLike {
-      override def append(s: String): Unit = sb.append(s)
-      override def append(s: String, start: Int, end: Int): Unit = sb.append(s, start, end)
-    })
-    sb.toString
+    val out = node(<p>{text}</p>)
+    prefix + out.stripPrefix("<p>").stripSuffix("</p>")
   }
 
   private val samples: Seq[(String, NodeSeq)] = Seq(
@@ -76,20 +76,13 @@ class XmlStreamSpec extends AnyFlatSpec {
     assert(seq(ns) == ns.toString)
   }
 
-  it should "write everything before returning, in chunks, without flushing or closing the writer" in {
-    val writes = collection.mutable.ArrayBuffer.empty[Int]
-    var flushed, closed = false
-    val sb = new java.lang.StringBuilder
-    val w = new java.io.Writer {
-      override def write(cbuf: Array[Char], off: Int, len: Int): Unit = { writes += len; sb.append(cbuf, off, len) }
-      override def flush(): Unit = flushed = true
-      override def close(): Unit = closed = true
-    }
+  it should "write everything before returning, in chunks of up to ChunkSize bytes, the last one ending the content" in {
+    val sink = new RecordingSink
     val ns = <div>{(1 to 5_000).map(i => <p>{i.toString}</p>)}</div>
-    XmlStream.writeSeq(ns, w)
-    assert(sb.toString == ns.toString)
-    assert(writes.size > 1 && writes.size < ns.toString.length / (XmlStream.ChunkSize / 2))
-    assert(!flushed && !closed)
+    XmlStream.writeSeq(ns, sink)
+    assert(sink.asString == ns.toString)
+    assert(sink.writes.size > 1 && sink.writes.size < ns.toString.length / (XmlStream.ChunkSize / 2))
+    assert(sink.writes.forall(_._1 <= XmlStream.ChunkSize) && sink.writes.init.forall(!_._2) && sink.writes.last._2)
   }
 
   it should "fail like Utility.serialize (and so toString) for unknown Node subclasses" in {
@@ -105,7 +98,7 @@ class XmlStreamSpec extends AnyFlatSpec {
 
   "XmlEscape.escape" should "match Utility.escape for every char" in {
     val all = (0 until 0x10000).map(_.toChar).mkString
-    assert(escaped(all) == Utility.escape(all))
+    assert(escaped(all) == utf8RoundTrip(Utility.escape(all))) // (lone surrogates: '?', as in UTF-8)
   }
 
   it should "match Utility.escape for random strings" in {
@@ -113,7 +106,9 @@ class XmlStreamSpec extends AnyFlatSpec {
     val alphabet = "ab &<>\"'\n\r\t\u0000\u0001\u001f\u007f é€😀"
     (1 to 2_000).foreach { _ =>
       val str = Seq.fill(rnd.nextInt(40))(alphabet(rnd.nextInt(alphabet.length))).mkString
-      assert(escaped(str) == Utility.escape(str), s"for ${str.toList}")
+      val (got, expected) = (escaped(str), utf8RoundTrip(Utility.escape(str)))
+      def codePoints(s: String) = s.map(c => f"${c.toInt}%04x").mkString(" ") // (lone surrogates can't be printed)
+      assert(got == expected, s"for ${codePoints(str)}: got ${codePoints(got)}, expected ${codePoints(expected)}")
     }
   }
 

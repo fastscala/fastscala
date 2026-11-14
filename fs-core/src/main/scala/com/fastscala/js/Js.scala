@@ -17,8 +17,6 @@ import java.util.Date
 
 trait Js {
 
-  def lengthUtf8Enc: Long
-
   def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit
 
   def cmd: String
@@ -51,7 +49,7 @@ object Js {
 
   val Void = com.fastscala.js.Void
 
-  def apply(js: String): Js = if (js == "") Void else StringJs(js)
+  def apply(js: String): Js = if (js == "") Void else RawJs(js)
 
   def apply(js: Js*): Js = if (js.isEmpty) Void else CompositeJs(js *)
 }

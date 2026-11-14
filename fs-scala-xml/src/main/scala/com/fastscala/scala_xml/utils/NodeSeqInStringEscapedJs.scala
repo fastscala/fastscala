@@ -21,18 +21,7 @@ class NodeSeqInStringEscapedJs(ns: NodeSeq) extends Js {
   /** Writes the escaped XML to `out` (flushed, not closed). */
   private def writeEscaped(out: OutputStream): Unit =
     XmlStream.writeSeq(ns, new Utf8ToWriterSink(encodedWriter(out))) // its last write flushes the writers
-
-  override lazy val lengthUtf8Enc: Long = {
-    var length = 0L
-    val counter = new OutputStream {
-      override def write(i: Int): Unit = length += 1
-
-      override def write(b: Array[Byte], off: Int, len: Int): Unit = length += len
-    }
-    writeEscaped(counter)
-    length
-  }
-
+  
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = {
     // Not closed: closing the sink's OutputStream would write last=true and end the response.
     try {

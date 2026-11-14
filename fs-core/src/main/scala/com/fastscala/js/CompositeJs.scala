@@ -31,9 +31,6 @@ class CompositeJs private(val children: Js*)(val separator: Js = Js.Void) extend
     }
   }
 
-  override def lengthUtf8Enc: Long =
-    children.map(_.lengthUtf8Enc).sum + separator.lengthUtf8Enc * math.max(0, children.size - 1)
-
   /**
    * Writes the children (with separators between them) one at a time: each part's write starts only once the previous
    * one has completed, and `callback` completes exactly once — after the last write, or on the first failure.

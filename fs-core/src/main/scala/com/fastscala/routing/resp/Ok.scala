@@ -26,7 +26,7 @@ object Ok {
       val responseHeaders = response.getHeaders
       responseHeaders.put(HttpHeader.CONTENT_TYPE, JsContentType)
       // Known length: lets Jetty skip chunked transfer encoding.
-      responseHeaders.put(HttpHeader.CONTENT_LENGTH, js.lengthUtf8Enc)
+      // responseHeaders.put(HttpHeader.CONTENT_LENGTH, js.lengthUtf8Enc)
       writeJs(js, response, callback)
       true
     }

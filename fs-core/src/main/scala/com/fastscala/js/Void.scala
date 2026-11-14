@@ -1,4 +1,4 @@
 package com.fastscala.js
 
 
-object Void extends StringJs("")
+object Void extends RawJs("")

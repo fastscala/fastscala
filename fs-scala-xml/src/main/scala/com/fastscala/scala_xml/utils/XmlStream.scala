@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.utils
 
 import org.eclipse.jetty.io.Content
-import org.eclipse.jetty.util.Blocker
+import org.eclipse.jetty.util.{Blocker, Callback}
 
 import java.nio.ByteBuffer
 import java.util.Arrays
@@ -13,10 +13,15 @@ import scala.xml.*
  * Writes XML, as `Node.toString` would (attributes of an [[ElemOptimized]] in its own order), encoded in UTF-8,
  * straight into a Jetty [[Content.Sink]] (e.g. a Response): no String, char[] or encoder in between.
  *
- * Output goes into one fixed `byte[]` of [[ChunkSize]] bytes (see [[Out]]), written to the sink each time it fills
- * up; the last chunk is written with `last = true`, so the content ends with it (a page that fits in one chunk is a
- * single write). Each write blocks until the sink has taken it. Most of a page is ASCII (Java stores it as Latin-1
- * bytes): ASCII runs are copied as they are, in bulk; anything else is encoded to UTF-8 char by char.
+ * Output goes into `byte[]` chunks of [[ChunkSize]] bytes (see [[Out]]), each written to the sink once full; the last
+ * one is written with `last = true`, so the content ends with it (a page that fits in one chunk is a single write).
+ * Most of a page is ASCII (Java stores it as Latin-1 bytes): ASCII runs are copied as they are, in bulk; anything else
+ * is encoded to UTF-8 char by char.
+ *
+ * Writing doesn't block (with a callback: see [[writeSeq]]): one write to the sink at a time (as Jetty requires), while
+ * serializing goes on into the next chunk; once [[MaxQueuedChunks]] chunks are waiting for their turn, serializing
+ * pauses (between nodes), and the write that drains the queue resumes it, on its thread. So a slow client doesn't hold
+ * a thread, and only a few chunks are kept (more only for a single node bigger than that, e.g. a huge text).
  */
 object XmlStream {
 
@@ -33,47 +38,48 @@ object XmlStream {
   /** Strings (and runs) up to this long are copied char by char: for a few bytes, a String.getBytes call costs more. */
   private final val ShortString = 32
 
-  private val cachedOut = new ThreadLocal[Out]
+  /** Serializing pauses once this many chunks are waiting to be written (besides the one being written)... */
+  val MaxQueuedChunks = 3
 
-  private def acquireOut(sink: Content.Sink): Out = {
-    val out = cachedOut.get()
-    if (out ne null) {
-      cachedOut.set(null)
-      out.init(sink)
-      out
-    } else {
-      new Out(sink)
-    }
-  }
+  /** ... and resumes once they're down to this many. */
+  private final val ResumeAtQueuedChunks = 1
 
-  private def releaseOut(out: Out): Unit = {
-    out.reset()
-    cachedOut.set(out)
-  }
-
-  /** Writes `prefix` (e.g. a doctype; it isn't escaped) and then `ns`, and ends the sink's content. */
-  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String = ""): Unit = {
-    val out = acquireOut(sink)
+  /**
+   * Writes `prefix` (e.g. a doctype; it isn't escaped) and then `ns`, and ends the sink's content, without blocking:
+   * returns at once (possibly having written everything, if the sink takes the writes at once), and completes
+   * `callback` once, after the last write (or fails it, on the first failure: a write's, or serializing's).
+   */
+  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String, callback: Callback): Unit = {
+    val out = new Out(sink, callback)
     try {
       out.append(prefix)
       out.pushSeq(ns, TopScope, null)
-      writeAll(out)
-      out.finish()
-    } finally {
-      releaseOut(out)
+    } catch {
+      case t: Throwable => out.fail(t)
     }
+    out.drive()
   }
 
-  /** Writes `n`, and ends the sink's content. */
-  def writeNode(n: Node, sink: Content.Sink): Unit = {
-    val out = acquireOut(sink)
+  /** As [[writeSeq]], for one node. */
+  def writeNode(n: Node, sink: Content.Sink, callback: Callback): Unit = {
+    val out = new Out(sink, callback)
+    out.pushSingle(n, TopScope)
+    out.drive()
+  }
+
+  /** As the non-blocking [[writeSeq]], but returns once everything is written, and throws if writing fails. */
+  def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String = ""): Unit =
+    blocking(writeSeq(ns, sink, prefix, _))
+
+  /** As the non-blocking [[writeNode]], but returns once everything is written, and throws if writing fails. */
+  def writeNode(n: Node, sink: Content.Sink): Unit = blocking(writeNode(n, sink, _))
+
+  private def blocking(write: Callback => Unit): Unit = {
+    val callback = Blocker.callback()
     try {
-      out.pushSingle(n, TopScope)
-      writeAll(out)
-      out.finish()
-    } finally {
-      releaseOut(out)
-    }
+      write(callback)
+      callback.block()
+    } finally callback.close()
   }
 
   /**
@@ -126,16 +132,40 @@ object XmlStream {
   private inline def copyAscii(s: String, from: Int, to: Int, buf: Array[Byte], p: Int): Unit =
     s.getBytes(from, to, buf, p)
 
+  /** A filled chunk, waiting to be written (or being written). */
+  private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean)
+
   /**
-   * The output: a fixed `byte[]` of [[ChunkSize]] bytes, written to the sink (and reused) whenever it's full, and by
-   * [[finish]] at the end, with `last = true`. (`buf` and `pos` are public so the inline methods use them directly.)
+   * The output, and the state of one write. Serializing fills `buf` (a `byte[]` of [[ChunkSize]] bytes); when it's
+   * full, [[flush]] queues it, to be written, and serializing goes on in a free (or new) buffer. The chunks are written
+   * to the sink one at a time, in order; each written one's buffer is reused. [[finish]] queues the last one.
+   *
+   * Only one thread serializes at a time (whichever calls [[drive]]: the caller, then the write that resumes it), so
+   * the serializing state (`buf`, `pos`, the stacks) isn't locked; the chunks' state (queue, write in progress, pause,
+   * failure) is shared with the writes' callbacks, so it is (with `lock`). (`buf` and `pos` are public so the inline
+   * methods use them directly.)
    */
-  private[utils] final class Out(private var sink: Content.Sink) {
-    val buf = new Array[Byte](ChunkSize)
+  private[utils] final class Out(sink: Content.Sink, callback: Callback) {
+    var buf = new Array[Byte](ChunkSize)
     var pos = 0
 
-    /** Wraps `buf`, for the sink: its position and limit are set for each write. */
-    private val bufAsByteBuffer = ByteBuffer.wrap(buf)
+    private val lock = new Object
+    private val queued = new java.util.ArrayDeque[Chunk]()
+    private val freeBuffers = new java.util.ArrayDeque[Array[Byte]]()
+    /** A write to the sink is in progress (Jetty allows one at a time). */
+    private var writing = false
+    /** Serializing is paused (waiting for the queue to drain): the write that drains it resumes it. */
+    private var paused = false
+    /** The first failure (then nothing more is written). */
+    private var failure: Throwable = null
+    /** The callback was completed. */
+    private var completed = false
+
+    /**
+     * Set by [[flush]] when serializing should check whether to pause (many chunks queued, or a failure): checked by
+     * the serializing thread only, between nodes, so it's a plain field (and the check itself is locked).
+     */
+    var checkPause = false
 
     private var _scratch: StringBuilder = null
 
@@ -147,7 +177,6 @@ object XmlStream {
     // Parallel stack arrays: zero Level object allocations, O(N) for both IndexedSeq and List.
     // indexStack: >= 0, the cursor into an indexed seq; or ListCursor, IteratorCursor or SingleNodeCursor.
     var depth = 0
-    var maxDepthUsed = 0
     var nodesStack = new Array[AnyRef](64)
     var indexStack = new Array[Int](64)
     /** For an indexed level: its length (read once, instead of calling length through the Seq interface per node). */
@@ -155,41 +184,109 @@ object XmlStream {
     var scopeStack = new Array[NamespaceBinding](64)
     var closingStack = new Array[Elem](64)
 
-    def init(s: Content.Sink): Unit = {
-      sink = s
-      pos = 0
-      depth = 0
-      maxDepthUsed = 0
-    }
-
-    def reset(): Unit = {
-      sink = null
-      pos = 0
-      depth = 0
-      if (maxDepthUsed > 0) {
-        Arrays.fill(nodesStack, 0, maxDepthUsed, null)
-        Arrays.fill(scopeStack.asInstanceOf[Array[AnyRef]], 0, maxDepthUsed, null)
-        Arrays.fill(closingStack.asInstanceOf[Array[AnyRef]], 0, maxDepthUsed, null)
-        maxDepthUsed = 0
-      }
-      if ((_scratch ne null) && _scratch.length > 0) _scratch.setLength(0)
-    }
-
-    /** Writes what's in the buffer (if anything), not ending the content. */
-    def flush(): Unit = if (pos > 0) write(last = false)
-
-    /** Writes what's in the buffer (even nothing) as the last content. */
-    def finish(): Unit = write(last = true)
-
-    /** Writes `buf(0 until pos)` to the sink, waiting until it's taken (then `buf` can be reused). */
-    private def write(last: Boolean): Unit = {
-      bufAsByteBuffer.limit(pos).position(0)
-      val callback = Blocker.callback()
+    /** Serializes (from where it stopped) until done, or until it should pause; then queues the last chunk. */
+    def drive(): Unit =
       try {
-        sink.write(last, bufAsByteBuffer, callback)
-        callback.block()
-      } finally callback.close()
+        if (writeAll(this)) finish()
+      } catch {
+        case t: Throwable => fail(t)
+      }
+
+    /** Queues what's in the buffer (if anything) to be written, not ending the content; goes on in another buffer. */
+    def flush(): Unit = if (pos > 0) queue(last = false)
+
+    /** Queues what's in the buffer (even nothing) as the last content. */
+    def finish(): Unit = queue(last = true)
+
+    private def queue(last: Boolean): Unit = {
+      val chunk = new Chunk(buf, pos, last)
+      lock.synchronized {
+        queued.add(chunk)
+        if (!last) {
+          val free = freeBuffers.poll()
+          buf = if (free ne null) free else new Array[Byte](ChunkSize)
+        }
+        if (queued.size >= MaxQueuedChunks || (failure ne null)) checkPause = true
+      }
       pos = 0
+      writeNext()
+    }
+
+    /**
+     * Whether serializing should stop here (between nodes): it pauses, if [[MaxQueuedChunks]] are still queued (the
+     * write that drains them resumes it), or stops, after a failure.
+     */
+    def shouldPause(): Boolean = lock.synchronized {
+      checkPause = false
+      if (failure ne null) true
+      else if (queued.size >= MaxQueuedChunks) {
+        paused = true
+        true
+      } else false
+    }
+
+    /** Starts writing the next queued chunk, unless a write is in progress (or after a failure). */
+    private def writeNext(): Unit = {
+      var next: Chunk = null
+      lock.synchronized {
+        if (!writing && (failure eq null) && !queued.isEmpty) {
+          writing = true
+          next = queued.poll()
+        }
+      }
+      if (next ne null) {
+        val chunk = next
+        sink.write(chunk.last, ByteBuffer.wrap(chunk.bytes, 0, chunk.length), new Callback {
+          override def succeeded(): Unit = written(chunk, null)
+
+          override def failed(t: Throwable): Unit = written(chunk, t)
+        })
+      }
+    }
+
+    /**
+     * A chunk was written (or failed): writes the next one, and resumes serializing if it's paused and the queue is
+     * short again; after the last one, or a failure, completes the callback. (When the sink completes writes at once,
+     * this runs inside [[writeNext]]: the nesting is at most as deep as the queue is long.)
+     */
+    private def written(chunk: Chunk, t: Throwable): Unit = {
+      var resume = false
+      lock.synchronized {
+        writing = false
+        if (chunk.bytes.length == ChunkSize) freeBuffers.add(chunk.bytes)
+        if ((t ne null) && (failure eq null)) failure = t
+        if ((failure eq null) && paused && queued.size <= ResumeAtQueuedChunks) {
+          paused = false
+          resume = true
+        }
+      }
+      if (t ne null) fail(t)
+      else if (chunk.last) complete(null)
+      else {
+        writeNext()
+        if (resume) drive()
+      }
+    }
+
+    /** Fails the write (once): nothing more is written. */
+    def fail(t: Throwable): Unit = {
+      lock.synchronized {
+        if (failure eq null) failure = t
+        checkPause = true
+      }
+      complete(t)
+    }
+
+    /** Completes the callback, once: succeeded (`t` null) or failed. */
+    private def complete(t: Throwable): Unit = {
+      val first = lock.synchronized {
+        val first = !completed
+        completed = true
+        first
+      }
+      if (first) {
+        if (t eq null) callback.succeeded() else callback.failed(t)
+      }
     }
 
     /** An ASCII char (the markup's own: `<`, `>`, `/`, `=`, `"`, ` `, `:`). */
@@ -288,7 +385,6 @@ object XmlStream {
       scopeStack(0) = scope
       closingStack(0) = null
       depth = 1
-      maxDepthUsed = 1
     }
 
     def pushSeq(nodes: collection.Seq[Node], scope: NamespaceBinding, closing: Elem): Unit = {
@@ -297,9 +393,7 @@ object XmlStream {
       setLevel(d, nodes)
       scopeStack(d) = scope
       closingStack(d) = closing
-      val nextDepth = d + 1
-      depth = nextDepth
-      if (nextDepth > maxDepthUsed) maxDepthUsed = nextDepth
+      depth = d + 1
     }
 
     /**
@@ -343,8 +437,11 @@ object XmlStream {
     out.append('>')
   }
 
-  private def writeAll(out: Out): Unit = {
+  /** Serializes from where it stopped: returns true when done, false if it paused (or stopped after a failure). */
+  private def writeAll(out: Out): Boolean = {
     while (out.depth > 0) {
+      if (out.checkPause && out.shouldPause()) return false
+
       val d = out.depth - 1
       val idx = out.indexStack(d)
       var nextNode: Node = null
@@ -439,6 +536,7 @@ object XmlStream {
         }
       }
     }
+    true
   }
 
   /**

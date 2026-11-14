@@ -14,8 +14,10 @@ import scala.xml.NodeSeq
  * Content-Length upfront: Jetty sends it with chunked transfer encoding (HTTP/1.1), or just ends the stream (HTTP/2).
  * (The last chunk ends the content, so a page that fits in one chunk is sent in a single write.)
  *
- * The writes block the handling thread until Jetty has taken each chunk. If writing fails midway (e.g. the client
- * went away), the response is already committed: the callback is failed, so Jetty aborts it.
+ * It doesn't block: [[respond]] returns at once, and the page is written as the client takes it (serializing pauses
+ * while the client is slow, and goes on in the thread of the write that lets it), so a slow client doesn't hold a
+ * thread. The callback is completed after the last write; if writing fails midway (e.g. the client went away), the
+ * response is already committed: the callback is failed, so Jetty aborts it.
  */
 class OkHtmlStreaming(ns: NodeSeq) extends Response {
 
@@ -30,12 +32,7 @@ class OkHtmlStreaming(ns: NodeSeq) extends Response {
     super.respond(response, callback)
     response.getHeaders.put(HttpHeader.CONTENT_TYPE, contentType)
     // No Content-Length: the length isn't known until everything is written.
-    try {
-      XmlStream.writeSeq(ns, response, prefix = docType + "\n") // the last chunk ends the content
-      callback.succeeded()
-    } catch {
-      case t: Throwable => callback.failed(t)
-    }
+    XmlStream.writeSeq(ns, response, docType + "\n", callback) // the last chunk ends the content; then the callback
     true
   }
 }

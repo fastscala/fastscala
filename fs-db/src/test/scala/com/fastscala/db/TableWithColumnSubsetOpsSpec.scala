@@ -29,7 +29,7 @@ class LightTableTestLightEntity(
 
 object LightTableTestLightEntity extends Table[LightTableTestLightEntity] {
 
-  override def tableName: String = LightTableTestEntity.tableName
+  override lazy val tableName: String = LightTableTestEntity.tableName
 
   override def createSampleRow(): LightTableTestLightEntity = new LightTableTestLightEntity
 }

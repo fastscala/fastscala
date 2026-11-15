@@ -39,12 +39,12 @@ object XmlJsStream extends JsWriter {
 
   val ChunkSize = 8192
 
-  // The special values of Out.indexStack (a value >= 0 is the cursor into an indexed seq):
-  /** The level's nodes are a non-empty `::` (List), read head by head: nodesStack holds the remaining list. */
+  // The special values of Level.index (a value >= 0 is the cursor into an indexed seq):
+  /** The level's nodes are a non-empty `::` (List), read head by head: `nodes` holds the remaining list. */
   private final val ListCursor = -1
-  /** The level's nodes are read with an Iterator (any other kind of seq): nodesStack holds the iterator. */
+  /** The level's nodes are read with an Iterator (any other kind of seq): `nodes` holds the iterator. */
   private final val IteratorCursor = -2
-  /** The level is a single node (writeNode's root, or a Node used as its own child seq): nodesStack holds the node. */
+  /** The level is a single node (writeNode's root, or a Node used as its own child seq): `nodes` holds the node. */
   private final val SingleNodeCursor = -3
 
   /** Serializing pauses once this many chunks are waiting to be written (besides the one being written)... */
@@ -123,6 +123,34 @@ object XmlJsStream extends JsWriter {
     } finally callback.close()
   }
 
+  /**
+   * A level of the stack (see [[Out.levels]]): the items being read, where the reading is at, and what applies to them.
+   * Mutable, and reused: a stack slot's Level is created once, and set again by each push that lands on it.
+   */
+  private[xml] final class Level {
+    /** The items (Nodes or Js), in the form `index` says: an indexed seq, the rest of a List, an Iterator, or the one item. */
+    var nodes: AnyRef = null
+    /** >= 0, the cursor into an indexed seq; or ListCursor, IteratorCursor or SingleNodeCursor. */
+    var index = 0
+    /** For an indexed level: its length (read once, instead of calling length through the Seq interface per node). */
+    var length = 0
+    var scope: NamespaceBinding = null
+    /** What's written once the level is done: an Elem's closing tag, or [[AttrValueEnd]]'s quote (null: nothing). */
+    var closing: AnyRef = null
+    /** The level's escaping: XML levels (see [[Out.xmlDepth]]) and JavaScript levels (see [[Out.jsDepth]]). */
+    var xmlDepth = 0
+    var jsDepth = 0
+    /** The level's [[Out.collector]] (null: none). */
+    var collector: ArrayBuffer[Js] = null
+
+    /** Nothing (more) to read: an empty indexed level. */
+    def setEmpty(): Unit = {
+      nodes = IndexedSeq.empty
+      index = 0
+      length = 0
+    }
+  }
+
   /** A filled chunk, waiting to be written (or being written). */
   private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean, val endsContent: Boolean)
 
@@ -132,7 +160,7 @@ object XmlJsStream extends JsWriter {
    * to the sink one at a time, in order; each written one's buffer is reused. [[finish]] queues the last one.
    *
    * Only one thread serializes at a time (whichever calls [[drive]]: the caller, then the write that resumes it), so
-   * the serializing state (`buf`, `pos`, the stacks) isn't locked; the chunks' state (queue, write in progress, pause,
+   * the serializing state (`buf`, `pos`, the stack) isn't locked; the chunks' state (queue, write in progress, pause,
    * failure) is shared with the writes' callbacks, so it is (with `lock`). It's the [[EncoderOutput]] that [[Encoder]]
    * writes everything into: `buf`, `pos` and [[flush]].
    */
@@ -165,21 +193,13 @@ object XmlJsStream extends JsWriter {
       _scratch
     }
 
-    // Parallel stack arrays: zero Level object allocations, O(N) for both IndexedSeq and List.
-    // indexStack: >= 0, the cursor into an indexed seq; or ListCursor, IteratorCursor or SingleNodeCursor.
+    /**
+     * The stack: the first `depth` Levels are the ones in use (the last of them, the current one). A slot's Level is
+     * created the first time the stack gets that deep, and reused after that (see [[push]]): so pushing a level
+     * allocates nothing, but for the deepest ones yet.
+     */
     var depth = 0
-    var nodesStack = new Array[AnyRef](64)
-    var indexStack = new Array[Int](64)
-    /** For an indexed level: its length (read once, instead of calling length through the Seq interface per node). */
-    var lengthStack = new Array[Int](64)
-    var scopeStack = new Array[NamespaceBinding](64)
-    /** What's written once a level is done: an Elem's closing tag, or [[AttrValueEnd]]'s quote (null: nothing). */
-    var closingStack = new Array[AnyRef](64)
-    /** Each level's escaping: XML levels (see [[xmlDepth]]) and JavaScript levels (see [[jsDepth]]). */
-    var xmlDepthStack = new Array[Int](64)
-    var jsDepthStack = new Array[Int](64)
-    /** Each level's [[collector]] (null: none). */
-    var collectorStack = new Array[ArrayBuffer[Js]](64)
+    var levels = new Array[Level](64)
 
     /**
      * The current level's escaping (by [[Encoder]], of everything written: the markup, the code, and text and attribute
@@ -339,28 +359,40 @@ object XmlJsStream extends JsWriter {
 
     /** The first level: a single item (a Node or a Js). */
     def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {
-      nodesStack(0) = n
-      indexStack(0) = SingleNodeCursor
-      scopeStack(0) = scope
-      closingStack(0) = null
-      xmlDepthStack(0) = 0
-      jsDepthStack(0) = 0
-      collectorStack(0) = null
+      depth = 0
+      val level = push()
+      level.nodes = n
+      level.index = SingleNodeCursor
+      level.scope = scope
+      level.closing = null
+      level.xmlDepth = 0
+      level.jsDepth = 0
+      level.collector = null
       collector = null
-      depth = 1
+    }
+
+    /** Adds a level to the stack, and returns it, to be set (all of it: it may be a reused one). */
+    private def push(): Level = {
+      val d = depth
+      if (d == levels.length) levels = Arrays.copyOf(levels, d * 2)
+      var level = levels(d)
+      if (level eq null) {
+        level = new Level
+        levels(d) = level
+      }
+      depth = d + 1
+      level
     }
 
     /** A level of items: Nodes, or Js (a CompositeJs's children). Escaped, and its scripts collected, as the current one. */
     def pushSeq(nodes: collection.Seq[AnyRef], scope: NamespaceBinding, closing: AnyRef): Unit = {
-      val d = depth
-      if (d == nodesStack.length) growStacks()
-      setLevel(d, nodes)
-      scopeStack(d) = scope
-      closingStack(d) = closing
-      xmlDepthStack(d) = xmlDepth // (as the level it's in)
-      jsDepthStack(d) = jsDepth
-      collectorStack(d) = collector
-      depth = d + 1
+      val level = push()
+      setNodes(level, nodes)
+      level.scope = scope
+      level.closing = closing
+      level.xmlDepth = xmlDepth // (as the level it's in)
+      level.jsDepth = jsDepth
+      level.collector = collector
     }
 
     /**
@@ -371,10 +403,10 @@ object XmlJsStream extends JsWriter {
     def pushCollecting(ns: NodeSeq, scripts: ArrayBuffer[Js]): Unit = {
       val escapedJsDepth = jsDepth + 1
       pushSeq(ns, TopScope, null)
-      val d = depth - 1
-      xmlDepthStack(d) = 0
-      jsDepthStack(d) = escapedJsDepth
-      collectorStack(d) = scripts
+      val level = levels(depth - 1)
+      level.xmlDepth = 0
+      level.jsDepth = escapedJsDepth
+      level.collector = scripts
       setEscaping(0, escapedJsDepth)
       collector = scripts
     }
@@ -386,55 +418,39 @@ object XmlJsStream extends JsWriter {
     def pushAttrValue(js: Js, scope: NamespaceBinding): Unit = pushSingleJs(js, scope, AttrValueEnd, xmlDepth + 1, jsDepth)
 
     private def pushSingleJs(js: Js, scope: NamespaceBinding, closing: AnyRef, xml: Int, jsLevels: Int): Unit = {
-      val d = depth
-      if (d == nodesStack.length) growStacks()
-      nodesStack(d) = js
-      indexStack(d) = SingleNodeCursor
-      scopeStack(d) = scope
-      closingStack(d) = closing
-      xmlDepthStack(d) = xml
-      jsDepthStack(d) = jsLevels
-      collectorStack(d) = null // (a level of Js: see collector)
+      val level = push()
+      level.nodes = js
+      level.index = SingleNodeCursor
+      level.scope = scope
+      level.closing = closing
+      level.xmlDepth = xml
+      level.jsDepth = jsLevels
+      level.collector = null // (a level of Js: see collector)
       collector = null
-      depth = d + 1
       setEscaping(xml, jsLevels)
     }
 
     /**
-     * Sets level `d` to read `nodes`, in the cheapest way for its kind. A Node is the NodeSeq of just itself (common:
+     * Sets `level` to read `nodes`, in the cheapest way for its kind. A Node is the NodeSeq of just itself (common:
      * e.g. an element's single child); any other NodeSeq is a wrapper, so its underlying seq is classified instead.
      */
-    @tailrec private def setLevel(d: Int, nodes: collection.Seq[AnyRef]): Unit = nodes match {
+    @tailrec private def setNodes(level: Level, nodes: collection.Seq[AnyRef]): Unit = nodes match {
       case node: Node =>
-        nodesStack(d) = node
-        indexStack(d) = SingleNodeCursor
+        level.nodes = node
+        level.index = SingleNodeCursor
       case iseq: collection.IndexedSeq[?] =>
-        nodesStack(d) = iseq
-        indexStack(d) = 0
-        lengthStack(d) = iseq.length
-      case ns: NodeSeq => setLevel(d, ns.theSeq)
+        level.nodes = iseq
+        level.index = 0
+        level.length = iseq.length
+      case ns: NodeSeq => setNodes(level, ns.theSeq)
       case cons: ::[AnyRef] =>
-        nodesStack(d) = cons
-        indexStack(d) = ListCursor
+        level.nodes = cons
+        level.index = ListCursor
       case Nil =>
-        nodesStack(d) = IndexedSeq.empty
-        indexStack(d) = 0
-        lengthStack(d) = 0
+        level.setEmpty()
       case other =>
-        nodesStack(d) = other.iterator
-        indexStack(d) = IteratorCursor
-    }
-
-    private def growStacks(): Unit = {
-      val newCap = nodesStack.length * 2
-      nodesStack = Arrays.copyOf(nodesStack, newCap)
-      indexStack = Arrays.copyOf(indexStack, newCap)
-      lengthStack = Arrays.copyOf(lengthStack, newCap)
-      scopeStack = Arrays.copyOf(scopeStack, newCap)
-      closingStack = Arrays.copyOf(closingStack, newCap)
-      xmlDepthStack = Arrays.copyOf(xmlDepthStack, newCap)
-      jsDepthStack = Arrays.copyOf(jsDepthStack, newCap)
-      collectorStack = Arrays.copyOf(collectorStack, newCap)
+        level.nodes = other.iterator
+        level.index = IteratorCursor
     }
   }
 
@@ -450,46 +466,43 @@ object XmlJsStream extends JsWriter {
       if (out.checkPause && out.shouldPause()) return false
 
       val d = out.depth - 1
-      val idx = out.indexStack(d)
+      val level = out.levels(d)
+      val idx = level.index
       var nextNode: AnyRef = null // a Node or a Js
 
       if (idx >= 0) {
-        if (idx < out.lengthStack(d)) {
-          out.indexStack(d) = idx + 1
-          nextNode = out.nodesStack(d).asInstanceOf[collection.IndexedSeq[AnyRef]](idx)
+        if (idx < level.length) {
+          level.index = idx + 1
+          nextNode = level.nodes.asInstanceOf[collection.IndexedSeq[AnyRef]](idx)
         }
       } else if (idx == ListCursor) {
-        val cons = out.nodesStack(d).asInstanceOf[::[AnyRef]]
+        val cons = level.nodes.asInstanceOf[::[AnyRef]]
         nextNode = cons.head
         val tail = cons.tail
-        if (tail.isEmpty) {
-          out.nodesStack(d) = IndexedSeq.empty
-          out.indexStack(d) = 0
-          out.lengthStack(d) = 0
-        } else {
-          out.nodesStack(d) = tail
-        }
+        if (tail.isEmpty) level.setEmpty()
+        else level.nodes = tail
       } else if (idx == IteratorCursor) {
-        val it = out.nodesStack(d).asInstanceOf[Iterator[AnyRef]]
+        val it = level.nodes.asInstanceOf[Iterator[AnyRef]]
         if (it.hasNext) nextNode = it.next()
       } else { // SingleNodeCursor
-        nextNode = out.nodesStack(d)
-        out.nodesStack(d) = IndexedSeq.empty
-        out.indexStack(d) = 0
-        out.lengthStack(d) = 0
+        nextNode = level.nodes
+        level.setEmpty()
       }
 
       if (nextNode eq null) {
-        val closing = out.closingStack(d)
-        out.nodesStack(d) = null
-        out.closingStack(d) = null
-        out.collectorStack(d) = null
+        val closing = level.closing
+        // (The Level stays in its slot, to be reused: it lets go of what it referred to.)
+        level.nodes = null
+        level.scope = null
+        level.closing = null
+        level.collector = null
         out.depth = d
         // (Back to the escaping, and collector, of the level it's in: before the closing tag, or quote, which is that
         // level's.)
         if (d > 0) {
-          out.setEscaping(out.xmlDepthStack(d - 1), out.jsDepthStack(d - 1))
-          out.collector = out.collectorStack(d - 1)
+          val parent = out.levels(d - 1)
+          out.setEscaping(parent.xmlDepth, parent.jsDepth)
+          out.collector = parent.collector
         } else {
           out.setEscaping(0, 0)
           out.collector = null
@@ -500,7 +513,7 @@ object XmlJsStream extends JsWriter {
           case _ => out.append('"') // AttrValueEnd
         }
       } else {
-        val levelScope = out.scopeStack(d)
+        val levelScope = level.scope
         nextNode match {
           case e: Elem if (out.collector ne null) && JS.collectJsOfScriptTag(e, out.collector) =>
             // A JS script, in a JsWithScriptDetection's XML: not written (its JavaScript was collected).

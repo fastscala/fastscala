@@ -1,25 +1,31 @@
-//package com.fastscala.scala_xml.js
-//
-//import com.fastscala.js.Js
-//import com.fastscala.scala_xml.xml.XmlJsStream
-//import org.eclipse.jetty.io.Content
-//import org.eclipse.jetty.util.Callback
-//
-//import scala.xml.NodeSeq
-//
-///**
-// * `ns`'s XML, as JavaScript code (e.g. to put in a string literal, escaped: `new EncJs(new NodeSeqJs(ns), inString =
-// * true)`). Written by [[XmlJsStream]], without blocking, as a part of the content: the XML is never one String (only
-// * [[cmd]] builds it).
-// */
-//class JsWithScriptDetection(
-//                             val before: Js,
-//                             val ns: NodeSeq,
-//                             val after: Js,
-//                             val scripts: Js => Js,
-//                           ) extends Js {
-//  override def cmd: String = ns.toString
-//
-//  override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit =
-//    XmlJsStream.writeSeq(ns, sink, "", callback, endContent = false) // (a part of the content: not ending it)
-//}
+package com.fastscala.scala_xml.js
+
+import com.fastscala.js.Js
+
+import scala.xml.NodeSeq
+
+/**
+ * JavaScript with `ns`'s XML in it, as a string literal, between `before` and `after`; the JavaScript of the XML's
+ * `<script>` tags (see [[JsXmlUtils.extractJsFromScriptTags]]) is taken out of it, and run after: `scripts` of it (e.g.
+ * as it is), as a statement of its own.
+ *
+ * The scripts are looked for when it's first written (or its cmd built), once: see [[js]].
+ */
+class JsWithScriptDetection(
+                             val before: Js,
+                             val ns: NodeSeq,
+                             val after: Js,
+                             val scripts: Js => Js,
+                           ) extends Js {
+
+  /**
+   * What this is, as Js that's written part by part (XmlJsStream writes this: the XML as it's serialized, escaped):
+   * `before`, the XML without its scripts (as a string literal), `after`; and then the scripts.
+   */
+  lazy val js: Js = {
+    val (cleaned, extracted) = JS.extractJsFromScriptTags(ns)
+    Js(before, JS.htmlAsJsStr(cleaned), after) & scripts(extracted)
+  }
+
+  override def cmd: String = js.cmd
+}

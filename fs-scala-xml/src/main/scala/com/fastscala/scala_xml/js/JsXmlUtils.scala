@@ -22,9 +22,18 @@ class JsXmlUtils extends JsUtils {
   def rerenderableContentsP[P](render: ContentRerendererP[P] => FSContext => P => NodeSeq, id: Option[String] = None, debugLabel: Option[String] = None): ContentRerendererP[P] =
     new ContentRerendererP[P](rerenderer => fsc => param => render(rerenderer)(fsc)(param), idOpt = id, debugLabel = debugLabel)
 
+  /**
+   * As [[append2Body]] of `ns` without its scripts (see [[extractJsFromScriptTags]]), and then the scripts: looked for
+   * when it's written (see [[JsWithScriptDetection]]).
+   */
   def append2BodyWithScriptExtraction(ns: NodeSeq): Js = {
-    val (cleaned, js) = extractJsFromScriptTags(ns)
-    append2Body(cleaned) & js
+    val templateId = IdGen.id("template")
+    new JsWithScriptDetection(
+      before = Js(Js("document.body.appendChild("), htmlToElementStart(templateId)),
+      ns = ns,
+      after = Js(HtmlToElementEnd, Js(");"), removeId(templateId)),
+      scripts = identity[Js]
+    )
   }
 
   def append2Body(ns: NodeSeq): Js = {
@@ -45,9 +54,26 @@ class JsXmlUtils extends JsUtils {
       removeId(elemId)
   }
 
+  /**
+   * As [[replace]] by `by` without its scripts (see [[extractJsFromScriptTags]]), and then the scripts: looked for when
+   * it's written (see [[JsWithScriptDetection]]). The temporary template is removed (if the element was found: it's
+   * only created then).
+   */
   def replaceWithScriptExtraction(id: String, by: NodeSeq): Js = {
-    val (cleaned, js) = extractJsFromScriptTags(by)
-    replace(id, cleaned) & js
+    val templateId = IdGen.id("template")
+    new JsWithScriptDetection(
+      before = Js(
+        js"""(document.getElementById("${escapeStr(id)}") ? document.getElementById("${escapeStr(id)}").replaceWith(""",
+        htmlToElementStart(templateId)
+      ),
+      ns = by,
+      after = Js(
+        HtmlToElementEnd,
+        js""") : console.error("Element with id ${escapeStr(id)} not found"));""",
+        js"""(function(template) {if (template) template.remove();})(document.getElementById(${asJsStr(templateId)}));"""
+      ),
+      scripts = identity[Js]
+    )
   }
 
   def replace(id: String, by: NodeSeq): Js = Js(
@@ -63,8 +89,18 @@ class JsXmlUtils extends JsUtils {
 
   def setContents(id: String, js: Js): Js = Js(s"""document.getElementById("${escapeStr(id)}").innerHTML = $js; """)
 
+  /**
+   * The nodes of `html` (a DocumentFragment): the content of a temporary `<template>` (with id `templateId`) appended to
+   * the body, with `html` as its innerHTML. (The template stays in the body, empty once its content is moved: remove it.)
+   */
   def htmlToElement(html: NodeSeq, templateId: String = IdGen.id): Js =
-    js"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", ${asJsStr(templateId)});template.innerHTML = html.trim(); return template;})(${htmlAsJsStr(html)}))).content"""
+    Js(htmlToElementStart(templateId), htmlAsJsStr(html), HtmlToElementEnd)
+
+  /** [[htmlToElement]], up to where the HTML (a string literal) goes; [[HtmlToElementEnd]] follows it. */
+  private def htmlToElementStart(templateId: String): Js =
+    js"""(document.body.appendChild((function htmlToElement(html) {var template = document.createElement('template');template.setAttribute("id", ${asJsStr(templateId)});template.innerHTML = html.trim(); return template;})("""
+
+  private val HtmlToElementEnd: Js = Js("))).content")
 
   def forceHttps: Elem = {
     <script type="text/javascript">{

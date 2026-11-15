@@ -4,7 +4,7 @@ import com.fastscala.components.bootstrap5.modals.BSModal5
 import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.core.*
 import com.fastscala.js.{CompositeJs, EncJs, Js, JsWriter}
-import com.fastscala.scala_xml.js.{JS, NodeSeqJs}
+import com.fastscala.scala_xml.js.{JS, JsWithScriptDetection, NodeSeqJs}
 import com.fastscala.scala_xml.xml.XmlJsStream
 import com.fastscala.testutils.PerfFS
 import org.eclipse.jetty.io.Content
@@ -39,6 +39,7 @@ class NestedJsEscapingSpec extends AnyFlatSpec {
    * another order): escaped by JsEscape, as EncJs.cmd does.
    */
   private def reference(js: Js): String = js match {
+    case d: JsWithScriptDetection => reference(d.js)
     case c: CompositeJs => c.children.map(reference).mkString
     case n: NodeSeqJs =>
       val bytes = new ByteArrayOutputStream()
@@ -64,12 +65,14 @@ class NestedJsEscapingSpec extends AnyFlatSpec {
   }
 
   private def structure(js: Js): String = js match {
+    case d: JsWithScriptDetection => structure(d.js)
     case c: CompositeJs => c.children.map(structure).mkString
     case e: EncJs => "EncJs(" + structure(e.js) + ")"
     case _ => ""
   }
 
   private def maxNesting(js: Js): Int = js match {
+    case d: JsWithScriptDetection => maxNesting(d.js)
     case c: CompositeJs => (c.children.map(maxNesting) :+ 0).max
     case e: EncJs => 1 + maxNesting(e.js)
     case _ => 0
@@ -89,15 +92,24 @@ class NestedJsEscapingSpec extends AnyFlatSpec {
     check("the modal", modalJs)
     check("the modal, in a JS.replace", JS.replace("modal", <div>{NodeSeq.Empty}</div>) & modalJs)
 
-    // Its callbacks (Cancel's and OK's), and then the ones they register (the "Updated" button's).
+    // Its callbacks (Cancel's, OK's, and the one for when it's hidden), and then the ones they register (the "Updated"
+    // button's): each one's are taken right after it runs, in the order they were registered (the one for when it's
+    // hidden deletes the modal's context, and so the callbacks registered in it: those are still run, as they were).
     var seen = before
-    var round = 0
-    while (page.callbacks.keySet.exists(!seen(_)) && round < 3) {
-      val fresh = page.callbacks.filter((id, _) => !seen(id)).values.toList
-      seen = seen ++ fresh.map(_.id)
-      fresh.foreach(f => check(s"callback ${f.id} (round $round)", f.func("")))
-      round += 1
+    def fresh(): List[FSFunc] = {
+      val fs = page.callbacks.filter((id, _) => !seen(id)).values.toList.sortBy(f => (f.id.length, f.id))
+      seen = seen ++ fs.map(_.id)
+      fs
     }
-    assert(round >= 2, "the OK callback didn't register the button's")
+    var pending: List[(FSFunc, Int)] = fresh().map(_ -> 0)
+    var rounds = 0
+    while (pending.nonEmpty) {
+      val (f, round) = pending.head
+      pending = pending.tail
+      check(s"callback ${f.id} (round $round)", f.func(""))
+      rounds = math.max(rounds, round + 1)
+      if (round < 2) pending = pending ++ fresh().map(_ -> (round + 1))
+    }
+    assert(rounds >= 2, "the OK callback didn't register the button's")
   }
 }

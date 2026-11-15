@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.{CompositeJs, EncJs, Js, JsWriter}
-import com.fastscala.scala_xml.js.NodeSeqJs
+import com.fastscala.scala_xml.js.{JsWithScriptDetection, NodeSeqJs}
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
@@ -531,6 +531,7 @@ object XmlJsStream extends JsWriter {
    *    as its `cmd`, toString, does), whatever XML the Js is in;
    *  - an [[EncJs]]'s Js is pushed, as a level that's escaped once more than this one (its quotes, if `inString`,
    *    are written at this level: so they're escaped by the EncJs's this one is in, if any, as its `cmd` does);
+   *  - a [[JsWithScriptDetection]] is written as its parts (see its `js`);
    *  - any other is written as its `cmd` (for now: specific kinds can be written without building it).
    */
   private def writeJsItem(js: Js, scope: NamespaceBinding, out: Out): Unit = js match {
@@ -541,6 +542,8 @@ object XmlJsStream extends JsWriter {
     case enc: EncJs =>
       if (enc.inString) out.pushSeq(Vector(Quote, new Escaped(enc.js), Quote), scope, null)
       else out.pushEscaped(enc.js, scope)
+    case detection: JsWithScriptDetection =>
+      writeJsItem(detection.js, scope, out) // (its parts: the XML, without its scripts, is written as it's serialized)
     case other =>
       out.append(codeOf(other))
   }
@@ -578,7 +581,7 @@ object XmlJsStream extends JsWriter {
    */
   private def needsLevel(js: Js): Boolean = js match {
     case composite: CompositeJs => composite.children.exists(needsLevel)
-    case _: EncJs | _: NodeSeqJs => true
+    case _: EncJs | _: NodeSeqJs | _: JsWithScriptDetection => true
     case _ => false
   }
 

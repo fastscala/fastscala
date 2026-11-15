@@ -44,18 +44,18 @@ class ReqSpec extends AnyFlatSpec {
     assert(Req.unapply(request("GET", "/dir/index.html/")).exists(_._4))
   }
 
-  it should "have no extension for a path without one" in pendingUntilFixed {
-    // BUG: without a ".ext" at the end, the regex doesn't match, and `ext` is the whole path (lower case).
+  it should "have no extension for a path without one" in {
+    // Regression (fixed): without a ".ext" at the end, the regex doesn't match, and `ext` is the whole path (lower case).
     assert(Req.unapply(request("GET", "/users/Profile")).contains((GET, List("users", "Profile"), "", false)))
   }
 
-  it should "not throw for a path with regex chars and no extension" in pendingUntilFixed {
-    // BUG: `ext` (the whole path, see above) is put in a regex unquoted: "(" makes it throw PatternSyntaxException.
+  it should "not throw for a path with regex chars and no extension" in {
+    // Regression (fixed): `ext` (the whole path, see above) is put in a regex unquoted: "(" makes it throw PatternSyntaxException.
     assert(Req.unapply(request("GET", "/a(b")).isDefined)
   }
 
-  it should "take an upper case extension off the last segment" in pendingUntilFixed {
-    // BUG: `ext` is lower-cased before it's taken off the path, so ".PNG" stays: List("img", "logo.PNG").
+  it should "take an upper case extension off the last segment" in {
+    // Regression (fixed): `ext` is lower-cased before it's taken off the path, so ".PNG" stays: List("img", "logo.PNG").
     assert(Req.unapply(request("GET", "/img/logo.PNG")).contains((GET, List("img", "logo"), "png", false)))
   }
 }

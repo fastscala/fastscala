@@ -14,7 +14,7 @@ object IdGen {
   def id = "id" + math.abs(rand.nextLong()).toHexString
 
   def secureId(nBytes: Int = 32): String = {
-    val bytes = Array.fill[Byte](32)(0)
+    val bytes = new Array[Byte](nBytes)
     randGen.nextBytes(bytes)
     Base64.getEncoder.encodeToString(bytes).replace("/", "_").replace("+", "-")
   }

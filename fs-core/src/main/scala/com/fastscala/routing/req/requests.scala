@@ -14,9 +14,13 @@ object Req {
   def unapply(req: Request): Option[(Method, List[String], String, Boolean)] = {
     Method.fromString.unapply(req.getMethod).map(method => {
       val path = req.getHttpURI.getPath
-      val ext = path.replaceAll(".*\\.(\\w+)$", "$1").toLowerCase
+      // The extension: the word chars after the last '.' of the last segment ("" if there are none).
+      val lastDot = path.lastIndexOf('.')
+      val hasExt = lastDot > path.lastIndexOf('/') && lastDot < path.length - 1 &&
+        path.substring(lastDot + 1).forall(c => Character.isLetterOrDigit(c) || c == '_')
+      val (withoutExt, ext) = if (hasExt) (path.substring(0, lastDot), path.substring(lastDot + 1).toLowerCase) else (path, "")
       (method,
-        path.replaceAll("^/", "").replaceAll(s"\\.$ext$$", "").split("/").toList.filter(_ != ""),
+        withoutExt.split("/").toList.filter(_ != ""),
         ext,
         path.endsWith("/"))
     })

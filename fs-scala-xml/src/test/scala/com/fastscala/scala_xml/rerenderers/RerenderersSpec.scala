@@ -125,8 +125,8 @@ class RerenderersSpec extends AnyFlatSpec {
     assert(js.contains("""$("#x").fadeOut(1500, function() {f()});"""), js)
   }
 
-  it should "not add an overlay to a tfoot" in pendingUntilFixed {
-    // BUG: the table elements left alone are "table", "thead", "tbody", "tfooter", "tr": "tfooter" isn't an element
+  it should "not add an overlay to a tfoot" in {
+    // Regression (fixed): the table elements left alone are "table", "thead", "tbody", "tfooter", "tr": "tfooter" isn't an element
     // (it's <tfoot>), so a tfoot gets a <span> overlay, which isn't valid inside it.
     val foot = <tfoot id="f"><tr><td>1</td></tr></tfoot>
     assert(RerendererDebugStatus.Enabled.render(foot) eq foot)

@@ -29,8 +29,8 @@ class ElemUtilsSpec extends AnyFlatSpec {
     assert(e.addClass("b").removeClass("b").getClassAttr.trim == "a")
   }
 
-  it should "leave other classes that contain its name alone" in pendingUntilFixed {
-    // BUG: it removes the name wherever it appears, case-insensitively: "btn btn-primary" without "btn" is " -primary".
+  it should "leave other classes that contain its name alone" in {
+    // Regression (fixed): it removes the name wherever it appears, case-insensitively: "btn btn-primary" without "btn" is " -primary".
     assert(<a class="btn btn-primary"/>.removeClass("btn").getClassAttr.trim == "btn-primary")
   }
 

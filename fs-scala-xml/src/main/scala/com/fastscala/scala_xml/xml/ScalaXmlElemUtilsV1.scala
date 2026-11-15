@@ -8,7 +8,6 @@ import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
 
 import java.lang.reflect.Modifier
-import java.util.regex.Pattern
 import scala.collection.immutable.{AbstractSeq, LinearSeq}
 import scala.xml.*
 
@@ -49,7 +48,12 @@ trait ScalaXmlElemUtilsV1 extends Any {
 
   def addClassIf(bool: Boolean, `class`: String): Elem = if (bool) addClass(`class`) else elem
 
-  def removeClass(`class`: String): Elem = attributeTransform("class", _.replaceAll("(?i)" + Pattern.quote(`class`), ""))
+  /** Removes the class (each of the classes, if it's several: "a b"), leaving the others, even those containing it. */
+  def removeClass(`class`: String): Elem = {
+    val toRemove = `class`.split("\\s+").filter(_.nonEmpty).toSet
+    if (toRemove.isEmpty) elem
+    else attributeTransform("class", _.split("\\s+").filter(c => c.nonEmpty && !toRemove.contains(c)).mkString(" "))
+  }
 
   def addOnClick(js: String): Elem = addOnClick(Js(js))
 

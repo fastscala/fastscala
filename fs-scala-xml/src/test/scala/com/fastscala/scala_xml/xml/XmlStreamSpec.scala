@@ -199,7 +199,6 @@ class XmlStreamSpec extends AnyFlatSpec {
     "inline SVG" ->
       <div><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 16 16"><use xlink:href="#icon"/><path d="M0 0h16"/></svg><p>after</p></div>,
     "prefixed attribute values that need escaping" -> <a xmlns:p="urn:p" p:t={"x < \"y\" & z"}/>,
-    "namespace URI that needs escaping" -> Elem(null, "a", Null, NamespaceBinding("p", "urn:a&b?c=\"d\"", TopScope), true),
     // A child built on its own (its scope chain doesn't go through the parent's): it writes its whole chain.
     "a namespaced element built separately, inside another scope" -> {
       val icon: Elem = (<svg xmlns="http://www.w3.org/2000/svg"><path d="M1 1"/></svg>) // (in parens: two literals in a row would be one NodeBuffer)
@@ -211,6 +210,13 @@ class XmlStreamSpec extends AnyFlatSpec {
     "writeSeq" should s"write namespace declarations as toString ($name)" in {
       assert(seq(ns) == ns.toString)
     }
+  }
+
+  it should "escape a namespace URI (unlike toString, whose XML would be malformed)" in {
+    // toString writes the URI as it is: xmlns:p="urn:a&b?c="d"" isn't XML. (This used to be compared with toString.)
+    val elem = Elem(null, "a", Null, NamespaceBinding("p", "urn:a&b?c=\"d\"", TopScope), true)
+    assert(seq(elem) == """<a xmlns:p="urn:a&amp;b?c=&quot;d&quot;"/>""")
+    assert(scala.xml.XML.loadString(seq(elem)).scope.getURI("p") == "urn:a&b?c=\"d\"")
   }
 
   it should "write each declaration only on the element that adds it" in {

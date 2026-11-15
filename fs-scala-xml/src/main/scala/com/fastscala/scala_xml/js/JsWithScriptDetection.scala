@@ -9,7 +9,9 @@ import scala.xml.NodeSeq
  * `<script>` tags (see [[JsXmlUtils.extractJsFromScriptTags]]) is taken out of it, and run after: `scripts` of it (e.g.
  * as it is), as a statement of its own.
  *
- * The scripts are looked for when it's first written (or its cmd built), once: see [[js]].
+ * XmlJsStream writes it without looking for the scripts first: it writes the XML, and collects the scripts' JavaScript
+ * (instead of writing them) as it gets to them; `scripts` is called with it once the XML is written. Its [[cmd]] is the
+ * same code: there, the scripts are looked for when it's first built, once (see [[js]]).
  */
 class JsWithScriptDetection(
                              val before: Js,
@@ -19,8 +21,8 @@ class JsWithScriptDetection(
                            ) extends Js {
 
   /**
-   * What this is, as Js that's written part by part (XmlJsStream writes this: the XML as it's serialized, escaped):
-   * `before`, the XML without its scripts (as a string literal), `after`; and then the scripts.
+   * What this is, as Js (what its [[cmd]] is built from): `before`, the XML without its scripts (as a string literal),
+   * `after`; and then the scripts.
    */
   lazy val js: Js = {
     val (cleaned, extracted) = JS.extractJsFromScriptTags(ns)

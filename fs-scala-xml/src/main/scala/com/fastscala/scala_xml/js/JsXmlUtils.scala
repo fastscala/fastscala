@@ -140,17 +140,27 @@ class JsXmlUtils extends JsUtils {
     case group: Group =>
       val nodes = extractJsFromScriptTagsSeq(group.nodes, scripts)
       if (nodes eq group.nodes) group else Group(nodes)
-    case script: ElemWithJsInScript =>
-      scripts.append(script.js)
-      NodeSeq.Empty
-    case script if isJsScriptTag(script) =>
-      val js = scriptTagJs(script)
-      if (js.nonEmpty) scripts.append(Js(js)) // empty scripts are skipped (as Js.Void would be by `&`)
-      NodeSeq.Empty
+    case script if collectJsOfScriptTag(script, scripts) => NodeSeq.Empty
     case elem: Elem =>
       val child = extractJsFromScriptTagsSeq(elem.child, scripts)
       if (child eq elem.child) elem else elem.copy(child = child)
     case node => node // Text, comments, etc.
+  }
+
+  /**
+   * Whether `node` (not a Group: its label throws) is a JS `<script>` tag (see [[isJsScriptTag]]): if it is, its JS is
+   * appended to `scripts` (unless it's empty). What [[extractJsFromScriptTags]] takes out of each node; and XmlJsStream,
+   * of the nodes it doesn't write (see [[JsWithScriptDetection]]).
+   */
+  private[scala_xml] def collectJsOfScriptTag(node: Node, scripts: collection.mutable.Buffer[Js]): Boolean = node match {
+    case script: ElemWithJsInScript =>
+      scripts.append(script.js)
+      true
+    case script if isJsScriptTag(script) =>
+      val js = scriptTagJs(script)
+      if (js.nonEmpty) scripts.append(Js(js)) // empty scripts are skipped (as Js.Void would be by `&`)
+      true
+    case _ => false
   }
 
   /** `nodes` without their scripts (`nodes` itself, by reference, if they have none): only copied from the first change. */

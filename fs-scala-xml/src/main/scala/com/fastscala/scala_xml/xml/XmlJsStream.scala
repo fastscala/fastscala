@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.{CompositeJs, EncJs, Js, JsWriter}
-import com.fastscala.scala_xml.js.{JsWithScriptDetection, NodeSeqJs}
+import com.fastscala.scala_xml.js.{JS, JsWithScriptDetection, NodeSeqJs}
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
@@ -9,6 +9,7 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import scala.annotation.tailrec
 import scala.collection.immutable.IndexedSeq
+import scala.collection.mutable.ArrayBuffer
 import scala.xml.*
 
 /**
@@ -29,6 +30,10 @@ import scala.xml.*
  * iteratively (not recursively): a [[CompositeJs]]'s children are a level, and so is a
  * [[NodeSeqJs]]'s XML (written as XML, raw: it's its code), and an [[EncJs]]'s Js: a level that's escaped (see
  * [[Encoder]]), as are those in it (escaped once more for each EncJs they're in); any other Js is written as its `cmd`, as it is (not escaped).
+ *
+ * A [[JsWithScriptDetection]]'s XML is a level too, with a collector (see `Out.collector`): its JS `<script>` tags
+ * aren't written; their JavaScript is collected as they're reached, and written after the XML (what its `scripts` makes
+ * of it). So the XML is neither searched nor copied beforehand.
  */
 object XmlJsStream extends JsWriter {
 
@@ -173,6 +178,8 @@ object XmlJsStream extends JsWriter {
     /** Each level's escaping: XML levels (see [[xmlDepth]]) and JavaScript levels (see [[jsDepth]]). */
     var xmlDepthStack = new Array[Int](64)
     var jsDepthStack = new Array[Int](64)
+    /** Each level's [[collector]] (null: none). */
+    var collectorStack = new Array[ArrayBuffer[Js]](64)
 
     /**
      * The current level's escaping (by [[Encoder]], of everything written: the markup, the code, and text and attribute
@@ -183,6 +190,14 @@ object XmlJsStream extends JsWriter {
      */
     var xmlDepth = 0
     var jsDepth = 0
+
+    /**
+     * Where the JavaScript of the current level's JS `<script>` tags goes, instead of the tags being written: not null
+     * in the XML of a [[JsWithScriptDetection]] (its levels of nodes: its elements' children, and Groups' nodes). Null
+     * in any other level; namely in a level of Js (e.g. an attribute's value), even inside that XML: the XML in such a
+     * Js (a NodeSeqJs's) is written as it is, with its scripts.
+     */
+    var collector: ArrayBuffer[Js] = null
 
     /** Changes the escaping (of what's written next). */
     def setEscaping(xml: Int, js: Int): Unit = {
@@ -330,10 +345,12 @@ object XmlJsStream extends JsWriter {
       closingStack(0) = null
       xmlDepthStack(0) = 0
       jsDepthStack(0) = 0
+      collectorStack(0) = null
+      collector = null
       depth = 1
     }
 
-    /** A level of items: Nodes, or Js (a CompositeJs's children). */
+    /** A level of items: Nodes, or Js (a CompositeJs's children). Escaped, and its scripts collected, as the current one. */
     def pushSeq(nodes: collection.Seq[AnyRef], scope: NamespaceBinding, closing: AnyRef): Unit = {
       val d = depth
       if (d == nodesStack.length) growStacks()
@@ -342,7 +359,24 @@ object XmlJsStream extends JsWriter {
       closingStack(d) = closing
       xmlDepthStack(d) = xmlDepth // (as the level it's in)
       jsDepthStack(d) = jsDepth
+      collectorStack(d) = collector
       depth = d + 1
+    }
+
+    /**
+     * A level of `ns`, the XML of a string literal (in its own scope, TopScope: as a NodeSeqJs's): escaped for
+     * JavaScript once more than the current level, and without its JS `<script>` tags, whose JavaScript goes into
+     * `scripts` (see [[collector]]).
+     */
+    def pushCollecting(ns: NodeSeq, scripts: ArrayBuffer[Js]): Unit = {
+      val escapedJsDepth = jsDepth + 1
+      pushSeq(ns, TopScope, null)
+      val d = depth - 1
+      xmlDepthStack(d) = 0
+      jsDepthStack(d) = escapedJsDepth
+      collectorStack(d) = scripts
+      setEscaping(0, escapedJsDepth)
+      collector = scripts
     }
 
     /** A level of just `js`, escaped for JavaScript once more than the current level (for an EncJs). */
@@ -360,6 +394,8 @@ object XmlJsStream extends JsWriter {
       closingStack(d) = closing
       xmlDepthStack(d) = xml
       jsDepthStack(d) = jsLevels
+      collectorStack(d) = null // (a level of Js: see collector)
+      collector = null
       depth = d + 1
       setEscaping(xml, jsLevels)
     }
@@ -398,6 +434,7 @@ object XmlJsStream extends JsWriter {
       closingStack = Arrays.copyOf(closingStack, newCap)
       xmlDepthStack = Arrays.copyOf(xmlDepthStack, newCap)
       jsDepthStack = Arrays.copyOf(jsDepthStack, newCap)
+      collectorStack = Arrays.copyOf(collectorStack, newCap)
     }
   }
 
@@ -446,9 +483,17 @@ object XmlJsStream extends JsWriter {
         val closing = out.closingStack(d)
         out.nodesStack(d) = null
         out.closingStack(d) = null
+        out.collectorStack(d) = null
         out.depth = d
-        // (Back to the escaping of the level it's in: before the closing tag, or quote, which is that level's.)
-        if (d > 0) out.setEscaping(out.xmlDepthStack(d - 1), out.jsDepthStack(d - 1)) else out.setEscaping(0, 0)
+        // (Back to the escaping, and collector, of the level it's in: before the closing tag, or quote, which is that
+        // level's.)
+        if (d > 0) {
+          out.setEscaping(out.xmlDepthStack(d - 1), out.jsDepthStack(d - 1))
+          out.collector = out.collectorStack(d - 1)
+        } else {
+          out.setEscaping(0, 0)
+          out.collector = null
+        }
         closing match {
           case null =>
           case e: Elem => writeClosingTag(e, out)
@@ -457,6 +502,9 @@ object XmlJsStream extends JsWriter {
       } else {
         val levelScope = out.scopeStack(d)
         nextNode match {
+          case e: Elem if (out.collector ne null) && JS.collectJsOfScriptTag(e, out.collector) =>
+            // A JS script, in a JsWithScriptDetection's XML: not written (its JavaScript was collected).
+
           case e: Elem =>
             out.append('<')
             appendName(e.prefix, e.label, out)
@@ -504,6 +552,12 @@ object XmlJsStream extends JsWriter {
           case escaped: Escaped =>
             out.pushEscaped(escaped.js, levelScope)
 
+          case xml: XmlWithoutScripts =>
+            out.pushCollecting(xml.ns, xml.scripts)
+
+          case collected: CollectedScripts =>
+            writeCollectedScripts(collected, levelScope, out)
+
           case attr: JsAttr =>
             if (needsLevel(attr.js)) {
               appendAttrStart(attr.key, out)
@@ -531,7 +585,9 @@ object XmlJsStream extends JsWriter {
    *    as its `cmd`, toString, does), whatever XML the Js is in;
    *  - an [[EncJs]]'s Js is pushed, as a level that's escaped once more than this one (its quotes, if `inString`,
    *    are written at this level: so they're escaped by the EncJs's this one is in, if any, as its `cmd` does);
-   *  - a [[JsWithScriptDetection]] is written as its parts (see its `js`);
+   *  - a [[JsWithScriptDetection]]'s parts are pushed, as a level: `before`, its XML as a string literal (a level that's
+   *    escaped once more, and whose JS scripts are collected instead of written: see [[XmlWithoutScripts]]), `after`,
+   *    and then the collected scripts (see [[CollectedScripts]]);
    *  - any other is written as its `cmd` (for now: specific kinds can be written without building it).
    */
   private def writeJsItem(js: Js, scope: NamespaceBinding, out: Out): Unit = js match {
@@ -543,7 +599,10 @@ object XmlJsStream extends JsWriter {
       if (enc.inString) out.pushSeq(Vector(Quote, new Escaped(enc.js), Quote), scope, null)
       else out.pushEscaped(enc.js, scope)
     case detection: JsWithScriptDetection =>
-      writeJsItem(detection.js, scope, out) // (its parts: the XML, without its scripts, is written as it's serialized)
+      val scripts = new ArrayBuffer[Js]()
+      out.pushSeq(
+        Vector(detection.before, Quote, new XmlWithoutScripts(detection.ns, scripts), Quote, detection.after, new CollectedScripts(detection, scripts)),
+        scope, null)
     case other =>
       out.append(codeOf(other))
   }
@@ -555,6 +614,30 @@ object XmlJsStream extends JsWriter {
   }
 
   private val Quote: Js = Js("\"")
+
+  private val Semicolon: Js = Js(";")
+
+  /**
+   * An item of a level (a [[JsWithScriptDetection]]'s): `ns`, to be pushed as a level of its own, escaped once more (as
+   * an EncJs's, between quotes), and without its JS scripts: their JavaScript is put in `scripts` as they're reached.
+   */
+  private final class XmlWithoutScripts(val ns: NodeSeq, val scripts: ArrayBuffer[Js])
+
+  /**
+   * An item of a level (the last of a [[JsWithScriptDetection]]'s): the JavaScript of its XML's scripts, by now all in
+   * `scripts` (the XML was written before this).
+   */
+  private final class CollectedScripts(val detection: JsWithScriptDetection, val scripts: ArrayBuffer[Js])
+
+  /**
+   * What the detection's `scripts` makes of the collected scripts (joined by `;`, in document order; Js.Void if there
+   * are none), as a statement of its own: after a `;`, unless it's Js.Void (as `&` does: see the detection's `js`).
+   */
+  private def writeCollectedScripts(collected: CollectedScripts, scope: NamespaceBinding, out: Out): Unit = {
+    val extracted = if (collected.scripts.isEmpty) Js.Void else CompositeJs.joined(collected.scripts, Semicolon)
+    val js = collected.detection.scripts(extracted)
+    if (js != Js.Void) out.pushSeq(Vector(Semicolon, js), scope, null)
+  }
 
   /** An item of a level: `js`, to be pushed as a level of its own, escaped once more (an EncJs's, between quotes). */
   private final class Escaped(val js: Js)

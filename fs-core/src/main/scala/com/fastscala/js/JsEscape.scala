@@ -31,8 +31,8 @@ object JsEscape {
   /** `c`'s escape, or null if it's written as it is; for a surrogate, its escape as a lone one. */
   private def escapeOf(c: Char): String =
     if (c < 0xA0) Table(c)
-    else if (c == ' ') "\\u2028"
-    else if (c == ' ') "\\u2029"
+    else if (c == '\u2028') "\\u2028"
+    else if (c == '\u2029') "\\u2029"
     else if (Character.isSurrogate(c)) f"\\u${c.toInt}%04x"
     else null
 

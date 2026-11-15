@@ -3,7 +3,7 @@ package com.fastscala.scala_xml.xml
 import com.fastscala.js.JsEscape
 
 import java.nio.charset.StandardCharsets.UTF_8
-import scala.annotation.{nowarn, switch}
+import scala.annotation.nowarn
 import scala.xml.Utility
 
 /**
@@ -35,10 +35,11 @@ trait EncoderOutput {
  * one XML level is e.g. the text of a NodeSeqJs's XML in an attribute, without an EncJs: escaped for its own XML, and
  * then for the attribute's value.
  *
- * Three ways of writing, by what's needed:
- *  - nothing escaped: ASCII copied in bulk (or, for a short String, char by char), anything else char by char;
- *  - one XML level only: one pass, without bounds checks, in slices that surely fit (see [[writeXml]]);
- *  - anything else: char by char, each char's bytes looked up in a table for that escaping (see [[writeTable]]).
+ * How it's written:
+ *  - nothing escaped, all ASCII: copied in bulk (or, for a short String, char by char, as it's checked);
+ *  - anything else: char by char, each char's bytes looked up in the table of that escaping (see [[Escaping]]). Most
+ *    are a single 8-byte store, whatever the char is escaped as (see [[writePacked]]); the rest, and whatever is
+ *    written when the buffer is nearly full, goes one char at a time, each checked to fit (see [[writeCareful]]).
  *
  * A lone surrogate is `?` (as String.getBytes(UTF_8) writes it) when not escaped for JavaScript, and `\uXXXX` (as
  * JsEscape escapes it) when it is. With XML escaping, a surrogate pair split by dropped chars is a pair again.
@@ -49,13 +50,14 @@ object Encoder {
 
   /** `s`, escaped for XML `xmlLevels` times, then for JavaScript `jsLevels` times, in UTF-8, into `out`'s buffer. */
   def write(s: String, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit =
-    if (jsLevels == 0 && xmlLevels <= 1) {
-      if (xmlLevels == 1) writeXml(s, out) else writeRaw(s, out)
-    } else writeTable(s, 0, s.length, out, xmlLevels, jsLevels)
+    if ((xmlLevels | jsLevels) == 0) writeRaw(s, out)
+    else writePacked(s, 0, out, escapingFor(xmlLevels, jsLevels), xmlLevels, jsLevels)
 
   /** As the other [[write]], for what's in `sb` (e.g. what scala-xml wrote for the nodes only it knows how to). */
-  def write(sb: java.lang.StringBuilder, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit =
-    writeTable(sb, 0, sb.length, out, xmlLevels, jsLevels)
+  def write(sb: java.lang.StringBuilder, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit = {
+    val len = sb.length
+    writeCareful(sb, 0, len, len, out, escapingFor(xmlLevels, jsLevels), xmlLevels, jsLevels)
+  }
 
   /** An ASCII char of the markup (`<`, `>`, `/`, `=`, `"`, ` `, `:`), escaped as [[write]] does. */
   inline def writeAscii(c: Char, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit =
@@ -63,7 +65,7 @@ object Encoder {
       if (out.pos == out.buf.length) out.flush()
       out.buf(out.pos) = c.toByte
       out.pos += 1
-    } else writeTable(c, out, xmlLevels, jsLevels)
+    } else writeEscapedAscii(c, out, xmlLevels, jsLevels)
 
   // ---------- nothing escaped ----------
 
@@ -76,15 +78,15 @@ object Encoder {
    */
   private def writeRaw(s: String, out: EncoderOutput): Unit = {
     val len = s.length
-    if (len <= ShortString && len <= out.buf.length - out.pos) {
-      val buf = out.buf
-      var p = out.pos
+    val buf = out.buf
+    var p = out.pos
+    if (len <= ShortString && len <= buf.length - p) {
       var i = 0
       while (i < len) {
         val c = s.charAt(i)
         if (c >= 0x80) { // not ASCII: the rest is encoded
           out.pos = p
-          writeTable(s, i, len, out, xmlLevels = 0, jsLevels = 0)
+          writePacked(s, i, out, Unescaped, 0, 0)
           return
         }
         buf(p) = c.toByte
@@ -99,7 +101,7 @@ object Encoder {
         bits |= s.charAt(i)
         i += 1
       }
-      if (bits < 0x80) writeAsciiBulk(s, out) else writeTable(s, 0, len, out, xmlLevels = 0, jsLevels = 0)
+      if (bits < 0x80) writeAsciiBulk(s, out) else writePacked(s, 0, out, Unescaped, 0, 0)
     }
   }
 
@@ -125,130 +127,24 @@ object Encoder {
   private inline def copyAscii(s: String, from: Int, to: Int, buf: Array[Byte], p: Int): Unit =
     s.getBytes(from, to, buf, p)
 
-  // ---------- XML only ----------
-
-  private final val ActionKeep: Byte = 0
-  private final val ActionDrop: Byte = 1
-  private final val ActionAmp: Byte = 2
-  private final val ActionLt: Byte = 3
-  private final val ActionGt: Byte = 4
-  private final val ActionQuot: Byte = 5
-
-  private val XmlActions: Array[Byte] = {
-    val arr = new Array[Byte](128)
-    (0 until 32).foreach(i => arr(i) = ActionDrop)
-    arr('\t') = ActionKeep
-    arr('\n') = ActionKeep
-    arr('\r') = ActionKeep
-    arr('&') = ActionAmp
-    arr('<') = ActionLt
-    arr('>') = ActionGt
-    arr('"') = ActionQuot
-    arr
-  }
-
-  /** Whether XML escaping drops `c` (the control chars but \t, \n and \r). */
-  private inline def xmlDrops(c: Char): Boolean = c < 32 && XmlActions(c) == ActionDrop
-
-  /** Text escaped in slices of at least this many chars: rather than a tiny one, the buffer is written out first. */
-  private final val MinSlice = 64
-
-  /**
-   * `text` escaped as Utility.escape does (`&`, `<`, `>` and `"` become entities; control chars other than \n, \r and
-   * \t are dropped), in UTF-8 (a lone surrogate is `?`).
-   *
-   * In slices that surely fit in the buffer (6 bytes per char: the longest entity, `&quot;`, and more than UTF-8's 3
-   * bytes per char), each written without any bounds check; usually the whole text is one slice.
-   */
-  private def writeXml(text: String, out: EncoderOutput): Unit = {
-    val len = text.length
-    var i = 0
-    while (i < len) {
-      var room = (out.buf.length - out.pos) / 6
-      if (room < len - i && room < MinSlice) {
-        out.flush()
-        room = out.buf.length / 6 // (1,365 chars for an 8,192-byte buffer)
-      }
-      i = writeXmlSlice(text, i, math.min(len, i + room), out)
-    }
-  }
-
-  // (The loop tests `c < 128` and then looks the char up. Testing `c > '>'` first, to skip most chars with one
-  // comparison, measured ~35% slower on a page with a lot of JavaScript in attributes: that branch is mispredicted
-  // whenever letters and digits / punctuation alternate, while `c < 128` is almost always true.)
-
-  /**
-   * Escapes `text(from until to)` without bounds checks (the caller guarantees room for 6 bytes per char); returns
-   * where it stopped: `to`, or after it if a surrogate pair started just before `to`.
-   *
-   * One pass: each char is written (as a byte, an entity, or encoded to UTF-8) as it's read. (Scanning for the next
-   * escape and then copying the run in between, with String.getBytes, measured ~25% slower: most runs between
-   * escapes, e.g. in JavaScript in attributes, are a few chars, so each char was read twice plus a call per run.)
-   */
-  private def writeXmlSlice(text: String, from: Int, to: Int, out: EncoderOutput): Int = {
-    val buf = out.buf
-    val actions = XmlActions
-    val len = text.length
-    var p = out.pos
-    var i = from
-    while (i < to) {
-      val c = text.charAt(i)
-      if (c < 128) {
-        (actions(c): @switch) match {
-          case ActionKeep =>
-            buf(p) = c.toByte
-            p += 1
-          case ActionAmp =>
-            buf(p) = '&'
-            buf(p + 1) = 'a'
-            buf(p + 2) = 'm'
-            buf(p + 3) = 'p'
-            buf(p + 4) = ';'
-            p += 5
-          case ActionLt =>
-            buf(p) = '&'
-            buf(p + 1) = 'l'
-            buf(p + 2) = 't'
-            buf(p + 3) = ';'
-            p += 4
-          case ActionGt =>
-            buf(p) = '&'
-            buf(p + 1) = 'g'
-            buf(p + 2) = 't'
-            buf(p + 3) = ';'
-            p += 4
-          case ActionQuot =>
-            buf(p) = '&'
-            buf(p + 1) = 'q'
-            buf(p + 2) = 'u'
-            buf(p + 3) = 'o'
-            buf(p + 4) = 't'
-            buf(p + 5) = ';'
-            p += 6
-          case _ => // ActionDrop
-        }
-      } else if (Character.isSurrogate(c)) {
-        // A high one's low surrogate may come after chars that are dropped: they're removed by the escaping, before
-        // the UTF-8 encoding (as toString's output is encoded), so then it's a pair. Otherwise it's lone: '?'.
-        val low = lowSurrogateAt(text, i, len, xml = true)
-        if (low >= 0) {
-          p = putCodePoint(Character.toCodePoint(c, text.charAt(low)), buf, p) // (4 bytes for 2 or more chars)
-          i = low
-        } else {
-          buf(p) = '?'
-          p += 1
-        }
-      } else p = putBmp(c, buf, p)
-      i += 1
-    }
-    out.pos = p
-    i
-  }
-
-  // ---------- anything else (JavaScript levels, several XML ones) ----------
+  // ---------- the escapings' tables ----------
 
   /** The chars whose bytes are in the tables: below U+00A0 (ASCII and the C1 controls). */
   private final val TableSize = 0xA0
+
+  /** In [[Escaping.packed]]: a char whose bytes don't fit in a packed entry (more than 7). */
+  private final val NotPacked = -1L
+
+  /**
+   * An escaping (so many XML levels, then so many JavaScript ones) of each char below [[TableSize]]:
+   *
+   * @param bytes  its bytes (null: the char itself, as one byte);
+   * @param packed the same, as a long: the bytes (up to 7; the first one lowest) and, in its highest byte, how many
+   *               they are; so the char is written with one 8-byte store, and the position advanced by that many
+   *               (the bytes stored after them are written over by what's written next). [[NotPacked]] if they're
+   *               more than 7 (e.g. a `"` in an attribute, in a rerender: `\x26quot;`).
+   */
+  private final class Escaping(val bytes: Array[Array[Byte]], val packed: Array[Long])
 
   /**
    * The reference: `s` escaped for XML (as Utility.escape does) `xmlLevels` times, then for JavaScript `jsLevels`
@@ -269,12 +165,19 @@ object Encoder {
     r
   }
 
-  /** For each char below [[TableSize]]: its bytes, escaped as [[escaped]] does (null: itself, as one byte). */
-  private def makeTable(xmlLevels: Int, jsLevels: Int): Array[Array[Byte]] =
-    Array.tabulate(TableSize) { c =>
-      val bytes = escaped(c.toChar.toString, xmlLevels, jsLevels).getBytes(UTF_8)
-      if (bytes.length == 1 && bytes(0) == c) null else bytes
+  private def makeEscaping(xmlLevels: Int, jsLevels: Int): Escaping = {
+    val bytes = Array.tabulate(TableSize) { c =>
+      val bs = escaped(c.toChar.toString, xmlLevels, jsLevels).getBytes(UTF_8)
+      if (bs.length == 1 && bs(0) == c) null else bs
     }
+    val packed = Array.tabulate(TableSize) { c =>
+      val bs = bytes(c)
+      if (bs eq null) c.toLong | (1L << 56)
+      else if (bs.length > 7) NotPacked
+      else bs.indices.foldLeft(bs.length.toLong << 56)((acc, i) => acc | ((bs(i) & 0xFFL) << (8 * i)))
+    }
+    new Escaping(bytes, packed)
+  }
 
   /**
    * The tables of fewer XML and JavaScript levels than these are made at once; others when first needed (an escape
@@ -284,29 +187,129 @@ object Encoder {
   private final val TabledXmlLevels = 3
   private final val TabledJsLevels = 8
 
-  private val Tables: Array[Array[Array[Byte]]] =
-    Array.tabulate(TabledXmlLevels * TabledJsLevels)(i => makeTable(i / TabledJsLevels, i % TabledJsLevels))
+  private val Escapings: Array[Escaping] =
+    Array.tabulate(TabledXmlLevels * TabledJsLevels)(i => makeEscaping(i / TabledJsLevels, i % TabledJsLevels))
 
-  private val OtherTables = new java.util.concurrent.ConcurrentHashMap[(Int, Int), Array[Array[Byte]]]()
+  private val OtherEscapings = new java.util.concurrent.ConcurrentHashMap[(Int, Int), Escaping]()
 
-  private def tableFor(xmlLevels: Int, jsLevels: Int): Array[Array[Byte]] =
-    if (xmlLevels < TabledXmlLevels && jsLevels < TabledJsLevels) Tables(xmlLevels * TabledJsLevels + jsLevels)
-    else OtherTables.computeIfAbsent((xmlLevels, jsLevels), key => makeTable(key._1, key._2))
+  /** No escaping: each char's UTF-8. */
+  private val Unescaped: Escaping = Escapings(0)
+
+  private def escapingFor(xmlLevels: Int, jsLevels: Int): Escaping =
+    if (xmlLevels < TabledXmlLevels && jsLevels < TabledJsLevels) Escapings(xmlLevels * TabledJsLevels + jsLevels)
+    else OtherEscapings.computeIfAbsent((xmlLevels, jsLevels), key => makeEscaping(key._1, key._2))
+
+  // ---------- escaped (or not ASCII): the fast way ----------
+
+  /** With less room than for this many chars, and more to write, the chars are written one by one ([[writeCareful]]). */
+  private final val MinSlice = 32
 
   /**
-   * `s(from until to)`, escaped as [[escaped]] does, in UTF-8: char by char, each char below U+00A0 looked up in the
-   * table for this escaping; above, a char is its UTF-8 (escaping leaves it as it is), but for the line separators
-   * (escaped for JavaScript) and the surrogates.
+   * `s(from until its end)`, escaped by `escaping` (that of `xmlLevels` and `jsLevels`), in UTF-8.
+   *
+   * In slices of as many chars as surely fit in the buffer at 8 bytes each (usually the whole String): so there's no
+   * check for room in the loop. A char below U+00A0 is one 8-byte store of its packed entry (see [[Escaping]]),
+   * whether it's escaped or not: no branch on what it is. Above, a char is its UTF-8 (2 or 3 bytes: escaping leaves it
+   * as it is). The few others (an escape of more than 7 bytes; the line separators, escaped for JavaScript; the
+   * surrogates) are written by [[writeCareful]], one at a time; and so is everything when the buffer is nearly full,
+   * so it's filled to its end.
+   *
+   * (Tried, and not kept: writing the escapes of 8 to 15 bytes with two stores, from a second table. No faster, on
+   * attribute values with JavaScript in a rerender, where they're most frequent: each one ended the slice.)
    */
-  private def writeTable(s: CharSequence, from: Int, to: Int, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit = {
-    val table = tableFor(xmlLevels, jsLevels)
+  private def writePacked(s: String, from: Int, out: EncoderOutput, escaping: Escaping, xmlLevels: Int, jsLevels: Int): Unit = {
+    val len = s.length
+    var i = from
+    while (i < len) {
+      val buf = out.buf
+      val p = out.pos
+      val room = (buf.length - p) >> 3
+      if (room < len - i && room < MinSlice) {
+        // Nearly full: char by char (each checked to fit), until past where it's flushed.
+        i = writeCareful(s, i, math.min(len, i + MinSlice), len, out, escaping, xmlLevels, jsLevels)
+      } else {
+        val end = math.min(len, i + room)
+        i = writeSlice(s, i, end, buf, p, out, escaping.packed)
+        if (i < end) i = writeCareful(s, i, i + 1, len, out, escaping, xmlLevels, jsLevels) // (the char it stopped at)
+      }
+    }
+  }
+
+  /**
+   * `s(from until end)`, without checking for room (the caller guarantees 8 bytes for each char), into `buf` from `p`
+   * on: until `end`, or a char that isn't written this way (see [[writePacked]]). Sets `out`'s position, and returns
+   * where it stopped.
+   */
+  private def writeSlice(s: String, from: Int, end: Int, buf: Array[Byte], pos: Int, out: EncoderOutput, packed: Array[Long]): Int = {
+    var p = pos
+    var i = from
+    while (i < end) {
+      val c = s.charAt(i)
+      if (c < TableSize) {
+        val entry = packed(c)
+        if (entry == NotPacked) {
+          out.pos = p
+          return i
+        }
+        LittleEndian.putLong(buf, p, entry)
+        p += (entry >>> 56).toInt
+      } else if (c < 0x800) {
+        buf(p) = (0xC0 | (c >> 6)).toByte
+        buf(p + 1) = (0x80 | (c & 0x3F)).toByte
+        p += 2
+      } else if (!Character.isSurrogate(c) && (c & 0xFFFE) != 0x2028) {
+        buf(p) = (0xE0 | (c >> 12)).toByte
+        buf(p + 1) = (0x80 | ((c >> 6) & 0x3F)).toByte
+        buf(p + 2) = (0x80 | (c & 0x3F)).toByte
+        p += 3
+      } else {
+        out.pos = p
+        return i
+      }
+      i += 1
+    }
+    out.pos = p
+    i
+  }
+
+  /** One ASCII char of the markup, escaped as [[write]] does (with some escaping). */
+  def writeEscapedAscii(c: Char, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit = {
+    val escaping = escapingFor(xmlLevels, jsLevels)
+    val entry = escaping.packed(c)
+    val p = out.pos
+    val buf = out.buf
+    if (entry != NotPacked && p <= buf.length - 8) {
+      LittleEndian.putLong(buf, p, entry)
+      out.pos = p + (entry >>> 56).toInt
+    } else {
+      val bytes = escaping.bytes(c)
+      if (bytes eq null) {
+        if (p == buf.length) out.flush()
+        out.buf(out.pos) = c.toByte
+        out.pos += 1
+      } else writeBytes(bytes, out)
+    }
+  }
+
+  // ---------- escaped (or not ASCII): one char at a time ----------
+
+  /** Whether XML escaping drops `c` (the control chars but \t, \n and \r). */
+  private inline def xmlDrops(c: Char): Boolean = c < ' ' && c != '\t' && c != '\n' && c != '\r'
+
+  /**
+   * The chars of `s` from `from` until `until` (and what goes with them, up to `to`: a low surrogate after the last
+   * one), escaped by `escaping`, in UTF-8: each one checked to fit in the buffer, which is flushed when it doesn't (an
+   * escape longer than the room left is written across it). Returns where it stopped: `until`, or after it.
+   */
+  private def writeCareful(s: CharSequence, from: Int, until: Int, to: Int, out: EncoderOutput, escaping: Escaping, xmlLevels: Int, jsLevels: Int): Int = {
+    val table = escaping.bytes
     val xml = xmlLevels > 0
     var buf = out.buf
     var p = out.pos
     var i = from
-    while (i < to) {
-      // Room for whatever a char but a table one is (4 bytes: a surrogate pair), and for most table ones.
-      if (p > buf.length - 8) {
+    while (i < until) {
+      // Room for whatever a char but a table one is (4 bytes: a surrogate pair), and for a table one of one byte.
+      if (p > buf.length - 4) {
         out.pos = p
         out.flush()
         buf = out.buf
@@ -347,16 +350,7 @@ object Encoder {
       i += 1
     }
     out.pos = p
-  }
-
-  /** One ASCII char of the markup, escaped as [[write]] does (with some escaping). */
-  private def writeTable(c: Char, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit = {
-    val bytes = tableFor(xmlLevels, jsLevels)(c)
-    if (bytes eq null) {
-      if (out.pos == out.buf.length) out.flush()
-      out.buf(out.pos) = c.toByte
-      out.pos += 1
-    } else writeBytes(bytes, out)
+    i
   }
 
   /** `bytes`, into the buffer, in as many pieces as it takes (one, but for an escape longer than the room left). */

@@ -323,7 +323,14 @@ object Encoder {
     }
   }
 
-  private def writeSlice(s: String, from: Int, initialEnd: Int, buf: Array[Byte], pos: Int, out: EncoderOutput, esc: Escaping): Int = {
+  /**
+   * Writes `s(from until initialEnd)` (fewer if it stops early) from `buf(pos)` on, with whole 8-byte stores (so `buf` must
+   * have 8 bytes of room for each char: see [[writePacked]]); returns where it stopped (sets `out.pos` to match): at
+   * `initialEnd`, or before a char it doesn't write (no packed escape, a surrogate, U+2028/9, or an escape of more than 7
+   * bytes without the room for its 16). Inlined into writePacked (a call per slice cost more than the loop, for short
+   * Strings), so written without `return`s.
+   */
+  private inline def writeSlice(s: String, from: Int, initialEnd: Int, buf: Array[Byte], pos: Int, out: EncoderOutput, esc: Escaping): Int = {
     val packed = esc.packed
     val packed2 = esc.packed2
     var p = pos
@@ -333,37 +340,30 @@ object Encoder {
       val c = s.charAt(i)
       if (c < TableSize) {
         val entry = packed(c)
-        if (entry < 0L) {
-          out.pos = p
-          return i
-        }
-        val bLen = (entry >>> 56).toInt
-        if (bLen <= 7) {
+        // One unsigned compare for the usual case: packed (not NotPacked, -1), in at most 7 bytes (length < 8).
+        if (java.lang.Long.compareUnsigned(entry, 8L << 56) < 0) {
           LittleEndian.putLong(buf, p, entry)
-          p += bLen
-        } else if (p <= buf.length - 15) {
+          p += (entry >>> 56).toInt
+          i += 1
+        } else if (entry >= 0L && p <= buf.length - 15) {
           LittleEndian.putLong(buf, p, entry)
           LittleEndian.putLong(buf, p + 7, packed2(c))
-          p += bLen
-          val maxEnd = i + 1 + ((buf.length - p) >> 3)
+          p += (entry >>> 56).toInt
+          i += 1
+          val maxEnd = i + ((buf.length - p) >> 3)
           if (maxEnd < end) end = maxEnd
-        } else {
-          out.pos = p
-          return i
-        }
+        } else end = i
       } else if (c < 0x800) {
         val word = (0xC0L | (c >> 6)) | ((0x80L | (c & 0x3F)) << 8)
         LittleEndian.putLong(buf, p, word)
         p += 2
+        i += 1
       } else if (!Character.isSurrogate(c) && (c & 0xFFFE) != 0x2028) {
         val word = (0xE0L | (c >> 12)) | ((0x80L | ((c >> 6) & 0x3F)) << 8) | ((0x80L | (c & 0x3F)) << 16)
         LittleEndian.putLong(buf, p, word)
         p += 3
-      } else {
-        out.pos = p
-        return i
-      }
-      i += 1
+        i += 1
+      } else end = i
     }
     out.pos = p
     i

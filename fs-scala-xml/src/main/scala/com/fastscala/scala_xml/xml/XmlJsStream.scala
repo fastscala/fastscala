@@ -7,7 +7,7 @@ import org.eclipse.jetty.util.{Blocker, Callback}
 
 import java.nio.ByteBuffer
 import java.util.Arrays
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.collection.immutable.IndexedSeq
 import scala.xml.*
 
@@ -41,9 +41,6 @@ object XmlJsStream extends JsWriter {
   private final val IteratorCursor = -2
   /** The level is a single node (writeNode's root, or a Node used as its own child seq): nodesStack holds the node. */
   private final val SingleNodeCursor = -3
-
-  /** Strings (and runs) up to this long are copied char by char: for a few bytes, a String.getBytes call costs more. */
-  private final val ShortString = 32
 
   /** Serializing pauses once this many chunks are waiting to be written (besides the one being written)... */
   val MaxQueuedChunks = 3
@@ -121,56 +118,6 @@ object XmlJsStream extends JsWriter {
     } finally callback.close()
   }
 
-  /**
-   * Encodes `s(from until to)` to UTF-8 into `buf` at `p`, returning the position after it. The caller guarantees
-   * room for 3 bytes per char (a surrogate pair is 4 bytes for 2 chars). A lone surrogate is written as `?`, as
-   * String.getBytes(UTF_8) and the JDK's UTF-8 encoder do.
-   */
-  private[xml] def encodeUtf8(s: String, from: Int, to: Int, buf: Array[Byte], pos: Int): Int = {
-    var p = pos
-    var i = from
-    while (i < to) {
-      val c = s.charAt(i)
-      if (c < 0x80) {
-        buf(p) = c.toByte
-        p += 1
-      } else if (c < 0x800) {
-        buf(p) = (0xC0 | (c >> 6)).toByte
-        buf(p + 1) = (0x80 | (c & 0x3F)).toByte
-        p += 2
-      } else if (Character.isSurrogate(c)) {
-        if (Character.isHighSurrogate(c) && i + 1 < to && Character.isLowSurrogate(s.charAt(i + 1))) {
-          val cp = Character.toCodePoint(c, s.charAt(i + 1))
-          buf(p) = (0xF0 | (cp >> 18)).toByte
-          buf(p + 1) = (0x80 | ((cp >> 12) & 0x3F)).toByte
-          buf(p + 2) = (0x80 | ((cp >> 6) & 0x3F)).toByte
-          buf(p + 3) = (0x80 | (cp & 0x3F)).toByte
-          p += 4
-          i += 1
-        } else {
-          buf(p) = '?'
-          p += 1
-        }
-      } else {
-        buf(p) = (0xE0 | (c >> 12)).toByte
-        buf(p + 1) = (0x80 | ((c >> 6) & 0x3F)).toByte
-        buf(p + 2) = (0x80 | (c & 0x3F)).toByte
-        p += 3
-      }
-      i += 1
-    }
-    p
-  }
-
-  /**
-   * Copies `s(from until to)`, which must be all ASCII, into `buf` at `p`: for a Latin-1 String this is an array copy
-   * of its bytes. (String.getBytes(int, int, byte[], int) keeps the low 8 bits of each char: deprecated, as that's
-   * only right for ASCII, which is all it's used for here.)
-   */
-  @nowarn("cat=deprecation")
-  private inline def copyAscii(s: String, from: Int, to: Int, buf: Array[Byte], p: Int): Unit =
-    s.getBytes(from, to, buf, p)
-
   /** A filled chunk, waiting to be written (or being written). */
   private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean, val endsContent: Boolean)
 
@@ -226,26 +173,13 @@ object XmlJsStream extends JsWriter {
     var jsDepthStack = new Array[Int](64)
 
     /**
-     * The current level's JavaScript escaping: how many EncJs's it's in (0: none). While it's not 0, everything written
-     * (the markup, and text and attribute values, escaped for XML first) goes through an [[Encoder]] with as many
-     * JavaScript layers, from the raw Strings straight into the buffer; with 0, it's written as before.
+     * The current level's JavaScript escaping: how many EncJs's it's in (0: none). Everything written (the markup, and
+     * text and attribute values) is escaped for JavaScript as many times, by [[Encoder]].
      */
     var jsDepth = 0
 
-    /**
-     * Writes `s` (already escaped by the layers before the JavaScript ones: e.g. XML) through the current JavaScript
-     * layers. They escape char by char, so each String is escaped on its own, as it's written.
-     */
-    def writeJsEncoded(s: String): Unit = if (!s.isEmpty) Encoder.js(jsDepth).write(s, this)
-
-    /** `text` escaped for XML and then the current JavaScript layers. */
-    def writeXmlJsEncoded(text: String): Unit = writeJsEncoded(EncodingLayer.Xml.encode(text))
-
     /** Changes the JavaScript escaping (how many EncJs's what's written next is in). */
     def setJsDepth(d: Int): Unit = jsDepth = d
-
-    /** Queues the (full) buffer (for [[Encoder]], which writes into it). */
-    def queueFull(): Unit = queue(last = false)
 
     /** Serializes (from where it stopped) until done, or until it should pause; then queues the last chunk. */
     def drive(): Unit =
@@ -353,105 +287,31 @@ object XmlJsStream extends JsWriter {
       }
     }
 
-    /** An ASCII char (the markup's own: `<`, `>`, `/`, `=`, `"`, ` `, `:`). */
-    inline def append(c: Char): Unit = {
-      if (jsDepth > 0) writeJsEncoded(String.valueOf(c))
-      else {
-        if (pos == ChunkSize) flush()
-        buf(pos) = c.toByte
-        pos += 1
-      }
-    }
+    // ---------- writing: all through Encoder (escaping, as the current level needs, and UTF-8) ----------
 
-    /** Two ASCII chars. */
+    /** An ASCII char of the markup's own (`<`, `>`, `/`, `=`, `"`, ` `, `:`). */
+    inline def append(c: Char): Unit = Encoder.writeAscii(c, this, jsDepth)
+
+    /** Two ASCII chars of the markup's own. */
     inline def append2(c1: Char, c2: Char): Unit = {
-      if (jsDepth > 0) writeJsEncoded(new String(Array(c1, c2)))
-      else {
-        if (pos + 2 > ChunkSize) flush()
-        val p = pos
-        buf(p) = c1.toByte
-        buf(p + 1) = c2.toByte
-        pos = p + 2
-      }
+      Encoder.writeAscii(c1, this, jsDepth)
+      Encoder.writeAscii(c2, this, jsDepth)
     }
 
-    def append(s: String): Unit = append(s, 0, s.length)
-
-    /**
-     * `s(from until to)`, encoded in UTF-8. A short one (names: tags, attributes) is copied char by char as it's
-     * checked, in one pass (cheaper than a String.getBytes call for a few bytes); a longer one is checked, and then
-     * copied in bulk if it's all ASCII.
-     */
-    def append(s: String, from: Int, to: Int): Unit = {
-      val n = to - from
-      if (jsDepth > 0) writeJsEncoded(s.substring(from, to))
-      else if (n <= ShortString && n <= ChunkSize - pos) {
-        var p = pos
-        var i = from
-        while (i < to) {
-          val c = s.charAt(i)
-          if (c >= 0x80) { // not ASCII: the rest is encoded
-            pos = p
-            appendUtf8(s, i, to)
-            return
-          }
-          buf(p) = c.toByte
-          p += 1
-          i += 1
-        }
-        pos = p
-      } else appendLong(s, from, to)
-    }
-
-    private def appendLong(s: String, from: Int, to: Int): Unit = {
-      var bits = 0
-      var i = from
-      while (i < to) {
-        bits |= s.charAt(i)
-        i += 1
-      }
-      if (bits < 0x80) appendAscii(s, from, to) else appendUtf8(s, from, to)
-    }
-
-    /** `s(from until to)`, all ASCII, in as few copies as the buffer allows. */
-    def appendAscii(s: String, from: Int, to: Int): Unit = {
-      if (jsDepth > 0) return writeJsEncoded(s.substring(from, to))
-      var start = from
-      while (start < to) {
-        if (pos == ChunkSize) flush()
-        val chunk = math.min(to - start, ChunkSize - pos)
-        copyAscii(s, start, start + chunk, buf, pos)
-        pos += chunk
-        start += chunk
-      }
-    }
-
-    /** `s(from until to)`, encoded char by char (a few at a time, so a char's bytes are never split over two chunks). */
-    def appendUtf8(s: String, from: Int, to: Int): Unit = {
-      if (jsDepth > 0) return writeJsEncoded(s.substring(from, to))
-      var start = from
-      while (start < to) {
-        if (ChunkSize - pos < 8) flush()
-        // As many chars as surely fit (3 bytes each); a surrogate pair isn't split: it's 4 bytes for 2 chars.
-        var end = math.min(to, start + (ChunkSize - pos) / 3)
-        if (end < to && Character.isHighSurrogate(s.charAt(end - 1))) end -= 1
-        if (end == start) end = math.min(to, start + 2)
-        pos = encodeUtf8(s, start, end, buf, pos)
-        start = end
-      }
-    }
+    /** `s`, as it is (markup, or code): not escaped for XML. */
+    def append(s: String): Unit = Encoder.write(s, this, xml = false, jsDepth)
 
     /** What's in `scratch` (then cleared): for the rare nodes only scala-xml knows how to write. */
     def appendScratch(): Unit = {
       val sb = _scratch.underlying
       if (sb.length > 0) {
-        append(sb.toString)
+        Encoder.write(sb, this, xml = false, jsDepth)
         sb.setLength(0)
       }
     }
 
-    /** `text`, escaped for XML (and then for JavaScript, in an EncJs). */
-    inline def escape(text: String): Unit = if (jsDepth > 0) writeXmlJsEncoded(text) else XmlEscape.escape(text, this)
+    /** `text`, escaped for XML (text, or an attribute's value). */
+    def escape(text: String): Unit = Encoder.write(text, this, xml = true, jsDepth)
 
     /** The first level: a single item (a Node or a Js). */
     def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {

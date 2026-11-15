@@ -44,32 +44,61 @@ class XmlJsStreamEscapingSpec extends AnyFlatSpec {
     sb.toString
   }
 
-  "Encoder's XML layer" should "write what XmlEscape does, for every char (controls, surrogates, pairs split by dropped chars)" in {
-    val bmp = (0 until 0x10000).map(_.toChar).mkString
-    val texts = Seq(bmp, "a\uD83D\u0001\uDE00b", "\uD800", "x\uDC00", "😀 & <é> \"q\"", "")
-    for (text <- texts) {
-      def collect(write: XmlJsStream.Out => Unit): Array[Byte] = {
-        val bytes = new ByteArrayOutputStream()
-        val out = new XmlJsStream.Out(new Content.Sink {
-          override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
-            while (bb.hasRemaining) bytes.write(bb.get())
-            cb.succeeded()
-          }
-        }, Callback.NOOP, true)
-        write(out)
-        out.finish()
-        bytes.toByteArray
+  /** What `write` writes into an Out (after `pad` ASCII bytes, so it starts anywhere in a chunk), and then finishes. */
+  private def collect(pad: Int)(write: XmlJsStream.Out => Unit): Array[Byte] = {
+    val bytes = new ByteArrayOutputStream()
+    val out = new XmlJsStream.Out(new Content.Sink {
+      override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
+        while (bb.hasRemaining) bytes.write(bb.get())
+        cb.succeeded()
       }
-      val expected = collect(out => XmlEscape.escape(text, out))
-      val actual = collect(out => Encoder(List(EncodingLayer.Xml)).write(text, out))
-      assert(java.util.Arrays.equals(expected, actual), s"differs for a text of ${text.length} chars")
+    }, Callback.NOOP, true)
+    Encoder.write("p" * pad, out, xml = false, 0)
+    write(out)
+    out.finish()
+    bytes.toByteArray.drop(pad)
+  }
+
+  /** The reference: `Utility.escape` (if `xml`), then JsEscape `jsLevels` times, in UTF-8 (a lone surrogate: `?`). */
+  private def reference(text: String, xml: Boolean, jsLevels: Int): Array[Byte] =
+    (1 to jsLevels).foldLeft(if (xml) Utility.escape(text) else text)((acc, _) => JsEscape.escape(acc)).getBytes(UTF_8)
+
+  "Encoder.write" should "write the reference escaping, for every char, with or without XML, and 0 to 3 JavaScript levels" in {
+    val bmp = (0 until 0x10000).map(_.toChar).mkString
+    val texts = Seq(bmp, "a\uD83D\u0001\uDE00b", "\uD800", "x\uDC00", "\uD83D\uD83D\uDE00", "😀 & <é> \"q\" \u2028\u0085", "short", "")
+    for (text <- texts; xml <- Seq(false, true); jsLevels <- 0 to 3) {
+      val expected = reference(text, xml, jsLevels)
+      val fromString = collect(0)(out => Encoder.write(text, out, xml, jsLevels))
+      val fromBuilder = collect(0)(out => Encoder.write(new java.lang.StringBuilder(text), out, xml, jsLevels))
+      val what = s"a text of ${text.length} chars, xml=$xml, jsLevels=$jsLevels"
+      assert(java.util.Arrays.equals(expected, fromString), s"String: $what")
+      assert(java.util.Arrays.equals(expected, fromBuilder), s"StringBuilder: $what")
     }
+  }
+
+  it should "write the same at every offset near a chunk's end (escapes and UTF-8 split over two chunks)" in {
+    val text = "a<\"é€😀\\\u2028\uD800&z" * 3
+    for (pad <- XmlJsStream.ChunkSize - 40 to XmlJsStream.ChunkSize + 2; xml <- Seq(false, true); jsLevels <- 0 to 2) {
+      assert(java.util.Arrays.equals(reference(text, xml, jsLevels), collect(pad)(out => Encoder.write(text, out, xml, jsLevels))), s"pad=$pad, xml=$xml, jsLevels=$jsLevels")
+    }
+  }
+
+  it should "write a markup char escaped for JavaScript, as a String of it" in {
+    for (c <- "<>/=\" :".toSeq; jsLevels <- 0 to 4) {
+      assert(java.util.Arrays.equals(reference(c.toString, xml = false, jsLevels), collect(0)(out => Encoder.writeAscii(c, out, jsLevels))), s"$c, $jsLevels")
+    }
+  }
+
+  it should "write escapes longer than a chunk (many JavaScript levels)" in {
+    val text = "\\\"x"
+    val jsLevels = 14 // a backslash: 2^14 of them
+    assert(java.util.Arrays.equals(reference(text, xml = true, jsLevels), collect(100)(out => Encoder.write(text, out, xml = true, jsLevels))))
   }
 
   "JavaScript escaping" should "be per char (so Strings can be escaped one at a time, as they're written)" in {
     val sample = "bé😀"
     val chars = (0 until 0x10000).filterNot(c => Character.isSurrogate(c.toChar)).map(c => c.toChar.toString) ++ Seq("😀", "\uD800", "\uDC00")
-    def enc(s: String) = EncodingLayer.Js.encode(s)
+    def enc(s: String) = JsEscape.escape(s)
     for (c <- chars) {
       val esc = enc(c)
       assert(enc("a" + c + sample + c + c) == "a" + esc + enc(sample) + esc + esc, s"not per char: U+${c.codePointAt(0).toHexString}")

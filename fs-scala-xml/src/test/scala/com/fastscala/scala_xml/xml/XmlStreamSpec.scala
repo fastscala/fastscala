@@ -13,7 +13,7 @@ class XmlStreamSpec extends AnyFlatSpec {
   private def node(n: Node): String = writtenNode(n)
 
   /**
-   * `prefix` + `text` escaped by [[XmlEscape]] (which writes into XmlJsStream's buffer only: so as text, in a `<p>`),
+   * `prefix` + `text` escaped for XML by [[Encoder]] (which writes into XmlJsStream's buffer only: so as text, in a `<p>`),
    * decoded from UTF-8.
    */
   private def escaped(text: String, prefix: String = ""): String = {
@@ -96,7 +96,7 @@ class XmlStreamSpec extends AnyFlatSpec {
 
   // ---------- escape / attributes ----------
 
-  "XmlEscape.escape" should "match Utility.escape for every char" in {
+  "Escaping for XML" should "match Utility.escape for every char" in {
     val all = (0 until 0x10000).map(_.toChar).mkString
     assert(escaped(all) == utf8RoundTrip(Utility.escape(all))) // (lone surrogates: '?', as in UTF-8)
   }
@@ -238,7 +238,7 @@ class XmlStreamSpec extends AnyFlatSpec {
     }
   }
 
-  "XmlEscape.escape" should "match Utility.escape for every character below 128, alone and inside text" in {
+  "Escaping for XML" should "match Utility.escape for every character below 128, alone and inside text" in {
     (0 until 128).map(_.toChar).foreach { c =>
       for (text <- Seq(c.toString, s"ab${c}cd", s"$c$c")) {
         val expected = Utility.escape(text)

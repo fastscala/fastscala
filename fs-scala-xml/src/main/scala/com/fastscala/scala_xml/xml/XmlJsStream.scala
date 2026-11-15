@@ -235,8 +235,18 @@ object XmlJsStream extends JsWriter {
       if (t ne null) fail(t)
       else if (chunk.last) complete(null)
       else {
-        writeNext()
-        if (resume) drive()
+        // The next write starts here, on the thread that completed this one: if the sink throws (instead of failing
+        // the write's callback), it's our failure, not that thread's (the callback would never be completed).
+        val started =
+          try {
+            writeNext()
+            true
+          } catch {
+            case t: Throwable =>
+              fail(t)
+              false
+          }
+        if (started && resume) drive()
       }
     }
 

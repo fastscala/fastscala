@@ -128,8 +128,8 @@ class XmlJsStreamFlowSpec extends AnyFlatSpec {
     assert(cb.completions.get() == 1 && cb.failure.exists(_.isInstanceOf[IllegalStateException]), cb.failure)
   }
 
-  "A sink whose write throws when called from the completion of the previous one" should "fail the callback, once" in pendingUntilFixed {
-    // BUG: the next write is started from the previous one's callback (Out.written -> writeNext), where a throwing
+  "A sink whose write throws when called from the completion of the previous one" should "fail the callback, once" in {
+    // Regression (fixed): the next write is started from the previous one's callback (Out.written -> writeNext), where a throwing
     // sink.write isn't caught: the exception goes to whoever completed the previous write, and the callback is never
     // completed (the response hangs).
     val sink = new HeldSink

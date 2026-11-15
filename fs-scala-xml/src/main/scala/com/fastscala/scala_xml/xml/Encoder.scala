@@ -7,9 +7,26 @@ import scala.annotation.{nowarn, switch}
 import scala.xml.Utility
 
 /**
+ * What [[Encoder]] writes into: a byte buffer, filled from `pos` on, that's emptied when it's full.
+ */
+trait EncoderOutput {
+
+  /** The buffer being filled. (Another one after a [[flush]], maybe: of the same length.) */
+  def buf: Array[Byte]
+
+  /** How many bytes of `buf` are filled: where the next one goes. */
+  def pos: Int
+
+  def pos_=(p: Int): Unit
+
+  /** Takes what's in the buffer (if anything): after it, `buf` is empty (`pos` is 0). */
+  def flush(): Unit
+}
+
+/**
  * Everything XmlJsStream writes goes through here: a String (or a StringBuilder), escaped for XML (text or attribute
  * value) `xmlLevels` times, then for JavaScript string literals `jsLevels` times (once for each EncJs it's in), and
- * encoded in UTF-8, straight into [[XmlJsStream.Out]]'s byte buffer (queuing the buffer whenever it's full).
+ * encoded in UTF-8, straight into an [[EncoderOutput]]'s byte buffer (flushing it whenever it's full).
  *
  * Every escaping is per char (XML's, and [[JsEscape]]'s), so the Strings written one after the other are escaped as
  * their concatenation would be: `JsEscape.escape` `jsLevels` times of `Utility.escape` `xmlLevels` times, in UTF-8.
@@ -28,24 +45,22 @@ import scala.xml.Utility
  */
 object Encoder {
 
-  import XmlJsStream.{ChunkSize, Out}
-
   // ---------- the entry points ----------
 
   /** `s`, escaped for XML `xmlLevels` times, then for JavaScript `jsLevels` times, in UTF-8, into `out`'s buffer. */
-  def write(s: String, out: Out, xmlLevels: Int, jsLevels: Int): Unit =
+  def write(s: String, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit =
     if (jsLevels == 0 && xmlLevels <= 1) {
       if (xmlLevels == 1) writeXml(s, out) else writeRaw(s, out)
     } else writeTable(s, 0, s.length, out, xmlLevels, jsLevels)
 
   /** As the other [[write]], for what's in `sb` (e.g. what scala-xml wrote for the nodes only it knows how to). */
-  def write(sb: java.lang.StringBuilder, out: Out, xmlLevels: Int, jsLevels: Int): Unit =
+  def write(sb: java.lang.StringBuilder, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit =
     writeTable(sb, 0, sb.length, out, xmlLevels, jsLevels)
 
   /** An ASCII char of the markup (`<`, `>`, `/`, `=`, `"`, ` `, `:`), escaped as [[write]] does. */
-  inline def writeAscii(c: Char, out: Out, xmlLevels: Int, jsLevels: Int): Unit =
+  inline def writeAscii(c: Char, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit =
     if ((xmlLevels | jsLevels) == 0) {
-      if (out.pos == ChunkSize) out.flush()
+      if (out.pos == out.buf.length) out.flush()
       out.buf(out.pos) = c.toByte
       out.pos += 1
     } else writeTable(c, out, xmlLevels, jsLevels)
@@ -59,9 +74,9 @@ object Encoder {
    * `s` in UTF-8. A short one (names: tags, attributes) is copied char by char as it's checked, in one pass; a longer
    * one is checked, and then copied in bulk if it's all ASCII. Anything not ASCII is encoded char by char.
    */
-  private def writeRaw(s: String, out: Out): Unit = {
+  private def writeRaw(s: String, out: EncoderOutput): Unit = {
     val len = s.length
-    if (len <= ShortString && len <= ChunkSize - out.pos) {
+    if (len <= ShortString && len <= out.buf.length - out.pos) {
       val buf = out.buf
       var p = out.pos
       var i = 0
@@ -89,12 +104,12 @@ object Encoder {
   }
 
   /** `s`, all ASCII, in as few copies as the buffer allows. */
-  private def writeAsciiBulk(s: String, out: Out): Unit = {
+  private def writeAsciiBulk(s: String, out: EncoderOutput): Unit = {
     var start = 0
     val len = s.length
     while (start < len) {
-      if (out.pos == ChunkSize) out.flush()
-      val n = math.min(len - start, ChunkSize - out.pos)
+      if (out.pos == out.buf.length) out.flush()
+      val n = math.min(len - start, out.buf.length - out.pos)
       copyAscii(s, start, start + n, out.buf, out.pos)
       out.pos += n
       start += n
@@ -145,14 +160,14 @@ object Encoder {
    * In slices that surely fit in the buffer (6 bytes per char: the longest entity, `&quot;`, and more than UTF-8's 3
    * bytes per char), each written without any bounds check; usually the whole text is one slice.
    */
-  private def writeXml(text: String, out: Out): Unit = {
+  private def writeXml(text: String, out: EncoderOutput): Unit = {
     val len = text.length
     var i = 0
     while (i < len) {
-      var room = (ChunkSize - out.pos) / 6
+      var room = (out.buf.length - out.pos) / 6
       if (room < len - i && room < MinSlice) {
         out.flush()
-        room = ChunkSize / 6 // 1,365 chars for an 8,192-byte buffer
+        room = out.buf.length / 6 // (1,365 chars for an 8,192-byte buffer)
       }
       i = writeXmlSlice(text, i, math.min(len, i + room), out)
     }
@@ -170,7 +185,7 @@ object Encoder {
    * escape and then copying the run in between, with String.getBytes, measured ~25% slower: most runs between
    * escapes, e.g. in JavaScript in attributes, are a few chars, so each char was read twice plus a call per run.)
    */
-  private def writeXmlSlice(text: String, from: Int, to: Int, out: Out): Int = {
+  private def writeXmlSlice(text: String, from: Int, to: Int, out: EncoderOutput): Int = {
     val buf = out.buf
     val actions = XmlActions
     val len = text.length
@@ -283,7 +298,7 @@ object Encoder {
    * table for this escaping; above, a char is its UTF-8 (escaping leaves it as it is), but for the line separators
    * (escaped for JavaScript) and the surrogates.
    */
-  private def writeTable(s: CharSequence, from: Int, to: Int, out: Out, xmlLevels: Int, jsLevels: Int): Unit = {
+  private def writeTable(s: CharSequence, from: Int, to: Int, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit = {
     val table = tableFor(xmlLevels, jsLevels)
     val xml = xmlLevels > 0
     var buf = out.buf
@@ -291,7 +306,7 @@ object Encoder {
     var i = from
     while (i < to) {
       // Room for whatever a char but a table one is (4 bytes: a surrogate pair), and for most table ones.
-      if (p > ChunkSize - 8) {
+      if (p > buf.length - 8) {
         out.pos = p
         out.flush()
         buf = out.buf
@@ -319,7 +334,7 @@ object Encoder {
       } else p = putBmp(c, buf, p)
 
       if (bytes ne null) {
-        if (bytes.length > ChunkSize - p) {
+        if (bytes.length > buf.length - p) {
           out.pos = p
           writeBytes(bytes, out)
           buf = out.buf
@@ -335,21 +350,21 @@ object Encoder {
   }
 
   /** One ASCII char of the markup, escaped as [[write]] does (with some escaping). */
-  private def writeTable(c: Char, out: Out, xmlLevels: Int, jsLevels: Int): Unit = {
+  private def writeTable(c: Char, out: EncoderOutput, xmlLevels: Int, jsLevels: Int): Unit = {
     val bytes = tableFor(xmlLevels, jsLevels)(c)
     if (bytes eq null) {
-      if (out.pos == ChunkSize) out.flush()
+      if (out.pos == out.buf.length) out.flush()
       out.buf(out.pos) = c.toByte
       out.pos += 1
     } else writeBytes(bytes, out)
   }
 
   /** `bytes`, into the buffer, in as many pieces as it takes (one, but for an escape longer than the room left). */
-  private def writeBytes(bytes: Array[Byte], out: Out): Unit = {
+  private def writeBytes(bytes: Array[Byte], out: EncoderOutput): Unit = {
     var start = 0
     while (start < bytes.length) {
-      if (out.pos == ChunkSize) out.flush()
-      val n = math.min(bytes.length - start, ChunkSize - out.pos)
+      if (out.pos == out.buf.length) out.flush()
+      val n = math.min(bytes.length - start, out.buf.length - out.pos)
       System.arraycopy(bytes, start, out.buf, out.pos, n)
       out.pos += n
       start += n

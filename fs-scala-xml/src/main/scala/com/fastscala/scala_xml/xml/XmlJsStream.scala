@@ -128,10 +128,10 @@ object XmlJsStream extends JsWriter {
    *
    * Only one thread serializes at a time (whichever calls [[drive]]: the caller, then the write that resumes it), so
    * the serializing state (`buf`, `pos`, the stacks) isn't locked; the chunks' state (queue, write in progress, pause,
-   * failure) is shared with the writes' callbacks, so it is (with `lock`). (`buf` and `pos` are public so the inline
-   * methods use them directly.)
+   * failure) is shared with the writes' callbacks, so it is (with `lock`). It's the [[EncoderOutput]] that [[Encoder]]
+   * writes everything into: `buf`, `pos` and [[flush]].
    */
-  private[xml] final class Out(sink: Content.Sink, callback: Callback, endContent: Boolean) {
+  private[xml] final class Out(sink: Content.Sink, callback: Callback, endContent: Boolean) extends EncoderOutput {
     var buf = new Array[Byte](ChunkSize)
     var pos = 0
 

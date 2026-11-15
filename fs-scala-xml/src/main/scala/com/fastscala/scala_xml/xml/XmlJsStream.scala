@@ -168,18 +168,27 @@ object XmlJsStream extends JsWriter {
     /** For an indexed level: its length (read once, instead of calling length through the Seq interface per node). */
     var lengthStack = new Array[Int](64)
     var scopeStack = new Array[NamespaceBinding](64)
-    var closingStack = new Array[Elem](64)
-    /** Each level's JavaScript escaping: how many EncJs's it's in (0: none). */
+    /** What's written once a level is done: an Elem's closing tag, or [[AttrValueEnd]]'s quote (null: nothing). */
+    var closingStack = new Array[AnyRef](64)
+    /** Each level's escaping: XML levels (see [[xmlDepth]]) and JavaScript levels (see [[jsDepth]]). */
+    var xmlDepthStack = new Array[Int](64)
     var jsDepthStack = new Array[Int](64)
 
     /**
-     * The current level's JavaScript escaping: how many EncJs's it's in (0: none). Everything written (the markup, and
-     * text and attribute values) is escaped for JavaScript as many times, by [[Encoder]].
+     * The current level's escaping (by [[Encoder]], of everything written: the markup, the code, and text and attribute
+     * values, which are escaped for XML once more): `xmlDepth` times for XML (how many attribute values it's in, since
+     * the innermost EncJs), then `jsDepth` times for JavaScript (how many EncJs's it's in). An attribute value adds an
+     * XML level; an EncJs adds a JavaScript level, and leaves no XML ones (XML escaping, after JavaScript escaping,
+     * changes nothing).
      */
+    var xmlDepth = 0
     var jsDepth = 0
 
-    /** Changes the JavaScript escaping (how many EncJs's what's written next is in). */
-    def setJsDepth(d: Int): Unit = jsDepth = d
+    /** Changes the escaping (of what's written next). */
+    def setEscaping(xml: Int, js: Int): Unit = {
+      xmlDepth = xml
+      jsDepth = js
+    }
 
     /** Serializes (from where it stopped) until done, or until it should pause; then queues the last chunk. */
     def drive(): Unit =
@@ -290,28 +299,28 @@ object XmlJsStream extends JsWriter {
     // ---------- writing: all through Encoder (escaping, as the current level needs, and UTF-8) ----------
 
     /** An ASCII char of the markup's own (`<`, `>`, `/`, `=`, `"`, ` `, `:`). */
-    inline def append(c: Char): Unit = Encoder.writeAscii(c, this, jsDepth)
+    inline def append(c: Char): Unit = Encoder.writeAscii(c, this, xmlDepth, jsDepth)
 
     /** Two ASCII chars of the markup's own. */
     inline def append2(c1: Char, c2: Char): Unit = {
-      Encoder.writeAscii(c1, this, jsDepth)
-      Encoder.writeAscii(c2, this, jsDepth)
+      Encoder.writeAscii(c1, this, xmlDepth, jsDepth)
+      Encoder.writeAscii(c2, this, xmlDepth, jsDepth)
     }
 
-    /** `s`, as it is (markup, or code): not escaped for XML. */
-    def append(s: String): Unit = Encoder.write(s, this, xml = false, jsDepth)
+    /** `s`, as it is (markup, or code): escaped only as the current level is. */
+    def append(s: String): Unit = Encoder.write(s, this, xmlDepth, jsDepth)
 
     /** What's in `scratch` (then cleared): for the rare nodes only scala-xml knows how to write. */
     def appendScratch(): Unit = {
       val sb = _scratch.underlying
       if (sb.length > 0) {
-        Encoder.write(sb, this, xml = false, jsDepth)
+        Encoder.write(sb, this, xmlDepth, jsDepth)
         sb.setLength(0)
       }
     }
 
-    /** `text`, escaped for XML (text, or an attribute's value). */
-    def escape(text: String): Unit = Encoder.write(text, this, xml = true, jsDepth)
+    /** `text`, escaped for XML (text, or an attribute's value): once more than the current level is. */
+    def escape(text: String): Unit = Encoder.write(text, this, xmlDepth + 1, jsDepth)
 
     /** The first level: a single item (a Node or a Js). */
     def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {
@@ -319,32 +328,40 @@ object XmlJsStream extends JsWriter {
       indexStack(0) = SingleNodeCursor
       scopeStack(0) = scope
       closingStack(0) = null
+      xmlDepthStack(0) = 0
       jsDepthStack(0) = 0
       depth = 1
     }
 
     /** A level of items: Nodes, or Js (a CompositeJs's children). */
-    def pushSeq(nodes: collection.Seq[AnyRef], scope: NamespaceBinding, closing: Elem): Unit = {
+    def pushSeq(nodes: collection.Seq[AnyRef], scope: NamespaceBinding, closing: AnyRef): Unit = {
       val d = depth
       if (d == nodesStack.length) growStacks()
       setLevel(d, nodes)
       scopeStack(d) = scope
       closingStack(d) = closing
-      jsDepthStack(d) = jsDepth // (as the level it's in)
+      xmlDepthStack(d) = xmlDepth // (as the level it's in)
+      jsDepthStack(d) = jsDepth
       depth = d + 1
     }
 
-    /** A level of just `js`, escaped (once more than the current level: for an EncJs). */
-    def pushEscaped(js: Js, scope: NamespaceBinding): Unit = {
+    /** A level of just `js`, escaped for JavaScript once more than the current level (for an EncJs). */
+    def pushEscaped(js: Js, scope: NamespaceBinding): Unit = pushSingleJs(js, scope, null, 0, jsDepth + 1)
+
+    /** A level of just `js`, an attribute's value: escaped for XML once more, and then closed by its quote. */
+    def pushAttrValue(js: Js, scope: NamespaceBinding): Unit = pushSingleJs(js, scope, AttrValueEnd, xmlDepth + 1, jsDepth)
+
+    private def pushSingleJs(js: Js, scope: NamespaceBinding, closing: AnyRef, xml: Int, jsLevels: Int): Unit = {
       val d = depth
       if (d == nodesStack.length) growStacks()
       nodesStack(d) = js
       indexStack(d) = SingleNodeCursor
       scopeStack(d) = scope
-      closingStack(d) = null
-      jsDepthStack(d) = jsDepth + 1
+      closingStack(d) = closing
+      xmlDepthStack(d) = xml
+      jsDepthStack(d) = jsLevels
       depth = d + 1
-      setJsDepth(jsDepth + 1)
+      setEscaping(xml, jsLevels)
     }
 
     /**
@@ -379,6 +396,7 @@ object XmlJsStream extends JsWriter {
       lengthStack = Arrays.copyOf(lengthStack, newCap)
       scopeStack = Arrays.copyOf(scopeStack, newCap)
       closingStack = Arrays.copyOf(closingStack, newCap)
+      xmlDepthStack = Arrays.copyOf(xmlDepthStack, newCap)
       jsDepthStack = Arrays.copyOf(jsDepthStack, newCap)
     }
   }
@@ -429,9 +447,13 @@ object XmlJsStream extends JsWriter {
         out.nodesStack(d) = null
         out.closingStack(d) = null
         out.depth = d
-        // (Back to the escaping of the level it's in: before the closing tag, which is that level's.)
-        out.setJsDepth(if (d > 0) out.jsDepthStack(d - 1) else 0)
-        if (closing ne null) writeClosingTag(closing, out)
+        // (Back to the escaping of the level it's in: before the closing tag, or quote, which is that level's.)
+        if (d > 0) out.setEscaping(out.xmlDepthStack(d - 1), out.jsDepthStack(d - 1)) else out.setEscaping(0, 0)
+        closing match {
+          case null =>
+          case e: Elem => writeClosingTag(e, out)
+          case _ => out.append('"') // AttrValueEnd
+        }
       } else {
         val levelScope = out.scopeStack(d)
         nextNode match {
@@ -441,37 +463,25 @@ object XmlJsStream extends JsWriter {
             e match {
               case fast: ElemOptimized =>
                 var cur = fast.attrs
-                while (cur.nonEmpty) {
+                var pushed = false
+                while (cur.nonEmpty && !pushed) {
                   val attr = cur.head
                   attr._2 match {
                     case value: String => appendAttribute(null, attr._1, value, out)
-                    case js: Js => appendJsAttribute(attr._1, js, out)
+                    case js: Js =>
+                      if (needsLevel(js)) {
+                        // The rest of the start tag is a level (its items end it): so this value can be a level.
+                        out.pushSeq(startTagRest(cur, fast), levelScope, null)
+                        pushed = true
+                      } else appendJsAttribute(attr._1, js, out)
                   }
                   cur = cur.tail
                 }
+                if (!pushed) endStartTag(e, levelScope, out)
               case _ =>
                 val attrs = e.attributes
                 if ((attrs ne null) && (attrs ne Null)) appendAttributes(attrs, out)
-            }
-            if ((e.scope ne levelScope) && (e.scope ne TopScope)) {
-              e.scope.buildString(out.scratch, levelScope)
-              out.appendScratch()
-            }
-
-            val children = e.child
-            if (children.isEmpty) {
-              if (e.minimizeEmpty) {
-                out.append2('/', '>')
-              } else {
-                out.append('>')
-                writeClosingTag(e, out)
-              }
-            } else {
-              out.append('>')
-              if (spacedAtoms(children)) {
-                writeSpacedAtoms(children, e.scope, out)
-                writeClosingTag(e, out)
-              } else out.pushSeq(children, e.scope, e)
+                endStartTag(e, levelScope, out)
             }
 
           case t: Text if t.getClass eq classOf[Text] =>
@@ -493,6 +503,18 @@ object XmlJsStream extends JsWriter {
 
           case escaped: Escaped =>
             out.pushEscaped(escaped.js, levelScope)
+
+          case attr: JsAttr =>
+            if (needsLevel(attr.js)) {
+              appendAttrStart(attr.key, out)
+              out.pushAttrValue(attr.js, levelScope)
+            } else appendJsAttribute(attr.key, attr.js, out)
+
+          case attr: StringAttr =>
+            appendAttribute(null, attr.key, attr.value, out)
+
+          case end: StartTagEnd =>
+            endStartTag(end.elem, levelScope, out)
 
           case other: Node =>
             writeRareNode(other, levelScope, out)
@@ -520,13 +542,80 @@ object XmlJsStream extends JsWriter {
       if (enc.inString) out.pushSeq(Vector(Quote, new Escaped(enc.js), Quote), scope, null)
       else out.pushEscaped(enc.js, scope)
     case other =>
-      out.append(other.cmd)
+      out.append(codeOf(other))
+  }
+
+  /** `js`'s code: its `cmd`; a null one is `null`, as it is in the cmd of whatever it's a part of (an EncJs, ...). */
+  private def codeOf(js: Js): String = {
+    val cmd = js.cmd
+    if (cmd eq null) "null" else cmd
   }
 
   private val Quote: Js = Js("\"")
 
   /** An item of a level: `js`, to be pushed as a level of its own, escaped once more (an EncJs's, between quotes). */
   private final class Escaped(val js: Js)
+
+  // ---------- the start tag of an ElemOptimized with Js attributes that are written as levels ----------
+  // From its first such attribute on, the start tag is a level of these items: so the attribute's value can be a level
+  // of its own (an EncJs's, a NodeSeqJs's XML, ...), and what follows it is written once it's done.
+
+  /** An attribute, with a Js value. */
+  private final class JsAttr(val key: String, val js: Js)
+
+  /** An attribute, with a String value. */
+  private final class StringAttr(val key: String, val value: String)
+
+  /** The end of `elem`'s start tag (its namespaces, and `>` or `/>`), and then its children and closing tag. */
+  private final class StartTagEnd(val elem: Elem)
+
+  /** The closing of a level that's an attribute's value: its quote. */
+  private object AttrValueEnd
+
+  /**
+   * Whether `js`, as an attribute's value, is written as a level (as an item of the stack): if there's an [[EncJs]]
+   * or a [[NodeSeqJs]] in it. Any other (e.g. RawJs, or a CompositeJs of those) is written at once ([[escapeJs]]).
+   */
+  private def needsLevel(js: Js): Boolean = js match {
+    case composite: CompositeJs => composite.children.exists(needsLevel)
+    case _: EncJs | _: NodeSeqJs => true
+    case _ => false
+  }
+
+  /** The items of the start tag of `elem`, from the attributes `from` (the rest of its attributes) on. */
+  private def startTagRest(from: List[(String, ElemOptimized.AttrValue)], elem: ElemOptimized): Vector[AnyRef] = {
+    val items = Vector.newBuilder[AnyRef]
+    from.foreach {
+      case (key, value: String) => items += new StringAttr(key, value)
+      case (key, js: Js) => items += new JsAttr(key, js)
+    }
+    items += new StartTagEnd(elem)
+    items.result()
+  }
+
+  /** The end of `e`'s start tag (its namespace declarations, and `>` or `/>`); then its children, and closing tag. */
+  private def endStartTag(e: Elem, levelScope: NamespaceBinding, out: Out): Unit = {
+    if ((e.scope ne levelScope) && (e.scope ne TopScope)) {
+      e.scope.buildString(out.scratch, levelScope)
+      out.appendScratch()
+    }
+
+    val children = e.child
+    if (children.isEmpty) {
+      if (e.minimizeEmpty) {
+        out.append2('/', '>')
+      } else {
+        out.append('>')
+        writeClosingTag(e, out)
+      }
+    } else {
+      out.append('>')
+      if (spacedAtoms(children)) {
+        writeSpacedAtoms(children, e.scope, out)
+        writeClosingTag(e, out)
+      } else out.pushSeq(children, e.scope, e)
+    }
+  }
 
   /**
    * As toString (Utility.serialize): when all of an element's children are Atoms but not Text (e.g. several `{value}`s
@@ -570,11 +659,19 @@ object XmlJsStream extends JsWriter {
     out.append(label)
   }
 
-  /** ` key="..."`, with `js` escaped straight into the buffer: a CompositeJs child by child, never joined. */
-  private def appendJsAttribute(key: String, js: Js, out: Out): Unit = {
+  /** ` key="` */
+  private def appendAttrStart(key: String, out: Out): Unit = {
     out.append(' ')
     out.append(key)
     out.append2('=', '"')
+  }
+
+  /**
+   * ` key="..."`, with `js` (no EncJs or NodeSeqJs in it: see [[needsLevel]]) escaped straight into the buffer: a
+   * CompositeJs child by child, never joined.
+   */
+  private def appendJsAttribute(key: String, js: Js, out: Out): Unit = {
+    appendAttrStart(key, out)
     escapeJs(js, out)
     out.append('"')
   }
@@ -582,7 +679,7 @@ object XmlJsStream extends JsWriter {
   /** `js`'s code, escaped: a CompositeJs's children one at a time (its `cmd` isn't built); any other Js, its `cmd`. */
   private def escapeJs(js: Js, out: Out): Unit = js match {
     case composite: CompositeJs => composite.children.foreach(escapeJs(_, out))
-    case other => out.escape(other.cmd)
+    case other => out.escape(codeOf(other))
   }
 
   private def appendAttribute(pre: String, key: String, value: String, out: Out): Unit = {

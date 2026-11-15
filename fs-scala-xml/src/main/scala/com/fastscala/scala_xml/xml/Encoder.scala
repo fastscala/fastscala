@@ -7,17 +7,21 @@ import scala.annotation.{nowarn, switch}
 import scala.xml.Utility
 
 /**
- * Everything XmlJsStream writes goes through here: a String (or a StringBuilder), optionally escaped for XML (text or
- * attribute value), then escaped for JavaScript string literals `jsLevels` times (once for each EncJs it's in), and
+ * Everything XmlJsStream writes goes through here: a String (or a StringBuilder), escaped for XML (text or attribute
+ * value) `xmlLevels` times, then for JavaScript string literals `jsLevels` times (once for each EncJs it's in), and
  * encoded in UTF-8, straight into [[XmlJsStream.Out]]'s byte buffer (queuing the buffer whenever it's full).
  *
  * Every escaping is per char (XML's, and [[JsEscape]]'s), so the Strings written one after the other are escaped as
- * their concatenation would be: `JsEscape.escape` `jsLevels` times of `Utility.escape` (if `xml`), in UTF-8.
+ * their concatenation would be: `JsEscape.escape` `jsLevels` times of `Utility.escape` `xmlLevels` times, in UTF-8.
+ * (Any escaping is XML levels and then JavaScript ones: an XML level outside a JavaScript one changes nothing, as
+ * JavaScript escaping leaves none of the chars XML escapes, or drops. So XmlJsStream doesn't count those.) More than
+ * one XML level is e.g. the text of a NodeSeqJs's XML in an attribute, without an EncJs: escaped for its own XML, and
+ * then for the attribute's value.
  *
  * Three ways of writing, by what's needed:
  *  - nothing escaped: ASCII copied in bulk (or, for a short String, char by char), anything else char by char;
- *  - XML only: one pass, without bounds checks, in slices that surely fit (see [[writeXml]]);
- *  - any JavaScript levels: char by char, each char's bytes looked up in a table for that escaping (see [[writeTable]]).
+ *  - one XML level only: one pass, without bounds checks, in slices that surely fit (see [[writeXml]]);
+ *  - anything else: char by char, each char's bytes looked up in a table for that escaping (see [[writeTable]]).
  *
  * A lone surrogate is `?` (as String.getBytes(UTF_8) writes it) when not escaped for JavaScript, and `\uXXXX` (as
  * JsEscape escapes it) when it is. With XML escaping, a surrogate pair split by dropped chars is a pair again.
@@ -28,23 +32,23 @@ object Encoder {
 
   // ---------- the entry points ----------
 
-  /** `s`, escaped for XML if `xml`, then for JavaScript `jsLevels` times, in UTF-8, into `out`'s buffer. */
-  def write(s: String, out: Out, xml: Boolean, jsLevels: Int): Unit =
-    if (jsLevels == 0) {
-      if (xml) writeXml(s, out) else writeRaw(s, out)
-    } else writeTable(s, 0, s.length, out, xml, jsLevels)
+  /** `s`, escaped for XML `xmlLevels` times, then for JavaScript `jsLevels` times, in UTF-8, into `out`'s buffer. */
+  def write(s: String, out: Out, xmlLevels: Int, jsLevels: Int): Unit =
+    if (jsLevels == 0 && xmlLevels <= 1) {
+      if (xmlLevels == 1) writeXml(s, out) else writeRaw(s, out)
+    } else writeTable(s, 0, s.length, out, xmlLevels, jsLevels)
 
   /** As the other [[write]], for what's in `sb` (e.g. what scala-xml wrote for the nodes only it knows how to). */
-  def write(sb: java.lang.StringBuilder, out: Out, xml: Boolean, jsLevels: Int): Unit =
-    writeTable(sb, 0, sb.length, out, xml, jsLevels)
+  def write(sb: java.lang.StringBuilder, out: Out, xmlLevels: Int, jsLevels: Int): Unit =
+    writeTable(sb, 0, sb.length, out, xmlLevels, jsLevels)
 
-  /** An ASCII char of the markup (`<`, `>`, `/`, `=`, `"`, ` `, `:`), escaped for JavaScript `jsLevels` times. */
-  inline def writeAscii(c: Char, out: Out, jsLevels: Int): Unit =
-    if (jsLevels == 0) {
+  /** An ASCII char of the markup (`<`, `>`, `/`, `=`, `"`, ` `, `:`), escaped as [[write]] does. */
+  inline def writeAscii(c: Char, out: Out, xmlLevels: Int, jsLevels: Int): Unit =
+    if ((xmlLevels | jsLevels) == 0) {
       if (out.pos == ChunkSize) out.flush()
       out.buf(out.pos) = c.toByte
       out.pos += 1
-    } else writeTable(c, out, jsLevels)
+    } else writeTable(c, out, xmlLevels, jsLevels)
 
   // ---------- nothing escaped ----------
 
@@ -65,7 +69,7 @@ object Encoder {
         val c = s.charAt(i)
         if (c >= 0x80) { // not ASCII: the rest is encoded
           out.pos = p
-          writeTable(s, i, len, out, xml = false, jsLevels = 0)
+          writeTable(s, i, len, out, xmlLevels = 0, jsLevels = 0)
           return
         }
         buf(p) = c.toByte
@@ -80,7 +84,7 @@ object Encoder {
         bits |= s.charAt(i)
         i += 1
       }
-      if (bits < 0x80) writeAsciiBulk(s, out) else writeTable(s, 0, len, out, xml = false, jsLevels = 0)
+      if (bits < 0x80) writeAsciiBulk(s, out) else writeTable(s, 0, len, out, xmlLevels = 0, jsLevels = 0)
     }
   }
 
@@ -226,18 +230,23 @@ object Encoder {
     i
   }
 
-  // ---------- with JavaScript levels (and anything else) ----------
+  // ---------- anything else (JavaScript levels, several XML ones) ----------
 
   /** The chars whose bytes are in the tables: below U+00A0 (ASCII and the C1 controls). */
   private final val TableSize = 0xA0
 
   /**
-   * The reference: `s` escaped for XML (as Utility.escape does) if `xml`, then for JavaScript `jsLevels` times. Each
-   * table entry is this of one char, in UTF-8; it's used as it is for the rare chars that have none.
+   * The reference: `s` escaped for XML (as Utility.escape does) `xmlLevels` times, then for JavaScript `jsLevels`
+   * times. Each table entry is this of one char, in UTF-8; it's used as it is for the rare chars that have none.
    */
-  private def escaped(s: String, xml: Boolean, jsLevels: Int): String = {
-    var r = if (xml) Utility.escape(s) else s
+  private def escaped(s: String, xmlLevels: Int, jsLevels: Int): String = {
+    var r = s
     var level = 0
+    while (level < xmlLevels) {
+      r = Utility.escape(r)
+      level += 1
+    }
+    level = 0
     while (level < jsLevels) {
       r = JsEscape.escape(r)
       level += 1
@@ -246,34 +255,37 @@ object Encoder {
   }
 
   /** For each char below [[TableSize]]: its bytes, escaped as [[escaped]] does (null: itself, as one byte). */
-  private def makeTable(xml: Boolean, jsLevels: Int): Array[Array[Byte]] =
+  private def makeTable(xmlLevels: Int, jsLevels: Int): Array[Array[Byte]] =
     Array.tabulate(TableSize) { c =>
-      val bytes = escaped(c.toChar.toString, xml, jsLevels).getBytes(UTF_8)
+      val bytes = escaped(c.toChar.toString, xmlLevels, jsLevels).getBytes(UTF_8)
       if (bytes.length == 1 && bytes(0) == c) null else bytes
     }
 
   /**
-   * The tables of fewer JavaScript levels than this are made at once; deeper ones when first needed (an escape doubles
-   * its backslashes at each level, so a table of n levels is about 2^n * 100 bytes: deep ones are big, and rare).
+   * The tables of fewer XML and JavaScript levels than these are made at once; others when first needed (an escape
+   * doubles its backslashes at each JavaScript level, so a table of n is about 2^n * 100 bytes: deep ones are big,
+   * and rare).
    */
-  private final val TabledLevels = 8
+  private final val TabledXmlLevels = 3
+  private final val TabledJsLevels = 8
 
   private val Tables: Array[Array[Array[Byte]]] =
-    Array.tabulate(TabledLevels * 2)(i => makeTable(xml = i % 2 == 1, jsLevels = i / 2))
+    Array.tabulate(TabledXmlLevels * TabledJsLevels)(i => makeTable(i / TabledJsLevels, i % TabledJsLevels))
 
-  private val DeepTables = new java.util.concurrent.ConcurrentHashMap[Integer, Array[Array[Byte]]]()
+  private val OtherTables = new java.util.concurrent.ConcurrentHashMap[(Int, Int), Array[Array[Byte]]]()
 
-  private def tableFor(xml: Boolean, jsLevels: Int): Array[Array[Byte]] =
-    if (jsLevels < TabledLevels) Tables(jsLevels * 2 + (if (xml) 1 else 0))
-    else DeepTables.computeIfAbsent(jsLevels * 2 + (if (xml) 1 else 0), key => makeTable(xml = key % 2 == 1, jsLevels = key / 2))
+  private def tableFor(xmlLevels: Int, jsLevels: Int): Array[Array[Byte]] =
+    if (xmlLevels < TabledXmlLevels && jsLevels < TabledJsLevels) Tables(xmlLevels * TabledJsLevels + jsLevels)
+    else OtherTables.computeIfAbsent((xmlLevels, jsLevels), key => makeTable(key._1, key._2))
 
   /**
    * `s(from until to)`, escaped as [[escaped]] does, in UTF-8: char by char, each char below U+00A0 looked up in the
    * table for this escaping; above, a char is its UTF-8 (escaping leaves it as it is), but for the line separators
    * (escaped for JavaScript) and the surrogates.
    */
-  private def writeTable(s: CharSequence, from: Int, to: Int, out: Out, xml: Boolean, jsLevels: Int): Unit = {
-    val table = tableFor(xml, jsLevels)
+  private def writeTable(s: CharSequence, from: Int, to: Int, out: Out, xmlLevels: Int, jsLevels: Int): Unit = {
+    val table = tableFor(xmlLevels, jsLevels)
+    val xml = xmlLevels > 0
     var buf = out.buf
     var p = out.pos
     var i = from
@@ -301,9 +313,9 @@ object Encoder {
         } else if (jsLevels == 0) {
           buf(p) = '?'
           p += 1
-        } else bytes = escaped(c.toString, xml = false, jsLevels).getBytes(UTF_8) // (`\uXXXX`, escaped further)
+        } else bytes = escaped(c.toString, xmlLevels = 0, jsLevels).getBytes(UTF_8) // (`\uXXXX`, escaped further)
       } else if (jsLevels > 0 && (c == ' ' || c == ' ')) {
-        bytes = escaped(c.toString, xml = false, jsLevels).getBytes(UTF_8)
+        bytes = escaped(c.toString, xmlLevels = 0, jsLevels).getBytes(UTF_8)
       } else p = putBmp(c, buf, p)
 
       if (bytes ne null) {
@@ -322,9 +334,9 @@ object Encoder {
     out.pos = p
   }
 
-  /** One ASCII char of the markup, escaped for JavaScript `jsLevels` times (> 0). */
-  private def writeTable(c: Char, out: Out, jsLevels: Int): Unit = {
-    val bytes = tableFor(xml = false, jsLevels)(c)
+  /** One ASCII char of the markup, escaped as [[write]] does (with some escaping). */
+  private def writeTable(c: Char, out: Out, xmlLevels: Int, jsLevels: Int): Unit = {
+    val bytes = tableFor(xmlLevels, jsLevels)(c)
     if (bytes eq null) {
       if (out.pos == ChunkSize) out.flush()
       out.buf(out.pos) = c.toByte

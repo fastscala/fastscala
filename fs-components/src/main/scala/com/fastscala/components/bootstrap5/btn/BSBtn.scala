@@ -97,7 +97,7 @@ case class BSBtn(
 
   def callback(func: FSContext => Js): BSBtn = copy(onclickOpt = Some(fsc => onclickOpt.map(_(fsc)).getOrElse(JS.void) & fsc.callback(() => func(fsc))))
 
-  def ajaxOnce(func: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = callbackRunOnce(func)
+  def ajaxOnce(func: FSContext => Js, moreThanOnceRslt: Option[Js] = None): BSBtn = callbackRunOnce(func, moreThanOnceRslt)
 
   def callbackRunOnce(func: FSContext => Js, onFurtherAttemptsJs: Option[Js] = None): BSBtn = {
     val used = new AtomicBoolean(false)
@@ -268,6 +268,7 @@ case class BSBtn(
 
   def btnLink(implicit fsc: FSContext): Elem = {
     var attrs: List[(String, ElemOptimized.AttrValue)] = ("class" -> cls) :: ("href" -> hrefOpt.getOrElse("javascript:void(0)")) :: additionalAttrs.toList
+    if (targetOpt.isDefined) attrs ::= ("target" -> targetOpt.get)
     if (idOpt.isDefined) attrs ::= ("id" -> idOpt.get)
     if (styleOpt.isDefined) attrs ::= ("style" -> styleOpt.get)
     if (onclickOpt.isDefined) attrs ::= ("onclick" -> onclickOpt.get(fsc)) // (a Js: XmlJsStream writes it part by part)

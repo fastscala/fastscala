@@ -36,7 +36,9 @@ case class ChartJs(
     import io.circe.syntax.*
 
     Js(
-      s"""const ctx = document.getElementById('$canvasId'); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces}); """
+      // The JSON goes in a <script> as it is: its '<'s (only ever in its strings) are escaped, so a "</script>" in a
+      // label can't end the script. (The same JSON for JavaScript: "\u003c" is "<".)
+      s"""const ctx = document.getElementById(${JS.asJsStr(canvasId).cmd}); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces.replace("<", "\\u003c")}); """
     )
   }
 

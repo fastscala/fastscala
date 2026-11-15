@@ -39,7 +39,7 @@ class ChartJsSpec extends AnyFlatSpec {
 
   "installInCanvas" should "create the chart on the canvas, with its config as JSON (without nulls)" in {
     val js = chart.installInCanvas("c1").cmd
-    assert(js.startsWith("const ctx = document.getElementById('c1'); new Chart(ctx, "), js)
+    assert(js.startsWith("const ctx = document.getElementById(\"c1\"); new Chart(ctx, "), js)
     val json = config(js)
     assert(json.hcursor.downField("type").as[String].contains("bar"))
     assert(json.hcursor.downField("data").downField("labels").as[List[String]].contains(List("Jan", "Feb")))
@@ -65,16 +65,18 @@ class ChartJsSpec extends AnyFlatSpec {
     val canvas = ns.head.asInstanceOf[Elem]
     assert(canvas.label == "canvas" && canvas.attribute("id").map(_.text).contains("my-chart"))
     assert(ns(1).label == "script")
-    assert(ns.toString.contains("document.getElementById('my-chart')"))
+    assert(ns.toString.contains("document.getElementById(\"my\\x2dchart\")"), ns) // (the id escaped, as a JavaScript string)
     val generated = chart.rendered().head.asInstanceOf[Elem]
     assert(generated.attribute("id").exists(_.text.startsWith("id")))
   }
 
-  it should "keep labels with </script> inside the script" in pendingUntilFixed {
-    // BUG: the config's JSON is put in the <script> as it is (Unparsed): a label with "</script>" ends the script, and
+  it should "keep labels with </script> inside the script" in {
+    // Regression (fixed): the config's JSON is put in the <script> as it is (Unparsed): a label with "</script>" ends the script, and
     // what follows it is HTML (an injection, with labels from users).
     val evil = ChartJs(BarChartType, data = Some(ChartData(labels = Some(List("</script><img src=x onerror=alert(1)>")))))
     val html = written(evil.renderedOn(<canvas id="c"></canvas>))
     assert(!html.contains("</script><img"), html)
+    // ... and the label is still the same, for Chart.js: "\u003c" is "<", in JSON as in JavaScript.
+    assert(config(evil.installInCanvas("c").cmd).hcursor.downField("data").downField("labels").downN(0).as[String].contains("</script><img src=x onerror=alert(1)>"))
   }
 }

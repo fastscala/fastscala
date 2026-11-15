@@ -103,8 +103,8 @@ class ClickToEditFieldsSpec extends AnyFlatSpec {
     assert(v.isEmpty)
   }
 
-  it should "keep the value when the input isn't a number" in pendingUntilFixed {
-    // BUG: an invalid number is saved as None (Try(str.toDouble).toOption): the value is erased.
+  it should "keep the value when the input isn't a number" in {
+    // Regression (fixed): an invalid number is saved as None (Try(str.toDouble).toOption): the value is erased.
     val root = newRoot()
     given FSContext = root
     var v: Option[Double] = Some(1.5)
@@ -113,8 +113,8 @@ class ClickToEditFieldsSpec extends AnyFlatSpec {
     assert(v.contains(1.5))
   }
 
-  it should "ask for confirmation, when asked to" in pendingUntilFixed {
-    // BUG: DoubleOpt doesn't pass `confirm` on to Str: it's ignored.
+  it should "ask for confirmation, when asked to" in {
+    // Regression (fixed): DoubleOpt doesn't pass `confirm` on to Str: it's ignored.
     val root = newRoot()
     given FSContext = root
     var v: Option[Double] = None

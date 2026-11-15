@@ -33,9 +33,11 @@ trait QueryStringSavedForm extends Form7 {
         case f: F7FieldWithIdAndStringSerializableF7Field if f.id.isDefined => f.id.get -> f.saveToString().toArray
       }).toMap
       val existingParams: Map[String, Array[String]] = (Request.getParameters(fsc.page.req).toStringArrayMap.asScala -- newParams.keys).toMap
-      val updatedUrl = fsc.page.req.getHttpURI.getPath + "?" + (existingParams ++ newParams).flatMap({ case (key, values) =>
+      val query = (existingParams ++ newParams).flatMap({ case (key, values) =>
         values.map(v => URLEncoder.encode(key, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8")).toList
-      }).mkString("&").replaceAll("\\?$", "")
+      }).mkString("&")
+      // (No "?" without parameters: the replaceAll that took it off applied to the parameters only.)
+      val updatedUrl = fsc.page.req.getHttpURI.getPath + (if (query.isEmpty) "" else "?" + query)
       Js(s"""if (history.pushState) {
             |   window.history.pushState({path:${JS.asJsStr(updatedUrl)}},'',${JS.asJsStr(updatedUrl)});
             |} else {

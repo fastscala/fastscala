@@ -76,8 +76,8 @@ class BSBtnSpec extends AnyFlatSpec {
     assert(runs == 1)
   }
 
-  "ajaxOnce" should "give moreThanOnceRslt on further clicks" in pendingUntilFixed {
-    // BUG: ajaxOnce passes only func on to callbackRunOnce: moreThanOnceRslt is dropped.
+  "ajaxOnce" should "give moreThanOnceRslt on further clicks" in {
+    // Regression (fixed): ajaxOnce passes only func on to callbackRunOnce: moreThanOnceRslt is dropped.
     val root = newRoot()
     given FSContext = root
     BSBtn().ajaxOnce(_ => Js("ran()"), moreThanOnceRslt = Some(Js("again()"))).btn
@@ -98,8 +98,8 @@ class BSBtnSpec extends AnyFlatSpec {
     assert(attr(BSBtn().lbl("Go").btnLink, "href").contains("javascript:void(0)"))
   }
 
-  it should "open in the target given" in pendingUntilFixed {
-    // BUG: btnLink doesn't render targetOpt: .target(...) and .targetBlank have no effect.
+  it should "open in the target given" in {
+    // Regression (fixed): btnLink doesn't render targetOpt: .target(...) and .targetBlank have no effect.
     given FSContext = newRoot()
     assert(attr(BSBtn().href("/x").targetBlank.btnLink, "target").contains("_blank"))
   }

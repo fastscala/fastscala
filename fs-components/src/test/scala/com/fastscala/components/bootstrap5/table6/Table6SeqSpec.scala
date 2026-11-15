@@ -106,8 +106,8 @@ class Table6SeqSpec extends AnyFlatSpec {
     assert(new PeopleTable(pageSize = 5, hideIfUnnecessary = true).render().toString.contains(">«<"))
   }
 
-  it should "show the pagination controls when there are two pages" in pendingUntilFixed {
-    // BUG: they're hidden if maxPages <= 1, but maxPages is the last page's index: with 2 pages, it's 1.
+  it should "show the pagination controls when there are two pages" in {
+    // Regression (fixed): they're hidden if maxPages <= 1, but maxPages is the last page's index: with 2 pages, it's 1.
     given FSContext = newRoot()
     assert(new PeopleTable(pageSize = 15, hideIfUnnecessary = true).render().toString.contains(">«<"))
   }

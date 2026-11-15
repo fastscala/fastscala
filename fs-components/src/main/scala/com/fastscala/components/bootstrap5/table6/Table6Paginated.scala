@@ -102,7 +102,8 @@ trait Table6Paginated extends Table6Base {
   }
 
   def renderPaginationBottomControls()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {
-    if (hidePaginationBottomControlsIfUnnecessary && maxPages <= 1) NodeSeq.Empty
+    // (maxPages is the last page's index: 0 when there's a single page.)
+    if (hidePaginationBottomControlsIfUnnecessary && maxPages < 1) NodeSeq.Empty
     else {
       row.apply {
         col.apply(renderPagesButtons()) ++

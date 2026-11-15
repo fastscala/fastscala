@@ -570,6 +570,14 @@ object XmlJsStream extends JsWriter {
         out.append('>')
         out.escape(iseq(0).asInstanceOf[Text].data)
         writeClosingTag(e, out)
+      case n: Node if n.getClass eq classOf[Text] =>
+        out.append('>')
+        out.escape(n.asInstanceOf[Text].data)
+        writeClosingTag(e, out)
+      case n: Node if n.isInstanceOf[Atom[?]] =>
+        out.append('>')
+        out.escape(n.asInstanceOf[Atom[?]].data.toString)
+        writeClosingTag(e, out)
       case _ if children.isEmpty =>
         if (e.minimizeEmpty) {
           out.append2('/', '>')

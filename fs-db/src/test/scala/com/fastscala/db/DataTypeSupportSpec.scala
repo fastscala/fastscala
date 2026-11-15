@@ -106,15 +106,17 @@ class DataTypeSupportSpec extends AnyFlatSpec with DBConn {
     assertThrows[Exception](Support.valueToLiteral(new Object))
   }
 
-  it should "quote a ' char" in pendingUntilFixed {
-    // BUG: a Char is written as '$v'::char, unescaped: ''' is a syntax error (and an injection, for other chars).
+  it should "quote a ' char" in {
+    // Regression (fixed): a Char is written as '$v'::char, unescaped: ''' is a syntax error (and an injection, for other chars).
     assert(selected(Support.valueToLiteral('\'')) == "'")
   }
 
-  it should "write the doubles that aren't numbers" in pendingUntilFixed {
-    // BUG: NaN::double precision (unquoted) is read as a column named nan; PostgreSQL wants 'NaN'::double precision.
+  it should "write the doubles that aren't numbers" in {
+    // Regression (fixed): NaN::double precision (unquoted) is read as a column named nan; PostgreSQL wants 'NaN'::double precision.
     assert(selected(Support.valueToLiteral(Double.NaN)) == "NaN")
     assert(selected(Support.valueToLiteral(Double.PositiveInfinity)) == "Infinity")
+    assert(selected(Support.valueToLiteral(Double.NegativeInfinity)) == "-Infinity")
+    assert(selected(Support.valueToLiteral(Float.NaN)) == "NaN")
   }
 
   "valueToBatchObject" should "be the JDBC object of the value" in {
@@ -131,11 +133,12 @@ class DataTypeSupportSpec extends AnyFlatSpec with DBConn {
     assert(Support.valueToBatchObject(field("day"), DayOfWeek.MONDAY) == "MONDAY")
   }
 
-  it should "support the types the columns can have (java.math.BigDecimal, Json)" in pendingUntilFixed {
-    // BUG: java.math.BigDecimal and io.circe.Json have columns (numeric, json) but no case here: MatchError.
+  it should "support the types the columns can have (java.math.BigDecimal, Json)" in {
+    // Regression (fixed): java.math.BigDecimal and io.circe.Json have columns (numeric, json) but no case here: MatchError.
     val f = field("myInt")
     assert(Support.valueToBatchObject(f, new java.math.BigDecimal("1.5")) == new java.math.BigDecimal("1.5"))
-    assert(Support.valueToBatchObject(f, Json.fromInt(1)) != null)
+    assert(Support.valueToBatchObject(f, Json.obj("a" -> Json.fromInt(1))) == """{"a":1}""")
+    assert(Support.valueBatchPlaceholder(f, Json.True) == "?::json")
   }
 
   "bytesToHex" should "be the upper case hex digits of the bytes" in {

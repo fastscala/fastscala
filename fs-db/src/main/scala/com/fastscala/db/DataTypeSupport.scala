@@ -239,6 +239,7 @@ trait DataTypeSupport {
 
   def valueBatchPlaceholder(field: Field, value: Any): String = value match {
     case v: java.util.UUID => "?::UUID"
+    case v: io.circe.Json => "?::json" // (its batch object is its text)
     case _ => "?"
   }
 
@@ -248,6 +249,7 @@ trait DataTypeSupport {
     case Some(value) => valueToBatchObject(field, value)
     case v: Int => java.lang.Integer(v)
     case v: Double => java.lang.Double(v)
+    case v: java.math.BigDecimal => v
     case v: scala.math.BigDecimal => v.bigDecimal
     case v: Boolean => java.lang.Boolean(v)
     case v: Char => java.lang.Character(v)
@@ -264,6 +266,7 @@ trait DataTypeSupport {
     case v: java.time.Instant => v
     case v: java.sql.Timestamp => v
     case v: java.util.UUID => v.toString
+    case v: io.circe.Json => v.noSpaces
     case v if field.getType.isEnum => v.toString
   }
 
@@ -301,12 +304,15 @@ trait DataTypeSupport {
     case Some(value) => valueToLiteral(value)
     case Array() => SQLSyntax.createUnsafely("''::bytea")
     case v: Int => SQLSyntax.createUnsafely(v + "::integer")
+    // (NaN and the infinities are only literals quoted: 'NaN'::double precision.)
+    case v: Double if v.isNaN || v.isInfinite => SQLSyntax.createUnsafely(s"'$v'::double precision")
     case v: Double => SQLSyntax.createUnsafely(v + "::double precision")
     case v: java.math.BigDecimal => SQLSyntax.createUnsafely(v.toString() + "::numeric")
     case v: scala.math.BigDecimal => SQLSyntax.createUnsafely(v.toString() + "::numeric")
     case v: Boolean => SQLSyntax.createUnsafely(v.toString + "::boolean")
-    case v: Char => SQLSyntax.createUnsafely(s"'$v'::char")
+    case v: Char => SQLSyntax.createUnsafely("'" + org.postgresql.core.Utils.escapeLiteral(null, v.toString, true) + "'::char")
     case v: Short => SQLSyntax.createUnsafely(s"$v::integer")
+    case v: Float if v.isNaN || v.isInfinite => SQLSyntax.createUnsafely(s"'$v'::real")
     case v: Float => SQLSyntax.createUnsafely(s"$v::real")
     case v: Long => SQLSyntax.createUnsafely(s"$v::bigint")
     case v: String => SQLSyntax.createUnsafely("'" + org.postgresql.core.Utils.escapeLiteral(null, v, true) + "'" + "::text")

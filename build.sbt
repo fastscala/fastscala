@@ -76,7 +76,10 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
       "com.google.guava" % "guava" % "33.8.0-jre",
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
-    )
+    ),
+    // One suite at a time: they share the JVM's single FSSystem (FSStats registers its metrics globally), and some
+    // check its gauges.
+    Test / parallelExecution := false
   )
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))

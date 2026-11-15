@@ -182,19 +182,18 @@ object Encoder {
     val buf = out.buf
     var p = out.pos
     if (len <= ShortString && len <= buf.length - p) {
+      // Copied without a branch per char: the chars are OR-ed together, and checked for ASCII once, at the end (if
+      // they're not, what was copied is written again, from the start, encoded).
       var i = 0
+      var any = 0
       while (i < len) {
         val c = s.charAt(i)
-        if (c >= 0x80) {
-          out.pos = p
-          writePacked(s, i, out, Unescaped)
-          return
-        }
-        buf(p) = c.toByte
-        p += 1
+        any |= c
+        buf(p + i) = c.toByte
         i += 1
       }
-      out.pos = p
+      if (any < 0x80) out.pos = p + len
+      else writePacked(s, 0, out, Unescaped)
     } else {
       val first = firstNonAscii(s, len)
       if (first == len) {

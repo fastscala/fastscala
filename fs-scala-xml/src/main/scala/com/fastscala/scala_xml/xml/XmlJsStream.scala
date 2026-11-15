@@ -8,7 +8,7 @@ import org.eclipse.jetty.util.{Blocker, Callback}
 import java.nio.ByteBuffer
 import java.util.Arrays
 import scala.annotation.tailrec
-import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.{ArraySeq, IndexedSeq}
 import scala.collection.mutable.ArrayBuffer
 import scala.xml.*
 
@@ -130,16 +130,16 @@ object XmlJsStream extends JsWriter {
   private[xml] final class Level {
     /** The items (Nodes or Js), in the form `index` says: an indexed seq, the rest of a List, an Iterator, or the one item. */
     var nodes: AnyRef = null
-    /** >= 0, the cursor into an indexed seq; or ListCursor, IteratorCursor or SingleNodeCursor. */
+    /**  >= 0, the cursor into an indexed seq; or ListCursor, IteratorCursor or SingleNodeCursor. */
     var index = 0
     /** For an indexed level: its length (read once, instead of calling length through the Seq interface per node). */
     var length = 0
     var scope: NamespaceBinding = null
     /** What's written once the level is done: an Elem's closing tag, or [[AttrValueEnd]]'s quote (null: nothing). */
     var closing: AnyRef = null
-    /** The level's escaping: XML levels (see [[Out.xmlDepth]]) and JavaScript levels (see [[Out.jsDepth]]). */
-    var xmlDepth = 0
-    var jsDepth = 0
+    /** The level's pre-resolved escapings for markup (`markupEsc`) and XML text/attribute content (`textEsc = markupEsc.nextXml`). */
+    var markupEsc: Encoder.Escaping = Encoder.Unescaped
+    var textEsc: Encoder.Escaping = Encoder.Xml1
     /** The level's [[Out.collector]] (null: none). */
     var collector: ArrayBuffer[Js] = null
 
@@ -202,14 +202,12 @@ object XmlJsStream extends JsWriter {
     var levels = new Array[Level](64)
 
     /**
-     * The current level's escaping (by [[Encoder]], of everything written: the markup, the code, and text and attribute
-     * values, which are escaped for XML once more): `xmlDepth` times for XML (how many attribute values it's in, since
-     * the innermost EncJs), then `jsDepth` times for JavaScript (how many EncJs's it's in). An attribute value adds an
-     * XML level; an EncJs adds a JavaScript level, and leaves no XML ones (XML escaping, after JavaScript escaping,
-     * changes nothing).
+     * The current level's pre-resolved escapings:
+     * - `markupEsc`: escaping of markup, code, and `Unparsed` (`(xmlDepth, jsDepth)`);
+     * - `textEsc`: escaping of XML text and attribute values (`(xmlDepth + 1, jsDepth)`).
      */
-    var xmlDepth = 0
-    var jsDepth = 0
+    var markupEsc: Encoder.Escaping = Encoder.Unescaped
+    var textEsc: Encoder.Escaping = Encoder.Xml1
 
     /**
      * Where the JavaScript of the current level's JS `<script>` tags goes, instead of the tags being written: not null
@@ -220,9 +218,9 @@ object XmlJsStream extends JsWriter {
     var collector: ArrayBuffer[Js] = null
 
     /** Changes the escaping (of what's written next). */
-    def setEscaping(xml: Int, js: Int): Unit = {
-      xmlDepth = xml
-      jsDepth = js
+    inline def setEscaping(markup: Encoder.Escaping, text: Encoder.Escaping): Unit = {
+      markupEsc = markup
+      textEsc = text
     }
 
     /** Serializes (from where it stopped) until done, or until it should pause; then queues the last chunk. */
@@ -331,31 +329,28 @@ object XmlJsStream extends JsWriter {
       }
     }
 
-    // ---------- writing: all through Encoder (escaping, as the current level needs, and UTF-8) ----------
+    // ---------- writing: all through Encoder (using pre-resolved Escaping) ----------
 
     /** An ASCII char of the markup's own (`<`, `>`, `/`, `=`, `"`, ` `, `:`). */
-    inline def append(c: Char): Unit = Encoder.writeAscii(c, this, xmlDepth, jsDepth)
+    inline def append(c: Char): Unit = Encoder.writeAscii(c, this, markupEsc)
 
-    /** Two ASCII chars of the markup's own. */
-    inline def append2(c1: Char, c2: Char): Unit = {
-      Encoder.writeAscii(c1, this, xmlDepth, jsDepth)
-      Encoder.writeAscii(c2, this, xmlDepth, jsDepth)
-    }
+    /** Two ASCII chars of the markup's own (`</`, `/>`, `="`). */
+    inline def append2(c1: Char, c2: Char): Unit = Encoder.writeAscii2(c1, c2, this, markupEsc)
 
     /** `s`, as it is (markup, or code): escaped only as the current level is. */
-    def append(s: String): Unit = Encoder.write(s, this, xmlDepth, jsDepth)
+    inline def append(s: String): Unit = Encoder.write(s, this, markupEsc)
 
     /** What's in `scratch` (then cleared): for the rare nodes only scala-xml knows how to write. */
     def appendScratch(): Unit = {
       val sb = _scratch.underlying
       if (sb.length > 0) {
-        Encoder.write(sb, this, xmlDepth, jsDepth)
+        Encoder.write(sb, this, markupEsc)
         sb.setLength(0)
       }
     }
 
     /** `text`, escaped for XML (text, or an attribute's value): once more than the current level is. */
-    def escape(text: String): Unit = Encoder.write(text, this, xmlDepth + 1, jsDepth)
+    inline def escape(text: String): Unit = Encoder.write(text, this, textEsc)
 
     /** The first level: a single item (a Node or a Js). */
     def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {
@@ -365,9 +360,10 @@ object XmlJsStream extends JsWriter {
       level.index = SingleNodeCursor
       level.scope = scope
       level.closing = null
-      level.xmlDepth = 0
-      level.jsDepth = 0
+      level.markupEsc = Encoder.Unescaped
+      level.textEsc = Encoder.Xml1
       level.collector = null
+      setEscaping(Encoder.Unescaped, Encoder.Xml1)
       collector = null
     }
 
@@ -390,8 +386,8 @@ object XmlJsStream extends JsWriter {
       setNodes(level, nodes)
       level.scope = scope
       level.closing = closing
-      level.xmlDepth = xmlDepth // (as the level it's in)
-      level.jsDepth = jsDepth
+      level.markupEsc = markupEsc
+      level.textEsc = textEsc
       level.collector = collector
     }
 
@@ -401,33 +397,40 @@ object XmlJsStream extends JsWriter {
      * `scripts` (see [[collector]]).
      */
     def pushCollecting(ns: NodeSeq, scripts: ArrayBuffer[Js]): Unit = {
-      val escapedJsDepth = jsDepth + 1
+      val nextMarkup = markupEsc.enterJs
+      val nextText = nextMarkup.nextXml
       pushSeq(ns, TopScope, null)
       val level = levels(depth - 1)
-      level.xmlDepth = 0
-      level.jsDepth = escapedJsDepth
+      level.markupEsc = nextMarkup
+      level.textEsc = nextText
       level.collector = scripts
-      setEscaping(0, escapedJsDepth)
+      setEscaping(nextMarkup, nextText)
       collector = scripts
     }
 
     /** A level of just `js`, escaped for JavaScript once more than the current level (for an EncJs). */
-    def pushEscaped(js: Js, scope: NamespaceBinding): Unit = pushSingleJs(js, scope, null, 0, jsDepth + 1)
+    def pushEscaped(js: Js, scope: NamespaceBinding, closing: AnyRef = null): Unit = {
+      val nextMarkup = markupEsc.enterJs
+      pushSingleJs(js, scope, closing, nextMarkup, nextMarkup.nextXml)
+    }
 
     /** A level of just `js`, an attribute's value: escaped for XML once more, and then closed by its quote. */
-    def pushAttrValue(js: Js, scope: NamespaceBinding): Unit = pushSingleJs(js, scope, AttrValueEnd, xmlDepth + 1, jsDepth)
+    def pushAttrValue(js: Js, scope: NamespaceBinding): Unit = {
+      val nextMarkup = textEsc
+      pushSingleJs(js, scope, AttrValueEnd, nextMarkup, nextMarkup.nextXml)
+    }
 
-    private def pushSingleJs(js: Js, scope: NamespaceBinding, closing: AnyRef, xml: Int, jsLevels: Int): Unit = {
+    private def pushSingleJs(js: Js, scope: NamespaceBinding, closing: AnyRef, nextMarkup: Encoder.Escaping, nextText: Encoder.Escaping): Unit = {
       val level = push()
       level.nodes = js
       level.index = SingleNodeCursor
       level.scope = scope
       level.closing = closing
-      level.xmlDepth = xml
-      level.jsDepth = jsLevels
+      level.markupEsc = nextMarkup
+      level.textEsc = nextText
       level.collector = null // (a level of Js: see collector)
       collector = null
-      setEscaping(xml, jsLevels)
+      setEscaping(nextMarkup, nextText)
     }
 
     /**
@@ -501,10 +504,10 @@ object XmlJsStream extends JsWriter {
         // level's.)
         if (d > 0) {
           val parent = out.levels(d - 1)
-          out.setEscaping(parent.xmlDepth, parent.jsDepth)
+          out.setEscaping(parent.markupEsc, parent.textEsc)
           out.collector = parent.collector
         } else {
-          out.setEscaping(0, 0)
+          out.setEscaping(Encoder.Unescaped, Encoder.Xml1)
           out.collector = null
         }
         closing match {
@@ -562,9 +565,6 @@ object XmlJsStream extends JsWriter {
           case js: Js =>
             writeJsItem(js, levelScope, out)
 
-          case escaped: Escaped =>
-            out.pushEscaped(escaped.js, levelScope)
-
           case xml: XmlWithoutScripts =>
             out.pushCollecting(xml.ns, xml.scripts)
 
@@ -609,13 +609,23 @@ object XmlJsStream extends JsWriter {
     case nodes: NodeSeqJs =>
       out.pushSeq(nodes.ns, TopScope, null)
     case enc: EncJs =>
-      if (enc.inString) out.pushSeq(Vector(Quote, new Escaped(enc.js), Quote), scope, null)
-      else out.pushEscaped(enc.js, scope)
+      if (enc.inString) {
+        out.append('"')
+        out.pushEscaped(enc.js, scope, AttrValueEnd)
+      } else {
+        out.pushEscaped(enc.js, scope, null)
+      }
     case detection: JsWithScriptDetection =>
       val scripts = new ArrayBuffer[Js]()
-      out.pushSeq(
-        Vector(detection.before, Quote, new XmlWithoutScripts(detection.ns, scripts), Quote, detection.after, new CollectedScripts(detection, scripts)),
-        scope, null)
+      val items = Array[AnyRef](
+        detection.before,
+        Quote,
+        new XmlWithoutScripts(detection.ns, scripts),
+        Quote,
+        detection.after,
+        new CollectedScripts(detection, scripts)
+      )
+      out.pushSeq(ArraySeq.unsafeWrapArray(items), scope, null)
     case other =>
       out.append(codeOf(other))
   }
@@ -627,8 +637,6 @@ object XmlJsStream extends JsWriter {
   }
 
   private val Quote: Js = Js("\"")
-
-  private val Semicolon: Js = Js(";")
 
   /**
    * An item of a level (a [[JsWithScriptDetection]]'s): `ns`, to be pushed as a level of its own, escaped once more (as
@@ -649,11 +657,13 @@ object XmlJsStream extends JsWriter {
   private def writeCollectedScripts(collected: CollectedScripts, scope: NamespaceBinding, out: Out): Unit = {
     val extracted = if (collected.scripts.isEmpty) Js.Void else CompositeJs.joined(collected.scripts, Semicolon)
     val js = collected.detection.scripts(extracted)
-    if (js != Js.Void) out.pushSeq(Vector(Semicolon, js), scope, null)
+    if (js != Js.Void) {
+      out.append(';')
+      writeJsItem(js, scope, out)
+    }
   }
 
-  /** An item of a level: `js`, to be pushed as a level of its own, escaped once more (an EncJs's, between quotes). */
-  private final class Escaped(val js: Js)
+  private val Semicolon: Js = Js(";")
 
   // ---------- the start tag of an ElemOptimized with Js attributes that are written as levels ----------
   // From its first such attribute on, the start tag is a level of these items: so the attribute's value can be a level
@@ -668,7 +678,7 @@ object XmlJsStream extends JsWriter {
   /** The end of `elem`'s start tag (its namespaces, and `>` or `/>`), and then its children and closing tag. */
   private final class StartTagEnd(val elem: Elem)
 
-  /** The closing of a level that's an attribute's value: its quote. */
+  /** The closing of a level that's an attribute's value or quoted `EncJs`: its quote. */
   private object AttrValueEnd
 
   /**
@@ -676,43 +686,85 @@ object XmlJsStream extends JsWriter {
    * or a [[NodeSeqJs]] in it. Any other (e.g. RawJs, or a CompositeJs of those) is written at once ([[escapeJs]]).
    */
   private def needsLevel(js: Js): Boolean = js match {
-    case composite: CompositeJs => composite.children.exists(needsLevel)
+    case composite: CompositeJs =>
+      composite.children match {
+        case iseq: collection.IndexedSeq[Js] =>
+          val len = iseq.length
+          var i = 0
+          while (i < len) {
+            if (needsLevel(iseq(i))) return true
+            i += 1
+          }
+          false
+        case other => other.exists(needsLevel)
+      }
     case _: EncJs | _: NodeSeqJs | _: JsWithScriptDetection => true
     case _ => false
   }
 
   /** The items of the start tag of `elem`, from the attributes `from` (the rest of its attributes) on. */
-  private def startTagRest(from: List[(String, ElemOptimized.AttrValue)], elem: ElemOptimized): Vector[AnyRef] = {
-    val items = Vector.newBuilder[AnyRef]
-    from.foreach {
-      case (key, value: String) => items += new StringAttr(key, value)
-      case (key, js: Js) => items += new JsAttr(key, js)
+  private def startTagRest(from: List[(String, ElemOptimized.AttrValue)], elem: ElemOptimized): IndexedSeq[AnyRef] = {
+    val buf = new Array[AnyRef](from.length + 1)
+    var cur = from
+    var i = 0
+    while (cur.nonEmpty) {
+      val attr = cur.head
+      buf(i) = attr._2 match {
+        case value: String => new StringAttr(attr._1, value)
+        case js: Js => new JsAttr(attr._1, js)
+      }
+      i += 1
+      cur = cur.tail
     }
-    items += new StartTagEnd(elem)
-    items.result()
+    buf(i) = new StartTagEnd(elem)
+    ArraySeq.unsafeWrapArray(buf)
   }
 
   /** The end of `e`'s start tag (its namespace declarations, and `>` or `/>`); then its children, and closing tag. */
   private def endStartTag(e: Elem, levelScope: NamespaceBinding, out: Out): Unit = {
     if ((e.scope ne levelScope) && (e.scope ne TopScope)) {
-      e.scope.buildString(out.scratch, levelScope)
-      out.appendScratch()
+      appendScope(e.scope, levelScope, out)
     }
 
     val children = e.child
-    if (children.isEmpty) {
-      if (e.minimizeEmpty) {
-        out.append2('/', '>')
-      } else {
+    children match {
+      case t: Text if t.getClass eq classOf[Text] =>
         out.append('>')
+        out.escape(t.data)
         writeClosingTag(e, out)
+      case iseq: collection.IndexedSeq[Node] if iseq.length == 1 && (iseq(0).getClass eq classOf[Text]) =>
+        out.append('>')
+        out.escape(iseq(0).asInstanceOf[Text].data)
+        writeClosingTag(e, out)
+      case _ if children.isEmpty =>
+        if (e.minimizeEmpty) {
+          out.append2('/', '>')
+        } else {
+          out.append('>')
+          writeClosingTag(e, out)
+        }
+      case _ =>
+        out.append('>')
+        if (spacedAtoms(children)) {
+          writeSpacedAtoms(children, e.scope, out)
+          writeClosingTag(e, out)
+        } else out.pushSeq(children, e.scope, e)
+    }
+  }
+
+  @tailrec private def appendScope(scope: NamespaceBinding, stop: NamespaceBinding, out: Out): Unit = {
+    if ((scope ne null) && (scope ne TopScope) && (scope ne stop)) {
+      out.append(" xmlns")
+      val prefix = scope.prefix
+      if (prefix ne null) {
+        out.append(':')
+        out.append(prefix)
       }
-    } else {
-      out.append('>')
-      if (spacedAtoms(children)) {
-        writeSpacedAtoms(children, e.scope, out)
-        writeClosingTag(e, out)
-      } else out.pushSeq(children, e.scope, e)
+      out.append2('=', '"')
+      val uri = scope.uri
+      if (uri ne null) out.escape(uri)
+      out.append('"')
+      appendScope(scope.parent, stop, out)
     }
   }
 
@@ -721,23 +773,48 @@ object XmlJsStream extends JsWriter {
    * next to each other in a literal), they're written separated by spaces. Checked fully only when the first child is
    * one, and there are several.
    */
-  private def spacedAtoms(children: collection.Seq[Node]): Boolean =
-    isAtomNotText(children.head) && children.lengthCompare(1) > 0 && children.forall(isAtomNotText)
+  private def spacedAtoms(children: collection.Seq[Node]): Boolean = children match {
+    case iseq: collection.IndexedSeq[Node] =>
+      val len = iseq.length
+      if (len <= 1 || !isAtomNotText(iseq(0))) false
+      else {
+        var i = 1
+        while (i < len) {
+          if (!isAtomNotText(iseq(i))) return false
+          i += 1
+        }
+        true
+      }
+    case _ =>
+      isAtomNotText(children.head) && children.lengthCompare(1) > 0 && children.forall(isAtomNotText)
+  }
 
-  private def isAtomNotText(n: Node): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
+  private inline def isAtomNotText(n: Node): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
 
   /** Atoms (see [[spacedAtoms]]), separated by spaces. */
-  @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Out): Unit = {
-    var first = true
-    children.foreach { n =>
-      if (!first) out.append(' ')
-      first = false
-      n match {
-        case atom: Atom[?] if atom.getClass eq classOf[Atom[?]] => out.escape(atom.data.toString)
-        case u: Unparsed if u.getClass eq classOf[Unparsed] => out.append(u.data)
-        case other => writeRareNode(other, scope, out)
-      }
+  @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Out): Unit =
+    children match {
+      case iseq: collection.IndexedSeq[Node] =>
+        val len = iseq.length
+        var i = 0
+        while (i < len) {
+          if (i > 0) out.append(' ')
+          writeAtomOrRare(iseq(i), scope, out)
+          i += 1
+        }
+      case _ =>
+        var first = true
+        children.foreach { n =>
+          if (!first) out.append(' ')
+          first = false
+          writeAtomOrRare(n, scope, out)
+        }
     }
+
+  private inline def writeAtomOrRare(n: Node, scope: NamespaceBinding, out: Out): Unit = n match {
+    case atom: Atom[?] if atom.getClass eq classOf[Atom[?]] => out.escape(atom.data.toString)
+    case u: Unparsed if u.getClass eq classOf[Unparsed] => out.append(u.data)
+    case other => writeRareNode(other, scope, out)
   }
 
   /** Kept out-of-line so `writeAll` stays small and register-friendly for HotSpot C2. */
@@ -777,7 +854,17 @@ object XmlJsStream extends JsWriter {
 
   /** `js`'s code, escaped: a CompositeJs's children one at a time (its `cmd` isn't built); any other Js, its `cmd`. */
   private def escapeJs(js: Js, out: Out): Unit = js match {
-    case composite: CompositeJs => composite.children.foreach(escapeJs(_, out))
+    case composite: CompositeJs =>
+      composite.children match {
+        case iseq: collection.IndexedSeq[Js] =>
+          val len = iseq.length
+          var i = 0
+          while (i < len) {
+            escapeJs(iseq(i), out)
+            i += 1
+          }
+        case other => other.foreach(escapeJs(_, out))
+      }
     case other => out.escape(codeOf(other))
   }
 
@@ -800,7 +887,16 @@ object XmlJsStream extends JsWriter {
     case a: Attribute if a.value eq null => // not a real attribute (e.g. the placeholder heading an ElemOptimized's)
       appendAttributes(a.next, out)
     case a: Attribute if isSinglePlainText(a.value) =>
-      appendAttribute(if (a.isPrefixed) a.pre else null, a.key, a.value.head.asInstanceOf[Atom[?]].data.toString, out)
+      val textVal = a.value match {
+        case t: Text => t.data
+        case n: Node => n.asInstanceOf[Atom[?]].data.toString
+        case seq =>
+          seq.head match {
+            case t: Text => t.data
+            case head => head.asInstanceOf[Atom[?]].data.toString
+          }
+      }
+      appendAttribute(if (a.isPrefixed) a.pre else null, a.key, textVal, out)
       appendAttributes(a.next, out)
     case other =>
       other.copy(Null).buildString(out.scratch) // just this attribute, including its leading ' '
@@ -808,9 +904,14 @@ object XmlJsStream extends JsWriter {
       appendAttributes(other.next, out)
   }
 
-  private def isSinglePlainText(value: collection.Seq[Node]): Boolean =
-    value.lengthCompare(1) == 0 && {
-      val cls = value.head.getClass
+  private def isSinglePlainText(value: collection.Seq[Node]): Boolean = value match {
+    case n: Node =>
+      val cls = n.getClass
       (cls eq classOf[Text]) || (cls eq classOf[Atom[?]])
-    }
+    case _ =>
+      value.lengthCompare(1) == 0 && {
+        val cls = value.head.getClass
+        (cls eq classOf[Text]) || (cls eq classOf[Atom[?]])
+      }
+  }
 }

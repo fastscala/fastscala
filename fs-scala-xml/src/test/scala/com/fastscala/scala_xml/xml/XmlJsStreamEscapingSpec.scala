@@ -53,7 +53,7 @@ class XmlJsStreamEscapingSpec extends AnyFlatSpec {
         cb.succeeded()
       }
     }, Callback.NOOP, true)
-    Encoder.write("p" * pad, out, 0, 0)
+    Encoder.write("p" * pad, out, Encoder.Unescaped)
     write(out)
     out.finish()
     bytes.toByteArray.drop(pad)
@@ -70,8 +70,8 @@ class XmlJsStreamEscapingSpec extends AnyFlatSpec {
     val texts = Seq(bmp, "a\uD83D\u0001\uDE00b", "\uD800", "x\uDC00", "\uD83D\uD83D\uDE00", "😀 & <é> \"q\" \u2028\u0085", "short", "")
     for (text <- texts; xml <- 0 to 2; jsLevels <- 0 to 3) {
       val expected = reference(text, xml, jsLevels)
-      val fromString = collect(0)(out => Encoder.write(text, out, xml, jsLevels))
-      val fromBuilder = collect(0)(out => Encoder.write(new java.lang.StringBuilder(text), out, xml, jsLevels))
+      val fromString = collect(0)(out => Encoder.write(text, out, Encoder.escaping(xml, jsLevels)))
+      val fromBuilder = collect(0)(out => Encoder.write(new java.lang.StringBuilder(text), out, Encoder.escaping(xml, jsLevels)))
       val what = s"a text of ${text.length} chars, xml=$xml, jsLevels=$jsLevels"
       assert(java.util.Arrays.equals(expected, fromString), s"String: $what")
       assert(java.util.Arrays.equals(expected, fromBuilder), s"StringBuilder: $what")
@@ -81,20 +81,20 @@ class XmlJsStreamEscapingSpec extends AnyFlatSpec {
   it should "write the same at every offset near a chunk's end (escapes and UTF-8 split over two chunks)" in {
     val text = "a<\"é€😀\\\u2028\uD800&z" * 3
     for (pad <- XmlJsStream.ChunkSize - 40 to XmlJsStream.ChunkSize + 2; xml <- 0 to 2; jsLevels <- 0 to 2) {
-      assert(java.util.Arrays.equals(reference(text, xml, jsLevels), collect(pad)(out => Encoder.write(text, out, xml, jsLevels))), s"pad=$pad, xml=$xml, jsLevels=$jsLevels")
+      assert(java.util.Arrays.equals(reference(text, xml, jsLevels), collect(pad)(out => Encoder.write(text, out, Encoder.escaping(xml, jsLevels)))), s"pad=$pad, xml=$xml, jsLevels=$jsLevels")
     }
   }
 
   it should "write a markup char escaped as a String of it is" in {
     for (c <- "<>/=\" :".toSeq; xml <- 0 to 2; jsLevels <- 0 to 4) {
-      assert(java.util.Arrays.equals(reference(c.toString, xml, jsLevels), collect(0)(out => Encoder.writeAscii(c, out, xml, jsLevels))), s"$c, $xml, $jsLevels")
+      assert(java.util.Arrays.equals(reference(c.toString, xml, jsLevels), collect(0)(out => Encoder.writeAscii(c, out, Encoder.escaping(xml, jsLevels)))), s"$c, $xml, $jsLevels")
     }
   }
 
   it should "write escapes longer than a chunk (many JavaScript levels)" in {
     val text = "\\\"x"
     val jsLevels = 14 // a backslash: 2^14 of them
-    assert(java.util.Arrays.equals(reference(text, xml = 1, jsLevels), collect(100)(out => Encoder.write(text, out, xmlLevels = 1, jsLevels))))
+    assert(java.util.Arrays.equals(reference(text, xml = 1, jsLevels), collect(100)(out => Encoder.write(text, out, Encoder.escaping(1, jsLevels)))))
   }
 
   "JavaScript escaping" should "be per char (so Strings can be escaped one at a time, as they're written)" in {

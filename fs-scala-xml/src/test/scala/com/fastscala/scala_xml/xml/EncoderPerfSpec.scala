@@ -135,10 +135,11 @@ object EncoderPerfSpec {
 
   def stringsNow(strings: Array[String], x: Int, j: Int, reps: Int): Long = {
     val out = new DiscardingOutput
+    val esc = Encoder.escaping(x, j)
     var r = 0
     while (r < reps) {
       var i = 0
-      while (i < strings.length) { Encoder.write(strings(i), out, x, j); i += 1 }
+      while (i < strings.length) { Encoder.write(strings(i), out, esc); i += 1 }
       r += 1
     }
     out.total + out.pos
@@ -161,10 +162,11 @@ object EncoderPerfSpec {
   def markupNow(x: Int, j: Int, reps: Int): Long = {
     val out = new DiscardingOutput
     val chars = MarkupChars
+    val esc = Encoder.escaping(x, j)
     var r = 0
     while (r < reps) {
       var i = 0
-      while (i < chars.length) { Encoder.writeAscii(chars(i), out, x, j); i += 1 }
+      while (i < chars.length) { Encoder.writeAscii(chars(i), out, esc); i += 1 }
       r += 1
     }
     out.total + out.pos
@@ -204,29 +206,33 @@ object EncoderPerfSpec {
 
   def elementsNow(x: Int, j: Int, reps: Int): Long = {
     val out = new DiscardingOutput
+    // As XmlJsStream does it: the level's two escapings, resolved once (markup, and one more XML level for text and
+    // attribute values), not per write.
+    val markup = Encoder.escaping(x, j)
+    val text = markup.nextXml
     var r = 0
     while (r < reps) {
       var e = 0
       while (e < Elements.length) {
         val el = Elements(e)
-        Encoder.writeAscii('<', out, x, j)
-        Encoder.write(el.tag, out, x, j)
+        Encoder.writeAscii('<', out, markup)
+        Encoder.write(el.tag, out, markup)
         var a = 0
         while (a < el.attrs.length) {
-          Encoder.writeAscii(' ', out, x, j)
-          Encoder.write(el.attrs(a), out, x, j)
-          Encoder.writeAscii('=', out, x, j)
-          Encoder.writeAscii('"', out, x, j)
-          Encoder.write(el.attrs(a + 1), out, x + 1, j)
-          Encoder.writeAscii('"', out, x, j)
+          Encoder.writeAscii(' ', out, markup)
+          Encoder.write(el.attrs(a), out, markup)
+          Encoder.writeAscii('=', out, markup)
+          Encoder.writeAscii('"', out, markup)
+          Encoder.write(el.attrs(a + 1), out, text)
+          Encoder.writeAscii('"', out, markup)
           a += 2
         }
-        Encoder.writeAscii('>', out, x, j)
-        Encoder.write(el.text, out, x + 1, j)
-        Encoder.writeAscii('<', out, x, j)
-        Encoder.writeAscii('/', out, x, j)
-        Encoder.write(el.tag, out, x, j)
-        Encoder.writeAscii('>', out, x, j)
+        Encoder.writeAscii('>', out, markup)
+        Encoder.write(el.text, out, text)
+        Encoder.writeAscii('<', out, markup)
+        Encoder.writeAscii('/', out, markup)
+        Encoder.write(el.tag, out, markup)
+        Encoder.writeAscii('>', out, markup)
         e += 1
       }
       r += 1

@@ -22,8 +22,8 @@ class EncoderSpec extends AnyFlatSpec {
   private def check(text: String, x: Int, j: Int, bufferSize: Int, pad: Int = 0): Unit = {
     val expected = reference(text, x, j)
     val what = s"${text.length} chars, xmlLevels=$x, jsLevels=$j, buffer of $bufferSize, after $pad bytes: ${codes(text)}"
-    assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(Encoder.write(text, _, x, j))), s"String: $what")
-    assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(Encoder.write(new java.lang.StringBuilder(text), _, x, j))), s"StringBuilder: $what")
+    assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(Encoder.write(text, _, Encoder.escaping(x, j)))), s"String: $what")
+    assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(Encoder.write(new java.lang.StringBuilder(text), _, Encoder.escaping(x, j)))), s"StringBuilder: $what")
     assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(EncoderV1.write(text, _, x, j))), s"EncoderV1: $what")
   }
 
@@ -32,7 +32,7 @@ class EncoderSpec extends AnyFlatSpec {
   "Encoder.write" should "write the reference escaping of every char, alone and in text" in {
     for ((x, j) <- levels; c <- (0 until 0x10000).map(_.toChar)) {
       val expected = reference(c.toString, x, j)
-      val out = written(64, 0)(Encoder.write(c.toString, _, x, j))
+      val out = written(64, 0)(Encoder.write(c.toString, _, Encoder.escaping(x, j)))
       if (!java.util.Arrays.equals(expected, out)) fail(f"U+${c.toInt}%04X, xmlLevels=$x, jsLevels=$j")
     }
     val bmp = (0 until 0x10000).map(_.toChar).mkString
@@ -76,7 +76,7 @@ class EncoderSpec extends AnyFlatSpec {
   it should "write Strings one after the other as their concatenation" in {
     val parts = Seq("<div", " ", "class", "=\"", "a & b", "\"", ">", "é😀", "\uD83D", "\uDE00", "</div>")
     for ((x, j) <- levels; size <- Seq(8, 64, 8192)) {
-      val out = written(size, 0)(o => parts.foreach(Encoder.write(_, o, x, j)))
+      val out = written(size, 0)(o => parts.foreach(Encoder.write(_, o, Encoder.escaping(x, j))))
       // (Each String is escaped by itself: a pair split between two Strings is two lone surrogates.)
       assert(java.util.Arrays.equals(out, parts.flatMap(reference(_, x, j)).toArray), s"xmlLevels=$x, jsLevels=$j, buffer of $size")
     }
@@ -84,7 +84,7 @@ class EncoderSpec extends AnyFlatSpec {
 
   "Encoder.writeAscii" should "write a markup char as a String of it is written" in {
     for ((x, j) <- levels; c <- (0x20 until 0x7F).map(_.toChar); size <- Seq(8, 64); pad <- Seq(0, 5, 7)) {
-      val out = written(size, pad)(Encoder.writeAscii(c, _, x, j))
+      val out = written(size, pad)(Encoder.writeAscii(c, _, Encoder.escaping(x, j)))
       assert(java.util.Arrays.equals(reference(c.toString, x, j), out), s"'$c', xmlLevels=$x, jsLevels=$j, buffer of $size, after $pad")
     }
   }
@@ -92,7 +92,7 @@ class EncoderSpec extends AnyFlatSpec {
   "Encoder" should "write escapes longer than the buffer (many JavaScript levels)" in {
     for (size <- Seq(8, 64, 8192); (x, j) <- Seq((0, 14), (1, 13), (2, 12))) {
       check("a\\\"b", x, j, size)
-      val out = written(size, 3)(Encoder.writeAscii('"', _, x, j))
+      val out = written(size, 3)(Encoder.writeAscii('"', _, Encoder.escaping(x, j)))
       assert(java.util.Arrays.equals(reference("\"", x, j), out))
     }
   }

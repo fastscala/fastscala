@@ -104,7 +104,9 @@ class FSSession(
   def createPage[T](generatePage: FSContext => T, debugLbl: Option[String] = None, onPageUnload: () => Js = () => JS.void)(implicit req: Request): T = createAndRenderPageWithImpl(
     new NoFSPageImplProvided[T] {
       override def render()(implicit fsc: FSContext): T = generatePage(fsc)
-    }
+    },
+    debugLbl = debugLbl,
+    onPageUnload = onPageUnload
   )
 
   /** Allows you to store your own page implementation in the page
@@ -159,13 +161,16 @@ class FSSession(
     fsSystem.sessions -= this.id
     fsSystem.stats.currentSessions.dec()
 
+    // (Counted before the maps are emptied.)
+    val nPages = pages.size
     pages.filterInPlace { (_, page) =>
       page.delete()
       false
     }
-    fsSystem.stats.currentPages.dec(pages.size)
+    fsSystem.stats.currentPages.dec(nPages)
 
+    val nAnonymousPages = anonymousPages.size
     anonymousPages.clear()
-    fsSystem.stats.currentAnonPages.dec(anonymousPages.size)
+    fsSystem.stats.currentAnonPages.dec(nAnonymousPages)
   }
 }

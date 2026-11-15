@@ -414,14 +414,30 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
 
   def callbackClientSideOnTimeout(implicit fsc: FSContext): Js = Js.Void
 
+  /**
+   * The percentage of the heap that's free: of the most it can grow to (`maxMemory`), not of what's allocated now
+   * (`totalMemory`, which the JVM grows as needed: measured against it, a heap that can still grow looks full).
+   */
+  protected def freeMemoryPercent(): Double = {
+    val runtime = Runtime.getRuntime
+    val used = runtime.totalMemory() - runtime.freeMemory()
+    (runtime.maxMemory() - used).toDouble / runtime.maxMemory() * 100
+  }
+
   def gc(): Unit = synchronized {
     val minFreeSpacePercent = config.getDouble("com.fastscala.core.gc.run-when-less-than-mem-free-percent")
-    if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
+    if (freeMemoryPercent() < minFreeSpacePercent) {
       System.gc()
-      if ((Runtime.getRuntime.freeMemory().toDouble / Runtime.getRuntime.totalMemory() * 100) < minFreeSpacePercent) {
+      // Frees up space while it's needed and something is left to delete. (A loop: it used to call itself again after
+      // each freeUpSpace, until a StackOverflowError once nothing was left to delete.)
+      def left: Int = sessions.size + sessions.valuesIterator.map(_.pages.size).sum
+      var remaining = left
+      while (remaining > 0 && freeMemoryPercent() < minFreeSpacePercent) {
         logger.trace(s"Less than ${minFreeSpacePercent.formatted("%.2f%%")} space available, freeing up space...")
         freeUpSpace()
-        gc()
+        val now = left
+        remaining = if (now < remaining) now else 0 // nothing was deleted: nothing more can be
+        if (remaining > 0) System.gc()
       }
     }
   }

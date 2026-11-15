@@ -103,8 +103,8 @@ class FSLifecycleSpec extends AnyFlatSpec {
     assert(s.nPages() == 1)
   }
 
-  it should "give the page its debug label and onPageUnload" in pendingUntilFixed {
-    // BUG: createPage doesn't pass debugLbl and onPageUnload on to createAndRenderPageWithImpl: they're dropped.
+  it should "give the page its debug label and onPageUnload" in {
+    // Regression (fixed): createPage doesn't pass debugLbl and onPageUnload on to createAndRenderPageWithImpl: they're dropped.
     val s = newSession()
     s.createPage(_ => (), debugLbl = Some("my-page"), onPageUnload = () => Js("bye()"))
     val page = s.pages.values.head
@@ -142,8 +142,8 @@ class FSLifecycleSpec extends AnyFlatSpec {
     assert(s.pages.isEmpty && s.anonymousPages.isEmpty)
   }
 
-  it should "update the current pages gauge" in pendingUntilFixed {
-    // BUG: the gauges are decremented by pages.size / anonymousPages.size after the maps are emptied: by 0.
+  it should "update the current pages gauge" in {
+    // Regression (fixed): the gauges are decremented by pages.size / anonymousPages.size after the maps are emptied: by 0.
     system.synchronized {
       val s = newSession()
       newPage(s)
@@ -164,8 +164,8 @@ class FSLifecycleSpec extends AnyFlatSpec {
     assert(page.callbacks.isEmpty && page.fileUploadCallbacks.isEmpty && page.fileDownloadCallbacks.isEmpty)
   }
 
-  it should "forget the deleted callbacks in the contexts that created them" in pendingUntilFixed {
-    // BUG: it removes the page's id (`-= id`) from each context's functionsGenerated, not the callback's.
+  it should "forget the deleted callbacks in the contexts that created them" in {
+    // Regression (fixed): it removes the page's id (`-= id`) from each context's functionsGenerated, not the callback's.
     val page = newPage()
     val root = page.rootFSContext
     root.callback(() => Js("a()"))
@@ -173,8 +173,8 @@ class FSLifecycleSpec extends AnyFlatSpec {
     assert(root.functionsGenerated.isEmpty, root.functionsGenerated)
   }
 
-  it should "update the current callbacks gauge" in pendingUntilFixed {
-    // BUG: decremented by callbacks.size after the map is emptied: by 0.
+  it should "update the current callbacks gauge" in {
+    // Regression (fixed): decremented by callbacks.size after the map is emptied: by 0.
     system.synchronized {
       val page = newPage()
       page.rootFSContext.callback(() => Js("a()"))
@@ -252,6 +252,46 @@ class FSLifecycleSpec extends AnyFlatSpec {
     val code = page.setupKeepAlive().cmd
     assert(code.contains(s"""window._fs.keepAlive("${page.id}")"""), code)
     assert(code.contains(s"setTimeout(sendKeepAlive, ${page.periodicKeepAlivePeriod})"), code)
+  }
+
+  // ---------- gc ----------
+
+  /** A system whose memory is always this free (sharing the stats: they're registered once per JVM). */
+  private def systemWithFreeMemory(percent: Double): FSSystemImpl = new FSSystemImpl(appName = "gc-test", stats = system.stats) {
+    override protected def freeMemoryPercent(): Double = percent
+  }
+
+  private def addSessionWithPages(fss: FSSystemImpl, pages: Int): FSSession = {
+    val s = new FSSession(fss.synchronized { counter += 1; s"gc-session-$counter" }, fss)
+    fss.sessions(s.id) = s
+    for (_ <- 1 to pages) {
+      val page = new FSPage(s.nextID(), s, req, new FSPageImpl[Unit] { override def render()(implicit fsc: FSContext): Unit = () })
+      s.pages(page.id) = page
+    }
+    s
+  }
+
+  "FSSystemImpl.gc" should "do nothing while there's enough free memory" in {
+    val fss = systemWithFreeMemory(100)
+    addSessionWithPages(fss, 3)
+    fss.gc()
+    assert(fss.sessions.size == 1 && fss.sessions.values.head.pages.size == 3)
+  }
+
+  it should "delete pages (and the sessions left empty) while memory is low, until nothing is left" in {
+    val fss = systemWithFreeMemory(0)
+    addSessionWithPages(fss, 5)
+    addSessionWithPages(fss, 2)
+    fss.gc()
+    assert(fss.sessions.isEmpty)
+  }
+
+  it should "stop when nothing is left to delete (not call itself until the stack overflows)" in {
+    val fss = systemWithFreeMemory(0)
+    fss.gc() // nothing at all
+    val s = addSessionWithPages(fss, 0)
+    fss.gc()
+    assert(fss.sessions.isEmpty, "the empty session should be deleted")
   }
 
   // ---------- contexts ----------

@@ -26,8 +26,8 @@ class IdGenSpec extends AnyFlatSpec {
     }
   }
 
-  it should "have as many random bytes as asked for" in pendingUntilFixed {
-    // BUG: nBytes is ignored: always 32 bytes.
+  it should "have as many random bytes as asked for" in {
+    // Regression (fixed): nBytes is ignored: always 32 bytes.
     assert(Base64.getUrlDecoder.decode(IdGen.secureId(nBytes = 16)).length == 16)
     assert(Base64.getUrlDecoder.decode(IdGen.secureId(nBytes = 64)).length == 64)
   }

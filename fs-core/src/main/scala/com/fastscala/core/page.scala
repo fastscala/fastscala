@@ -141,23 +141,28 @@ class FSPage(
   def deleteOlderThan(ts: Long): Unit = rootFSContext.deleteOlderThan(ts)
 
   def delete(): Unit = {
-    callbacks.filterInPlace { (_, f) =>
-      f.fsc.functionsGenerated -= id
+    // Each one is forgotten by the context that created it (by its own id, not the page's), and counted before the
+    // maps are emptied.
+    val nCallbacks = callbacks.size
+    callbacks.filterInPlace { (funcId, f) =>
+      f.fsc.functionsGenerated -= funcId
       false
     }
-    session.fsSystem.stats.currentCallbacks.dec(callbacks.size)
+    session.fsSystem.stats.currentCallbacks.dec(nCallbacks)
 
-    fileUploadCallbacks.filterInPlace { (_, f) =>
-      f.fsc.functionsFileUploadGenerated -= id
+    val nFileUploadCallbacks = fileUploadCallbacks.size
+    fileUploadCallbacks.filterInPlace { (funcId, f) =>
+      f.fsc.functionsFileUploadGenerated -= funcId
       false
     }
-    session.fsSystem.stats.currentFileUploadCallbacks.dec(fileUploadCallbacks.size)
+    session.fsSystem.stats.currentFileUploadCallbacks.dec(nFileUploadCallbacks)
 
-    fileDownloadCallbacks.filterInPlace { (_, f) =>
-      f.fsc.functionsFileDownloadGenerated -= id
+    val nFileDownloadCallbacks = fileDownloadCallbacks.size
+    fileDownloadCallbacks.filterInPlace { (funcId, f) =>
+      f.fsc.functionsFileDownloadGenerated -= funcId
       false
     }
-    session.fsSystem.stats.currentFileDownloadCallbacks.dec(fileDownloadCallbacks.size)
+    session.fsSystem.stats.currentFileDownloadCallbacks.dec(nFileDownloadCallbacks)
   }
 
   def callbackClientSideBefore(implicit fsc: FSContext): Js = session.fsSystem.callbackClientSideBefore

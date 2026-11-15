@@ -80,7 +80,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   )
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
-  .settings(commonSettings, name := "fs-circe", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.10", "io.circe" %% "circe-generic" % "0.14.10", "io.circe" %% "circe-parser" % "0.14.10"))
+  .settings(commonSettings, name := "fs-circe", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.10", "io.circe" %% "circe-generic" % "0.14.10", "io.circe" %% "circe-parser" % "0.14.10", "org.scalatest" %% "scalatest" % "3.2.19" % Test))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))

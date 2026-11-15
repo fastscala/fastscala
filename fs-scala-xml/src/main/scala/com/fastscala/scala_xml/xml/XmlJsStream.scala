@@ -112,8 +112,8 @@ object XmlJsStream extends JsWriter {
     /** The list, iterator or single node read (see the cursors above); not used when reading `items`. */
     var nodes: AnyRef = null
     /**
-     * An indexed seq's elements, read from `index` until `length`: an `ArraySeq.ofRef`'s own array, or the others' copied
-     * into `own`. So each element is an array load, not a call through the IndexedSeq interface (which is megamorphic:
+     * An indexed seq's elements, read from `index` until `length`: an `ArraySeq.ofRef`'s or a small Vector's own array
+     * (see [[VectorArrays]]), or the others' copied into `own`. So each element is an array load, not a call through the IndexedSeq interface (which is megamorphic:
      * Vector, ArraySeq, ArrayBuffer... all reach here).
      */
     var items: Array[AnyRef] = EmptyItems
@@ -364,16 +364,23 @@ object XmlJsStream extends JsWriter {
         level.index = 0
         level.length = arr.length
       case iseq: collection.IndexedSeq[?] =>
-        val len = iseq.length
-        var own = level.own
-        if ((own eq null) || own.length < len) {
-          own = new Array[AnyRef](math.max(len, 16))
-          level.own = own
+        val vector1 = VectorArrays.arrayOfVector1(iseq) // a small Vector's own array: read in place
+        if (vector1 ne null) {
+          level.items = vector1
+          level.index = 0
+          level.length = vector1.length
+        } else {
+          val len = iseq.length
+          var own = level.own
+          if ((own eq null) || own.length < len) {
+            own = new Array[AnyRef](math.max(len, 16))
+            level.own = own
+          }
+          iseq.asInstanceOf[collection.IndexedSeq[AnyRef]].copyToArray(own, 0, len)
+          level.items = own
+          level.index = 0
+          level.length = len
         }
-        iseq.asInstanceOf[collection.IndexedSeq[AnyRef]].copyToArray(own, 0, len)
-        level.items = own
-        level.index = 0
-        level.length = len
       case ns: NodeSeq => setNodes(level, ns.theSeq)
       case cons: ::[AnyRef] =>
         level.nodes = cons

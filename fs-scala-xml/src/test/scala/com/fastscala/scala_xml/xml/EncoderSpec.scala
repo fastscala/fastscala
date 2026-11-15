@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.xml
 
 import com.fastscala.js.JsEscape
+import com.fastscala.scala_xml.xml.baseline.{EncoderBaseline, EncoderBaselineOutput}
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.ByteArrayOutputStream
@@ -24,7 +25,7 @@ class EncoderSpec extends AnyFlatSpec {
     val what = s"${text.length} chars, xmlLevels=$x, jsLevels=$j, buffer of $bufferSize, after $pad bytes: ${codes(text)}"
     assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(Encoder.write(text, _, Encoder.escaping(x, j)))), s"String: $what")
     assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(Encoder.write(new java.lang.StringBuilder(text), _, Encoder.escaping(x, j)))), s"StringBuilder: $what")
-    assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(EncoderV1.write(text, _, x, j))), s"EncoderV1: $what")
+    assert(java.util.Arrays.equals(expected, written(bufferSize, pad)(EncoderBaseline.write(text, _, EncoderBaseline.escaping(x, j)))), s"EncoderBaseline: $what")
   }
 
   private def codes(s: String): String = s.take(40).map(c => f"${c.toInt}%04x").mkString(" ") + (if (s.length > 40) " ..." else "")
@@ -106,8 +107,8 @@ object EncoderSpec {
     (1 to js).foldLeft(xmlEscaped)((acc, _) => JsEscape.escape(acc)).getBytes(UTF_8)
   }
 
-  /** An [[EncoderOutput]] with a buffer of `size` bytes, that keeps everything flushed. */
-  final class CollectingOutput(size: Int) extends EncoderOutput {
+  /** An [[EncoderOutput]] (and an [[EncoderBaselineOutput]]) with a buffer of `size` bytes, that keeps everything flushed. */
+  final class CollectingOutput(size: Int) extends EncoderOutput, EncoderBaselineOutput {
     var buf = new Array[Byte](size)
     var pos = 0
     val bytes = new ByteArrayOutputStream()
@@ -120,7 +121,7 @@ object EncoderSpec {
   }
 
   /** What `write` writes into a buffer of `size` bytes with `pad` bytes in it already (not returned). */
-  def written(size: Int, pad: Int)(write: EncoderOutput => Unit): Array[Byte] = {
+  def written(size: Int, pad: Int)(write: CollectingOutput => Unit): Array[Byte] = {
     val out = new CollectingOutput(size)
     var i = 0
     while (i < pad) {

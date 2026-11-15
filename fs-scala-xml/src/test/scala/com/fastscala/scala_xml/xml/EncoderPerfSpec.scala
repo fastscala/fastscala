@@ -1,10 +1,12 @@
 package com.fastscala.scala_xml.xml
 
+import com.fastscala.scala_xml.xml.baseline.{EncoderBaseline, EncoderBaselineOutput}
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
- * Performance test: [[Encoder]] against [[EncoderV1]] (what it was before it was optimized), on what XmlJsStream
- * writes: names, markup chars, text and attribute values, plain and escaped (in a rerender's string literal).
+ * Performance test: [[Encoder]] against [[EncoderBaseline]] (a frozen copy of what it was at the last baseline reset),
+ * on what XmlJsStream writes: names, markup chars, text and attribute values, plain and escaped (in a rerender's string
+ * literal). At the end: the geometric mean of the ratios, for a single number to follow from one change to the next.
  *
  * For each workload: how fast each encodes it (MB of input chars per second; the best of several runs), and how many
  * times faster the current one is. Only what's written is asserted on (the same number of bytes), not the times:
@@ -24,61 +26,64 @@ class EncoderPerfSpec extends AnyFlatSpec {
   private val Warmups = 8
   private val Runs = 15
 
+  private val ratios = collection.mutable.ArrayBuffer[Double]()
+
   /**
-   * Runs `v1` and `now` in turn (which one first alternates, so neither is favoured by when it runs), each `Warmups`
+   * Runs `base` and `now` in turn (which one first alternates, so neither is favoured by when it runs), each `Warmups`
    * times and then `Runs` times measured: reports the best of each, in MB of input chars per second, and how many times faster `now` is.
    */
-  private def compare(name: String, chars: Long)(v1: => Long)(now: => Long): Unit = {
+  private def compare(name: String, chars: Long)(base: => Long)(now: => Long): Unit = {
     var i = 0
-    var (bytesV1, bytesNow) = (0L, 0L)
-    while (i < Warmups) { bytesV1 = v1; bytesNow = now; i += 1 }
-    var (bestV1, bestNow) = (Long.MaxValue, Long.MaxValue)
+    var (bytesBase, bytesNow) = (0L, 0L)
+    while (i < Warmups) { bytesBase = base; bytesNow = now; i += 1 }
+    var (bestBase, bestNow) = (Long.MaxValue, Long.MaxValue)
     i = 0
     while (i < Runs) {
       if (i % 2 == 0) {
         val t0 = System.nanoTime()
-        bytesV1 = v1
+        bytesBase = base
         val t1 = System.nanoTime()
         bytesNow = now
         val t2 = System.nanoTime()
-        bestV1 = math.min(bestV1, t1 - t0)
+        bestBase = math.min(bestBase, t1 - t0)
         bestNow = math.min(bestNow, t2 - t1)
       } else {
         val t0 = System.nanoTime()
         bytesNow = now
         val t1 = System.nanoTime()
-        bytesV1 = v1
+        bytesBase = base
         val t2 = System.nanoTime()
         bestNow = math.min(bestNow, t1 - t0)
-        bestV1 = math.min(bestV1, t2 - t1)
+        bestBase = math.min(bestBase, t2 - t1)
       }
       i += 1
     }
-    assert(bytesV1 == bytesNow, s"$name: EncoderV1 wrote $bytesV1 bytes, Encoder $bytesNow")
+    assert(bytesBase == bytesNow, s"$name: EncoderBaseline wrote $bytesBase bytes, Encoder $bytesNow")
     def mbs(nanos: Long) = chars / 1e6 / (nanos / 1e9)
-    info(f"$name%-46s V1 ${mbs(bestV1)}%6.0f MB/s   now ${mbs(bestNow)}%6.0f MB/s   x${bestV1.toDouble / bestNow}%.2f")
+    ratios += bestBase.toDouble / bestNow
+    info(f"$name%-46s baseline ${mbs(bestBase)}%6.0f MB/s   now ${mbs(bestNow)}%6.0f MB/s   x${bestBase.toDouble / bestNow}%.2f")
   }
 
   /** The Strings of `strings`, written one by one, `reps` times. */
   private def strings(name: String, strings: Array[String], x: Int, j: Int): Unit = {
     val chars = strings.iterator.map(_.length.toLong).sum
     val reps = math.max(1, (TargetChars / chars).toInt)
-    compare(s"$name ($x,$j)", chars * reps)(stringsV1(strings, x, j, reps))(stringsNow(strings, x, j, reps))
+    compare(s"$name ($x,$j)", chars * reps)(stringsBase(strings, x, j, reps))(stringsNow(strings, x, j, reps))
   }
 
   /** The markup's own chars, one by one. */
   private def markupChars(x: Int, j: Int): Unit = {
     val reps = (TargetChars / MarkupChars.length / 4).toInt
-    compare(s"markup chars, one by one ($x,$j)", MarkupChars.length.toLong * reps)(markupV1(x, j, reps))(markupNow(x, j, reps))
+    compare(s"markup chars, one by one ($x,$j)", MarkupChars.length.toLong * reps)(markupBase(x, j, reps))(markupNow(x, j, reps))
   }
 
   /** Whole elements, as XmlJsStream writes them: `<tag attr="value" ...>text</tag>`, piece by piece. */
   private def elements(x: Int, j: Int): Unit = {
     val reps = (TargetChars / ElementChars).toInt
-    compare(s"whole elements, piece by piece ($x,$j)", ElementChars * reps)(elementsV1(x, j, reps))(elementsNow(x, j, reps))
+    compare(s"whole elements, piece by piece ($x,$j)", ElementChars * reps)(elementsBase(x, j, reps))(elementsNow(x, j, reps))
   }
 
-  "Encoder" should "be measured against EncoderV1 (xmlLevels,jsLevels)" in {
+  "Encoder" should "be measured against EncoderBaseline (xmlLevels,jsLevels)" in {
     // A page: nothing escaped, and text and attribute values escaped for XML.
     elements(0, 0)
     strings("names", Names, 0, 0)
@@ -103,6 +108,7 @@ class EncoderPerfSpec extends AnyFlatSpec {
     strings("attribute values: JavaScript", JsValues, 1, 2)
     strings("attribute values: JavaScript", JsValues, 2, 0)
     elements(1, 0)
+    info(f"geometric mean of ${ratios.size} workloads: x${math.exp(ratios.map(math.log).sum / ratios.size)}%.2f")
   }
 }
 
@@ -120,14 +126,27 @@ object EncoderPerfSpec {
     }
   }
 
+  /** The same, for [[EncoderBaseline]]. */
+  final class BaselineDiscardingOutput extends EncoderBaselineOutput {
+    var buf = new Array[Byte](8192)
+    var pos = 0
+    var total = 0L
+
+    override def flush(): Unit = {
+      total += pos
+      pos = 0
+    }
+  }
+
   // The measured loops: each one a method of its own (so it's compiled as one), once for each Encoder.
 
-  def stringsV1(strings: Array[String], x: Int, j: Int, reps: Int): Long = {
-    val out = new DiscardingOutput
+  def stringsBase(strings: Array[String], x: Int, j: Int, reps: Int): Long = {
+    val out = new BaselineDiscardingOutput
+    val esc = EncoderBaseline.escaping(x, j)
     var r = 0
     while (r < reps) {
       var i = 0
-      while (i < strings.length) { EncoderV1.write(strings(i), out, x, j); i += 1 }
+      while (i < strings.length) { EncoderBaseline.write(strings(i), out, esc); i += 1 }
       r += 1
     }
     out.total + out.pos
@@ -147,13 +166,14 @@ object EncoderPerfSpec {
 
   val MarkupChars: Array[Char] = "<>/=\" :<></=\"\" >".toCharArray
 
-  def markupV1(x: Int, j: Int, reps: Int): Long = {
-    val out = new DiscardingOutput
+  def markupBase(x: Int, j: Int, reps: Int): Long = {
+    val out = new BaselineDiscardingOutput
     val chars = MarkupChars
+    val esc = EncoderBaseline.escaping(x, j)
     var r = 0
     while (r < reps) {
       var i = 0
-      while (i < chars.length) { EncoderV1.writeAscii(chars(i), out, x, j); i += 1 }
+      while (i < chars.length) { EncoderBaseline.writeAscii(chars(i), out, esc); i += 1 }
       r += 1
     }
     out.total + out.pos
@@ -172,31 +192,35 @@ object EncoderPerfSpec {
     out.total + out.pos
   }
 
-  def elementsV1(x: Int, j: Int, reps: Int): Long = {
-    val out = new DiscardingOutput
+  def elementsBase(x: Int, j: Int, reps: Int): Long = {
+    val out = new BaselineDiscardingOutput
+    // As XmlJsStream does it: the level's two escapings, resolved once (markup, and one more XML level for text and
+    // attribute values), not per write.
+    val markup = EncoderBaseline.escaping(x, j)
+    val text = markup.nextXml
     var r = 0
     while (r < reps) {
       var e = 0
       while (e < Elements.length) {
         val el = Elements(e)
-        EncoderV1.writeAscii('<', out, x, j)
-        EncoderV1.write(el.tag, out, x, j)
+        EncoderBaseline.writeAscii('<', out, markup)
+        EncoderBaseline.write(el.tag, out, markup)
         var a = 0
         while (a < el.attrs.length) {
-          EncoderV1.writeAscii(' ', out, x, j)
-          EncoderV1.write(el.attrs(a), out, x, j)
-          EncoderV1.writeAscii('=', out, x, j)
-          EncoderV1.writeAscii('"', out, x, j)
-          EncoderV1.write(el.attrs(a + 1), out, x + 1, j)
-          EncoderV1.writeAscii('"', out, x, j)
+          EncoderBaseline.writeAscii(' ', out, markup)
+          EncoderBaseline.write(el.attrs(a), out, markup)
+          EncoderBaseline.writeAscii('=', out, markup)
+          EncoderBaseline.writeAscii('"', out, markup)
+          EncoderBaseline.write(el.attrs(a + 1), out, text)
+          EncoderBaseline.writeAscii('"', out, markup)
           a += 2
         }
-        EncoderV1.writeAscii('>', out, x, j)
-        EncoderV1.write(el.text, out, x + 1, j)
-        EncoderV1.writeAscii('<', out, x, j)
-        EncoderV1.writeAscii('/', out, x, j)
-        EncoderV1.write(el.tag, out, x, j)
-        EncoderV1.writeAscii('>', out, x, j)
+        EncoderBaseline.writeAscii('>', out, markup)
+        EncoderBaseline.write(el.text, out, text)
+        EncoderBaseline.writeAscii('<', out, markup)
+        EncoderBaseline.writeAscii('/', out, markup)
+        EncoderBaseline.write(el.tag, out, markup)
+        EncoderBaseline.writeAscii('>', out, markup)
         e += 1
       }
       r += 1

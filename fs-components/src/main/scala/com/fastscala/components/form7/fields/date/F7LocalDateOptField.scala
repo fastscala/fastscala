@@ -26,5 +26,7 @@ class F7LocalDateOptField()(implicit renderer: F7InputFieldRenderer) extends F7I
 
   def toString(value: Option[java.time.LocalDate]): String = value.map(_.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).getOrElse("")
 
-  def fromString(str: String): Either[String, Option[java.time.LocalDate]] = Right(Some(str).filter(_.trim != "").map(str => java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+  def fromString(str: String): Either[String, Option[java.time.LocalDate]] =
+    if (str.trim == "") Right(None)
+    else scala.util.Try(java.time.LocalDate.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd"))).toEither.map(Some(_)).left.map(_ => "Invalid input")
 }

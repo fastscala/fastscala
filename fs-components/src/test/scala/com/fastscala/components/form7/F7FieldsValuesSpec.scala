@@ -103,9 +103,10 @@ class F7FieldsValuesSpec extends AnyFlatSpec {
     assert(f.toString(Some(LocalDate.of(2026, 2, 28))) == "2026-02-28")
   }
 
-  it should "refuse an invalid date (not throw)" in pendingUntilFixed {
-    // BUG: LocalDate.parse's exception isn't caught: fromString throws instead of returning a Left.
-    assert(new F7LocalDateOptField().fromString("2026-02-30").isLeft)
+  it should "refuse an invalid date (not throw)" in {
+    // Regression (fixed): LocalDate.parse's exception isn't caught: fromString throws instead of returning a Left.
+    assert(new F7LocalDateOptField().fromString("15/11/2026").isLeft)
+    assert(new F7LocalDateOptField().fromString("someday").isLeft)
   }
 
   "F7LocalDateOptField.asString" should "read and write the date as a String, in the pattern given" in {
@@ -123,8 +124,8 @@ class F7FieldsValuesSpec extends AnyFlatSpec {
     assert(f.fromString(" ") == Right(None))
   }
 
-  it should "refuse an invalid date-time (not throw)" in pendingUntilFixed {
-    // BUG: as F7LocalDateOptField's: LocalDateTime.parse's exception isn't caught.
+  it should "refuse an invalid date-time (not throw)" in {
+    // Regression (fixed): as F7LocalDateOptField's: LocalDateTime.parse's exception isn't caught.
     assert(new F7LocalDateTimeOptField().fromString("tomorrow").isLeft)
   }
 

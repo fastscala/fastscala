@@ -139,13 +139,15 @@ object ClickToEditFields {
                  tabindex: Int = 0
                )(implicit fsc: FSContext): NodeSeq = Str(
     () => get().map(_.toString).getOrElse(""),
-    str => if (str == "") set(None) else set(scala.util.Try(str.toDouble).toOption),
+    // (What isn't a number leaves the value as it is: it used to be saved as None, erasing it.)
+    str => if (str == "") set(None) else scala.util.Try(str.toDouble).toOption.map(d => set(Some(d))).getOrElse(JS.void),
     emptyString = emptyString,
     displayElemClasses = displayElemClasses,
     editElemClasses = editElemClasses,
     placeholder = placeholder,
     transformDisplayElem = transformDisplayElem,
     transformEditElem = transformEditElem,
+    confirm = confirm,
     tabindex = tabindex
   )
 

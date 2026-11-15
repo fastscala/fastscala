@@ -1,13 +1,11 @@
 package com.fastscala.js
 
-import org.owasp.encoder.Encode
-
 import java.util.Date
 
 /**
  * Helpers that build JavaScript. Written with `js"..."` ([[RawJs]]): the Js values in them stay parts of the result
  * (so they're never turned into one String, e.g. when XmlJsStream writes them into an attribute), and Strings are
- * inserted as JavaScript string literals with [[asJsStr]] (quoted, and escaped with OWASP's `Encode.forJavaScript`).
+ * inserted as JavaScript string literals with [[asJsStr]] (quoted, and escaped with [[JsEscape]]).
  */
 trait JsUtils {
 
@@ -34,7 +32,7 @@ trait JsUtils {
 
   def fromString(s: String): Js = Js(s)
 
-  def escapeStr(s: String) = Encode.forJavaScript(s)
+  def escapeStr(s: String): String = JsEscape.escape(s)
 
   /** `s` as a JavaScript string literal: quoted, and escaped. */
   def asJsStr(s: String): Js = new EncJs(Js(s), inString = true)

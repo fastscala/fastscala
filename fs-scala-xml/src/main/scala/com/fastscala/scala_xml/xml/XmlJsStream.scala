@@ -6,7 +6,6 @@ import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets.UTF_8
 import java.util.Arrays
 import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.IndexedSeq
@@ -29,7 +28,7 @@ import scala.xml.*
  * JavaScript ([[writeJs]]) goes through the same stack as the XML (a level's items can be Nodes or Js), so it's written
  * iteratively, not recursively (as Js.writeUtf8Enc does): a [[CompositeJs]]'s children are a level, and so is a
  * [[NodeSeqJs]]'s XML (written as XML, raw: it's its code), and an [[EncJs]]'s Js: a level that's escaped (see
- * [[JsEscaper]]), as are those in it (escaped once more for each EncJs they're in); any other Js is written as its `cmd`, as it is (not escaped).
+ * [[Encoder]]), as are those in it (escaped once more for each EncJs they're in); any other Js is written as its `cmd`, as it is (not escaped).
  */
 object XmlJsStream extends JsWriter {
 
@@ -223,86 +222,29 @@ object XmlJsStream extends JsWriter {
     var lengthStack = new Array[Int](64)
     var scopeStack = new Array[NamespaceBinding](64)
     var closingStack = new Array[Elem](64)
-    /** Each level's escaping (null: none): how many EncJs's it's in. */
-    var escaperStack = new Array[JsEscaper](64)
+    /** Each level's JavaScript escaping: how many EncJs's it's in (0: none). */
+    var jsDepthStack = new Array[Int](64)
 
     /**
-     * The current level's escaping (null: none). The bytes written while it's set are written into the buffer as they
-     * are (from [[escapeStart]]): every way of writing (XML, escaped XML, Js) is the same as without it; they're escaped
-     * all at once (one table pass: [[JsEscaper.escape]]), when the buffer is full, or the escaping changes.
+     * The current level's JavaScript escaping: how many EncJs's it's in (0: none). While it's not 0, everything written
+     * (the markup, and text and attribute values, escaped for XML first) goes through an [[Encoder]] with as many
+     * JavaScript layers, from the raw Strings straight into the buffer; with 0, it's written as before.
      */
-    var escaper: JsEscaper = null
-    /** Where the bytes to escape (written with [[escaper]] set) start in the buffer. */
-    private var escapeStart = 0
-    /** The bytes to escape, copied out of the buffer (escaping writes them back into it, longer). */
-    private var raw: Array[Byte] = null
+    var jsDepth = 0
 
     /**
-     * The last char written with an escaper (its UTF-8 bytes; none if `heldLength` is 0), not escaped yet: it's escaped
-     * differently if it's the last of a layer's input (see [[JsEscaper]]), which is known only once what comes next is.
-     * Written at escaping `heldDepth`; `heldMinDepth`: the shallowest the escaping has been since (the layers deeper
-     * than that have ended since it).
+     * Writes `s` (already escaped by the layers before the JavaScript ones: e.g. XML) through the current JavaScript
+     * layers. They escape char by char, so each String is escaped on its own, as it's written.
      */
-    private val held = new Array[Byte](4)
-    private var heldLength = 0
-    private var heldDepth = 0
-    private var heldMinDepth = 0
+    def writeJsEncoded(s: String): Unit = if (!s.isEmpty) Encoder.js(jsDepth).write(s, this)
 
-    /**
-     * Escapes what was written with [[escaper]] set (if anything), in place, in the buffer (queuing it as it fills):
-     * after the char held before it (resolved), and but for its own last char (held).
-     */
-    private def escapePending(): Unit = {
-      val n = pos - escapeStart
-      if (n > 0) {
-        if (raw eq null) raw = new Array[Byte](ChunkSize)
-        System.arraycopy(buf, escapeStart, raw, 0, n)
-        pos = escapeStart
-        resolveHeld()
-        var last = n - 1
-        while (last > 0 && (raw(last) & 0xC0) == 0x80) last -= 1 // (the start of the last char)
-        escaper.escape(raw, last, this)
-        heldLength = n - last
-        System.arraycopy(raw, last, held, 0, heldLength)
-        heldDepth = escaper.depth
-        heldMinDepth = heldDepth
-      }
-      escapeStart = pos
-    }
+    /** `text` escaped for XML and then the current JavaScript layers. */
+    def writeXmlJsEncoded(text: String): Unit = writeJsEncoded(EncodingLayer.Xml.encode(text))
 
-    /** Writes the held char, escaped by its layers: as the last of their input by those that have ended since. */
-    private def resolveHeld(): Unit =
-      if (heldLength > 0) {
-        val n = heldLength
-        heldLength = 0
-        if (heldMinDepth >= heldDepth) JsEscaper.forDepth(heldDepth).escape(held, n, this) // (no layer ended)
-        else {
-          val bytes = JsEscaper.resolve(new String(held, 0, n, UTF_8), heldDepth, heldMinDepth).getBytes(UTF_8)
-          var i = 0
-          while (i < bytes.length) {
-            if (pos == ChunkSize) queue(last = false)
-            buf(pos) = bytes(i)
-            pos += 1
-            i += 1
-          }
-        }
-      }
+    /** Changes the JavaScript escaping (how many EncJs's what's written next is in). */
+    def setJsDepth(d: Int): Unit = jsDepth = d
 
-    /**
-     * Changes the escaping, escaping what was written before with the previous one. Going to a shallower escaping ends
-     * the layers in between; with none, all have ended, so the held char is resolved.
-     */
-    def setEscaper(e: JsEscaper): Unit =
-      if (e ne escaper) {
-        if (escaper ne null) escapePending()
-        val newDepth = if (e eq null) 0 else e.depth
-        if (newDepth < heldMinDepth) heldMinDepth = newDepth
-        escaper = e
-        escapeStart = pos
-        if (e eq null) resolveHeld()
-      }
-
-    /** Queues the (full) buffer, as [[flush]], but as it is (for [[JsEscaper.escape]], which escapes into it). */
+    /** Queues the (full) buffer (for [[Encoder]], which writes into it). */
     def queueFull(): Unit = queue(last = false)
 
     /** Serializes (from where it stopped) until done, or until it should pause; then queues the last chunk. */
@@ -313,25 +255,11 @@ object XmlJsStream extends JsWriter {
         case t: Throwable => fail(t)
       }
 
-    /**
-     * Queues what's in the buffer (if anything) to be written, not ending the content; goes on in another (empty)
-     * buffer. What was written with an escaper is escaped first (it's longer then: maybe more than a buffer).
-     */
-    def flush(): Unit = {
-      if (escaper ne null) {
-        escapePending()
-        if (pos > 0) queue(last = false)
-        escapeStart = 0
-      } else if (pos > 0) queue(last = false)
-    }
+    /** Queues what's in the buffer (if anything) to be written, not ending the content; goes on in another buffer. */
+    def flush(): Unit = if (pos > 0) queue(last = false)
 
     /** Queues what's in the buffer (even nothing) as the last content. */
-    def finish(): Unit = {
-      if (escaper ne null) escapePending()
-      heldMinDepth = 0
-      resolveHeld()
-      queue(last = true)
-    }
+    def finish(): Unit = queue(last = true)
 
     /** (`last`: the last chunk, after which the callback is completed; it ends the sink's content if `endContent`.) */
     private def queue(last: Boolean): Unit = {
@@ -427,18 +355,24 @@ object XmlJsStream extends JsWriter {
 
     /** An ASCII char (the markup's own: `<`, `>`, `/`, `=`, `"`, ` `, `:`). */
     inline def append(c: Char): Unit = {
-      if (pos == ChunkSize) flush()
-      buf(pos) = c.toByte
-      pos += 1
+      if (jsDepth > 0) writeJsEncoded(String.valueOf(c))
+      else {
+        if (pos == ChunkSize) flush()
+        buf(pos) = c.toByte
+        pos += 1
+      }
     }
 
     /** Two ASCII chars. */
     inline def append2(c1: Char, c2: Char): Unit = {
-      if (pos + 2 > ChunkSize) flush()
-      val p = pos
-      buf(p) = c1.toByte
-      buf(p + 1) = c2.toByte
-      pos = p + 2
+      if (jsDepth > 0) writeJsEncoded(new String(Array(c1, c2)))
+      else {
+        if (pos + 2 > ChunkSize) flush()
+        val p = pos
+        buf(p) = c1.toByte
+        buf(p + 1) = c2.toByte
+        pos = p + 2
+      }
     }
 
     def append(s: String): Unit = append(s, 0, s.length)
@@ -450,7 +384,8 @@ object XmlJsStream extends JsWriter {
      */
     def append(s: String, from: Int, to: Int): Unit = {
       val n = to - from
-      if (n <= ShortString && n <= ChunkSize - pos) {
+      if (jsDepth > 0) writeJsEncoded(s.substring(from, to))
+      else if (n <= ShortString && n <= ChunkSize - pos) {
         var p = pos
         var i = from
         while (i < to) {
@@ -480,6 +415,7 @@ object XmlJsStream extends JsWriter {
 
     /** `s(from until to)`, all ASCII, in as few copies as the buffer allows. */
     def appendAscii(s: String, from: Int, to: Int): Unit = {
+      if (jsDepth > 0) return writeJsEncoded(s.substring(from, to))
       var start = from
       while (start < to) {
         if (pos == ChunkSize) flush()
@@ -492,6 +428,7 @@ object XmlJsStream extends JsWriter {
 
     /** `s(from until to)`, encoded char by char (a few at a time, so a char's bytes are never split over two chunks). */
     def appendUtf8(s: String, from: Int, to: Int): Unit = {
+      if (jsDepth > 0) return writeJsEncoded(s.substring(from, to))
       var start = from
       while (start < to) {
         if (ChunkSize - pos < 8) flush()
@@ -513,7 +450,8 @@ object XmlJsStream extends JsWriter {
       }
     }
 
-    inline def escape(text: String): Unit = XmlEscape.escape(text, this)
+    /** `text`, escaped for XML (and then for JavaScript, in an EncJs). */
+    inline def escape(text: String): Unit = if (jsDepth > 0) writeXmlJsEncoded(text) else XmlEscape.escape(text, this)
 
     /** The first level: a single item (a Node or a Js). */
     def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {
@@ -521,7 +459,7 @@ object XmlJsStream extends JsWriter {
       indexStack(0) = SingleNodeCursor
       scopeStack(0) = scope
       closingStack(0) = null
-      escaperStack(0) = null
+      jsDepthStack(0) = 0
       depth = 1
     }
 
@@ -532,7 +470,7 @@ object XmlJsStream extends JsWriter {
       setLevel(d, nodes)
       scopeStack(d) = scope
       closingStack(d) = closing
-      escaperStack(d) = escaper // (as the level it's in)
+      jsDepthStack(d) = jsDepth // (as the level it's in)
       depth = d + 1
     }
 
@@ -544,10 +482,9 @@ object XmlJsStream extends JsWriter {
       indexStack(d) = SingleNodeCursor
       scopeStack(d) = scope
       closingStack(d) = null
-      val e = JsEscaper.forDepth(if (escaper eq null) 1 else escaper.depth + 1)
-      escaperStack(d) = e
+      jsDepthStack(d) = jsDepth + 1
       depth = d + 1
-      setEscaper(e)
+      setJsDepth(jsDepth + 1)
     }
 
     /**
@@ -582,7 +519,7 @@ object XmlJsStream extends JsWriter {
       lengthStack = Arrays.copyOf(lengthStack, newCap)
       scopeStack = Arrays.copyOf(scopeStack, newCap)
       closingStack = Arrays.copyOf(closingStack, newCap)
-      escaperStack = Arrays.copyOf(escaperStack, newCap)
+      jsDepthStack = Arrays.copyOf(jsDepthStack, newCap)
     }
   }
 
@@ -633,8 +570,7 @@ object XmlJsStream extends JsWriter {
         out.closingStack(d) = null
         out.depth = d
         // (Back to the escaping of the level it's in: before the closing tag, which is that level's.)
-        val parentEscaper = if (d > 0) out.escaperStack(d - 1) else null
-        if (parentEscaper ne out.escaper) out.setEscaper(parentEscaper)
+        out.setJsDepth(if (d > 0) out.jsDepthStack(d - 1) else 0)
         if (closing ne null) writeClosingTag(closing, out)
       } else {
         val levelScope = out.scopeStack(d)
@@ -774,13 +710,19 @@ object XmlJsStream extends JsWriter {
     out.append(label)
   }
 
-  /** ` key="..."`, with the parts of `js` (see [[Js.foreachPart]]) escaped straight into the buffer: never joined. */
+  /** ` key="..."`, with `js` escaped straight into the buffer: a CompositeJs child by child, never joined. */
   private def appendJsAttribute(key: String, js: Js, out: Out): Unit = {
     out.append(' ')
     out.append(key)
     out.append2('=', '"')
-    js.foreachPart(part => XmlEscape.escape(part, out))
+    escapeJs(js, out)
     out.append('"')
+  }
+
+  /** `js`'s code, escaped: a CompositeJs's children one at a time (its `cmd` isn't built); any other Js, its `cmd`. */
+  private def escapeJs(js: Js, out: Out): Unit = js match {
+    case composite: CompositeJs => composite.children.foreach(escapeJs(_, out))
+    case other => out.escape(other.cmd)
   }
 
   private def appendAttribute(pre: String, key: String, value: String, out: Out): Unit = {

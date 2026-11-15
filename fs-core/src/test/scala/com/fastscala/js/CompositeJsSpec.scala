@@ -138,15 +138,15 @@ class CompositeJsSpec extends AnyFlatSpec {
     assert(cb.successes == 1)
   }
 
-  // ---------- foreachPart ----------
+  // ---------- children ----------
 
-  private def parts(js: Js): Seq[String] = {
-    val b = Seq.newBuilder[String]
-    js.foreachPart(b += _)
-    b.result()
+  /** The leaves of `js` (a CompositeJs's children, flattened), as their cmds. */
+  private def parts(js: Js): Seq[String] = js match {
+    case c: CompositeJs => c.children.flatMap(parts)
+    case other => Seq(other.cmd)
   }
 
-  "foreachPart" should "give parts that, concatenated, are exactly cmd" in {
+  "A Js tree" should "have leaves that, concatenated, are exactly cmd" in {
     val cases: Seq[Js] = Seq(
       Js("a()"),
       Js.Void,
@@ -166,22 +166,8 @@ class CompositeJsSpec extends AnyFlatSpec {
     cases.foreach(js => assert(parts(js).mkString == js.cmd, js.cmd))
   }
 
-  it should "give a StringJs's string, and a CompositeJs's parts, without building cmd" in {
-    assert(parts(Js("abc")) == Seq("abc"))
+  it should "keep a CompositeJs's children as they are (joined only with the separators given)" in {
     assert(parts(CompositeJs.joined(Seq(Js("a"), Js("b"), Js("c")), Js(";"))) == Seq("a", ";", "b", ";", "c"))
-    // A Js whose cmd isn't called (it would throw): only its parts are.
-    val noCmd = new CompositeJs(Js("a"), Js("b")) {
-      override def cmd: String = throw new IllegalStateException("cmd was built")
-    }
-    assert(parts(noCmd) == Seq("a", "b"))
-  }
-
-  it should "give a Js's cmd, as one part, by default" in {
-    val js = new Js {
-      override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = callback.succeeded()
-      override def cmd: String = "f()"
-    }
-    assert(parts(js) == Seq("f()"))
   }
 
   // ---------- JsFunc ----------

@@ -21,9 +21,6 @@ class CompositeJs(val children: Js*) extends Js {
 
   override def cmd: String = children.map(_.cmd).mkString
 
-  /** The children's parts: `cmd`, without joining it. */
-  override def foreachPart(f: String => Unit): Unit = children.foreach(_.foreachPart(f))
-
   /**
    * Writes the children one at a time: each one's write starts only once the previous one has completed, and `callback`
    * completes exactly once — after the last write, or on the first failure. Every child's `writeUtf8Enc` must complete

@@ -3,7 +3,7 @@ package com.fastscala.scala_xml.js
 import com.fastscala.js.EncJs
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
-import org.owasp.encoder.Encode
+import com.fastscala.js.JsEscape
 import org.scalatest.flatspec.AnyFlatSpec
 
 import java.io.ByteArrayOutputStream
@@ -97,7 +97,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
 
   "cmd" should "be the NodeSeq's XML, escaped for a JS string" in {
     val ns = <p title="x">a 'b' "c"</p>
-    assert(escaped(ns).cmd == Encode.forJavaScript(ns.toString()))
+    assert(escaped(ns).cmd == JsEscape.escape(ns.toString()))
   }
 
   it should "be empty for an empty NodeSeq" in {
@@ -143,7 +143,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
   "EncJs with inString" should "be the escaped XML in quotes, streamed as cmd" in {
     samples.foreach { case (name, ns) =>
       val js = new EncJs(new NodeSeqJs(ns), inString = true)
-      assert(js.cmd == "\"" + Encode.forJavaScript(ns.toString()) + "\"", name)
+      assert(js.cmd == "\"" + JsEscape.escape(ns.toString()) + "\"", name)
       val sink = new CapturingSink
       val cb = new RecordingCallback
       js.writeUtf8Enc(sink, cb)

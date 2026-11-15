@@ -117,6 +117,10 @@ object ElemOptimized {
     attrs = attrs, label = label, minimizeEmpty = minimizeEmpty, child = child *
   )
 
+  def apply(label: String, attrs: (String, AttrValue)*)(child: Node*): ElemOptimized = new ElemOptimized(
+    attrs = attrs.toList, label = label, minimizeEmpty = false, child = child *
+  )
+
   def transform(orig: Elem, name: String, transform: String => String) =
     new ElemOptimized(orig, name, ElemOptimized.onText(transform))
 
@@ -149,6 +153,7 @@ object ElemOptimized {
  *
  * @param orig  the element whose attributes these replace; never itself an [[ElemOptimized]], so a chain of
  *              transforms doesn't nest wrappers and computes the attributes only once
+ *
  * @param attrs in reverse print order; names unique, values never null (a removed attribute is not in the list)
  */
 class ElemOptimized private(

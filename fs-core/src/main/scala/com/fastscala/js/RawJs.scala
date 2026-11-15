@@ -16,15 +16,13 @@ import java.util.Date
 class RawJs(str: String) extends Js {
   override def cmd: String = str
 
-  override def foreachPart(f: String => Unit): Unit = f(str)
-
   override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = sink.write(false, ByteBuffer.wrap(str.getBytes("UTF-8")), callback)
 }
 
 /**
  * `js"..."`: JavaScript as it's written. Raw (as Scala's `raw"..."`): backslashes are kept (`\n` stays a backslash and an
  * `n`, as JavaScript string literals need), and interpolated values are inserted as they are, not escaped or quoted:
- * a [[Js]] as a part of the result (so it's written part by part, its `cmd` never built: see [[Js.foreachPart]]),
+ * a [[Js]] as a part of the result (so it's written part by part, its `cmd` never built),
  * anything else as its `toString`. With no Js values, the result is a [[RawJs]]; with some, a [[CompositeJs]] of the
  * literal text (as RawJs) and them.
  *

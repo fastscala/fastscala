@@ -2,7 +2,7 @@ package com.fastscala.scala_xml.js
 
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.xml.ElemWithJsInScript
-import org.owasp.encoder.Encode
+import com.fastscala.js.JsEscape
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
@@ -14,7 +14,7 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   private def module(code: String): Elem = <script type="module">{code}</script>
 
   /** How the DOM methods reference an element id (escaped for a JS string literal). */
-  private def byId(id: String): String = s"""document.getElementById("${Encode.forJavaScript(id)}")"""
+  private def byId(id: String): String = s"""document.getElementById("${JsEscape.escape(id)}")"""
 
   // ---------- extractJsInScriptTags ----------
 
@@ -146,7 +146,7 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
 
   "append2BodyWithScriptExtraction" should "append the HTML without the scripts, then run the scripts" in {
     val cmd = JS.append2BodyWithScriptExtraction(<p>x</p> ++ js("run()")).cmd
-    assert(cmd.contains(Encode.forJavaScript("<p>x</p>")))
+    assert(cmd.contains(JsEscape.escape("<p>x</p>")))
     assert(!cmd.contains("script"))
     assert(cmd.endsWith(";run()"))
   }
@@ -154,7 +154,7 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   "replaceWithScriptExtraction" should "replace with the HTML without the scripts, then run the scripts" in {
     val cmd = JS.replaceWithScriptExtraction("target", <div>{js("run()")}</div>).cmd
     assert(cmd.contains(byId("target")))
-    assert(cmd.contains(Encode.forJavaScript("<div></div>")))
+    assert(cmd.contains(JsEscape.escape("<div></div>")))
     assert(!cmd.contains("script"))
     assert(cmd.endsWith(";run()"))
   }
@@ -164,8 +164,8 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   "htmlToElement" should "create a template with the given id and the escaped HTML" in {
     val html = <p class="a">"x" &amp; 'y'</p>
     val cmd = JS.htmlToElement(html, "tpl-id").cmd
-    assert(cmd.contains(s"""template.setAttribute("id", "${Encode.forJavaScript("tpl-id")}")""")) // (the id escaped too)
-    assert(cmd.contains("\"" + Encode.forJavaScript(html.toString) + "\""))
+    assert(cmd.contains(s"""template.setAttribute("id", "${JsEscape.escape("tpl-id")}")""")) // (the id escaped too)
+    assert(cmd.contains("\"" + JsEscape.escape(html.toString) + "\""))
     assert(!cmd.contains("<p")) // no raw HTML inside the JS string
     assert(cmd.endsWith(".content"))
   }
@@ -194,12 +194,12 @@ class JsXmlUtilsSpec extends AnyFlatSpec {
   "replace" should "replace the element, or log an error if it doesn't exist" in {
     val cmd = JS.replace("target", <p>x</p>).cmd
     assert(cmd.startsWith(s"(${byId("target")} ? ${byId("target")}.replaceWith("))
-    assert(cmd.contains(s"""console.error("Element with id ${Encode.forJavaScript("target")} not found")"""))
+    assert(cmd.contains(s"""console.error("Element with id ${JsEscape.escape("target")} not found")"""))
   }
 
   "setContents" should "set the innerHTML to the escaped HTML" in {
     val html = <p>"x"</p>
-    assert(JS.setContents("target", html).cmd == s"""${byId("target")}.innerHTML = "${Encode.forJavaScript(html.toString)}";""")
+    assert(JS.setContents("target", html).cmd == s"""${byId("target")}.innerHTML = "${JsEscape.escape(html.toString)}";""")
   }
 
   it should "set the innerHTML to the result of a Js expression" in {

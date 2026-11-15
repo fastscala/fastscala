@@ -3,8 +3,6 @@ package com.fastscala.js
 import org.owasp.encoder.Encode
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.StringWriter
-
 class JsEscapeSpec extends AnyFlatSpec {
 
   /** OWASP's escaping, without its rule for the input's last char: as if more followed it ("a", never escaped). */
@@ -51,24 +49,6 @@ class JsEscapeSpec extends AnyFlatSpec {
       val a = Seq.fill(rnd.nextInt(6))(alphabet(rnd.nextInt(alphabet.length))).mkString
       val b = Seq.fill(rnd.nextInt(6))(alphabet(rnd.nextInt(alphabet.length))).mkString
       assert(JsEscape.escape(a + b) == JsEscape.escape(a) + JsEscape.escape(b), (a, b))
-    }
-  }
-
-  "EscapingWriter" should "write what escape returns, however the input is split into writes" in {
-    val rnd = new scala.util.Random(11)
-    val alphabet = Seq("s", "a", "<", "\\", "\"", " ", "é", "€", "😀", "\uD83D", "\uDE00", " ", "\u0000")
-    for (_ <- 1 to 2000) {
-      val s = Seq.fill(rnd.nextInt(12))(alphabet(rnd.nextInt(alphabet.size))).mkString
-      val out = new StringWriter()
-      val w = new JsEscape.EscapingWriter(out)
-      var i = 0
-      while (i < s.length) { // (splitting surrogate pairs too)
-        val n = math.min(s.length - i, 1 + rnd.nextInt(4))
-        w.write(s.toCharArray, i, n)
-        i += n
-      }
-      w.flush()
-      assert(out.toString == JsEscape.escape(s), s.map(c => f"U+${c.toInt}%04X").mkString(" "))
     }
   }
 }

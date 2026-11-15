@@ -18,12 +18,12 @@ object Ok {
   private val JsContentType: String = "text/javascript;charset=utf-8"
 
   /**
-   * JavaScript, written as it's produced, by `writer` (e.g. fs-scala-xml's `XmlJsStream`), which ends the content. No
-   * Content-Length is computed (it'd cost as much as writing it: e.g. a rerender's, with HTML in it): Jetty sets one only
-   * if the whole JavaScript is written at once, with the last write (a short one, with XmlJsStream); otherwise it's sent
-   * chunked.
+   * JavaScript, written by `writer` (its `cmd`, by default; as it's produced, by fs-scala-xml's `XmlJsStream`), which
+   * ends the content. No Content-Length is computed (it'd cost as much as writing it: e.g. a rerender's, with HTML in
+   * it): Jetty sets one only if the whole JavaScript is written at once, with the last write (always, with `cmd`; a
+   * short one, with XmlJsStream); otherwise it's sent chunked.
    */
-  def js(js: Js, writer: JsWriter = JsWriter.Recursive) = new Response {
+  def js(js: Js, writer: JsWriter = JsWriter.Cmd) = new Response {
     override def status: HttpStatus = HttpStatuses.OK
 
     override def respond(response: JettyServerResponse, callback: Callback): Boolean = {

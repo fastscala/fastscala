@@ -59,10 +59,8 @@ class NestedJsEscapingSpec extends AnyFlatSpec {
     val cmd = reference(js)
     assert(cmd.length == js.cmd.length, s"$name: the reference differs from cmd in more than the attributes' order")
     val stream = written(js, XmlJsStream)
-    val recursive = written(js, JsWriter.Recursive)
     info(s"$name: ${cmd.length} chars, ${"EncJs".r.findAllIn(structure(js)).size} EncJs (max nesting ${maxNesting(js)})")
     assert(stream == cmd, s"$name: XmlJsStream\n  written: $stream\n  cmd:     $cmd")
-    assert(recursive == cmd, s"$name: Js.writeUtf8Enc\n  written: $recursive\n  cmd:     $cmd")
   }
 
   private def structure(js: Js): String = js match {

@@ -17,8 +17,6 @@ import java.util.Date
 
 trait Js {
 
-  def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit
-
   def cmd: String
 
   def &(js: Js) = (this, js) match {

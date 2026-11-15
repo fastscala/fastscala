@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.js.EncJs
+import com.fastscala.scala_xml.xml.XmlJsStream
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 import com.fastscala.js.JsEscape
@@ -72,7 +73,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
   private def streamed(ns: NodeSeq): (String, Array[Byte], RecordingCallback) = {
     val sink = new CapturingSink
     val cb = new RecordingCallback
-    escaped(ns).writeUtf8Enc(sink, cb)
+    XmlJsStream.writeJs(escaped(ns), sink, cb, endContent = false)
     assert(!sink.lastSeen, "a part of the content: it mustn't end it")
     (sink.asString, sink.bytes.toByteArray, cb)
   }
@@ -111,16 +112,16 @@ class NodeSeqJsSpec extends AnyFlatSpec {
     assert(!cmd.toLowerCase.contains("</script"))
   }
 
-  // ---------- writeUtf8Enc ----------
+  // ---------- written by XmlJsStream ----------
 
   samples.foreach { case (name, ns) =>
-    "writeUtf8Enc" should s"stream exactly what cmd returns ($name)" in {
+    "XmlJsStream.writeJs" should s"stream exactly what cmd returns ($name)" in {
       val (out, _, _) = streamed(ns)
       assert(out == escaped(ns).cmd)
     }
   }
 
-  "writeUtf8Enc" should "complete the callback exactly once, successfully" in {
+  "XmlJsStream.writeJs" should "complete the callback exactly once, successfully" in {
     val (_, _, cb) = streamed(<p>x</p>)
     assert(cb.successes == 1)
     assert(cb.failure.isEmpty)
@@ -146,7 +147,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
       assert(js.cmd == "\"" + JsEscape.escape(ns.toString()) + "\"", name)
       val sink = new CapturingSink
       val cb = new RecordingCallback
-      js.writeUtf8Enc(sink, cb)
+      XmlJsStream.writeJs(js, sink, cb, endContent = false)
       assert(sink.asString == js.cmd, name)
       assert(cb.successes == 1 && cb.failure.isEmpty && !sink.lastSeen, name)
     }
@@ -158,7 +159,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
       assert(js.cmd == ns.toString(), name)
       val sink = new CapturingSink
       val cb = new RecordingCallback
-      js.writeUtf8Enc(sink, cb)
+      XmlJsStream.writeJs(js, sink, cb, endContent = false)
       assert(sink.asString == ns.toString(), name)
       assert(cb.successes == 1 && cb.failure.isEmpty && !sink.lastSeen, name)
     }
@@ -169,7 +170,7 @@ class NodeSeqJsSpec extends AnyFlatSpec {
   "JS.setContents" should "embed the escaped NodeSeq consistently in cmd and the stream" in {
     val js = JS.setContents("target", <p>{"a 'b' \"c\""}</p>)
     val sink = new CapturingSink
-    js.writeUtf8Enc(sink, Callback.NOOP)
+    XmlJsStream.writeJs(js, sink, Callback.NOOP, endContent = false)
     assert(sink.asString == js.cmd)
   }
 }

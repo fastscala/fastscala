@@ -22,11 +22,11 @@ class JsUtilsSpec extends AnyFlatSpec {
 
   private def streamed(js: Js): String = {
     val out = new ByteArrayOutputStream()
-    js.writeUtf8Enc(new Content.Sink {
+    JsWriter.Cmd.writeJs(js, new Content.Sink {
       override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
         val arr = new Array[Byte](bb.remaining()); bb.get(arr); out.write(arr); cb.succeeded()
       }
-    }, Callback.NOOP)
+    }, Callback.NOOP, endContent = false)
     out.toString(UTF_8)
   }
 
@@ -130,7 +130,7 @@ class JsUtilsSpec extends AnyFlatSpec {
     check(J.catchAndLogErrors(a), "try {a()} catch (error) { console.error(error); }")
   }
 
-  it should "keep the Js given as parts (never building their cmd)" in {
+  it should "keep the Js given as parts (their cmd isn't built: XmlJsStream writes them part by part)" in {
     val noCmd = new CompositeJs(Js("a()"), Js("b()")) {
       override def cmd: String = throw new IllegalStateException("cmd was built")
     }
@@ -139,10 +139,7 @@ class JsUtilsSpec extends AnyFlatSpec {
       J.consoleLog(noCmd), J.confirm("ok?", noCmd), J.catchAndLogErrors(noCmd), J.onload(noCmd), J.selectedValues(noCmd),
       noCmd `_!=` noCmd, noCmd `_=` noCmd,
     )
-    built.foreach { js =>
-      assert(parts(js).exists(_ == "a()"))
-      assert(streamed(js).contains("a()b()"))
-    }
+    built.foreach(js => assert(parts(js).exists(_ == "a()")))
   }
 
   "evalIf" should "be the Js, or nothing" in {

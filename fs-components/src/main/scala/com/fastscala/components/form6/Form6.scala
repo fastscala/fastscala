@@ -87,5 +87,9 @@ trait Form6 extends RenderableWithFSContext with ElemWithRandomId {
       rootField.reRender()
   }
 
-  def onSaveClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => onSaveServerSide())
+  /**
+   * The callback is registered in `fsc` (where the button, or whatever saves, is rendered), so it's deleted with it,
+   * e.g. when it's rerendered; it runs in the page's root context (see [[onSaveServerSide]]).
+   */
+  def onSaveClientSide()(implicit fsc: FSContext): Js = fsc.callback(() => onSaveServerSide())
 }

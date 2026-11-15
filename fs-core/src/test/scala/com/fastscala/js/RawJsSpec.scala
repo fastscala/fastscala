@@ -13,11 +13,11 @@ class RawJsSpec extends AnyFlatSpec {
 
   private def streamed(js: Js): String = {
     val out = new ByteArrayOutputStream()
-    js.writeUtf8Enc(new Content.Sink {
+    JsWriter.Cmd.writeJs(js, new Content.Sink {
       override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
         val arr = new Array[Byte](bb.remaining()); bb.get(arr); out.write(arr); cb.succeeded()
       }
-    }, Callback.NOOP)
+    }, Callback.NOOP, endContent = false)
     out.toString(UTF_8)
   }
 
@@ -53,13 +53,12 @@ class RawJsSpec extends AnyFlatSpec {
     check(f, "f('O'Brien & <co>', 42, 1.5, true, null)")
   }
 
-  it should "keep an interpolated Js as a part (written part by part, its cmd never built)" in {
+  it should "keep an interpolated Js as a part (so XmlJsStream writes it part by part, its cmd never built)" in {
     val inner = new CompositeJs(Js("a()"), Js(";"), Js("b()")) {
       override def cmd: String = throw new IllegalStateException("cmd was built")
     }
     val outer = js"if (x) { $inner } else { ${Js("c()")} }"
     assert(parts(outer) == Seq("if (x) { ", "a()", ";", "b()", " } else { ", "c()", " }"))
-    assert(streamed(outer) == "if (x) { a();b() } else { c() }")
   }
 
   it should "handle values next to each other, at the start and at the end, and Js.Void" in {

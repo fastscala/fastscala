@@ -15,8 +15,6 @@ import java.util.Date
 
 class RawJs(str: String) extends Js {
   override def cmd: String = str
-
-  override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = sink.write(false, ByteBuffer.wrap(str.getBytes("UTF-8")), callback)
 }
 
 /**

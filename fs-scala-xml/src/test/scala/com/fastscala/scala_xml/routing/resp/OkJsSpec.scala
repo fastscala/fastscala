@@ -77,12 +77,12 @@ class OkJsSpec extends AnyFlatSpec with BeforeAndAfterAll {
 
   private val cases: Seq[(String, () => Js)] = Seq("plain JavaScript" -> (() => plainJs), "JavaScript with a big page in it" -> (() => htmlJs))
 
-  private val writers: Seq[(String, JsWriter)] = Seq("Js.writeUtf8Enc" -> JsWriter.Recursive, "XmlJsStream" -> XmlJsStream)
+  private val writers: Seq[(String, JsWriter)] = Seq("Js.cmd" -> JsWriter.Cmd, "XmlJsStream" -> XmlJsStream)
 
   for ((writerName, writer) <- writers; (name, js) <- cases) {
-    // XmlJsStream ends the content with its last write: JavaScript that fits in one chunk is a single write, and so
-    // gets a Content-Length; the recursive writer ends it with an extra, empty write, so it's always chunked.
-    val singleWrite = writer == XmlJsStream && js().cmd.getBytes(UTF_8).length <= XmlJsStream.ChunkSize
+    // Both end the content with their last write: JsWriter.Cmd's only one (the whole cmd), so it always gets a
+    // Content-Length; XmlJsStream's is the only one, and so gets a Content-Length, if the JavaScript fits in a chunk.
+    val singleWrite = writer == JsWriter.Cmd || js().cmd.getBytes(UTF_8).length <= XmlJsStream.ChunkSize
 
     s"Ok.js (with $writerName)" should s"send the JavaScript, ${if (singleWrite) "with a Content-Length" else "chunked"} ($name)" in {
       val resp = get(Ok.js(js(), writer))
@@ -100,10 +100,8 @@ class OkJsSpec extends AnyFlatSpec with BeforeAndAfterAll {
     }
   }
 
-  /** Fails however it's written: by itself (writeUtf8Enc), or as its cmd (XmlJsStream). */
+  /** Fails however it's written: its cmd can't be built. */
   private val failingJs: Js = new Js {
-    override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = callback.failed(new IllegalStateException("can't"))
-
     override def cmd: String = throw new IllegalStateException("can't")
   }
 

@@ -26,7 +26,7 @@ import scala.xml.*
  * a thread, and only a few chunks are kept (more only for a single node bigger than that, e.g. a huge text).
  *
  * JavaScript ([[writeJs]]) goes through the same stack as the XML (a level's items can be Nodes or Js), so it's written
- * iteratively, not recursively (as Js.writeUtf8Enc does): a [[CompositeJs]]'s children are a level, and so is a
+ * iteratively (not recursively): a [[CompositeJs]]'s children are a level, and so is a
  * [[NodeSeqJs]]'s XML (written as XML, raw: it's its code), and an [[EncJs]]'s Js: a level that's escaped (see
  * [[Encoder]]), as are those in it (escaped once more for each EncJs they're in); any other Js is written as its `cmd`, as it is (not escaped).
  */
@@ -527,8 +527,8 @@ object XmlJsStream extends JsWriter {
   /**
    * A Js:
    *  - a [[CompositeJs]]'s children are pushed, as a level;
-   *  - a [[NodeSeqJs]]'s nodes are pushed, as a level of XML: its code is the XML as it is (as its writeUtf8Enc writes
-   *    it), in its own scope (TopScope, as its `cmd`, toString, does), whatever XML the Js is in;
+   *  - a [[NodeSeqJs]]'s nodes are pushed, as a level of XML: its code is the XML as it is, in its own scope (TopScope,
+   *    as its `cmd`, toString, does), whatever XML the Js is in;
    *  - an [[EncJs]]'s Js is pushed, as a level that's escaped once more than this one (its quotes, if `inString`,
    *    are written at this level: so they're escaped by the EncJs's this one is in, if any, as its `cmd` does);
    *  - any other is written as its `cmd` (for now: specific kinds can be written without building it).

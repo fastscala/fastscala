@@ -344,7 +344,7 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
   }
 
   /** How responses' JavaScript is written: each Js writing itself (fs-scala-xml's FSSystem uses its XmlJsStream). */
-  def jsWriter: JsWriter = JsWriter.Recursive
+  def jsWriter: JsWriter = JsWriter.Cmd
 
   def respondWithJs(js: Js): Response = Ok.js(js, jsWriter)
 

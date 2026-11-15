@@ -133,7 +133,7 @@ class FSContext(
 
   def delete(): Unit = {
     //    logger.trace(s"Delete context $fullPath")
-//    println(Thread.currentThread().getStackTrace.mkString("\n")+"\n\n\n")
+    //    println(Thread.currentThread().getStackTrace.mkString("\n")+"\n\n\n")
     val now = System.currentTimeMillis()
     val toRemove = all.map(fsc => {
       fsc.deletedAt = Some(now)
@@ -143,7 +143,7 @@ class FSContext(
           case (id, fsFunc) => id -> fsFunc.fullPath
         })
       }
-      (key, functionsGenerated, functionsFileUploadGenerated, functionsFileDownloadGenerated)
+      (fsc.key, fsc.functionsGenerated, fsc.functionsFileUploadGenerated, fsc.functionsFileDownloadGenerated)
     }).toSeq
     val keysToRemove = toRemove.flatMap(_._1)
     val functionsGeneratedToRemove = toRemove.flatMap(_._2)

@@ -20,27 +20,6 @@ import java.util.Date
 class CompositeJs(val children: Js*) extends Js {
 
   override def cmd: String = children.map(_.cmd).mkString
-
-  /**
-   * Writes the children one at a time: each one's write starts only once the previous one has completed, and `callback`
-   * completes exactly once — after the last write, or on the first failure. Every child's `writeUtf8Enc` must complete
-   * the callback it is given exactly once.
-   */
-  override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = {
-    val parts: Iterator[Js] = children.iterator
-
-    new IteratingCallback() {
-      override def process(): IteratingCallback.Action =
-        if (parts.hasNext) {
-          parts.next().writeUtf8Enc(sink, this) // calls succeeded()/failed() on `this`, which re-enters process()
-          IteratingCallback.Action.SCHEDULED
-        } else IteratingCallback.Action.SUCCEEDED
-
-      override def onCompleteSuccess(): Unit = callback.succeeded()
-
-      override def onCompleteFailure(cause: Throwable): Unit = callback.failed(cause)
-    }.iterate()
-  }
 }
 
 object CompositeJs {

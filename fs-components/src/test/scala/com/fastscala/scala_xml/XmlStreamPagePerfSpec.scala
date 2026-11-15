@@ -25,8 +25,9 @@ import com.fastscala.components.form7.fields.text.{F7StringField, F7StringTextar
 import com.fastscala.components.form7.{DefaultForm7, F7Field}
 import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.*
-import com.fastscala.js.Js
+import com.fastscala.js.{Js, JsWriter}
 import com.fastscala.scala_xml.js.JS
+import com.fastscala.scala_xml.rerenderers.Rerenderer
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions, PerfFS}
@@ -84,10 +85,10 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
   /** The JavaScript a rerender of the whole page sends: replacing the `<html>` with `page` (escaped in a string). */
   private def replaceJs(page: Elem): Js = JS.replace(PageId, page)
 
-  /** Writes `js` (as a response would: Js.writeUtf8Enc) into `sink`, checking it completed, successfully. */
+  /** Writes `js` as its cmd (JsWriter.Cmd: built, as one String) into `sink`, checking it completed, successfully. */
   private def writeJs(js: Js, sink: Content.Sink): Unit = {
     var outcome: Option[Throwable] = null
-    js.writeUtf8Enc(sink, Callback.from(() => outcome = None, (t: Throwable) => outcome = Some(t)))
+    JsWriter.Cmd.writeJs(js, sink, Callback.from(() => outcome = None, (t: Throwable) => outcome = Some(t)), endContent = false)
     assert(outcome != null, "the Js's write wasn't completed")
     outcome.foreach(t => throw t)
   }
@@ -105,7 +106,7 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     count
   }
 
-  /** Writes `js`, discarding the bytes: returns how many were written. */
+  /** Writes `js` as its cmd, discarding the bytes: returns how many were written. */
   private def countJs(js: Js): Long = {
     var count = 0L
     writeJs(js, new Content.Sink {
@@ -149,15 +150,14 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     val same = normalized(out) == normalized(small.html.toString)
     assert(same, "XmlJsStream output differs from toString (attributes in any order)")
 
-    // JS.replace of the page (a rerender's response): streamed (written by XmlJsStream, escaped by EncJs as it's written),
-    // as cmd (which serializes with toString, so the attributes' order may differ: the lengths are compared).
+    // JS.replace of the page (a rerender's response): streamed (written by XmlJsStream, escaped as it's written), as
+    // cmd (which serializes with toString, so the attributes' order may differ: the lengths are compared).
     {
       val js = replaceJs(small.html)
       val streamed = {
         val bytes = new ByteArrayOutputStream()
-        writeJs(js, new Content.Sink {
+        XmlJsStream.writeJs(js, new Content.Sink {
           override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
-            assert(!last, "a Js mustn't end the response")
             while (bb.hasRemaining) bytes.write(bb.get())
             cb.succeeded()
           }
@@ -169,18 +169,6 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       assert(streamed.startsWith(s"""(document.getElementById("${JS.escapeStr(PageId)}") ? """), streamed.take(200))
       assert(streamed.endsWith(s"""console.error("Element with id ${JS.escapeStr(PageId)} not found"));"""), streamed.takeRight(200))
       assert(!streamed.contains("<html") && streamed.contains(JS.escapeStr("<html id=\"main-content\">")), "the page, escaped")
-      // And with XmlJsStream (escaping as it's written, in one pass): the same.
-      val viaStream = {
-        val bytes = new ByteArrayOutputStream()
-        XmlJsStream.writeJs(js, new Content.Sink {
-          override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
-            while (bb.hasRemaining) bytes.write(bb.get())
-            cb.succeeded()
-          }
-        })
-        bytes.toString(UTF_8)
-      }
-      assert(viaStream == streamed, "XmlJsStream's JS.replace differs from Js.writeUtf8Enc's")
     }
 
     // The start tags, as (label, attributes); the attributes' order isn't fixed, so they're compared as a Map.
@@ -254,9 +242,9 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
       System.nanoTime() - t0
     }
 
-    // JS.replace("main-content", page): building the Js and writing it all (the page written by XmlJsStream and escaped
-    // as it's written by EncJs), as a rerender of the whole page does. On fresh pages (as a rerender: the first write
-    // computes the class transforms), and on the already-written one.
+    // JS.replace("main-content", page): building the Js and writing it all, as a rerender of the whole page does: as its
+    // cmd (built, as one String: JsWriter.Cmd), and with XmlJsStream (the page written and escaped as it goes). On fresh
+    // pages (as a rerender: the first write computes the class transforms), and on the already-written one.
     (1 to WarmupIterations).foreach(_ => countJs(replaceJs(build(Sections).html)))
     var jsBytes = 0L
     val replaceFirstTimes = (1 to MeasuredIterations).map { _ =>
@@ -288,10 +276,72 @@ class XmlStreamPagePerfSpec extends AnyFlatSpec with AsyncProfAssertions {
     info(stats("Build (page, callbacks, modals)", buildTimes.result()))
     info(stats("Write (first, XmlJsStream)       ", writeTimes.result()))
     info(stats("Write again (XmlJsStream)        ", rewriteTimes))
-    info(stats("JS.replace (first)             ", replaceFirstTimes))
-    info(stats("JS.replace (again)             ", replaceAgainTimes))
+    info(stats("JS.replace, cmd (first)        ", replaceFirstTimes))
+    info(stats("JS.replace, cmd (again)        ", replaceAgainTimes))
     info(stats("JS.replace, XmlJsStream (first)", streamFirstTimes))
     info(stats("JS.replace, XmlJsStream (again)", streamAgainTimes))
+  }
+
+  it should "be rerendered: the whole page in a Rerenderer, its rerender()'s Js written by XmlJsStream" in {
+    def writtenJs(js: Js): String = {
+      val bytes = new ByteArrayOutputStream()
+      XmlJsStream.writeJs(js, new Content.Sink {
+        override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
+          while (bb.hasRemaining) bytes.write(bb.get())
+          cb.succeeded()
+        }
+      })
+      bytes.toString(UTF_8)
+    }
+
+    // On a small page: what's written is the rerender's cmd (but for the attributes' order: the lengths are compared),
+    // the page escaped in it; and rerendering doesn't add callbacks (the Rerenderer's context, and those in it, are
+    // deleted: their callbacks with them).
+    {
+      val small = buildInRerenderer(SanitySections)
+      val callbacks = small.page.callbacks.size
+      val plainCallbacks = build(SanitySections).page.callbacks.size
+      assert(callbacks == plainCallbacks, s"in a Rerenderer: $callbacks callbacks; not in one: $plainCallbacks")
+      val js = small.rerenderer.rerender()(using small.page)
+      val (out, cmd) = (writtenJs(js), js.cmd)
+      assert(out.length == cmd.length && out.getBytes(UTF_8).length == cmd.getBytes(UTF_8).length, (out.length, cmd.length))
+      assert(out.startsWith(s"""(document.getElementById("${JS.escapeStr(PageId)}") ? """), out.take(200))
+      assert(!out.contains("<html") && out.contains(JS.escapeStr("<html id=\"main-content\">")), "the page, escaped")
+      assert(count(out, JS.escapeStr(">Open modal ")) == SanitySections, "a button that opens its modal, for each section")
+      val afterOne = small.page.callbacks.size
+      small.rerenderer.rerender()(using small.page)
+      val afterTwo = small.page.callbacks.size
+      assert(afterOne == callbacks && afterTwo == callbacks, s"callbacks: $callbacks rendered, $afterOne after a rerender, $afterTwo after another")
+    }
+
+    // Measured: rerender() (building the page again, in the Rerenderer's context, and the Js that replaces it: with its
+    // scripts extracted), and writing that Js with XmlJsStream (the page written and escaped as it goes; each rerender's
+    // page is new, so writing it computes the class transforms). Each on a page just built and rendered once (not
+    // measured), so every rerender is the first one of its page.
+    (1 to WarmupIterations).foreach { _ =>
+      val built = buildInRerenderer(Sections)
+      countJsStream(built.rerenderer.rerender()(using built.page))
+    }
+    val rerenderTimes = Seq.newBuilder[Long]
+    val writeTimes = Seq.newBuilder[Long]
+    var jsBytes = 0L
+    var built: BuiltInRerenderer = null
+    (1 to MeasuredIterations).foreach { _ =>
+      built = buildInRerenderer(Sections)
+      val t0 = System.nanoTime()
+      val js = built.rerenderer.rerender()(using built.page)
+      val t1 = System.nanoTime()
+      jsBytes = countJsStream(js)
+      val t2 = System.nanoTime()
+      rerenderTimes += t1 - t0
+      writeTimes += t2 - t1
+    }
+    val (rerenders, writes) = (rerenderTimes.result(), writeTimes.result())
+
+    info(s"Page in a Rerenderer: $Sections sections; rerender()'s Js: $jsBytes bytes")
+    info(stats("Rerenderer.rerender() (builds the Js)", rerenders))
+    info(stats("Write of its Js (XmlJsStream)        ", writes))
+    info(stats("Both                                 ", rerenders.zip(writes).map(_ + _)))
   }
 
   it should "profile building it with async-profiler" in {
@@ -386,6 +436,9 @@ object XmlStreamPagePerfSpec {
 
   final class Built(val page: FSPage, val html: Elem)
 
+  /** A page whose whole XML is what `rerenderer` renders (rendered once, as when the page is served). */
+  final class BuiltInRerenderer(val page: FSPage, val rerenderer: Rerenderer)
+
   /** The state the section's fields edit. */
   final class SectionState(s: Int) {
     var name: String = s"Section $s"
@@ -417,8 +470,23 @@ object XmlStreamPagePerfSpec {
 
   def build(sections: Int): Built = {
     val page = PerfFS.newPage()
-    implicit val fsc: FSContext = page.rootFSContext
+    new Built(page, pageHtml(sections)(using page.rootFSContext))
+  }
 
+  /**
+   * The whole page in a [[Rerenderer]] (so its callbacks, modals, forms and tables are in the Rerenderer's context),
+   * rendered once: `rerenderer.rerender()` then builds the page again (in that context, cleared), as the JavaScript that
+   * replaces the `<html>` with it.
+   */
+  def buildInRerenderer(sections: Int): BuiltInRerenderer = {
+    val page = PerfFS.newPage()
+    val rerenderer = new Rerenderer(_ => fsc => pageHtml(sections)(using fsc))
+    rerenderer.render()(using page.rootFSContext)
+    new BuiltInRerenderer(page, rerenderer)
+  }
+
+  /** The page's XML, built in `fsc` (its callbacks, and the contexts of what's in it, are registered there). */
+  private def pageHtml(sections: Int)(implicit fsc: FSContext): Elem = {
     // A unique id for the literal elements, from a counter.
     var lastId = 0
 
@@ -560,6 +628,6 @@ object XmlStreamPagePerfSpec {
           }</div>.withId(nextId()).container.py_4
         }</body>
       </html>
-    new Built(page, html)
+    html
   }
 }

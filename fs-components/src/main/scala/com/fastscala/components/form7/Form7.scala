@@ -96,7 +96,11 @@ trait Form7 extends RenderableWithFSContext with ElemWithRandomId with F7FormWit
 
   def postSubmitForm()(implicit fsc: FSContext): Js = JS.void
 
-  def submitFormClientSide()(implicit fsc: FSContext): Js = fsc.page.rootFSContext.callback(() => submitFormServerSide())
+  /**
+   * The callback is registered in `fsc` (where the button, or whatever submits, is rendered), so it's deleted with it,
+   * e.g. when it's rerendered; it runs in the page's root context (see [[submitFormServerSide]]).
+   */
+  def submitFormClientSide()(implicit fsc: FSContext): Js = fsc.callback(() => submitFormServerSide())
 
   def onSubmitIgnoredFormAlreadySaved()(implicit fsc: FSContext): Js = Js.Void
 

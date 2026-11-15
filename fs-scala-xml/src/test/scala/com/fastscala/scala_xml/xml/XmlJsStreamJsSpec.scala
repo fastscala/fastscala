@@ -77,7 +77,7 @@ class XmlJsStreamJsSpec extends AnyFlatSpec {
     check(js"el.innerHTML = ${new EncJs(new NodeSeqJs(html), inString = true)};")
   }
 
-  it should "write a NodeSeqJs's XML, as XML, raw (as its writeUtf8Enc does), wherever it is" in {
+  it should "write a NodeSeqJs's XML, as XML, raw, wherever it is" in {
     val html = <div id="x" class="c"><p title={"t \"q\" & <x>"}>{"Hello & <bye> é € 😀"}</p><br/><!-- c --></div>
     check(new NodeSeqJs(html))
     check(new NodeSeqJs(NodeSeq.Empty))
@@ -86,15 +86,13 @@ class XmlJsStreamJsSpec extends AnyFlatSpec {
     // Its own namespaces (TopScope), not the ones of the XML it's in.
     val ns = <svg:g xmlns:svg="http://www.w3.org/2000/svg"><svg:rect/></svg:g>
     check(new NodeSeqJs(ns))
-    // The same as its own writeUtf8Enc (which writes the XML with writeSeq).
-    val viaItself = {
+    // The same as the XML written by itself (writeSeq).
+    val viaWriteSeq = {
       val sink = new RecordingSink
-      var done = false
-      new NodeSeqJs(html).writeUtf8Enc(sink, Callback.from(() => done = true, (t: Throwable) => rethrow(t)))
-      assert(done)
+      XmlJsStream.writeSeq(html, sink)
       sink.bytes.toString(UTF_8)
     }
-    assert(written(Js(a, new NodeSeqJs(html), b)) == a.cmd + viaItself + b.cmd)
+    assert(written(Js(a, new NodeSeqJs(html), b)) == a.cmd + viaWriteSeq + b.cmd)
   }
 
   it should "write an EncJs with a NodeSeqJs in it escaped (as its cmd), not raw" in {
@@ -153,8 +151,6 @@ class XmlJsStreamJsSpec extends AnyFlatSpec {
     // Many parts, each produced (its cmd built) only when it's written: so how far it got is visible.
     val parts = (1 to 50_000).map(i => new Js {
       override def cmd: String = { produced.incrementAndGet(); s"part($i);" }
-
-      override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = ???
     })
     var pending: Callback = null
     val bytes = new ByteArrayOutputStream()
@@ -192,8 +188,6 @@ class XmlJsStreamJsSpec extends AnyFlatSpec {
     assert(outcome(Js(a, b), failingSink).exists(_.getMessage == "gone"))
     val throwing = new Js {
       override def cmd: String = throw new IllegalStateException("no cmd")
-
-      override def writeUtf8Enc(sink: Content.Sink, callback: Callback): Unit = ???
     }
     assert(outcome(Js(a, throwing, b), new RecordingSink).exists(_.getMessage == "no cmd"))
   }

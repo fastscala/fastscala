@@ -39,7 +39,7 @@ object XmlJsStream extends JsWriter {
 
   val ChunkSize = 8192
 
-  // The special values of Level.index (a value >= 0 is the cursor into an indexed seq):
+  // The special values of Level.index (a value >= 0 is the cursor into `items`, an indexed seq's elements):
   /** The level's nodes are a non-empty `::` (List), read head by head: `nodes` holds the remaining list. */
   private final val ListCursor = -1
   /** The level's nodes are read with an Iterator (any other kind of seq): `nodes` holds the iterator. */
@@ -109,7 +109,16 @@ object XmlJsStream extends JsWriter {
    * Mutable, and reused: a stack slot's Level is created once, and set again by each push that lands on it.
    */
   private[xml] final class Level {
+    /** The list, iterator or single node read (see the cursors above); not used when reading `items`. */
     var nodes: AnyRef = null
+    /**
+     * An indexed seq's elements, read from `index` until `length`: an `ArraySeq.ofRef`'s own array, or the others' copied
+     * into `own`. So each element is an array load, not a call through the IndexedSeq interface (which is megamorphic:
+     * Vector, ArraySeq, ArrayBuffer... all reach here).
+     */
+    var items: Array[AnyRef] = EmptyItems
+    /** This slot's buffer for copies of indexed seqs (reused by every push that lands on the slot; grown as needed). */
+    var own: Array[AnyRef] = null
     var index = 0
     var length = 0
     var scope: NamespaceBinding = null
@@ -119,11 +128,14 @@ object XmlJsStream extends JsWriter {
     var collector: ArrayBuffer[Js] = null
 
     def setEmpty(): Unit = {
-      nodes = IndexedSeq.empty
+      nodes = null
+      items = EmptyItems
       index = 0
       length = 0
     }
   }
+
+  private val EmptyItems = new Array[AnyRef](0)
 
   private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean, val endsContent: Boolean)
 
@@ -332,14 +344,36 @@ object XmlJsStream extends JsWriter {
       setEscaping(nextMarkup, nextText)
     }
 
+    /** Takes the level just pushed off the stack, as if it had never been pushed (nothing was written for it). */
+    def dropLevel(): Unit = {
+      val level = levels(depth - 1)
+      level.nodes = null
+      level.items = EmptyItems
+      level.scope = null
+      level.closing = null
+      level.collector = null
+      depth -= 1
+    }
+
     @tailrec private def setNodes(level: Level, nodes: collection.Seq[AnyRef]): Unit = nodes match {
       case node: Node =>
         level.nodes = node
         level.index = SingleNodeCursor
-      case iseq: collection.IndexedSeq[?] =>
-        level.nodes = iseq
+      case arr: ArraySeq.ofRef[?] =>
+        level.items = arr.unsafeArray.asInstanceOf[Array[AnyRef]]
         level.index = 0
-        level.length = iseq.length
+        level.length = arr.length
+      case iseq: collection.IndexedSeq[?] =>
+        val len = iseq.length
+        var own = level.own
+        if ((own eq null) || own.length < len) {
+          own = new Array[AnyRef](math.max(len, 16))
+          level.own = own
+        }
+        iseq.asInstanceOf[collection.IndexedSeq[AnyRef]].copyToArray(own, 0, len)
+        level.items = own
+        level.index = 0
+        level.length = len
       case ns: NodeSeq => setNodes(level, ns.theSeq)
       case cons: ::[AnyRef] =>
         level.nodes = cons
@@ -371,7 +405,7 @@ object XmlJsStream extends JsWriter {
       if (idx >= 0) {
         if (idx < level.length) {
           level.index = idx + 1
-          nextNode = level.nodes.asInstanceOf[collection.IndexedSeq[AnyRef]](idx)
+          nextNode = level.items(idx)
         }
       } else if (idx == ListCursor) {
         val cons = level.nodes.asInstanceOf[::[AnyRef]]
@@ -399,6 +433,7 @@ object XmlJsStream extends JsWriter {
   @inline private def popLevel(level: Level, out: Out, d: Int): Unit = {
     val closing = level.closing
     level.nodes = null
+    level.items = EmptyItems
     level.scope = null
     level.closing = null
     level.collector = null
@@ -562,37 +597,62 @@ object XmlJsStream extends JsWriter {
 
     val children = e.child
     children match {
-      case t: Text if t.getClass eq classOf[Text] =>
-        out.append('>')
-        out.escape(t.data)
-        writeClosingTag(e, out)
-      case iseq: collection.IndexedSeq[Node] if iseq.length == 1 && (iseq(0).getClass eq classOf[Text]) =>
-        out.append('>')
-        out.escape(iseq(0).asInstanceOf[Text].data)
-        writeClosingTag(e, out)
-      case n: Node if n.getClass eq classOf[Text] =>
-        out.append('>')
-        out.escape(n.asInstanceOf[Text].data)
-        writeClosingTag(e, out)
-      case n: Node if n.isInstanceOf[Atom[?]] =>
-        out.append('>')
-        out.escape(n.asInstanceOf[Atom[?]].data.toString)
-        writeClosingTag(e, out)
-      case _ if children.isEmpty =>
-        if (e.minimizeEmpty) {
-          out.append2('/', '>')
+      case n: Node => // a Node that's its own child seq
+        if (n.getClass eq classOf[Text]) {
+          out.append('>')
+          out.escape(n.asInstanceOf[Text].data)
+          writeClosingTag(e, out)
+        } else if (n.isInstanceOf[Atom[?]]) {
+          out.append('>')
+          out.escape(n.asInstanceOf[Atom[?]].data.toString)
+          writeClosingTag(e, out)
         } else {
           out.append('>')
-          writeClosingTag(e, out)
+          out.pushSeq(children, e.scope, e)
         }
       case _ =>
-        out.append('>')
-        if (spacedAtoms(children)) {
-          writeSpacedAtoms(children, e.scope, out)
-          writeClosingTag(e, out)
-        } else out.pushSeq(children, e.scope, e)
+        // Pushed first: then what's in it is read from the level's array (once), not through the Seq's interface.
+        out.pushSeq(children, e.scope, e)
+        val level = out.levels(out.depth - 1)
+        if (level.index >= 0) {
+          val len = level.length
+          val items = level.items
+          if (len == 0) {
+            out.dropLevel()
+            writeEmpty(e, out)
+          } else if (len == 1 && (items(0).getClass eq classOf[Text])) {
+            out.dropLevel()
+            out.append('>')
+            out.escape(items(0).asInstanceOf[Text].data)
+            writeClosingTag(e, out)
+          } else if (len > 1 && spacedAtoms(items, len)) {
+            out.dropLevel()
+            out.append('>')
+            writeSpacedAtoms(items, len, e.scope, out)
+            writeClosingTag(e, out)
+          } else out.append('>')
+        } else {
+          // A List or another kind of seq: rare (scala-xml's and fs' children are indexed).
+          out.dropLevel()
+          if (children.isEmpty) writeEmpty(e, out)
+          else {
+            out.append('>')
+            if (spacedAtoms(children)) {
+              writeSpacedAtoms(children, e.scope, out)
+              writeClosingTag(e, out)
+            } else out.pushSeq(children, e.scope, e)
+          }
+        }
     }
   }
+
+  private def writeEmpty(e: Elem, out: Out): Unit =
+    if (e.minimizeEmpty) {
+      out.append2('/', '>')
+    } else {
+      out.append('>')
+      writeClosingTag(e, out)
+    }
 
   @tailrec private def appendScope(scope: NamespaceBinding, stop: NamespaceBinding, out: Out): Unit = {
     if ((scope ne null) && (scope ne TopScope) && (scope ne stop)) {
@@ -626,7 +686,25 @@ object XmlJsStream extends JsWriter {
       isAtomNotText(children.head) && children.lengthCompare(1) > 0 && children.forall(isAtomNotText)
   }
 
-  private inline def isAtomNotText(n: Node): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
+  private def spacedAtoms(items: Array[AnyRef], len: Int): Boolean = {
+    var i = 0
+    while (i < len) {
+      if (!isAtomNotText(items(i))) return false
+      i += 1
+    }
+    true
+  }
+
+  @noinline private def writeSpacedAtoms(items: Array[AnyRef], len: Int, scope: NamespaceBinding, out: Out): Unit = {
+    var i = 0
+    while (i < len) {
+      if (i > 0) out.append(' ')
+      writeAtomOrRare(items(i).asInstanceOf[Node], scope, out)
+      i += 1
+    }
+  }
+
+  private inline def isAtomNotText(n: AnyRef): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
 
   @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Out): Unit =
     children match {

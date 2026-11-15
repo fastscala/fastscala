@@ -5,7 +5,6 @@ import com.fastscala.scala_xml.js.{JS, JsWithScriptDetection, NodeSeqJs}
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
-import java.nio.ByteBuffer
 import java.util.Arrays
 import scala.annotation.tailrec
 import scala.collection.immutable.{ArraySeq, IndexedSeq}
@@ -21,10 +20,11 @@ import scala.xml.*
  * Most of a page is ASCII (Java stores it as Latin-1 bytes): ASCII runs are copied as they are, in bulk; anything else
  * is encoded to UTF-8 char by char.
  *
- * Writing doesn't block (with a callback: see [[writeSeq]]): one write to the sink at a time (as Jetty requires), while
- * serializing goes on into the next chunk; once [[MaxQueuedChunks]] chunks are waiting for their turn, serializing
- * pauses (between nodes), and the write that drains the queue resumes it, on its thread. So a slow client doesn't hold
- * a thread, and only a few chunks are kept (more only for a single node bigger than that, e.g. a huge text).
+ * Writing doesn't block (with a callback: see [[writeSeq]]), as [[ChunkedSinkWriter]] does it: one write to the sink at
+ * a time (as Jetty requires), while serializing goes on into the next chunk; once [[MaxQueuedChunks]] chunks are waiting
+ * for their turn, serializing pauses (between nodes), and the write that drains the queue resumes it, on its thread. So
+ * a slow client doesn't hold a thread, and only a few chunks are kept (more only for a single node bigger than that,
+ * e.g. a huge text).
  *
  * JavaScript ([[writeJs]]) goes through the same stack as the XML (a level's items can be Nodes or Js), so it's written
  * iteratively (not recursively): a [[CompositeJs]]'s children are a level, and so is a
@@ -37,7 +37,8 @@ import scala.xml.*
  */
 object XmlJsStream extends JsWriter {
 
-  val ChunkSize = 8192
+  /** The size of each write but the last (see [[ChunkedSinkWriter]]). */
+  val ChunkSize: Int = ChunkedSinkWriter.ChunkSize
 
   // The special values of Level.index (a value >= 0 is the cursor into `items`, an indexed seq's elements):
   /** The level's nodes are a non-empty `::` (List), read head by head: `nodes` holds the remaining list. */
@@ -47,19 +48,8 @@ object XmlJsStream extends JsWriter {
   /** The level is a single node (writeNode's root, or a Node used as its own child seq): `nodes` holds the node. */
   private final val SingleNodeCursor = -3
 
-  /** Serializing pauses once this many chunks are waiting to be written (besides the one being written)... */
-  val MaxQueuedChunks = 3
-
-  /** ... and resumes once they're down to this many. */
-  private final val ResumeAtQueuedChunks = 1
-
-  /**
-   * At most this many written chunks' buffers are kept for reuse: as many as can be in use at once otherwise (the
-   * queued ones and the one being written). More are only allocated while a single node bigger than that is written
-   * (serializing doesn't pause inside a node); once written, they're dropped (left to the GC), instead of being kept
-   * until the end of the response.
-   */
-  private final val MaxFreeBuffers = MaxQueuedChunks + 1
+  /** Serializing pauses (between nodes) once this many chunks are waiting to be written (see [[ChunkedSinkWriter]]). */
+  val MaxQueuedChunks: Int = ChunkedSinkWriter.MaxQueued
 
   def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String, callback: Callback): Unit =
     writeSeq(ns, sink, prefix, callback, endContent = true)
@@ -137,21 +127,12 @@ object XmlJsStream extends JsWriter {
 
   private val EmptyItems = new Array[AnyRef](0)
 
-  private final class Chunk(val bytes: Array[Byte], val length: Int, val last: Boolean, val endsContent: Boolean)
+  /**
+   * Serializes into the buffers of [[ChunkedSinkWriter]] (which writes them to the sink): the stack of levels being
+   * read, and the escaping and script collector in force. Its producer is [[writeAll]], which pauses between nodes.
+   */
+  private[xml] final class Out(protected val sink: Content.Sink, protected val callback: Callback, protected val endContent: Boolean) extends ChunkedSinkWriter {
 
-  private[xml] final class Out(sink: Content.Sink, callback: Callback, endContent: Boolean) extends EncoderOutput {
-    var buf = new Array[Byte](ChunkSize)
-    var pos = 0
-
-    private val lock = new Object
-    private val queued = new java.util.ArrayDeque[Chunk]()
-    private val freeBuffers = new java.util.ArrayDeque[Array[Byte]]()
-    private var writing = false
-    private var paused = false
-    private var failure: Throwable = null
-    private var completed = false
-
-    var checkPause = false
     private var _scratch: StringBuilder = null
 
     def scratch: StringBuilder = {
@@ -171,103 +152,7 @@ object XmlJsStream extends JsWriter {
       textEsc = text
     }
 
-    def drive(): Unit =
-      try {
-        if (writeAll(this)) finish()
-      } catch {
-        case t: Throwable => fail(t)
-      }
-
-    def flush(): Unit = if (pos > 0) queue(last = false)
-    def finish(): Unit = queue(last = true)
-
-    private def queue(last: Boolean): Unit = {
-      val chunk = new Chunk(buf, pos, last, endsContent = last && endContent)
-      lock.synchronized {
-        queued.add(chunk)
-        if (!last) {
-          val free = freeBuffers.poll()
-          buf = if (free ne null) free else new Array[Byte](ChunkSize)
-        }
-        if (queued.size >= MaxQueuedChunks || (failure ne null)) checkPause = true
-      }
-      pos = 0
-      writeNext()
-    }
-
-    def shouldPause(): Boolean = lock.synchronized {
-      checkPause = false
-      if (failure ne null) true
-      else if (queued.size >= MaxQueuedChunks) {
-        paused = true
-        true
-      } else false
-    }
-
-    private def writeNext(): Unit = {
-      var next: Chunk = null
-      lock.synchronized {
-        if (!writing && (failure eq null) && !queued.isEmpty) {
-          writing = true
-          next = queued.poll()
-        }
-      }
-      if (next ne null) {
-        val chunk = next
-        sink.write(chunk.endsContent, ByteBuffer.wrap(chunk.bytes, 0, chunk.length), new Callback {
-          override def succeeded(): Unit = written(chunk, null)
-          override def failed(t: Throwable): Unit = written(chunk, t)
-        })
-      }
-    }
-
-    private def written(chunk: Chunk, t: Throwable): Unit = {
-      var resume = false
-      lock.synchronized {
-        writing = false
-        if (chunk.bytes.length == ChunkSize && freeBuffers.size < MaxFreeBuffers) freeBuffers.add(chunk.bytes)
-        if ((t ne null) && (failure eq null)) failure = t
-        if ((failure eq null) && paused && queued.size <= ResumeAtQueuedChunks) {
-          paused = false
-          resume = true
-        }
-      }
-      if (t ne null) fail(t)
-      else if (chunk.last) complete(null)
-      else {
-        // The next write starts here, on the thread that completed this one: if the sink throws (instead of failing
-        // the write's callback), it's our failure, not that thread's (the callback would never be completed).
-        val started =
-          try {
-            writeNext()
-            true
-          } catch {
-            case t: Throwable =>
-              fail(t)
-              false
-          }
-        if (started && resume) drive()
-      }
-    }
-
-    def fail(t: Throwable): Unit = {
-      lock.synchronized {
-        if (failure eq null) failure = t
-        checkPause = true
-      }
-      complete(t)
-    }
-
-    private def complete(t: Throwable): Unit = {
-      val first = lock.synchronized {
-        val first = !completed
-        completed = true
-        first
-      }
-      if (first) {
-        if (t eq null) callback.succeeded() else callback.failed(t)
-      }
-    }
+    override protected def produce(): Boolean = writeAll(this)
 
     inline def append(c: Char): Unit = Encoder.writeAscii(c, this, markupEsc)
     inline def append2(c1: Char, c2: Char): Unit = Encoder.writeAscii2(c1, c2, this, markupEsc)

@@ -21,9 +21,20 @@ trait RowWithLongId[R <: RowWithLongId[R] : ClassTag] extends Row[R] with RowWit
 
   def isPersisted_? = id != null
 
-  def reloadOpt(): Option[R] = table.getForIdOpt(id)
+  /**
+   * Refreshes this row from the database, in place (as RowWithUUID's does). Returns None if it doesn't exist in the DB
+   * (or was never saved): then this row isn't changed.
+   */
+  def reloadOpt(): Option[R] = keyOpt.flatMap(id => table.getForIdOpt(id).map(inDB => {
+    copyFrom(inDB)
+    this
+  }))
 
-  def reload(): R = reloadOpt().get
+  /** Refreshes this row from the database, in place (as RowWithUUID's does); a row never saved is left as it is. */
+  def reload(): R = {
+    if (isPersisted_?) copyFrom(table.getForIdOpt(id).get)
+    this
+  }
 
   def save(): R = {
     if (isPersisted_?) {

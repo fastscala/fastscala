@@ -42,6 +42,19 @@ class PrimaryKeyAsLongSeqBackedSpec extends AnyFlatSpec with DBConn {
       assert(PrimaryKeyAsLongSeqBackedSpecTable.selectAll().size == 2)
     })
   }
+  "reload" should "refresh the row in place" in {
+    val row = PrimaryKeyAsLongSeqBackedSpecTable.selectAll().head
+    val other = PrimaryKeyAsLongSeqBackedSpecTable.getForIdOpt(row.id).get
+    other.myInt = 321
+    other.save()
+    assert(row.myInt == 123)
+    assert(row.reload() eq row)
+    assert(row.myInt == 321)
+    other.myInt = 5
+    other.save()
+    assert(row.reloadOpt().exists(_ eq row) && row.myInt == 5)
+    assert(new PrimaryKeyAsLongSeqBackedSpecTable().reloadOpt().isEmpty)
+  }
   "Delete table" should "succeed" in {
     DB.localTx({ implicit session =>
       PrimaryKeyAsLongSeqBackedSpecTable.__dropTableSQL.foreach(_.execute())

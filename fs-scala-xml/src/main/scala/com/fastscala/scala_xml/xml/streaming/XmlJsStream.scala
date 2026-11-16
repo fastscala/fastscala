@@ -87,12 +87,6 @@ object XmlJsStream extends JsWriter {
     } finally callback.close()
   }
 
-  private inline def writeClosingTag(closing: Elem, out: Writer): Unit = {
-    out.append2('<', '/')
-    appendName(closing.prefix, closing.label, out)
-    out.append('>')
-  }
-
   /** Main dispatch loop split via method inlining to keep code size small for HotSpot C2. */
   def writeAll(out: Out): Boolean = {
     while (out.depth > 0) {
@@ -149,7 +143,7 @@ object XmlJsStream extends JsWriter {
     }
     closing match {
       case null =>
-      case e: Elem => writeClosingTag(e, out)
+      case e: Elem => WriterHelpers.writeClosingTag(e, out)
       case _ => out.append('"')
     }
   }
@@ -168,18 +162,18 @@ object XmlJsStream extends JsWriter {
       case collected: CollectedScripts => writeCollectedScripts(collected, levelScope, out)
       case attr: JsAttr =>
         if (needsLevel(attr.js)) {
-          appendAttrStart(attr.key, out)
+          WriterHelpers.appendAttrStart(attr.key, out)
           out.pushAttrValue(attr.js, levelScope)
-        } else appendJsAttribute(attr.key, attr.js, out)
-      case attr: StringAttr => appendAttribute(null, attr.key, attr.value, out)
+        } else WriterHelpers.appendJsAttribute(attr.key, attr.js, out)
+      case attr: StringAttr => WriterHelpers.appendAttribute(null, attr.key, attr.value, out)
       case end: StartTagEnd => endStartTag(end.elem, levelScope, out)
-      case other: Node => writeRareNode(other, levelScope, out)
+      case other: Node => WriterHelpers.writeRareNode(other, levelScope, out)
     }
   }
 
   @inline private def writeElemInline(e: Elem, levelScope: NamespaceBinding, out: Out): Unit = {
     out.append('<')
-    appendName(e.prefix, e.label, out)
+    WriterHelpers.appendName(e.prefix, e.label, out)
     e match {
       case fast: ElemOptimized =>
         var cur = fast.attrs
@@ -187,19 +181,19 @@ object XmlJsStream extends JsWriter {
         while (cur.nonEmpty && !pushed) {
           val attr = cur.head
           attr._2 match {
-            case value: String => appendAttribute(null, attr._1, value, out)
+            case value: String => WriterHelpers.appendAttribute(null, attr._1, value, out)
             case js: Js =>
               if (needsLevel(js)) {
                 out.pushSeq(startTagRest(cur, fast), levelScope, null)
                 pushed = true
-              } else appendJsAttribute(attr._1, js, out)
+              } else WriterHelpers.appendJsAttribute(attr._1, js, out)
           }
           cur = cur.tail
         }
         if (!pushed) endStartTag(e, levelScope, out)
       case _ =>
         val attrs = e.attributes
-        if ((attrs ne null) && (attrs ne Null)) appendAttributes(attrs, out)
+        if ((attrs ne null) && (attrs ne Null)) WriterHelpers.appendAttributes(attrs, out)
         endStartTag(e, levelScope, out)
     }
   }
@@ -228,12 +222,7 @@ object XmlJsStream extends JsWriter {
       )
       out.pushSeq(ArraySeq.unsafeWrapArray(items), scope, null)
     case other =>
-      out.append(codeOf(other))
-  }
-
-  private def codeOf(js: Js): String = {
-    val cmd = js.cmd
-    if (cmd eq null) "null" else cmd
+      out.append(WriterHelpers.codeOf(other))
   }
 
   private val Quote: Js = Js("\"")
@@ -296,7 +285,7 @@ object XmlJsStream extends JsWriter {
 
   private def endStartTag(e: Elem, levelScope: NamespaceBinding, out: Out): Unit = {
     if ((e.scope ne levelScope) && (e.scope ne TopScope)) {
-      appendScope(e.scope, levelScope, out)
+      WriterHelpers.appendScope(e.scope, levelScope, out)
     }
 
     val children = e.child
@@ -305,11 +294,11 @@ object XmlJsStream extends JsWriter {
         if (n.getClass eq classOf[Text]) {
           out.append('>')
           out.escape(n.asInstanceOf[Text].data)
-          writeClosingTag(e, out)
+          WriterHelpers.writeClosingTag(e, out)
         } else if (n.isInstanceOf[Atom[?]]) {
           out.append('>')
           out.escape(n.asInstanceOf[Atom[?]].data.toString)
-          writeClosingTag(e, out)
+          WriterHelpers.writeClosingTag(e, out)
         } else {
           out.append('>')
           out.pushSeq(children, e.scope, e)
@@ -323,197 +312,31 @@ object XmlJsStream extends JsWriter {
           val items = level.items
           if (len == 0) {
             out.dropLevel()
-            writeEmpty(e, out)
+            WriterHelpers.writeEmpty(e, out)
           } else if (len == 1 && (items(0).getClass eq classOf[Text])) {
             out.dropLevel()
             out.append('>')
             out.escape(items(0).asInstanceOf[Text].data)
-            writeClosingTag(e, out)
-          } else if (len > 1 && spacedAtoms(items, len)) {
+            WriterHelpers.writeClosingTag(e, out)
+          } else if (len > 1 && WriterHelpers.spacedAtoms(items, len)) {
             out.dropLevel()
             out.append('>')
-            writeSpacedAtoms(items, len, e.scope, out)
-            writeClosingTag(e, out)
+            WriterHelpers.writeSpacedAtoms(items, len, e.scope, out)
+            WriterHelpers.writeClosingTag(e, out)
           } else out.append('>')
         } else {
           // A List or another kind of seq: rare (scala-xml's and fs' children are indexed).
           out.dropLevel()
-          if (children.isEmpty) writeEmpty(e, out)
+          if (children.isEmpty) WriterHelpers.writeEmpty(e, out)
           else {
             out.append('>')
-            if (spacedAtoms(children)) {
-              writeSpacedAtoms(children, e.scope, out)
-              writeClosingTag(e, out)
+            if (WriterHelpers.spacedAtoms(children)) {
+              WriterHelpers.writeSpacedAtoms(children, e.scope, out)
+              WriterHelpers.writeClosingTag(e, out)
             } else out.pushSeq(children, e.scope, e)
           }
         }
     }
   }
 
-  private def writeEmpty(e: Elem, out: Writer): Unit =
-    if (e.minimizeEmpty) {
-      out.append2('/', '>')
-    } else {
-      out.append('>')
-      writeClosingTag(e, out)
-    }
-
-  @tailrec private def appendScope(scope: NamespaceBinding, stop: NamespaceBinding, out: Writer): Unit = {
-    if ((scope ne null) && (scope ne TopScope) && (scope ne stop)) {
-      out.append(" xmlns")
-      val prefix = scope.prefix
-      if (prefix ne null) {
-        out.append(':')
-        out.append(prefix)
-      }
-      out.append2('=', '"')
-      val uri = scope.uri
-      if (uri ne null) out.escape(uri)
-      out.append('"')
-      appendScope(scope.parent, stop, out)
-    }
-  }
-
-  private def spacedAtoms(children: collection.Seq[Node]): Boolean = children match {
-    case iseq: collection.IndexedSeq[Node] =>
-      val len = iseq.length
-      if (len <= 1 || !isAtomNotText(iseq(0))) false
-      else {
-        var i = 1
-        while (i < len) {
-          if (!isAtomNotText(iseq(i))) return false
-          i += 1
-        }
-        true
-      }
-    case _ =>
-      isAtomNotText(children.head) && children.lengthCompare(1) > 0 && children.forall(isAtomNotText)
-  }
-
-  private def spacedAtoms(items: Array[AnyRef], len: Int): Boolean = {
-    var i = 0
-    while (i < len) {
-      if (!isAtomNotText(items(i))) return false
-      i += 1
-    }
-    true
-  }
-
-  @noinline private def writeSpacedAtoms(items: Array[AnyRef], len: Int, scope: NamespaceBinding, out: Writer): Unit = {
-    var i = 0
-    while (i < len) {
-      if (i > 0) out.append(' ')
-      writeAtomOrRare(items(i).asInstanceOf[Node], scope, out)
-      i += 1
-    }
-  }
-
-  private inline def isAtomNotText(n: AnyRef): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
-
-  @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Writer): Unit =
-    children match {
-      case iseq: collection.IndexedSeq[Node] =>
-        val len = iseq.length
-        var i = 0
-        while (i < len) {
-          if (i > 0) out.append(' ')
-          writeAtomOrRare(iseq(i), scope, out)
-          i += 1
-        }
-      case _ =>
-        var first = true
-        children.foreach { n =>
-          if (!first) out.append(' ')
-          first = false
-          writeAtomOrRare(n, scope, out)
-        }
-    }
-
-  private inline def writeAtomOrRare(n: Node, scope: NamespaceBinding, out: Writer): Unit = n match {
-    case atom: Atom[?] if atom.getClass eq classOf[Atom[?]] => out.escape(atom.data.toString)
-    case u: Unparsed if u.getClass eq classOf[Unparsed] => out.append(u.data)
-    case other => writeRareNode(other, scope, out)
-  }
-
-  @noinline private def writeRareNode(node: Node, levelScope: NamespaceBinding, out: Writer): Unit = node match {
-    case special: SpecialNode =>
-      out.appendScratch(special.buildString)
-    case other =>
-      out.appendScratch(Utility.serialize(other, levelScope, _))
-  }
-
-  private inline def appendName(prefix: String, label: String, out: Writer): Unit = {
-    if (prefix ne null) {
-      out.append(prefix)
-      out.append(':')
-    }
-    out.append(label)
-  }
-
-  private def appendAttrStart(key: String, out: Writer): Unit = {
-    out.append(' ')
-    out.append(key)
-    out.append2('=', '"')
-  }
-
-  private def appendJsAttribute(key: String, js: Js, out: Writer): Unit = {
-    appendAttrStart(key, out)
-    escapeJs(js, out)
-    out.append('"')
-  }
-
-  private def escapeJs(js: Js, out: Writer): Unit = js match {
-    case composite: CompositeJs =>
-      composite.children match {
-        case iseq: collection.IndexedSeq[Js] =>
-          val len = iseq.length
-          var i = 0
-          while (i < len) {
-            escapeJs(iseq(i), out)
-            i += 1
-          }
-        case other => other.foreach(escapeJs(_, out))
-      }
-    case other => out.escape(codeOf(other))
-  }
-
-  private def appendAttribute(pre: String, key: String, value: String, out: Writer): Unit = {
-    out.append(' ')
-    appendName(pre, key, out)
-    out.append2('=', '"')
-    out.escape(value)
-    out.append('"')
-  }
-
-  @tailrec private def appendAttributes(attributes: MetaData, out: Writer): Unit = attributes match {
-    case Null =>
-    case a: Attribute if a.value eq null =>
-      appendAttributes(a.next, out)
-    case a: Attribute if isSinglePlainText(a.value) =>
-      val textVal = a.value match {
-        case t: Text => t.data
-        case n: Node => n.asInstanceOf[Atom[?]].data.toString
-        case seq =>
-          seq.head match {
-            case t: Text => t.data
-            case head => head.asInstanceOf[Atom[?]].data.toString
-          }
-      }
-      appendAttribute(if (a.isPrefixed) a.pre else null, a.key, textVal, out)
-      appendAttributes(a.next, out)
-    case other =>
-      out.appendScratch(other.copy(Null).buildString)
-      appendAttributes(other.next, out)
-  }
-
-  private def isSinglePlainText(value: collection.Seq[Node]): Boolean = value match {
-    case n: Node =>
-      val cls = n.getClass
-      (cls eq classOf[Text]) || (cls eq classOf[Atom[?]])
-    case _ =>
-      value.lengthCompare(1) == 0 && {
-        val cls = value.head.getClass
-        (cls eq classOf[Text]) || (cls eq classOf[Atom[?]])
-      }
-  }
 }

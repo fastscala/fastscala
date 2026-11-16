@@ -63,10 +63,13 @@ class UtilsSpec extends AnyFlatSpec {
   }
 
   it should "print the stack traces sampled when the code took longer than the threshold" in {
-    val (out, _) = printed {
+    val bytes = new ByteArrayOutputStream()
+    Console.withOut(new PrintStream(bytes, true, "UTF-8")) {
       Utils.profile("slow", threshold = 0, samplePeriod = 5)(Thread.sleep(60))
-      Thread.sleep(100) // the watchdog prints after the code, on its own thread
+      // The watchdog prints after the code, on its own thread (with this Console.out: it inherits it): wait for it.
+      val deadline = System.currentTimeMillis() + 5000
+      while (!bytes.toString("UTF-8").contains("[slow - profile stack trace") && System.currentTimeMillis() < deadline) Thread.sleep(10)
     }
-    assert(out.contains("[slow - profile stack trace"), out)
+    assert(bytes.toString("UTF-8").contains("[slow - profile stack trace"), bytes.toString("UTF-8"))
   }
 }

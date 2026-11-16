@@ -1,5 +1,7 @@
 package com.fastscala.scala_xml.xml
 
+import com.fastscala.scala_xml.xml.streaming.*
+
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 import org.scalatest.flatspec.AnyFlatSpec
@@ -10,12 +12,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
 
 /**
- * [[ChunkedSinkWriter]] by itself, with a producer of bytes (not XML): writes in order, one at a time, pausing while
+ * [[NonBlockingChunkedSinkWriter]] by itself, with a producer of bytes (not XML): writes in order, one at a time, pausing while
  * the sink is slow and resumed by the writes, and failing once.
  */
 class NonBlockingChunkedSinkWriterSpec extends AnyFlatSpec {
 
-  import ChunkedSinkWriter.{ChunkSize, MaxQueued}
+  import NonBlockingChunkedSinkWriter.{ChunkSize, MaxQueued}
 
   /** The byte at offset `i` of what the producer writes. */
   private def byteAt(i: Int): Byte = (i * 31 + i / 7).toByte
@@ -24,7 +26,7 @@ class NonBlockingChunkedSinkWriterSpec extends AnyFlatSpec {
 
   /** Writes `total` bytes, in "items" of `itemSize` (it only pauses between items, as XmlJsStream between nodes). */
   private final class Producer(total: Int, protected val sink: Content.Sink, protected val callback: Callback, protected val endContent: Boolean = true,
-                               itemSize: Int = 100, failAt: Int = -1) extends ChunkedSinkWriter {
+                               itemSize: Int = 100, failAt: Int = -1) extends NonBlockingChunkedSinkWriter {
     @volatile var produced = 0
     @volatile var produceCalls = 0
 
@@ -86,7 +88,7 @@ class NonBlockingChunkedSinkWriterSpec extends AnyFlatSpec {
     override def failed(x: Throwable): Unit = { failure = Some(x); completions.incrementAndGet(); done.countDown() }
   }
 
-  "ChunkedSinkWriter" should "write everything, in order, in buffers of ChunkSize, the last one ending the content" in {
+  "NonBlockingChunkedSinkWriter" should "write everything, in order, in buffers of ChunkSize, the last one ending the content" in {
     val sink = new HeldSink
     val cb = new Recording
     val total = ChunkSize * 10 + 123

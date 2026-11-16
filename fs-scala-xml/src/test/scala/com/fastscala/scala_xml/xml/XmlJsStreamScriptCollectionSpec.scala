@@ -1,5 +1,7 @@
 package com.fastscala.scala_xml.xml
 
+import com.fastscala.scala_xml.xml.streaming.*
+
 import com.fastscala.js.{Js, JsEscape}
 import com.fastscala.scala_xml.js.{JS, JsWithScriptDetection, NodeSeqJs}
 import org.eclipse.jetty.io.Content

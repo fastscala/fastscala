@@ -1,5 +1,7 @@
 package com.fastscala.scala_xml.xml
 
+import com.fastscala.scala_xml.xml.streaming.*
+
 import com.fastscala.js.JsEscape
 import org.scalatest.flatspec.AnyFlatSpec
 

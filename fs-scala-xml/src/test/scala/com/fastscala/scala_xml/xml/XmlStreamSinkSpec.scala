@@ -1,5 +1,7 @@
 package com.fastscala.scala_xml.xml
 
+import com.fastscala.scala_xml.xml.streaming.*
+
 import com.fastscala.scala_xml.testutils.AttributeOrder.normalized
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback

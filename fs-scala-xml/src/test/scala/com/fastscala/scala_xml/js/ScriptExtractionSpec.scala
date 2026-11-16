@@ -1,7 +1,8 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.js.{Js, JsEscape}
-import com.fastscala.scala_xml.xml.{ElemOptimized, XmlJsStream}
+import com.fastscala.scala_xml.xml.ElemOptimized
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 import org.scalatest.flatspec.AnyFlatSpec

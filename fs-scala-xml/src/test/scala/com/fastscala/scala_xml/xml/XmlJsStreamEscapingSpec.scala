@@ -1,5 +1,7 @@
 package com.fastscala.scala_xml.xml
 
+import com.fastscala.scala_xml.xml.streaming.*
+
 import com.fastscala.js.{EncJs, Js, js}
 import com.fastscala.scala_xml.js.{JS, NodeSeqJs}
 import org.eclipse.jetty.io.Content
@@ -45,9 +47,9 @@ class XmlJsStreamEscapingSpec extends AnyFlatSpec {
   }
 
   /** What `write` writes into an Out (after `pad` ASCII bytes, so it starts anywhere in a chunk), and then finishes. */
-  private def collect(pad: Int)(write: XmlJsStream.Out => Unit): Array[Byte] = {
+  private def collect(pad: Int)(write: Out => Unit): Array[Byte] = {
     val bytes = new ByteArrayOutputStream()
-    val out = new XmlJsStream.Out(new Content.Sink {
+    val out = new Out(new Content.Sink {
       override def write(last: Boolean, bb: ByteBuffer, cb: Callback): Unit = {
         while (bb.hasRemaining) bytes.write(bb.get())
         cb.succeeded()

@@ -61,14 +61,7 @@ object Out {
  * Serializes into the buffers of [[NonBlockingChunkedSinkWriter]] (which writes them to the sink): the stack of levels being
  * read, and the escaping and script collector in force. Its producer is [[writeAll]], which pauses between nodes.
  */
-private[xml] final class Out(protected val sink: Content.Sink, protected val callback: Callback, protected val endContent: Boolean) extends NonBlockingChunkedSinkWriter {
-
-  private var _scratch: StringBuilder = null
-
-  def scratch: StringBuilder = {
-    if (_scratch eq null) _scratch = new StringBuilder(256)
-    _scratch
-  }
+private[xml] final class Out(protected val sink: Content.Sink, protected val callback: Callback, protected val endContent: Boolean) extends NonBlockingChunkedSinkWriter with Writer {
 
   var depth = 0
   var levels = new Array[Level](64)
@@ -90,7 +83,15 @@ private[xml] final class Out(protected val sink: Content.Sink, protected val cal
 
   inline def append(s: String): Unit = Encoder.write(s, this, markupEsc)
 
-  def appendScratch(): Unit = {
+  private var _scratch: StringBuilder = null
+
+  def scratch: StringBuilder = {
+    if (_scratch eq null) _scratch = new StringBuilder(256)
+    _scratch
+  }
+
+  def appendScratch(f: StringBuilder => Unit): Unit = {
+    f(scratch)
     val sb = _scratch.underlying
     if (sb.length > 0) {
       Encoder.write(sb, this, markupEsc)

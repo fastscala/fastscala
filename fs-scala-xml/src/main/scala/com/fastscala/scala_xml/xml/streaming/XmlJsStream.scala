@@ -87,7 +87,7 @@ object XmlJsStream extends JsWriter {
     } finally callback.close()
   }
 
-  private inline def writeClosingTag(closing: Elem, out: Out): Unit = {
+  private inline def writeClosingTag(closing: Elem, out: Writer): Unit = {
     out.append2('<', '/')
     appendName(closing.prefix, closing.label, out)
     out.append('>')
@@ -350,7 +350,7 @@ object XmlJsStream extends JsWriter {
     }
   }
 
-  private def writeEmpty(e: Elem, out: Out): Unit =
+  private def writeEmpty(e: Elem, out: Writer): Unit =
     if (e.minimizeEmpty) {
       out.append2('/', '>')
     } else {
@@ -358,7 +358,7 @@ object XmlJsStream extends JsWriter {
       writeClosingTag(e, out)
     }
 
-  @tailrec private def appendScope(scope: NamespaceBinding, stop: NamespaceBinding, out: Out): Unit = {
+  @tailrec private def appendScope(scope: NamespaceBinding, stop: NamespaceBinding, out: Writer): Unit = {
     if ((scope ne null) && (scope ne TopScope) && (scope ne stop)) {
       out.append(" xmlns")
       val prefix = scope.prefix
@@ -399,7 +399,7 @@ object XmlJsStream extends JsWriter {
     true
   }
 
-  @noinline private def writeSpacedAtoms(items: Array[AnyRef], len: Int, scope: NamespaceBinding, out: Out): Unit = {
+  @noinline private def writeSpacedAtoms(items: Array[AnyRef], len: Int, scope: NamespaceBinding, out: Writer): Unit = {
     var i = 0
     while (i < len) {
       if (i > 0) out.append(' ')
@@ -410,7 +410,7 @@ object XmlJsStream extends JsWriter {
 
   private inline def isAtomNotText(n: AnyRef): Boolean = n.isInstanceOf[Atom[?]] && !n.isInstanceOf[Text]
 
-  @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Out): Unit =
+  @noinline private def writeSpacedAtoms(children: collection.Seq[Node], scope: NamespaceBinding, out: Writer): Unit =
     children match {
       case iseq: collection.IndexedSeq[Node] =>
         val len = iseq.length
@@ -429,22 +429,20 @@ object XmlJsStream extends JsWriter {
         }
     }
 
-  private inline def writeAtomOrRare(n: Node, scope: NamespaceBinding, out: Out): Unit = n match {
+  private inline def writeAtomOrRare(n: Node, scope: NamespaceBinding, out: Writer): Unit = n match {
     case atom: Atom[?] if atom.getClass eq classOf[Atom[?]] => out.escape(atom.data.toString)
     case u: Unparsed if u.getClass eq classOf[Unparsed] => out.append(u.data)
     case other => writeRareNode(other, scope, out)
   }
 
-  @noinline private def writeRareNode(node: Node, levelScope: NamespaceBinding, out: Out): Unit = node match {
+  @noinline private def writeRareNode(node: Node, levelScope: NamespaceBinding, out: Writer): Unit = node match {
     case special: SpecialNode =>
-      special.buildString(out.scratch)
-      out.appendScratch()
+      out.appendScratch(special.buildString)
     case other =>
-      Utility.serialize(other, levelScope, out.scratch)
-      out.appendScratch()
+      out.appendScratch(Utility.serialize(other, levelScope, _))
   }
 
-  private inline def appendName(prefix: String, label: String, out: Out): Unit = {
+  private inline def appendName(prefix: String, label: String, out: Writer): Unit = {
     if (prefix ne null) {
       out.append(prefix)
       out.append(':')
@@ -452,19 +450,19 @@ object XmlJsStream extends JsWriter {
     out.append(label)
   }
 
-  private def appendAttrStart(key: String, out: Out): Unit = {
+  private def appendAttrStart(key: String, out: Writer): Unit = {
     out.append(' ')
     out.append(key)
     out.append2('=', '"')
   }
 
-  private def appendJsAttribute(key: String, js: Js, out: Out): Unit = {
+  private def appendJsAttribute(key: String, js: Js, out: Writer): Unit = {
     appendAttrStart(key, out)
     escapeJs(js, out)
     out.append('"')
   }
 
-  private def escapeJs(js: Js, out: Out): Unit = js match {
+  private def escapeJs(js: Js, out: Writer): Unit = js match {
     case composite: CompositeJs =>
       composite.children match {
         case iseq: collection.IndexedSeq[Js] =>
@@ -479,7 +477,7 @@ object XmlJsStream extends JsWriter {
     case other => out.escape(codeOf(other))
   }
 
-  private def appendAttribute(pre: String, key: String, value: String, out: Out): Unit = {
+  private def appendAttribute(pre: String, key: String, value: String, out: Writer): Unit = {
     out.append(' ')
     appendName(pre, key, out)
     out.append2('=', '"')
@@ -487,7 +485,7 @@ object XmlJsStream extends JsWriter {
     out.append('"')
   }
 
-  @tailrec private def appendAttributes(attributes: MetaData, out: Out): Unit = attributes match {
+  @tailrec private def appendAttributes(attributes: MetaData, out: Writer): Unit = attributes match {
     case Null =>
     case a: Attribute if a.value eq null =>
       appendAttributes(a.next, out)
@@ -504,8 +502,7 @@ object XmlJsStream extends JsWriter {
       appendAttribute(if (a.isPrefixed) a.pre else null, a.key, textVal, out)
       appendAttributes(a.next, out)
     case other =>
-      other.copy(Null).buildString(out.scratch)
-      out.appendScratch()
+      out.appendScratch(other.copy(Null).buildString)
       appendAttributes(other.next, out)
   }
 

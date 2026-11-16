@@ -3,6 +3,7 @@ package com.fastscala.scala_xml.xml
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.xml.XmlJsStreamFixtures.*
 import com.fastscala.scala_xml.xml.baseline.XmlJsStreamBaseline
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
@@ -17,7 +18,7 @@ import scala.xml.*
  * ([[XmlJsStreamBaselineSpec]] checks the bytes themselves), not the times: they vary from run to run (see
  * [[EncoderPerfSpec]]), so only a ratio well away from 1, in several runs, means something. Run it alone.
  *
- * Run with: `sbt "fs_scala_xml/testOnly com.fastscala.scala_xml.xml.XmlJsStreamPerfSpec"`
+ * Run with: `sbt "perf_benchmarks/testOnly com.fastscala.scala_xml.xml.XmlJsStreamPerfSpec"`
  */
 class XmlJsStreamPerfSpec extends AnyFlatSpec {
 

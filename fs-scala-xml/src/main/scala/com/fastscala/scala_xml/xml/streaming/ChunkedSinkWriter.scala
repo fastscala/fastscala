@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.xml
+package com.fastscala.scala_xml.xml.streaming
 
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback

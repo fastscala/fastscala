@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.js
 
 import com.fastscala.js.EncJs
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 import com.fastscala.js.JsEscape

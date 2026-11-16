@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml.routing.resp
 
 import com.fastscala.js.{Js, JsWriter}
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import com.fastscala.routing.resp.{Ok, Response}
 import com.fastscala.js.EncJs
 import com.fastscala.scala_xml.js.NodeSeqJs

@@ -1,6 +1,6 @@
 package com.fastscala.testutils
 
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback
 

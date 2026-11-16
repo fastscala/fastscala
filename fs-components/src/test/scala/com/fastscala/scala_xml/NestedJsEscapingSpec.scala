@@ -5,7 +5,7 @@ import com.fastscala.components.bootstrap5.utils.BSBtn
 import com.fastscala.core.*
 import com.fastscala.js.{CompositeJs, EncJs, Js, JsWriter}
 import com.fastscala.scala_xml.js.{JS, JsWithScriptDetection, NodeSeqJs}
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import com.fastscala.testutils.PerfFS
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.Callback

@@ -1,7 +1,7 @@
 package com.fastscala.scala_xml
 
-import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import com.fastscala.components.bootstrap5.alerts.SimpleAlert
 import com.fastscala.components.bootstrap5.form7.BSForm7Renderers
 import com.fastscala.components.bootstrap5.form7.layout.F7BSFormInputGroup
@@ -45,7 +45,7 @@ import scala.xml.*
  * Performance test: a big page using many parts of the library, rendered with [[XmlJsStream]]. The page has
  * [[XmlStreamPagePerfSpec.Sections]] sections (Bootstrap cards), each with:
  *
- *  - literal XML with Bootstrap class helpers on [[ScalaXmlElemUtilsV1]] (see [[XmlStreamPagePerfSpec.V1Helpers]]):
+ *  - literal XML with Bootstrap class helpers on [[ScalaXmlElemUtils]] (see [[XmlStreamPagePerfSpec.V1Helpers]]):
  *    ids from a counter, styles, classes and data attributes, as in `<td>...</td>.withId(nextId()).withStyle(...).px_2`;
  *  - [[BSBtn]]s: as `<button>` (with callbacks, a confirm, icons), `<span>` and `<a>` (`btnLink`), in several styles;
  *  - [[ImmediateInputFields]]: text (with and without a button), password, checkbox, select, range and textarea;
@@ -61,7 +61,7 @@ import scala.xml.*
  * the modals' child contexts, and the forms' and tables' rerenderers. Measured: building the page, writing it the first time (when the class transforms of the
  * helpers are computed) and writing it again.
  *
- * Run with: `sbt -J-Xmx8g "fs_components/testOnly com.fastscala.scala_xml.XmlStreamPagePerfSpec"`
+ * Run with: `sbt -J-Xmx8g "perf_benchmarks/testOnly com.fastscala.scala_xml.XmlStreamPagePerfSpec"`
  *
  * The profiling tests write a JFR + HTML flame graph to [[AsyncProf.OutDir]], named `XmlStreamPage-build-...` and
  * `XmlStreamPage-write-...`.
@@ -414,12 +414,12 @@ object XmlStreamPagePerfSpec {
   val TdStyle = "max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
 
   /**
-   * The Bootstrap class, color and data attribute helpers, on [[ScalaXmlElemUtilsV1]] / ElemOptimized (which also
+   * The Bootstrap class, color and data attribute helpers, on [[ScalaXmlElemUtils]] / ElemOptimized (which also
    * gives withId, withStyle, withAttr, ...). Only these are imported for the literal XML in the page.
    */
   object V1Helpers {
-    implicit class RichElemV1(val elem: Elem) extends AnyVal
-      with BSClassesHelper[Elem] with BSColorsHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtilsV1 {
+    implicit class RichElem(val elem: Elem) extends AnyVal
+      with BSClassesHelper[Elem] with BSColorsHelper[Elem] with BSDataHelper[Elem] with ScalaXmlElemUtils {
       override protected def setAttribute(name: String, value: String): Elem = withAttr(name -> value)
     }
   }

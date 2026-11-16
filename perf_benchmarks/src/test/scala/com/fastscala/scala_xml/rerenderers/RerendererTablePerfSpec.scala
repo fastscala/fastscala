@@ -17,8 +17,8 @@ import scala.xml.*
  * Rerenderer, and one more `<td>` with a [[BSBtn]] whose callback rerenders the row. Measured: building it, i.e. a new
  * page, rendering every row's Rerenderer (a child FSContext and a callback per row) and the table.
  *
- * Lives in fs-components because it uses BSHelpers and BSBtn. Run with:
- * `sbt -J-Xmx8g "fs_components/testOnly com.fastscala.scala_xml.rerenderers.RerendererTablePerfSpec"`
+ * Run with:
+ * `sbt -J-Xmx8g "perf_benchmarks/testOnly com.fastscala.scala_xml.rerenderers.RerendererTablePerfSpec"`
  *
  * The last test profiles the build with [[AsyncProf]] (JFR + HTML flame graph in [[AsyncProf.OutDir]], named
  * `RerendererTable-build-...`).

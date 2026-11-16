@@ -1,13 +1,13 @@
 package com.fastscala.scala_xml.xml
 
-import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils
 import com.fastscala.scala_xml.testutils.ElemUtilsV1
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
 
 /**
- * The getters of [[ScalaXmlElemUtilsV1]] read an ElemOptimized's attrs directly:
+ * The getters of [[ScalaXmlElemUtils]] read an ElemOptimized's attrs directly:
  * they must not compute the attributes, and must return exactly what they return for a plain Elem with the same ones.
  */
 class FastAttrsGettersSpec extends AnyFlatSpec {

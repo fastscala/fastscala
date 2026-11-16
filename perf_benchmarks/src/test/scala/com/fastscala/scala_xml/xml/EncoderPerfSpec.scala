@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.xml
 
 import com.fastscala.scala_xml.xml.baseline.{EncoderBaseline, EncoderBaselineOutput}
+import com.fastscala.scala_xml.xml.streaming.{Encoder, EncoderOutput}
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
@@ -17,7 +18,7 @@ import org.scalatest.flatspec.AnyFlatSpec
  *    calls (`buf`, `pos`) aren't inlined any more, which slows down what's written in small pieces: not what happens
  *    in an application, where XmlJsStream's is the only one.
  *
- * Run with: `sbt "fs_scala_xml/testOnly com.fastscala.scala_xml.xml.EncoderPerfSpec"`
+ * Run with: `sbt "perf_benchmarks/testOnly com.fastscala.scala_xml.xml.EncoderPerfSpec"`
  */
 class EncoderPerfSpec extends AnyFlatSpec {
 

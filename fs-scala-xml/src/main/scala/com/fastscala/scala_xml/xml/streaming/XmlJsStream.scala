@@ -1,7 +1,8 @@
-package com.fastscala.scala_xml.xml
+package com.fastscala.scala_xml.xml.streaming
 
 import com.fastscala.js.{CompositeJs, EncJs, Js, JsWriter}
 import com.fastscala.scala_xml.js.{JS, JsWithScriptDetection, NodeSeqJs}
+import com.fastscala.scala_xml.xml.ElemOptimized
 import org.eclipse.jetty.io.Content
 import org.eclipse.jetty.util.{Blocker, Callback}
 
@@ -155,7 +156,9 @@ object XmlJsStream extends JsWriter {
     override protected def produce(): Boolean = writeAll(this)
 
     inline def append(c: Char): Unit = Encoder.writeAscii(c, this, markupEsc)
+
     inline def append2(c1: Char, c2: Char): Unit = Encoder.writeAscii2(c1, c2, this, markupEsc)
+
     inline def append(s: String): Unit = Encoder.write(s, this, markupEsc)
 
     def appendScratch(): Unit = {
@@ -441,7 +444,9 @@ object XmlJsStream extends JsWriter {
   private val Semicolon: Js = Js(";")
 
   private final class XmlWithoutScripts(val ns: NodeSeq, val scripts: ArrayBuffer[Js])
+
   private final class CollectedScripts(val detection: JsWithScriptDetection, val scripts: ArrayBuffer[Js])
+
   private final class Escaped(val js: Js)
 
   private def writeCollectedScripts(collected: CollectedScripts, scope: NamespaceBinding, out: Out): Unit = {
@@ -454,8 +459,11 @@ object XmlJsStream extends JsWriter {
   }
 
   private final class JsAttr(val key: String, val js: Js)
+
   private final class StringAttr(val key: String, val value: String)
+
   private final class StartTagEnd(val elem: Elem)
+
   private object AttrValueEnd
 
   private def needsLevel(js: Js): Boolean = js match {
@@ -483,7 +491,7 @@ object XmlJsStream extends JsWriter {
       val attr = cur.head
       buf(i) = attr._2 match {
         case value: String => new StringAttr(attr._1, value)
-        case js: Js        => new JsAttr(attr._1, js)
+        case js: Js => new JsAttr(attr._1, js)
       }
       i += 1
       cur = cur.tail

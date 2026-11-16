@@ -3,6 +3,7 @@ package com.fastscala.scala_xml.xml
 import com.fastscala.js.Js
 import com.fastscala.scala_xml.xml.XmlJsStreamFixtures.*
 import com.fastscala.scala_xml.xml.baseline.XmlJsStreamBaseline
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*

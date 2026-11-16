@@ -122,8 +122,7 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
-    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.15.1", "com.lihaoyi" %% "upickle" % "4.4.3", "com.softwaremill.quicklens" %% "quicklens" % "1.9.15", "org.scalatest" %% "scalatest" % "3.2.20" % Test,
-      "me.bechberger" % "ap-loader-all" % "4.6-14" % Test), // async-profiler, for profiling in perf tests (see AsyncProf)
+    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.15.1", "com.lihaoyi" %% "upickle" % "4.4.3", "com.softwaremill.quicklens" %% "quicklens" % "1.9.15", "org.scalatest" %% "scalatest" % "3.2.20" % Test),
     Compile / run / javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
     Compile / run / fork := true,
     Compile / run / connectInput := true
@@ -131,4 +130,26 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .dependsOn(fs_core)
   .dependsOn(fs_circe)
   .dependsOn(fs_scala_xml)
+
+// The performance tests of every module (and what only they use: the frozen baselines they measure against, AsyncProf).
+// Not published. Run one with e.g. `sbt -J-Xmx8g "perf_benchmarks/testOnly *XmlStreamPagePerfSpec"`.
+lazy val perf_benchmarks = (project in file(FSRoot + "perf_benchmarks"))
+  .settings(
+    commonSettings,
+    name := "perf-benchmarks",
+    version := Version,
+    organization := "com.fastscala",
+    scalacOptions ++= Seq("-Xmax-inlines", "50"),
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
+    scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
+    libraryDependencies ++= Seq(
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test,
+      "me.bechberger" % "ap-loader-all" % "4.6-14" % Test // async-profiler, for profiling in perf tests (see AsyncProf)
+    ),
+    publish / skip := true,
+    // One suite at a time: they'd skew each other's timings, and they share the JVM's single FSSystem (see PerfFS).
+    Test / parallelExecution := false
+  )
+  // test->test: fs-components' test helpers (PerfFS, XmlStreamWrite, AttributeOrder), which its other specs use too.
+  .dependsOn(fs_components % "compile->compile;test->test")
 // ---------- end of FastScala modules ----------

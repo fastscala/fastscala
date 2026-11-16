@@ -3,7 +3,7 @@ package com.fastscala.scala_xml.js
 import com.fastscala.core.FSContext
 import com.fastscala.js.{CompositeJs, Js, JsUtils}
 import com.fastscala.scala_xml.rerenderers.{ContentRerenderer, ContentRerendererP, Rerenderer, RerendererP}
-import com.fastscala.scala_xml.xml.{ElemWithJsInScript, XmlJsStream}
+import com.fastscala.scala_xml.xml.ElemWithJsInScript
 import com.fastscala.utils.IdGen
 import org.apache.commons.text.StringEscapeUtils
 import org.eclipse.jetty.io.Content

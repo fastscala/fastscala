@@ -15,7 +15,7 @@ import scala.xml.*
  * rendered on a new page each time (so rendering also registers each button's callback), then written with
  * [[XmlJsStream]].
  *
- * Run with: `sbt -J-Xmx8g "fs_components/testOnly com.fastscala.components.bootstrap5.utils.BSBtnPerfSpec"`
+ * Run with: `sbt -J-Xmx8g "perf_benchmarks/testOnly com.fastscala.components.bootstrap5.utils.BSBtnPerfSpec"`
  * (one method only: add `-- -z btnLink`, for example).
  *
  * The profiling tests write a JFR + HTML flame graph per method to [[AsyncProf.OutDir]], named `BSBtn-<method>-...`.

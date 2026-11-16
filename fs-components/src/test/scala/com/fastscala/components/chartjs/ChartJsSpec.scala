@@ -1,6 +1,6 @@
 package com.fastscala.components.chartjs
 
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 import io.circe.Json
 import io.circe.parser.parse
 import org.eclipse.jetty.io.Content

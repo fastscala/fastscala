@@ -1,4 +1,4 @@
-package com.fastscala.scala_xml.xml;
+package com.fastscala.scala_xml.xml.streaming;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

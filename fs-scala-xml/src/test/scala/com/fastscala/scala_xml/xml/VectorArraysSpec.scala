@@ -1,6 +1,7 @@
 package com.fastscala.scala_xml.xml
 
 import com.fastscala.scala_xml.testutils.XmlStreamTestUtils
+import com.fastscala.scala_xml.xml.streaming.VectorArrays
 import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*

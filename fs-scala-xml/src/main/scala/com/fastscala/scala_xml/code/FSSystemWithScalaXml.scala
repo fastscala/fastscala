@@ -4,7 +4,7 @@ import com.fastscala.core.FSSystem
 import com.fastscala.routing.resp.{Ok, Response}
 import com.fastscala.js.JsWriter
 import com.fastscala.scala_xml.routing.resp.ResponseScalaXmlSupport.RichOk
-import com.fastscala.scala_xml.xml.XmlJsStream
+import com.fastscala.scala_xml.xml.streaming.XmlJsStream
 
 import scala.xml.NodeSeq
 

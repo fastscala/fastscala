@@ -5,7 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.xml.*
 
-class ScalaXmlElemUtilsV1Spec extends AnyFlatSpec {
+class ScalaXmlElemUtilsSpec extends AnyFlatSpec {
 
   /** The previous implementation: one withAttr call per pair. */
   private def reference(elem: Elem, attrs: (String, String)*): Elem =

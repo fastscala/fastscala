@@ -1,6 +1,6 @@
 package com.fastscala.scala_xml
 
-import com.fastscala.scala_xml.xml.ScalaXmlElemUtilsV1
+import com.fastscala.scala_xml.xml.ScalaXmlElemUtils
 import com.fastscala.components.bootstrap5.helpers.{BSClassesHelper, BSHelpers}
 import com.fastscala.testutils.{AsyncProf, AsyncProfAssertions}
 import com.fastscala.testutils.AttributeOrder.normalized
@@ -15,18 +15,18 @@ import scala.xml.*
  * counter) and 4 classes added via Bootstrap class helpers; each `<td>` also gets a style ([[XmlStreamTablePerfSpec.TdStyle]]).
  * Run for each implementation of the attribute helpers, for comparison:
  *
- *  - V2: [[BSHelpers]] (which is on [[ScalaXmlElemUtilsV1]] too, with all its helpers)
- *  - V1: only the class helpers, on [[ScalaXmlElemUtilsV1]] ([[com.fastscala.scala_xml.xml.ElemOptimized]])
+ *  - V2: [[BSHelpers]] (which is on [[ScalaXmlElemUtils]] too, with all its helpers)
+ *  - V1: only the class helpers, on [[ScalaXmlElemUtils]] ([[com.fastscala.scala_xml.xml.ElemOptimized]])
  *
  * The class transforms are computed when the attributes are read, so for implementations XmlJsStream has no fast path
  * for, the first render includes computing the final `class` attributes.
  *
- * Lives in fs-components because it uses BSHelpers. Run with:
- * `sbt -J-Xmx8g "fs_components/testOnly com.fastscala.scala_xml.XmlStreamTablePerfSpec"`
+ * Run with:
+ * `sbt -J-Xmx8g "perf_benchmarks/testOnly com.fastscala.scala_xml.XmlStreamTablePerfSpec"`
  *
  * Running several variants in one JVM lets each skew the JIT for the next (the shared class helpers see several
  * addClass implementations), so for comparable numbers run one per JVM with `-Dperf.variants=V1` (or `V2`; comma
- * separated; default: all), e.g. `sbt -J-Xmx8g -Dperf.variants=V1 "fs_components/testOnly ..."`.
+ * separated; default: all), e.g. `sbt -J-Xmx8g -Dperf.variants=V1 "perf_benchmarks/testOnly ..."`.
  *
  * The second test of each variant profiles building the table with [[AsyncProf]] (JFR + HTML flame graph in
  * [[AsyncProf.OutDir]], named `XmlStreamTable-build-<variant>-...`).
@@ -147,7 +147,7 @@ object XmlStreamTablePerfSpec {
 
   // Each table is built in its own object, importing only its own helpers, so the implicit conversions don't clash.
 
-  /** With [[BSHelpers]] (on [[ScalaXmlElemUtilsV1]] / ElemOptimized). */
+  /** With [[BSHelpers]] (on [[ScalaXmlElemUtils]] / ElemOptimized). */
   object V2Table {
 
     import BSHelpers.*
@@ -174,11 +174,11 @@ object XmlStreamTablePerfSpec {
   }
 
   /**
-   * The same Bootstrap class helpers as BSHelpers, mixed in with [[ScalaXmlElemUtilsV1]] / ElemOptimized directly
+   * The same Bootstrap class helpers as BSHelpers, mixed in with [[ScalaXmlElemUtils]] / ElemOptimized directly
    * (for withId, withStyle, ...).
    */
   object V1Helpers {
-    implicit class RichElemV1(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with ScalaXmlElemUtilsV1
+    implicit class RichElem(val elem: Elem) extends AnyVal with BSClassesHelper[Elem] with ScalaXmlElemUtils
   }
 
   object V1Table {

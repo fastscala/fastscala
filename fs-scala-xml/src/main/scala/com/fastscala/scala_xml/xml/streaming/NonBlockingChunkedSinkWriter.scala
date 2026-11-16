@@ -16,16 +16,16 @@ import java.nio.ByteBuffer
  *
  * The producer is [[produce]], run by [[drive]]: it should check `checkPause` regularly (cheap: a field), and when it's
  * set, call [[shouldPause]], and if that's true return false (paused). Once the queue is down again (to
- * [[ChunkedSinkWriter.ResumeAtQueued]]), the write that drained it calls [[drive]] again, on its thread: the producer
+ * [[NonBlockingChunkedSinkWriter.ResumeAtQueued]]), the write that drained it calls [[drive]] again, on its thread: the producer
  * goes on from where it stopped. So a slow client doesn't hold a thread, and only a few buffers are kept: more only
  * while the producer doesn't pause (e.g. for a single node bigger than that).
  *
  * `callback` is completed once: after the last write completed, or with the first failure (the producer's, or a
  * write's: then nothing more is written, and the producer, at its next check, pauses for good).
  */
-private[xml] trait ChunkedSinkWriter extends EncoderOutput {
+private[xml] trait NonBlockingChunkedSinkWriter extends EncoderOutput {
 
-  import ChunkedSinkWriter.*
+  import NonBlockingChunkedSinkWriter.*
 
   /** Where the buffers are written. */
   protected def sink: Content.Sink
@@ -115,6 +115,7 @@ private[xml] trait ChunkedSinkWriter extends EncoderOutput {
       val chunk = next
       sink.write(chunk.endsContent, ByteBuffer.wrap(chunk.bytes, 0, chunk.length), new Callback {
         override def succeeded(): Unit = written(chunk, null)
+
         override def failed(t: Throwable): Unit = written(chunk, t)
       })
     }
@@ -161,7 +162,7 @@ private[xml] trait ChunkedSinkWriter extends EncoderOutput {
   }
 }
 
-private[xml] object ChunkedSinkWriter {
+private[xml] object NonBlockingChunkedSinkWriter {
 
   /** The size of each buffer (each write, but the last). */
   val ChunkSize = 8192

@@ -13,7 +13,7 @@ import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
  * [[ChunkedSinkWriter]] by itself, with a producer of bytes (not XML): writes in order, one at a time, pausing while
  * the sink is slow and resumed by the writes, and failing once.
  */
-class ChunkedSinkWriterSpec extends AnyFlatSpec {
+class NonBlockingChunkedSinkWriterSpec extends AnyFlatSpec {
 
   import ChunkedSinkWriter.{ChunkSize, MaxQueued}
 

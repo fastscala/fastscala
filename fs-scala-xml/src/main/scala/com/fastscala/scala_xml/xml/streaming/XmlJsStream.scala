@@ -21,7 +21,7 @@ import scala.xml.*
  * Most of a page is ASCII (Java stores it as Latin-1 bytes): ASCII runs are copied as they are, in bulk; anything else
  * is encoded to UTF-8 char by char.
  *
- * Writing doesn't block (with a callback: see [[writeSeq]]), as [[ChunkedSinkWriter]] does it: one write to the sink at
+ * Writing doesn't block (with a callback: see [[writeSeq]]), as [[NonBlockingChunkedSinkWriter]] does it: one write to the sink at
  * a time (as Jetty requires), while serializing goes on into the next chunk; once [[MaxQueuedChunks]] chunks are waiting
  * for their turn, serializing pauses (between nodes), and the write that drains the queue resumes it, on its thread. So
  * a slow client doesn't hold a thread, and only a few chunks are kept (more only for a single node bigger than that,
@@ -38,19 +38,11 @@ import scala.xml.*
  */
 object XmlJsStream extends JsWriter {
 
-  /** The size of each write but the last (see [[ChunkedSinkWriter]]). */
-  val ChunkSize: Int = ChunkedSinkWriter.ChunkSize
+  /** The size of each write but the last (see [[NonBlockingChunkedSinkWriter]]). */
+  val ChunkSize: Int = NonBlockingChunkedSinkWriter.ChunkSize
 
-  // The special values of Level.index (a value >= 0 is the cursor into `items`, an indexed seq's elements):
-  /** The level's nodes are a non-empty `::` (List), read head by head: `nodes` holds the remaining list. */
-  private final val ListCursor = -1
-  /** The level's nodes are read with an Iterator (any other kind of seq): `nodes` holds the iterator. */
-  private final val IteratorCursor = -2
-  /** The level is a single node (writeNode's root, or a Node used as its own child seq): `nodes` holds the node. */
-  private final val SingleNodeCursor = -3
-
-  /** Serializing pauses (between nodes) once this many chunks are waiting to be written (see [[ChunkedSinkWriter]]). */
-  val MaxQueuedChunks: Int = ChunkedSinkWriter.MaxQueued
+  /** Serializing pauses (between nodes) once this many chunks are waiting to be written (see [[NonBlockingChunkedSinkWriter]]). */
+  val MaxQueuedChunks: Int = NonBlockingChunkedSinkWriter.MaxQueued
 
   def writeSeq(ns: NodeSeq, sink: Content.Sink, prefix: String, callback: Callback): Unit =
     writeSeq(ns, sink, prefix, callback, endContent = true)
@@ -95,202 +87,6 @@ object XmlJsStream extends JsWriter {
     } finally callback.close()
   }
 
-  /**
-   * A level of the stack (see [[Out.levels]]): the items being read, where the reading is at, and what applies to them.
-   * Mutable, and reused: a stack slot's Level is created once, and set again by each push that lands on it.
-   */
-  private[xml] final class Level {
-    /** The list, iterator or single node read (see the cursors above); not used when reading `items`. */
-    var nodes: AnyRef = null
-    /**
-     * An indexed seq's elements, read from `index` until `length`: an `ArraySeq.ofRef`'s or a small Vector's own array
-     * (see [[VectorArrays]]), or the others' copied into `own`. So each element is an array load, not a call through the IndexedSeq interface (which is megamorphic:
-     * Vector, ArraySeq, ArrayBuffer... all reach here).
-     */
-    var items: Array[AnyRef] = EmptyItems
-    /** This slot's buffer for copies of indexed seqs (reused by every push that lands on the slot; grown as needed). */
-    var own: Array[AnyRef] = null
-    var index = 0
-    var length = 0
-    var scope: NamespaceBinding = null
-    var closing: AnyRef = null
-    var markupEsc: Encoder.Escaping = Encoder.Unescaped
-    var textEsc: Encoder.Escaping = Encoder.Xml1
-    var collector: ArrayBuffer[Js] = null
-
-    def setEmpty(): Unit = {
-      nodes = null
-      items = EmptyItems
-      index = 0
-      length = 0
-    }
-  }
-
-  private val EmptyItems = new Array[AnyRef](0)
-
-  /**
-   * Serializes into the buffers of [[ChunkedSinkWriter]] (which writes them to the sink): the stack of levels being
-   * read, and the escaping and script collector in force. Its producer is [[writeAll]], which pauses between nodes.
-   */
-  private[xml] final class Out(protected val sink: Content.Sink, protected val callback: Callback, protected val endContent: Boolean) extends ChunkedSinkWriter {
-
-    private var _scratch: StringBuilder = null
-
-    def scratch: StringBuilder = {
-      if (_scratch eq null) _scratch = new StringBuilder(256)
-      _scratch
-    }
-
-    var depth = 0
-    var levels = new Array[Level](64)
-
-    var markupEsc: Encoder.Escaping = Encoder.Unescaped
-    var textEsc: Encoder.Escaping = Encoder.Xml1
-    var collector: ArrayBuffer[Js] = null
-
-    inline def setEscaping(markup: Encoder.Escaping, text: Encoder.Escaping): Unit = {
-      markupEsc = markup
-      textEsc = text
-    }
-
-    override protected def produce(): Boolean = writeAll(this)
-
-    inline def append(c: Char): Unit = Encoder.writeAscii(c, this, markupEsc)
-
-    inline def append2(c1: Char, c2: Char): Unit = Encoder.writeAscii2(c1, c2, this, markupEsc)
-
-    inline def append(s: String): Unit = Encoder.write(s, this, markupEsc)
-
-    def appendScratch(): Unit = {
-      val sb = _scratch.underlying
-      if (sb.length > 0) {
-        Encoder.write(sb, this, markupEsc)
-        sb.setLength(0)
-      }
-    }
-
-    inline def escape(text: String): Unit = Encoder.write(text, this, textEsc)
-
-    def pushSingle(n: AnyRef, scope: NamespaceBinding): Unit = {
-      depth = 0
-      val level = push()
-      level.nodes = n
-      level.index = SingleNodeCursor
-      level.scope = scope
-      level.closing = null
-      level.markupEsc = Encoder.Unescaped
-      level.textEsc = Encoder.Xml1
-      level.collector = null
-      setEscaping(Encoder.Unescaped, Encoder.Xml1)
-      collector = null
-    }
-
-    private def push(): Level = {
-      val d = depth
-      if (d == levels.length) levels = Arrays.copyOf(levels, d * 2)
-      var level = levels(d)
-      if (level eq null) {
-        level = new Level
-        levels(d) = level
-      }
-      depth = d + 1
-      level
-    }
-
-    def pushSeq(nodes: collection.Seq[AnyRef], scope: NamespaceBinding, closing: AnyRef): Unit = {
-      val level = push()
-      setNodes(level, nodes)
-      level.scope = scope
-      level.closing = closing
-      level.markupEsc = markupEsc
-      level.textEsc = textEsc
-      level.collector = collector
-    }
-
-    def pushCollecting(ns: NodeSeq, scripts: ArrayBuffer[Js]): Unit = {
-      val nextMarkup = markupEsc.enterJs
-      val nextText = nextMarkup.nextXml
-      pushSeq(ns, TopScope, null)
-      val level = levels(depth - 1)
-      level.markupEsc = nextMarkup
-      level.textEsc = nextText
-      level.collector = scripts
-      setEscaping(nextMarkup, nextText)
-      collector = scripts
-    }
-
-    def pushEscaped(js: Js, scope: NamespaceBinding, closing: AnyRef = null): Unit = {
-      val nextMarkup = markupEsc.enterJs
-      pushSingleJs(js, scope, closing, nextMarkup, nextMarkup.nextXml)
-    }
-
-    def pushAttrValue(js: Js, scope: NamespaceBinding): Unit = {
-      val nextMarkup = textEsc
-      pushSingleJs(js, scope, AttrValueEnd, nextMarkup, nextMarkup.nextXml)
-    }
-
-    private def pushSingleJs(js: Js, scope: NamespaceBinding, closing: AnyRef, nextMarkup: Encoder.Escaping, nextText: Encoder.Escaping): Unit = {
-      val level = push()
-      level.nodes = js
-      level.index = SingleNodeCursor
-      level.scope = scope
-      level.closing = closing
-      level.markupEsc = nextMarkup
-      level.textEsc = nextText
-      level.collector = null
-      collector = null
-      setEscaping(nextMarkup, nextText)
-    }
-
-    /** Takes the level just pushed off the stack, as if it had never been pushed (nothing was written for it). */
-    def dropLevel(): Unit = {
-      val level = levels(depth - 1)
-      level.nodes = null
-      level.items = EmptyItems
-      level.scope = null
-      level.closing = null
-      level.collector = null
-      depth -= 1
-    }
-
-    @tailrec private def setNodes(level: Level, nodes: collection.Seq[AnyRef]): Unit = nodes match {
-      case node: Node =>
-        level.nodes = node
-        level.index = SingleNodeCursor
-      case arr: ArraySeq.ofRef[?] =>
-        level.items = arr.unsafeArray.asInstanceOf[Array[AnyRef]]
-        level.index = 0
-        level.length = arr.length
-      case iseq: collection.IndexedSeq[?] =>
-        val vector1 = VectorArrays.arrayOfVector1(iseq) // a small Vector's own array: read in place
-        if (vector1 ne null) {
-          level.items = vector1
-          level.index = 0
-          level.length = vector1.length
-        } else {
-          val len = iseq.length
-          var own = level.own
-          if ((own eq null) || own.length < len) {
-            own = new Array[AnyRef](math.max(len, 16))
-            level.own = own
-          }
-          iseq.asInstanceOf[collection.IndexedSeq[AnyRef]].copyToArray(own, 0, len)
-          level.items = own
-          level.index = 0
-          level.length = len
-        }
-      case ns: NodeSeq => setNodes(level, ns.theSeq)
-      case cons: ::[AnyRef] =>
-        level.nodes = cons
-        level.index = ListCursor
-      case Nil =>
-        level.setEmpty()
-      case other =>
-        level.nodes = other.iterator
-        level.index = IteratorCursor
-    }
-  }
-
   private inline def writeClosingTag(closing: Elem, out: Out): Unit = {
     out.append2('<', '/')
     appendName(closing.prefix, closing.label, out)
@@ -298,7 +94,7 @@ object XmlJsStream extends JsWriter {
   }
 
   /** Main dispatch loop split via method inlining to keep code size small for HotSpot C2. */
-  private def writeAll(out: Out): Boolean = {
+  def writeAll(out: Out): Boolean = {
     while (out.depth > 0) {
       if (out.checkPause && out.shouldPause()) return false
 
@@ -312,13 +108,13 @@ object XmlJsStream extends JsWriter {
           level.index = idx + 1
           nextNode = level.items(idx)
         }
-      } else if (idx == ListCursor) {
+      } else if (idx == Out.ListCursor) {
         val cons = level.nodes.asInstanceOf[::[AnyRef]]
         nextNode = cons.head
         val tail = cons.tail
         if (tail.isEmpty) level.setEmpty()
         else level.nodes = tail
-      } else if (idx == IteratorCursor) {
+      } else if (idx == Out.IteratorCursor) {
         val it = level.nodes.asInstanceOf[Iterator[AnyRef]]
         if (it.hasNext) nextNode = it.next()
       } else {
@@ -338,7 +134,7 @@ object XmlJsStream extends JsWriter {
   @inline private def popLevel(level: Level, out: Out, d: Int): Unit = {
     val closing = level.closing
     level.nodes = null
-    level.items = EmptyItems
+    level.items = Out.EmptyItems
     level.scope = null
     level.closing = null
     level.collector = null
@@ -416,7 +212,7 @@ object XmlJsStream extends JsWriter {
     case enc: EncJs =>
       if (enc.inString) {
         out.append('"')
-        out.pushEscaped(enc.js, scope, AttrValueEnd)
+        out.pushEscaped(enc.js, scope, Out.AttrValueEnd)
       } else {
         out.pushEscaped(enc.js, scope, null)
       }
@@ -463,8 +259,6 @@ object XmlJsStream extends JsWriter {
   private final class StringAttr(val key: String, val value: String)
 
   private final class StartTagEnd(val elem: Elem)
-
-  private object AttrValueEnd
 
   private def needsLevel(js: Js): Boolean = js match {
     case composite: CompositeJs =>

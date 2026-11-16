@@ -2,7 +2,7 @@ import sbt.Keys.*
 import sbt.{url, *}
 import xerial.sbt.Sonatype.sonatypeCentralHost
 
-val Version = "0.0.53"
+val FSVersion = "0.0.53"
 
 resolvers += Resolver.mavenLocal
 
@@ -11,7 +11,7 @@ ThisBuild / sonatypeCredentialHost := sonatypeCentralHost
 ThisBuild / publishTo := sonatypePublishToBundle.value
 
 ThisBuild / organization := "com.fastscala"
-ThisBuild / version := Version
+ThisBuild / version := FSVersion
 ThisBuild / scalaVersion := "3.10.0"
 
 ThisBuild / shellPrompt := { state => Project.extract(state).currentRef.project + "> " }
@@ -53,7 +53,7 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   .settings(
     commonSettings,
     name := "fs-core",
-    version := Version,
+    version := FSVersion,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
@@ -83,18 +83,39 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   )
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
-  .settings(commonSettings, name := "fs-circe", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.17", "io.circe" %% "circe-generic" % "0.14.17", "io.circe" %% "circe-parser" % "0.14.17", "org.scalatest" %% "scalatest" % "3.2.20" % Test))
+  .settings(
+    commonSettings,
+    name := "fs-circe",
+    version := FSVersion,
+    organization := "com.fastscala",
+    libraryDependencies ++= Seq(
+      "io.circe" %% "circe-core" % "0.14.17",
+      "io.circe" %% "circe-generic" % "0.14.17",
+      "io.circe" %% "circe-parser" % "0.14.17",
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test
+    ))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.5.0", "org.scalatest" %% "scalatest" % "3.2.20" % Test, "net.bytebuddy" % "byte-buddy" % "1.18.17"))
+  .settings(
+    commonSettings,
+    name := "fs-scala-xml",
+    version := FSVersion,
+    organization := "com.fastscala",
+    scalacOptions ++= Seq("-old-syntax", "-rewrite"),
+    scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
+    libraryDependencies ++= Seq(
+      "org.scala-lang.modules" %% "scala-xml" % "2.5.0",
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test,
+      "net.bytebuddy" % "byte-buddy" % "1.18.17"
+    ))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
   .settings(
     commonSettings,
     name := "fs-db",
-    version := Version,
+    version := FSVersion,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
@@ -117,7 +138,7 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
   .settings(
     commonSettings,
     name := "fs-components",
-    version := Version,
+    version := FSVersion,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
@@ -137,7 +158,7 @@ lazy val perf_benchmarks = (project in file(FSRoot + "perf_benchmarks"))
   .settings(
     commonSettings,
     name := "perf-benchmarks",
-    version := Version,
+    version := FSVersion,
     organization := "com.fastscala",
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),

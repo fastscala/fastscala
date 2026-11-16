@@ -143,7 +143,7 @@ object XmlJsStream extends JsWriter {
     }
     closing match {
       case null =>
-      case e: Elem => WriterHelpers.writeClosingTag(e, out)
+      case e: Elem => out.writeClosingTag(e)
       case _ => out.append('"')
     }
   }
@@ -162,18 +162,18 @@ object XmlJsStream extends JsWriter {
       case collected: CollectedScripts => writeCollectedScripts(collected, levelScope, out)
       case attr: JsAttr =>
         if (needsLevel(attr.js)) {
-          WriterHelpers.appendAttrStart(attr.key, out)
+          out.appendAttrStart(attr.key)
           out.pushAttrValue(attr.js, levelScope)
-        } else WriterHelpers.appendJsAttribute(attr.key, attr.js, out)
-      case attr: StringAttr => WriterHelpers.appendAttribute(null, attr.key, attr.value, out)
+        } else out.appendJsAttribute(attr.key, attr.js)
+      case attr: StringAttr => out.appendAttribute(null, attr.key, attr.value)
       case end: StartTagEnd => endStartTag(end.elem, levelScope, out)
-      case other: Node => WriterHelpers.writeRareNode(other, levelScope, out)
+      case other: Node => out.writeRareNode(other, levelScope)
     }
   }
 
   @inline private def writeElemInline(e: Elem, levelScope: NamespaceBinding, out: Out): Unit = {
     out.append('<')
-    WriterHelpers.appendName(e.prefix, e.label, out)
+    out.appendName(e.prefix, e.label)
     e match {
       case fast: ElemOptimized =>
         var cur = fast.attrs
@@ -181,19 +181,19 @@ object XmlJsStream extends JsWriter {
         while (cur.nonEmpty && !pushed) {
           val attr = cur.head
           attr._2 match {
-            case value: String => WriterHelpers.appendAttribute(null, attr._1, value, out)
+            case value: String => out.appendAttribute(null, attr._1, value)
             case js: Js =>
               if (needsLevel(js)) {
                 out.pushSeq(startTagRest(cur, fast), levelScope, null)
                 pushed = true
-              } else WriterHelpers.appendJsAttribute(attr._1, js, out)
+              } else out.appendJsAttribute(attr._1, js)
           }
           cur = cur.tail
         }
         if (!pushed) endStartTag(e, levelScope, out)
       case _ =>
         val attrs = e.attributes
-        if ((attrs ne null) && (attrs ne Null)) WriterHelpers.appendAttributes(attrs, out)
+        if ((attrs ne null) && (attrs ne Null)) out.appendAttributes(attrs)
         endStartTag(e, levelScope, out)
     }
   }
@@ -222,7 +222,7 @@ object XmlJsStream extends JsWriter {
       )
       out.pushSeq(ArraySeq.unsafeWrapArray(items), scope, null)
     case other =>
-      out.append(WriterHelpers.codeOf(other))
+      out.append(out.codeOf(other))
   }
 
   private val Quote: Js = Js("\"")
@@ -285,7 +285,7 @@ object XmlJsStream extends JsWriter {
 
   private def endStartTag(e: Elem, levelScope: NamespaceBinding, out: Out): Unit = {
     if ((e.scope ne levelScope) && (e.scope ne TopScope)) {
-      WriterHelpers.appendScope(e.scope, levelScope, out)
+      out.appendScope(e.scope, levelScope)
     }
 
     val children = e.child
@@ -294,11 +294,11 @@ object XmlJsStream extends JsWriter {
         if (n.getClass eq classOf[Text]) {
           out.append('>')
           out.escape(n.asInstanceOf[Text].data)
-          WriterHelpers.writeClosingTag(e, out)
+          out.writeClosingTag(e)
         } else if (n.isInstanceOf[Atom[?]]) {
           out.append('>')
           out.escape(n.asInstanceOf[Atom[?]].data.toString)
-          WriterHelpers.writeClosingTag(e, out)
+          out.writeClosingTag(e)
         } else {
           out.append('>')
           out.pushSeq(children, e.scope, e)
@@ -312,27 +312,27 @@ object XmlJsStream extends JsWriter {
           val items = level.items
           if (len == 0) {
             out.dropLevel()
-            WriterHelpers.writeEmpty(e, out)
+            out.writeEmpty(e)
           } else if (len == 1 && (items(0).getClass eq classOf[Text])) {
             out.dropLevel()
             out.append('>')
             out.escape(items(0).asInstanceOf[Text].data)
-            WriterHelpers.writeClosingTag(e, out)
-          } else if (len > 1 && WriterHelpers.spacedAtoms(items, len)) {
+            out.writeClosingTag(e)
+          } else if (len > 1 && out.spacedAtoms(items, len)) {
             out.dropLevel()
             out.append('>')
-            WriterHelpers.writeSpacedAtoms(items, len, e.scope, out)
-            WriterHelpers.writeClosingTag(e, out)
+            out.writeSpacedAtoms(items, len, e.scope)
+            out.writeClosingTag(e)
           } else out.append('>')
         } else {
           // A List or another kind of seq: rare (scala-xml's and fs' children are indexed).
           out.dropLevel()
-          if (children.isEmpty) WriterHelpers.writeEmpty(e, out)
+          if (children.isEmpty) out.writeEmpty(e)
           else {
             out.append('>')
-            if (WriterHelpers.spacedAtoms(children)) {
-              WriterHelpers.writeSpacedAtoms(children, e.scope, out)
-              WriterHelpers.writeClosingTag(e, out)
+            if (out.spacedAtoms(children)) {
+              out.writeSpacedAtoms(children, e.scope)
+              out.writeClosingTag(e)
             } else out.pushSeq(children, e.scope, e)
           }
         }

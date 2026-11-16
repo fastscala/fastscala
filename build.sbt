@@ -58,24 +58,24 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.5.6",
+      "ch.qos.logback" % "logback-classic" % "1.6.7",
       // "net.logstash.logback" % "logstash-logback-encoder" % "8.0",
-      "org.slf4j" % "slf4j-api" % "2.0.16",
-      "com.github.loki4j" % "loki-logback-appender" % "2.0.0",
-      "io.prometheus" % "prometheus-metrics-core" % "1.3.10",
-      "io.prometheus" % "prometheus-metrics-instrumentation-jvm" % "1.3.10",
-      "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.3.10",
-      "com.typesafe" % "config" % "1.4.3",
-      "org.apache.commons" % "commons-text" % "1.12.0",
+      "org.slf4j" % "slf4j-api" % "2.0.20",
+      "com.github.loki4j" % "loki-logback-appender" % "2.1.0",
+      "io.prometheus" % "prometheus-metrics-core" % "1.10.0",
+      "io.prometheus" % "prometheus-metrics-instrumentation-jvm" % "1.10.0",
+      "io.prometheus" % "prometheus-metrics-exporter-httpserver" % "1.10.0",
+      "com.typesafe" % "config" % "1.4.10",
+      "org.apache.commons" % "commons-text" % "1.15.0",
       "org.apache.commons" % "commons-rng-simple" % "1.7",
-      "org.eclipse.jetty" % "jetty-server" % "12.0.12",
-      "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.0.12",
+      "org.eclipse.jetty" % "jetty-server" % "12.1.15",
+      "org.eclipse.jetty.websocket" % "jetty-websocket-jetty-server" % "12.1.15",
       "org.apache.commons" % "commons-rng-simple" % "1.7",
       "commons-io" % "commons-io" % "2.22.0",
       "org.owasp.encoder" % "encoder" % "1.6.0",
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
       "com.google.guava" % "guava" % "33.8.0-jre",
-      "org.scalatest" %% "scalatest" % "3.2.19" % Test,
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test,
     ),
     // One suite at a time: they share the JVM's single FSSystem (FSStats registers its metrics globally), and some
     // check its gauges.
@@ -83,11 +83,11 @@ lazy val fs_core = (project in file(FSRoot + "fs-core"))
   )
 
 lazy val fs_circe = (project in file(FSRoot + "fs-circe"))
-  .settings(commonSettings, name := "fs-circe", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.10", "io.circe" %% "circe-generic" % "0.14.10", "io.circe" %% "circe-parser" % "0.14.10", "org.scalatest" %% "scalatest" % "3.2.19" % Test))
+  .settings(commonSettings, name := "fs-circe", version := Version, organization := "com.fastscala", libraryDependencies ++= Seq("io.circe" %% "circe-core" % "0.14.17", "io.circe" %% "circe-generic" % "0.14.17", "io.circe" %% "circe-parser" % "0.14.17", "org.scalatest" %% "scalatest" % "3.2.20" % Test))
   .dependsOn(fs_core)
 
 lazy val fs_scala_xml = (project in file(FSRoot + "fs-scala-xml"))
-  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.5.0", "org.scalatest" %% "scalatest" % "3.2.19" % Test, "net.bytebuddy" % "byte-buddy" % "1.18.17"))
+  .settings(commonSettings, name := "fs-scala-xml", version := Version, organization := "com.fastscala", scalacOptions ++= Seq("-old-syntax", "-rewrite"), scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"), libraryDependencies ++= Seq("org.scala-lang.modules" %% "scala-xml" % "2.5.0", "org.scalatest" %% "scalatest" % "3.2.20" % Test, "net.bytebuddy" % "byte-buddy" % "1.18.17"))
   .dependsOn(fs_core)
 
 lazy val fs_db = (project in file(FSRoot + "fs-db"))
@@ -99,15 +99,15 @@ lazy val fs_db = (project in file(FSRoot + "fs-db"))
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
     libraryDependencies ++= Seq(
-      "io.circe" %% "circe-core" % "0.14.15",
-      "io.circe" %% "circe-generic" % "0.14.15",
-      "io.circe" %% "circe-parser" % "0.14.15",
+      "io.circe" %% "circe-core" % "0.14.17",
+      "io.circe" %% "circe-generic" % "0.14.17",
+      "io.circe" %% "circe-parser" % "0.14.17",
       "org.postgresql" % "postgresql" % "42.7.14",
-      "org.xerial" % "sqlite-jdbc" % "3.51.0.0",
+      "org.xerial" % "sqlite-jdbc" % "3.54.1.0",
       "org.scalikejdbc" %% "scalikejdbc" % "4.3.5",
-      "com.google.guava" % "guava" % "33.5.0-jre",
-      "commons-codec" % "commons-codec" % "1.20.0",
-      "org.scalatest" %% "scalatest" % "3.2.19" % Test
+      "com.google.guava" % "guava" % "33.8.0-jre",
+      "commons-codec" % "commons-codec" % "1.23.0",
+      "org.scalatest" %% "scalatest" % "3.2.20" % Test
     ),
     Test / parallelExecution := false
   )
@@ -122,7 +122,7 @@ lazy val fs_components = (project in file(FSRoot + "fs-components"))
     scalacOptions ++= Seq("-Xmax-inlines", "50"),
     scalacOptions ++= Seq("-old-syntax", "-rewrite"),
     scalacOptions ++= Seq("-rewrite", "-source", "3.7-migration"),
-    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.12.7", "com.lihaoyi" %% "upickle" % "4.1.0", "com.softwaremill.quicklens" %% "quicklens" % "1.9.11", "org.scalatest" %% "scalatest" % "3.2.19" % Test,
+    libraryDependencies ++= Seq("joda-time" % "joda-time" % "2.15.1", "com.lihaoyi" %% "upickle" % "4.4.3", "com.softwaremill.quicklens" %% "quicklens" % "1.9.15", "org.scalatest" %% "scalatest" % "3.2.20" % Test,
       "me.bechberger" % "ap-loader-all" % "4.6-14" % Test), // async-profiler, for profiling in perf tests (see AsyncProf)
     Compile / run / javaOptions += "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005",
     Compile / run / fork := true,

@@ -264,7 +264,7 @@ class FSSystemImpl(val appName: String = "app", val stats: FSStats = new FSStats
                             new FSUploadedFile(
                               name = part.getFileName,
                               contentType = part.getHeaders.get(HttpHeader.CONTENT_TYPE),
-                              bytes = () => Content.Source.asByteBuffer(part.getContentSource).array,
+                              bytes = () => org.eclipse.jetty.util.BufferUtil.toArray(Content.Source.asByteBuffer(part.getContentSource)), // the buffer's content only (not its backing array, which may be larger)
                               inputStream = () => Content.Source.asInputStream(part.getContentSource)
                             )
                           )

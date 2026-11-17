@@ -6,8 +6,8 @@ class LazyWithPage[T](compute: FSPage => T) {
 
   var computed = Option.empty[T]
 
-  def apply()(implicit fsc: FSContext) = computed.getOrElse({
-    computed = Some(compute(fsc.page))
+  def apply()(implicit page: FSPage): T = computed.getOrElse({
+    computed = Some(compute(page))
     computed.get
   })
 

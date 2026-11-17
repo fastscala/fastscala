@@ -258,7 +258,10 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
   ): Elem =
     onTableFootTrThTransforms(elem.addClass(tableFootTrThClasses()).addStyle(tableFootTrThStyle()))
 
-  def columns(): Seq[C]
+  def columns()(implicit fsc: com.fastscala.core.FSPage): Seq[C]
+
+  /** The columns that are rendered: all of [[columns]], unless the table shows only some of them (e.g. [[Table6ColumnSelection]]). */
+  def visibleColumns()(implicit fsc: FSContext): Seq[C] = columns()(using fsc.page)
 
   def rowsHints()(implicit fsc: FSContext): Seq[RowsHint] = Nil
 
@@ -282,7 +285,7 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
           implicit val rowsWithIds: Seq[(String, R)] = rows(rowsHints()).zipWithIndex.map({ case (row, rowIdx) =>
             (idForRow(row, rowIdx), row)
           })
-          implicit val columnsWithIds: Seq[(String, C)] = columns().zipWithIndex.map({ case (col, colIdx) =>
+          implicit val columnsWithIds: Seq[(String, C)] = visibleColumns().zipWithIndex.map({ case (col, colIdx) =>
             (idForColumn(col, colIdx), col)
           })
 

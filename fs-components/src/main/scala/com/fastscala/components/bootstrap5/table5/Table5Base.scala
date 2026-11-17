@@ -92,7 +92,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     onTableBodyTRTDTransforms = onTableBodyTRTDTransforms.pipe(onTableBodyTRTDTransforms => elem => f(onTableBodyTRTDTransforms(elem)))
   }
 
-  def columns(): Seq[C]
+  def columns()(implicit fsc: com.fastscala.core.FSPage): Seq[C]
 
   def rowsHints(): Seq[RowsHint] = Nil
 
@@ -180,7 +180,7 @@ abstract class Table5Base() extends Table5ColsRenderable with ClassEnrichableMut
     implicit val rowsWithIds: Seq[(String, R)] = rows().zipWithIndex.map({
       case (row, rowIdx) => (idForRow(row, rowIdx), row)
     })
-    implicit val columnsWithIds: Seq[(String, C)] = columns().map(col => (idForColumn(col), col))
+    implicit val columnsWithIds: Seq[(String, C)] = columns()(using fsc.page).map(col => (idForColumn(col), col))
 
     val tableContents = renderTableContents()
 

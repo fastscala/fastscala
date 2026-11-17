@@ -583,7 +583,7 @@ object XmlStreamPagePerfSpec {
         val ColCity = ColStr("City", _.city)
         val ColActions = ColNs("Actions", implicit fsc => p => BSBtn().BtnOutlinePrimary.sm.lbl(s"View ${p.id}").callback(implicit fsc => Js.Void).btn)
 
-        override def columns(): List[C] = List(ColId, ColName, ColAge, ColCity, ColActions)
+        override def columns()(implicit fsc: com.fastscala.core.FSPage): List[C] = List(ColId, ColName, ColAge, ColCity, ColActions)
 
         override def rows(hints: Seq[RowsHint]): Seq[Person] =
           (1 to Table6Rows).map(r => Person(r, s"Person $r of s$s t$t", 20 + (r * s) % 60, Colors(r % Colors.size).capitalize + " City"))

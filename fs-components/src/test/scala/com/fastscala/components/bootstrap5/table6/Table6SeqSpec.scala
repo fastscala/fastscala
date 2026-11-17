@@ -3,7 +3,7 @@ package com.fastscala.components.bootstrap5.table6
 import com.fastscala.core.FSPage
 
 import com.fastscala.components.langpack.FSComponentsLangPack
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSPage}
 import com.fastscala.testutils.PerfFS
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -26,7 +26,7 @@ class Table6SeqSpec extends AnyFlatSpec {
     val ColName = ColStr("Name", _.name)
     val ColAge = ColStr("Age", _.age.toString)
 
-    override def columns(): List[C] = List(ColId, ColName, ColAge)
+    override def columns()(implicit page: FSPage): List[C] = List(ColId, ColName, ColAge)
 
     override def seqRowsSource: Seq[Person] = data
 
@@ -161,11 +161,11 @@ class Table6SeqSpec extends AnyFlatSpec {
       page.callbacks(funcId).func("")
     }
     clickHeader("Age")
-    assert(t.currentSortCol().contains(t.ColAge) && t.currentSortAsc())
+    assert(t.currentSortCol()(using page).contains(t.ColAge) && t.currentSortAsc()(using page))
     clickHeader("Age")
-    assert(t.currentSortCol().contains(t.ColAge) && !t.currentSortAsc())
+    assert(t.currentSortCol()(using page).contains(t.ColAge) && !t.currentSortAsc()(using page))
     clickHeader("Name")
-    assert(t.currentSortCol().contains(t.ColName) && t.currentSortAsc())
+    assert(t.currentSortCol()(using page).contains(t.ColName) && t.currentSortAsc()(using page))
   }
 
   "An empty table" should "render no rows" in {

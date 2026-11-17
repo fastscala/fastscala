@@ -18,25 +18,29 @@ trait Table6Paginated extends Table6Base {
 
   def defaultCurrentPage(implicit fsPage: FSPage): Int = 0
 
+  def defaultCurrentPageFinal(implicit fsPage: FSPage): Int = defaultCurrentPage
+
   def defaultPageSize(implicit fsPage: FSPage): Int = 100
+
+  def defaultPageSizeFinal(implicit fsPage: FSPage): Int = defaultPageSize
 
   def visiblePageSizes: List[Int] = List(10, 20, 50, 100, 500)
 
   def hidePaginationBottomControlsIfUnnecessary: Boolean = false
 
-  lazy val currentPageSize = LazyWithPage(implicit fsPage => defaultPageSize)
+  lazy val currentPageSize = LazyWithPage(implicit fsPage => defaultPageSizeFinal)
 
-  lazy val currentPage = LazyWithPage(implicit fsPage => defaultCurrentPage)
+  lazy val currentPage = LazyWithPage(implicit fsPage => defaultCurrentPageFinal)
 
-  def maxPages(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Int = knownTotalNumberOfRowsMat.value.map(n => (n - 1) / currentPageSize()).getOrElse(currentPage() + 10)
+  def maxPages(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Int = knownTotalNumberOfRowsMat.value.map(n => (n - 1) / currentPageSize()(using fsc.page)).getOrElse(currentPage()(using fsc.page) + 10)
 
   override def rowsHints()(implicit fsc: FSContext): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
-    offset = currentPage() * currentPageSize()
-    , limit = currentPageSize()
+    offset = currentPage()(using fsc.page) * currentPageSize()(using fsc.page)
+    , limit = currentPageSize()(using fsc.page)
   )
 
   def visiblePages()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): List[Int] =
-    (math.max(0, currentPage() - defaultNumberOfAdditionalPagesEachSide) to math.min(maxPages, (currentPage() + (defaultNumberOfAdditionalPagesEachSide * 2)))).take(defaultNumberOfAdditionalPagesEachSide * 2 + 1)
+    (math.max(0, currentPage()(using fsc.page) - defaultNumberOfAdditionalPagesEachSide) to math.min(maxPages, (currentPage()(using fsc.page) + (defaultNumberOfAdditionalPagesEachSide * 2)))).take(defaultNumberOfAdditionalPagesEachSide * 2 + 1)
       .toList
       .filter(_ >= 0)
 
@@ -71,23 +75,23 @@ trait Table6Paginated extends Table6Base {
 
   def renderPagesButtons()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
     BSBtn().BtnLight.lbl("«")
-      .callback(implicit fsc => onSetCurrentPageServerSide(math.max(0, currentPage() - 1)))
+      .callback(implicit fsc => onSetCurrentPageServerSide(math.max(0, currentPage()(using fsc.page) - 1)))
       .btn.pipe(onPaginationButtonsTransforms) ++
       visiblePages().map(page => {
-        (if (currentPage() == page) BSBtn().BtnPrimary else BSBtn().BtnLight)
+        (if (currentPage()(using fsc.page) == page) BSBtn().BtnPrimary else BSBtn().BtnLight)
           .lbl((page + 1).toString)
           .callback(implicit fsc => onSetCurrentPageServerSide(page))
           .btn.pipe(onPaginationButtonsTransforms)
       }).mkNS ++
       BSBtn().BtnLight.lbl("»")
-        .callback(implicit fsc => onSetCurrentPageServerSide(math.min(maxPages, currentPage() + 1)))
+        .callback(implicit fsc => onSetCurrentPageServerSide(math.min(maxPages, currentPage()(using fsc.page) + 1)))
         .btn.pipe(onPaginationButtonsTransforms)
   }
 
   def renderPageSizeDropdown()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Elem = {
     ImmediateInputFields.select[Int](
       () => visiblePageSizes,
-      () => currentPageSize(),
+      () => currentPageSize()(using fsc.page),
       pageSize => onChangeCurrentPageSizeServerSide(pageSize)
     ).mb_3.mx_3.pipe(onPageSizeSelectTransforms)
   }
@@ -98,10 +102,10 @@ trait Table6Paginated extends Table6Base {
 
   def renderTableSizeInfo()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {
     knownTotalNumberOfRowsMat.value.map(knownTotalNumberOfRows => {
-      val from = currentPage() * currentPageSize() + 1
-      val to = math.min(knownTotalNumberOfRows, (currentPage() + 1) * currentPageSize())
+      val from = currentPage()(using fsc.page) * currentPageSize()(using fsc.page) + 1
+      val to = math.min(knownTotalNumberOfRows, (currentPage()(using fsc.page) + 1) * currentPageSize()(using fsc.page))
       renderTableSizeInfo(from, to, to - from + 1, Some(knownTotalNumberOfRows))
-    }).getOrElse(renderTableSizeInfo(currentPage() * currentPageSize() + 1, (currentPage() + 1) * currentPageSize(), currentPageSize(), None))
+    }).getOrElse(renderTableSizeInfo(currentPage()(using fsc.page) * currentPageSize()(using fsc.page) + 1, (currentPage()(using fsc.page) + 1) * currentPageSize()(using fsc.page), currentPageSize()(using fsc.page), None))
   }
 
   def renderPaginationBottomControls()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): NodeSeq = {

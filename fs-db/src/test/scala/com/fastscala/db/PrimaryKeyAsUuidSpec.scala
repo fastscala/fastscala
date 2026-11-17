@@ -70,6 +70,30 @@ class PrimaryKeyBeingUuidSpec extends AnyFlatSpec with DBConn {
       assert(PrimaryKeyBeingUuidSpecTable.selectAll().isEmpty)
     })
   }
+  "Upsert" should "update the row with the same uuid, or insert it" in {
+    val row = new PrimaryKeyBeingUuidSpecTable().save()
+    val copy = PrimaryKeyBeingUuidSpecTable.getForId(row.id)
+    copy.myInt = 777
+    copy.upsert()
+    assert(PrimaryKeyBeingUuidSpecTable.getForIds(row.id).map(_.myInt) == List(777))
+
+    val fresh = new PrimaryKeyBeingUuidSpecTable(myInt = 5)
+    fresh.uuid = Some(java.util.UUID.randomUUID())
+    fresh.upsert()
+    assert(PrimaryKeyBeingUuidSpecTable.getForId(fresh.id).myInt == 5)
+
+    assert(PrimaryKeyBeingUuidSpecTable.delete(row) == 1)
+    assert(PrimaryKeyBeingUuidSpecTable.deleteAll(Seq(fresh)) == 1)
+  }
+  "Duplicate" should "insert a new row with the same values, leaving the row as it is" in {
+    val row = new PrimaryKeyBeingUuidSpecTable(myColumn = "dup", myInt = 9).save()
+    val uuid = row.id
+    val dup = row.duplicate()
+    assert(row.id == uuid && dup.id != uuid)
+    assert(dup.myColumn == "dup" && dup.myInt == 9)
+    assert(PrimaryKeyBeingUuidSpecTable.getForIds(uuid, dup.id).size == 2)
+    assert(PrimaryKeyBeingUuidSpecTable.deleteAll(Seq(row, dup)) == 2)
+  }
   "Reload" should "succeed" in {
     val ins = new PrimaryKeyBeingUuidSpecTable().save()
 

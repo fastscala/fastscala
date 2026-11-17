@@ -15,7 +15,7 @@ trait Table6SelectableRows extends Table6SelectableRowsBase with Table6ColsLabel
 
   lazy val allSelectedRowsEvenIfNotVisible = collection.mutable.Set[R]()
 
-  def selectedVisibleRows: Seq[R] = rows(rowsHints()).filter(row => allSelectedRowsEvenIfNotVisible.contains(row))
+  def selectedVisibleRows(implicit fsc: FSContext): Seq[R] = rows(rowsHints()).filter(row => allSelectedRowsEvenIfNotVisible.contains(row))
 
   def transformSelectedRowTd(td: Elem): Elem = td.bg_primary_subtle
 

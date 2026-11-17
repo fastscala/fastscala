@@ -4,7 +4,6 @@ import com.fastscala.db.Row
 import com.fastscala.db.annotations.PrimaryKey
 import com.fastscala.db.keyed.{RowWithId, RowWithIdBase}
 import scalikejdbc.*
-import scalikejdbc.interpolation.SQLSyntax
 
 import scala.reflect.ClassTag
 
@@ -15,81 +14,17 @@ trait RowWithLongId[R <: RowWithLongId[R] : ClassTag] extends Row[R] with RowWit
 
   def table: TableWithLongId[R]
 
-  def keyOpt: Option[java.lang.Long] = Option(id)
-
   override def key: java.lang.Long = id
 
-  def isPersisted_? = id != null
+  def isPersisted_? : Boolean = id != null
 
-  /**
-   * Refreshes this row from the database, in place (as RowWithUUID's does). Returns None if it doesn't exist in the DB
-   * (or was never saved): then this row isn't changed.
-   */
-  def reloadOpt(): Option[R] = keyOpt.flatMap(id => table.getForIdOpt(id).map(inDB => {
-    copyFrom(inDB)
-    this
-  }))
+  protected def insertWithNewKey()(implicit session: DBSession): Unit =
+    id = table.insertSQL(this).updateAndReturnGeneratedKey("id").apply()
 
-  /** Refreshes this row from the database, in place (as RowWithUUID's does); a row never saved is left as it is. */
-  def reload(): R = {
-    if (isPersisted_?) copyFrom(table.getForIdOpt(id).get)
-    this
-  }
+  protected def clearKey(): Unit = id = null
 
-  def save(): R = {
-    if (isPersisted_?) {
-      update()
-    } else {
-      DB.localTx({ implicit session =>
-        id = table.insertSQL(this).updateAndReturnGeneratedKey("id").apply()
-      })
-    }
-    this
-  }
-
-  def duplicate(): R = {
-    val oldId = id
-    try {
-      id = null
-      val newId = DB.localTx({ implicit session => table.insertSQL(this).updateAndReturnGeneratedKey("id").apply() })
-      table.getForIdOpt(newId).get
-    } finally {
-      id = oldId
-    }
-  }
-
-  def update(): Unit = {
-    DB.localTx({ implicit session =>
-      table.updateSQL(this, sqls" where id = $id").execute()
-    })
-  }
-
-  def upsert(): R = {
-    DB.localTx({ implicit session => table.upsertSQL(this).execute() })
-    this
-  }
-
-  def update(upd: R => Unit): R = {
-    table.getForIdOpt(id).map(row => {
-      upd(row)
-      row.save()
-      upd(this)
-    })
-    this
-  }
-
-  def delete(): Unit = {
-    DB.localTx({ implicit session =>
-      table.deleteSQL(this, sqls"where id = $id").execute()
-    })
-  }
-
-  //  override def insert(): Unit = {
-  //    if (isPersisted_?) throw new Exception(s"Row already inserted with id $id")
-  //    super.insert()
-  //  }
-
-  override def hashCode(): Int = id.hashCode() * 41
+  // (A row never saved has no id: as in equals, it's only itself.)
+  override def hashCode(): Int = if (id == null) super.hashCode() else id.hashCode() * 41
 
   override def equals(obj: Any): Boolean = obj match {
     case obj: R =>

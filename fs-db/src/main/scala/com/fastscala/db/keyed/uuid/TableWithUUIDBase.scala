@@ -7,19 +7,16 @@ import scalikejdbc.{WrappedResultSet, scalikejdbcSQLInterpolationImplicitDef, sq
 
 import java.util.UUID
 
+/** What's specific to UUID keys (column `uuid`): the rest is in [[TableWithId]]. */
 trait TableWithUUIDBase[R <: RowWithUUIDBase] extends Table[R] with TableWithId[R, UUID] {
-
-  def getForIdOpt(key: UUID): Option[R]
-
-  def getForIds(uuid: UUID*): List[R]
-
-  def delete(row: R): Long = delete(sqls"uuid = ${row.id}")
-
-  def delete(ids: Seq[UUID]): Long = delete(SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(ids.map(_.toString).toArray[String])))
 
   def idSQL: SQLSyntax = sqls"""uuid"""
 
-  def idFromWrappedResultSetOpt(rs: WrappedResultSet, prefix: Option[String] = None): Option[UUID] = rs.stringOpt(prefix.map(prefix => s"${prefix}_uuid").getOrElse("uuid")).map(UUID.fromString(_))
+  def keyEqualsSQL(key: UUID): SQLSyntax = sqls"uuid = ${key.toString}::UUID"
 
-  override def idFromWrappedResultSet(rs: WrappedResultSet, prefix: Option[String] = None): UUID = idFromWrappedResultSetOpt(rs, prefix).get
+  def keyInSQL(keys: Seq[UUID]): SQLSyntax = SQLSyntax.createUnsafely("""uuid = ANY(?::UUID[])""", Seq(keys.map(_.toString).toArray[String]))
+
+  def keyOf(row: R): Option[UUID] = row.uuid
+
+  def idFromWrappedResultSetOpt(rs: WrappedResultSet, prefix: Option[String] = None): Option[UUID] = rs.stringOpt(prefix.map(prefix => s"${prefix}_uuid").getOrElse("uuid")).map(UUID.fromString(_))
 }

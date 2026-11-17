@@ -260,11 +260,11 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
 
   def columns(): Seq[C]
 
-  def rowsHints(): Seq[RowsHint] = Nil
+  def rowsHints()(implicit fsc: FSContext): Seq[RowsHint] = Nil
 
   /** Generates the rows and a context relevant for this rendering.
    */
-  def rows(hints: Seq[RowsHint] = rowsHints()): Seq[R]
+  def rows(hints: Seq[RowsHint]): Seq[R]
 
   def knownTotalNumberOfRows(): KnownTotalNumberOfRowsMaterialized = KnownTotalNumberOfRowsMaterialized(None)
 
@@ -279,7 +279,7 @@ abstract class Table6Base(implicit val langPack: FSComponentsLangPack) extends T
       implicit rerenderer =>
         implicit fsc => {
 
-          implicit val rowsWithIds: Seq[(String, R)] = rows().zipWithIndex.map({ case (row, rowIdx) =>
+          implicit val rowsWithIds: Seq[(String, R)] = rows(rowsHints()).zipWithIndex.map({ case (row, rowIdx) =>
             (idForRow(row, rowIdx), row)
           })
           implicit val columnsWithIds: Seq[(String, C)] = columns().zipWithIndex.map({ case (col, colIdx) =>

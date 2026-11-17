@@ -15,7 +15,7 @@ trait Table6SelectableRowsFast extends Table6SelectableRowsBase with Table6ColsL
 
   lazy val allSelectedRowsEvenIfNotVisible = collection.mutable.Set[R]()
 
-  def selectedVisibleRows: Seq[R] =
+  def selectedVisibleRows(implicit fsc: FSContext): Seq[R] =
     if (allSelectedRowsEvenIfNotVisible.nonEmpty) rows(rowsHints()).filter(row => allSelectedRowsEvenIfNotVisible.contains(row))
     else Nil
 

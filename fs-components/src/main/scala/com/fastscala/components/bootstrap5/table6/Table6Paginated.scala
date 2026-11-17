@@ -2,9 +2,10 @@ package com.fastscala.components.bootstrap5.table6
 
 import com.fastscala.components.bootstrap5.helpers.BSHelpers.RichElemBootstrapClasses
 import com.fastscala.components.bootstrap5.utils.{BSBtn, ImmediateInputFields}
-import com.fastscala.core.FSContext
+import com.fastscala.core.{FSContext, FSPage}
+import com.fastscala.js.Js
 import com.fastscala.scala_xml.xml.ScalaXmlNodeSeqUtils.MkNSFromElems
-import com.fastscala.utils.Lazy
+import com.fastscala.utils.{Lazy, LazyWithPage}
 
 import scala.util.chaining.scalaUtilChainingOps
 import scala.xml.{Elem, NodeSeq}
@@ -15,26 +16,26 @@ trait Table6Paginated extends Table6Base {
 
   def defaultNumberOfAdditionalPagesEachSide = 3
 
-  def defaultCurrentPage = 0
+  def defaultCurrentPage(implicit fsPage: FSPage): Int = 0
 
-  def defaultPageSize = 100
+  def defaultPageSize(implicit fsPage: FSPage): Int = 100
 
   def visiblePageSizes: List[Int] = List(10, 20, 50, 100, 500)
 
   def hidePaginationBottomControlsIfUnnecessary: Boolean = false
 
-  lazy val currentPageSize = Lazy(defaultPageSize)
+  lazy val currentPageSize = LazyWithPage(implicit fsPage => defaultPageSize)
 
-  lazy val currentPage = Lazy(defaultCurrentPage)
+  lazy val currentPage = LazyWithPage(implicit fsPage => defaultCurrentPage)
 
-  def maxPages(implicit knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Int = knownTotalNumberOfRowsMat.value.map(n => (n - 1) / currentPageSize()).getOrElse(currentPage() + 10)
+  def maxPages(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Int = knownTotalNumberOfRowsMat.value.map(n => (n - 1) / currentPageSize()).getOrElse(currentPage() + 10)
 
-  override def rowsHints(): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
+  override def rowsHints()(implicit fsc: FSContext): Seq[RowsHint] = super.rowsHints() :+ PagingRowsHint(
     offset = currentPage() * currentPageSize()
     , limit = currentPageSize()
   )
 
-  def visiblePages()(implicit knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): List[Int] =
+  def visiblePages()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): List[Int] =
     (math.max(0, currentPage() - defaultNumberOfAdditionalPagesEachSide) to math.min(maxPages, (currentPage() + (defaultNumberOfAdditionalPagesEachSide * 2)))).take(defaultNumberOfAdditionalPagesEachSide * 2 + 1)
       .toList
       .filter(_ >= 0)
@@ -57,35 +58,37 @@ trait Table6Paginated extends Table6Base {
     onPageSizeSelectTransforms = onPageSizeSelectTransforms.pipe(onPageSizeSelectTransforms => elem => f(onPageSizeSelectTransforms(elem)))
   }
 
+  def onSetCurrentPageServerSide(page: Int)(implicit fsc: FSContext): Js = {
+    currentPage() = page
+    rerender()
+  }
+
+  def onChangeCurrentPageSizeServerSide(pageSize: Int)(implicit fsc: FSContext): Js = {
+    currentPageSize() = pageSize
+    currentPage() = 0
+    rerender()
+  }
+
   def renderPagesButtons()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Elem = div.d_grid.d_flex.mb_3.mx_3.gap_1.apply {
-    BSBtn().BtnLight.lbl("«").callback(implicit fsc => {
-      currentPage() = math.max(0, currentPage() - 1)
-      rerender()
-    }).btn.pipe(onPaginationButtonsTransforms) ++
+    BSBtn().BtnLight.lbl("«")
+      .callback(implicit fsc => onSetCurrentPageServerSide(math.max(0, currentPage() - 1)))
+      .btn.pipe(onPaginationButtonsTransforms) ++
       visiblePages().map(page => {
         (if (currentPage() == page) BSBtn().BtnPrimary else BSBtn().BtnLight)
           .lbl((page + 1).toString)
-          .callback(implicit fsc => {
-            currentPage() = page
-            rerender()
-          })
+          .callback(implicit fsc => onSetCurrentPageServerSide(page))
           .btn.pipe(onPaginationButtonsTransforms)
       }).mkNS ++
-      BSBtn().BtnLight.lbl("»").callback(implicit fsc => {
-        currentPage() = math.min(maxPages, currentPage() + 1)
-        rerender()
-      }).btn.pipe(onPaginationButtonsTransforms)
+      BSBtn().BtnLight.lbl("»")
+        .callback(implicit fsc => onSetCurrentPageServerSide(math.min(maxPages, currentPage() + 1)))
+        .btn.pipe(onPaginationButtonsTransforms)
   }
 
   def renderPageSizeDropdown()(implicit fsc: FSContext, knownTotalNumberOfRowsMat: KnownTotalNumberOfRowsMaterialized): Elem = {
     ImmediateInputFields.select[Int](
       () => visiblePageSizes,
       () => currentPageSize(),
-      pageSize => {
-        currentPageSize() = pageSize
-        currentPage() = 0
-        rerender()
-      }
+      pageSize => onChangeCurrentPageSizeServerSide(pageSize)
     ).mb_3.mx_3.pipe(onPageSizeSelectTransforms)
   }
 

@@ -13,11 +13,10 @@ trait ObservableRow[K, R <: ObservableRow[K, R]] extends RowWithId[K, R] with Ob
   }
 
   def updateX(func: R => Unit)(implicit obs: DBObserver): R = {
-    val inDB = reload()
-    func(inDB)
-    inDB.saveX()
+    // (reload() refreshes this row in place: so `func` is applied once, to the current values.)
+    reload()
     func(this)
-    this
+    saveX()
   }
   
   override def deleteX()(implicit obs: DBObserver): Unit = try {

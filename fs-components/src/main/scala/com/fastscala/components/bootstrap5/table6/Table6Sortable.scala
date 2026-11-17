@@ -19,7 +19,7 @@ trait Table6Sortable extends Table6Base with Table6StandardColumns {
   lazy val currentSortCol: Lazy[Option[C]] = Lazy(defaultSortCol)
   lazy val currentSortAsc: Lazy[Boolean] = Lazy(currentSortCol().map(defaultSortAsc).getOrElse(true))
 
-  override def rowsHints(): Seq[RowsHint] = super.rowsHints() ++ currentSortCol().map(col => {
+  override def rowsHints()(implicit fsc: FSContext): Seq[RowsHint] = super.rowsHints() ++ currentSortCol().map(col => {
     SortingRowsHint(col, currentSortAsc())
   }).toList
 

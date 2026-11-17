@@ -10,8 +10,9 @@ trait TableWithLongIdSeqBacked[R <: RowWithLongId[R]] extends TableWithLongId[R]
 
   override def insertFields: List[Field] = (super.insertFields ::: fieldsList.filter(_.getName == "id")).distinct
 
+  // A row without an id takes the sequence's next one; a row that has one keeps it (so an upsert finds its row).
   override def valueToFragment(field: Field, value: Any): SQLSyntax =
-    if (field.getName == "id") SQLSyntax.createUnsafely(s"nextval('$sequenceIdName')")
+    if (field.getName == "id" && value == null) SQLSyntax.createUnsafely(s"nextval('$sequenceIdName')")
     else super.valueToFragment(field, value)
 
   override def __createTableSQL: List[SQL[Nothing, NoExtractor]] =

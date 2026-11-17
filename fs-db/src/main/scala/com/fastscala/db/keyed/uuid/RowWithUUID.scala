@@ -2,9 +2,7 @@ package com.fastscala.db.keyed.uuid
 
 import com.fastscala.db.keyed.RowWithId
 import com.fastscala.db.{Row, TableWithUuidId}
-import org.postgresql.util.PSQLException
 import scalikejdbc.*
-import scalikejdbc.interpolation.SQLSyntax
 
 import java.util.UUID
 import scala.reflect.ClassTag
@@ -16,53 +14,29 @@ trait RowWithUUID[R <: RowWithUUID[R] : ClassTag] extends Row[R] with RowWithUUI
 
   def key: UUID = uuid.getOrElse(null)
 
+  /** The SQL that saves the row (an insert, giving it its uuid, or an update), for the caller to run. */
   def saveSQL(): SQL[Nothing, NoExtractor] = {
+    uncheckedWrite("saveSQL()")
     val sql = if (uuid.isEmpty) {
       uuid = Some(UUID.randomUUID())
       table.insertSQL(this)
     } else {
-      table.updateSQL(this, sqls" where uuid = ${uuid.get.toString}::UUID")
+      table.updateSQL(this, sqls" where ${table.keyEqualsSQL(uuid.get)}")
     }
     sql
   }
 
-  def save(): R = {
-    DB.localTx({ implicit session => save(session) })
-    this
-  }
-
-  def save(session: DBSession): R = {
-    saveSQL().update()(using session)
-    this
-  }
-
-  def update(func: R => Unit): R = {
-    val inDB = uuid match {
-      case Some(id) => table.getForIdOpt(id).get
-      case None => this
-    }
-    func(inDB)
-    inDB.save()
-    copyFrom(inDB)
-    this
-  }
-
-  def reload(): R = {
-    uuid match {
-      case Some(uuid) =>
-        copyFrom(table.getForIdOpt(uuid).get)
-        this
-      case None => this
+  protected def insertWithNewKey()(implicit session: DBSession): Unit = {
+    uuid = Some(UUID.randomUUID())
+    try table.insertSQL(this).update()
+    catch {
+      case t: Throwable =>
+        uuid = None
+        throw t
     }
   }
 
-  /**
-   * Returns None if doesn't exist in DB.
-   */
-  def reloadOpt(): Option[R] = uuid.flatMap(uuid => table.getForIdOpt(uuid).map(inDB => {
-    copyFrom(inDB)
-    this
-  }))
+  protected def clearKey(): Unit = uuid = None
 
   def _reload()(implicit session: DBSession): R = {
     uuid match {
@@ -71,22 +45,6 @@ trait RowWithUUID[R <: RowWithUUID[R] : ClassTag] extends Row[R] with RowWithUUI
         this
       case None => this
     }
-  }
-
-  def update(): Unit = {
-    uuid.foreach(uuid => {
-      DB.localTx({ implicit session =>
-        table.updateSQL(this, sqls" where uuid = ${uuid.toString}::UUID").execute()
-      })
-    })
-  }
-
-  def delete(): Unit = {
-    uuid.foreach(uuid => {
-      DB.localTx({ implicit session =>
-        table.deleteSQL(this, sqls"where uuid = $uuid::UUID").execute()
-      })
-    })
   }
 
   override def insert(): Unit = {

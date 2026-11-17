@@ -17,4 +17,7 @@ object PerfFS {
 
   /** A new page, as FSSession.createPage creates it (the request is only stored, so null is fine here). */
   def newPage(): FSPage = new FSPage(session.nextID(), session, null, NoImpl)
+
+  /** A new page loaded with a GET of `uri` (e.g. `/people?page=2`): for what reads the page's request. */
+  def newPage(uri: String): FSPage = new FSPage(session.nextID(), session, TestRequests.request("GET", uri), NoImpl)
 }

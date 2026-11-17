@@ -1,5 +1,7 @@
 package com.fastscala.components.bootstrap5.table6
 
+import com.fastscala.core.FSPage
+
 import com.fastscala.components.langpack.FSComponentsLangPack
 import com.fastscala.core.FSContext
 import com.fastscala.testutils.PerfFS
@@ -28,7 +30,7 @@ class Table6SeqSpec extends AnyFlatSpec {
 
     override def seqRowsSource: Seq[Person] = data
 
-    override def defaultPageSize: Int = pageSize
+    override def defaultPageSize(implicit fsPage: FSPage): Int = pageSize
 
     override def hidePaginationBottomControlsIfUnnecessary: Boolean = hideIfUnnecessary
 
@@ -69,16 +71,18 @@ class Table6SeqSpec extends AnyFlatSpec {
   }
 
   it should "know how many pages there are (maxPages is the last page's index)" in {
+    given fsc: FSContext = newRoot()
     val t = new PeopleTable()
     given KnownTotalNumberOfRowsMaterialized = t.knownTotalNumberOfRows()
     assert(summon[KnownTotalNumberOfRowsMaterialized].value.contains(25))
     assert(t.maxPages == 2)
-    assert(new PeopleTable(pageSize = 25).maxPages(using KnownTotalNumberOfRowsMaterialized(Some(25))) == 0)
-    assert(new PeopleTable(pageSize = 5).maxPages(using KnownTotalNumberOfRowsMaterialized(Some(25))) == 4)
-    assert(new PeopleTable().maxPages(using KnownTotalNumberOfRowsMaterialized(Some(0))) == 0)
+    assert(new PeopleTable(pageSize = 25).maxPages(using fsc, KnownTotalNumberOfRowsMaterialized(Some(25))) == 0)
+    assert(new PeopleTable(pageSize = 5).maxPages(using fsc, KnownTotalNumberOfRowsMaterialized(Some(25))) == 4)
+    assert(new PeopleTable().maxPages(using fsc, KnownTotalNumberOfRowsMaterialized(Some(0))) == 0)
   }
 
   it should "show the pages around the current one" in {
+    given FSContext = newRoot()
     val t = new PeopleTable(pageSize = 1)
     given KnownTotalNumberOfRowsMaterialized = KnownTotalNumberOfRowsMaterialized(Some(25))
     assert(t.visiblePages() == (0 to 6).toList)
@@ -89,6 +93,7 @@ class Table6SeqSpec extends AnyFlatSpec {
   }
 
   it should "page with offset and limit hints" in {
+    given FSContext = newRoot()
     val t = new PeopleTable()
     t.currentPage() = 2
     assert(t.rowsHints().collect { case h: PagingRowsHint => h } == Seq(PagingRowsHint(20, 10)))

@@ -23,6 +23,24 @@ object ChartJsEncoders {
   implicit val ChartJsEncoder: Encoder[ChartJs] = semiauto.deriveEncoder[ChartJs]
 }
 
+object ChartJs {
+
+  /** The version of Chart.js that this package is written for (and that [[jsImports]] loads). */
+  val version = "4.6.1"
+
+  /** Without the fields that are null (the Nones), in all objects. The nulls in arrays stay: a null in a dataset's data is a gap, and
+   * without it the values after it are in the wrong place. */
+  def dropNullFields(json: Json): Json = json.arrayOrObject(
+    json,
+    values => Json.fromValues(values.map(dropNullFields)),
+    obj => Json.fromJsonObject(obj.filter(!_._2.isNull).mapValues(dropNullFields))
+  )
+
+  /** The script that loads Chart.js (for the page's head, or anywhere before the charts). */
+  def jsImports: NodeSeq =
+    <script src={s"https://cdn.jsdelivr.net/npm/chart.js@$version/dist/chart.umd.min.js"} integrity="sha256-hzZMwrKnamaEkp59a4Cxiol3lNs4QAyv8fzxeRxpJdI=" crossorigin="anonymous"></script>
+}
+
 case class ChartJs(
                     `type`: ChartType
                     , data: Option[ChartData] = None
@@ -38,7 +56,7 @@ case class ChartJs(
     Js(
       // The JSON goes in a <script> as it is: its '<'s (only ever in its strings) are escaped, so a "</script>" in a
       // label can't end the script. (The same JSON for JavaScript: "\u003c" is "<".)
-      s"""const ctx = document.getElementById(${JS.asJsStr(canvasId).cmd}); new Chart(ctx, ${this.asJson.deepDropNullValues.noSpaces.replace("<", "\\u003c")}); """
+      s"""const ctx = document.getElementById(${JS.asJsStr(canvasId).cmd}); new Chart(ctx, ${ChartJs.dropNullFields(this.asJson).noSpaces.replace("<", "\\u003c")}); """
     )
   }
 

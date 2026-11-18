@@ -56,8 +56,83 @@ class ChartJsSpec extends AnyFlatSpec {
   }
 
   "The chart types" should "have Chart.js's names" in {
-    assert(Seq(BarChartType, BubbleChartType, DoughnutChartType, LineChartType, ScatterChartType, PolarAreaChartType, RadarChartType).map(_.name) ==
-      Seq("bar", "bubble", "doughnut", "line", "scatter", "polarArea", "radar"))
+    assert(Seq(BarChartType, BubbleChartType, DoughnutChartType, PieChartType, LineChartType, ScatterChartType, PolarAreaChartType, RadarChartType).map(_.name) ==
+      Seq("bar", "bubble", "doughnut", "pie", "line", "scatter", "polarArea", "radar"))
+  }
+
+  "jsImports" should "load the version of Chart.js that this package is written for" in {
+    val script = ChartJs.jsImports.head.asInstanceOf[Elem]
+    assert(script.label == "script")
+    assert(script.attribute("src").map(_.text).contains("https://cdn.jsdelivr.net/npm/chart.js@4.6.1/dist/chart.umd.min.js"))
+    assert(script.attribute("integrity").exists(_.text.startsWith("sha256-")))
+  }
+
+  "A bar dataset" should "have the options of Chart.js 4: hoverBorderRadius, skipNull" in {
+    val json = BarChartDataset(hoverBorderRadius = Some(4), skipNull = Some(true)).encode().deepDropNullValues
+    assert(json == Json.obj("hoverBorderRadius" -> Json.fromDoubleOrNull(4), "skipNull" -> Json.True))
+  }
+
+  "A doughnut (or pie) dataset" should "have a color for each arc, and the spacing options" in {
+    val pie = ChartJs(PieChartType, data = Some(ChartData(
+      labels = Some(List("A", "B")),
+      datasets = Some(List(DoughnutChartDataset(data = Some(SimpleNumbersChartDatasetData(List(1, 3))), backgroundColor = Some(List("#f00", "#0f0")), spacing = Some(2), spacingMode = Some("parallel"))))
+    )))
+    val json = config(pie.installInCanvas("c").cmd)
+    assert(json.hcursor.downField("type").as[String].contains("pie"))
+    val dataset = json.hcursor.downField("data").downField("datasets").downN(0)
+    assert(dataset.downField("data").as[List[Double]].contains(List(1.0, 3.0)))
+    assert(dataset.downField("backgroundColor").as[List[String]].contains(List("#f00", "#0f0")))
+    assert(dataset.downField("spacing").as[Double].contains(2.0))
+    assert(dataset.downField("spacingMode").as[String].contains("parallel"))
+    assert(dataset.downField("weight").focus.isEmpty, "a None is left out")
+  }
+
+  /** The first dataset of a chart with this dataset, as it's given to Chart.js. */
+  private def dataset(tpe: ChartType, ds: ChartDataset) =
+    config(ChartJs(tpe, data = Some(ChartData(datasets = Some(List(ds))))).installInCanvas("c").cmd).hcursor.downField("data").downField("datasets").downN(0)
+
+  "A line dataset" should "have the line and point options, and gaps (nulls) in its data" in {
+    val ds = dataset(LineChartType, LineChartDataset(
+      label = Some("Temp"), data = Some(NullableNumbersChartDatasetData(List(Some(1), None, Some(3)))), borderColor = Some("#00f"), borderDash = Some(List(4, 2)),
+      fill = Some(Json.fromString("origin")), spanGaps = Some(Json.True), stepped = Some(Json.fromString("middle")), tension = Some(0.4), pointRadius = Some(0)
+    ))
+    assert(ds.downField("data").as[List[Option[Double]]].contains(List(Some(1.0), None, Some(3.0))))
+    assert(ds.downField("borderColor").as[String].contains("#00f"))
+    assert(ds.downField("borderDash").as[List[Double]].contains(List(4.0, 2.0)))
+    assert(ds.downField("fill").as[String].contains("origin"))
+    assert(ds.downField("spanGaps").as[Boolean].contains(true))
+    assert(ds.downField("stepped").as[String].contains("middle"))
+    assert(ds.downField("tension").as[Double].contains(0.4))
+    assert(ds.downField("pointRadius").as[Double].contains(0.0))
+    assert(ds.downField("showLine").focus.isEmpty, "a None is left out")
+  }
+
+  "A scatter dataset" should "be a line dataset with points ({x, y}) as its data" in {
+    val ds = dataset(ScatterChartType, LineChartDataset(data = Some(PointsChartDatasetData(List(ChartPoint(-10, 0), ChartPoint(0.5, 5.5)))), pointBackgroundColor = Some("#f00")))
+    assert(ds.downField("data").focus.contains(parse("""[{"x":-10.0,"y":0.0},{"x":0.5,"y":5.5}]""").toTry.get))
+    assert(ds.downField("pointBackgroundColor").as[String].contains("#f00"))
+  }
+
+  "A bubble dataset" should "have bubbles ({x, y, r}) as its data" in {
+    val ds = dataset(BubbleChartType, BubbleChartDataset(data = Some(BubblesChartDatasetData(List(ChartBubble(20, 30, 15)))), backgroundColor = Some("#f00"), hoverRadius = Some(2)))
+    assert(ds.downField("data").focus.contains(parse("""[{"x":20.0,"y":30.0,"r":15.0}]""").toTry.get))
+    assert(ds.downField("backgroundColor").as[String].contains("#f00"))
+    assert(ds.downField("hoverRadius").as[Double].contains(2.0))
+  }
+
+  "A radar dataset" should "have the line and point options" in {
+    val ds = dataset(RadarChartType, RadarChartDataset(data = Some(SimpleNumbersChartDatasetData(List(1, 2, 3))), fill = Some(Json.True), pointStyle = Some(Json.fromString("rect")), tension = Some(0.1)))
+    assert(ds.downField("data").as[List[Double]].contains(List(1.0, 2.0, 3.0)))
+    assert(ds.downField("fill").as[Boolean].contains(true))
+    assert(ds.downField("pointStyle").as[String].contains("rect"))
+    assert(ds.downField("tension").as[Double].contains(0.1))
+  }
+
+  "A polar area dataset" should "have a color for each arc" in {
+    val ds = dataset(PolarAreaChartType, PolarAreaChartDataset(data = Some(SimpleNumbersChartDatasetData(List(11, 16))), backgroundColor = Some(List("#f00", "#0f0")), circular = Some(false)))
+    assert(ds.downField("data").as[List[Double]].contains(List(11.0, 16.0)))
+    assert(ds.downField("backgroundColor").as[List[String]].contains(List("#f00", "#0f0")))
+    assert(ds.downField("circular").as[Boolean].contains(false))
   }
 
   "rendered / renderedOn" should "be the canvas (with an id) and the script creating the chart on it" in {

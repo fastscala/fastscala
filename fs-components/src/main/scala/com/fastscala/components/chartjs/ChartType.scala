@@ -8,6 +8,8 @@ object BubbleChartType extends ChartType("bubble")
 
 object DoughnutChartType extends ChartType("doughnut")
 
+object PieChartType extends ChartType("pie")
+
 object LineChartType extends ChartType("line")
 
 object ScatterChartType extends ChartType("scatter")

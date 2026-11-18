@@ -36,13 +36,15 @@ trait Table6ColumnSelection extends Table6Base with Table6ColsLabeled {
     onDropdownIndividualBtnTransforms = onDropdownIndividualBtnTransforms.pipe(onDropdownIndividualBtnTransforms => elem => f(onDropdownIndividualBtnTransforms(elem)))
   }
 
-  lazy val currentSelectedCols: LazyWithPage[collection.mutable.Set[C]] = LazyWithPage(implicit page => collection.mutable.Set(allColumns.filter(columnStartsVisible) *))
+  lazy val currentSelectedCols: LazyWithPage[collection.mutable.Set[C]] = LazyWithPage(implicit page => collection.mutable.Set(allColumns.filter(columnStartsVisibleFinal) *))
 
   def allColumns: Seq[C]
 
   lazy val initiallyVisibleColumns: Set[C] = allColumns.toSet
 
   def columnStartsVisible(c: C)(implicit fsc: FSPage): Boolean = initiallyVisibleColumns.contains(c)
+
+  def columnStartsVisibleFinal(c: C)(implicit fsc: FSPage): Boolean = columnStartsVisible(c)
 
   def columns()(implicit fsc: FSPage): Seq[C] = allColumns
 

@@ -29,8 +29,8 @@ trait Table6ColumnSelectionPersistedInQueryString extends Table6ColumnSelection 
     inQueryString.split(java.util.regex.Pattern.quote(persistedSelectedColsSeparator)).toSet.filter(_ != "")
   })
 
-  override def columnStartsVisible(c: C)(implicit page: FSPage): Boolean =
-    if (selectedColumnsInQueryString().isEmpty) super.columnStartsVisible(c)(using page)
+  override def columnStartsVisibleFinal(c: C)(implicit page: FSPage): Boolean =
+    if (selectedColumnsInQueryString().isEmpty) super.columnStartsVisibleFinal(c)(using page)
     else selectedColumnsInQueryString().contains(colLabel(c))
 
   override def onColumnSelectionChange()(implicit fsc: FSContext): Js = {
@@ -38,7 +38,7 @@ trait Table6ColumnSelectionPersistedInQueryString extends Table6ColumnSelection 
     setProp(
       PropNamePersistedSelectedCols,
       Some(visibleCols.map(colLabel).mkString(persistedSelectedColsSeparator))
-        .filter(_ => visibleCols != allColumns.filter(super.columnStartsVisible(_)(using fsc.page)))
+        .filter(_ => visibleCols != allColumns.filter(columnStartsVisible(_)(using fsc.page)))
     )(using fsc.page)
   }
 }
